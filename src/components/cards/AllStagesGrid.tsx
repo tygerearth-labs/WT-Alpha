@@ -20,12 +20,24 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
     return stage.id === currentStageId;
   };
 
+  // Calculate progress to next stage
+  const progressToNextStage = (stage: Stage, currentTotal: number): number => {
+    const nextStage = STAGES.find(s => s.id === stage.id);
+    if (!nextStage || nextStage.range[1] === Infinity) return 100;
+    const rangeStart = stage.range[0];
+    const rangeEnd = nextStage.range[1];
+    const currentProgress = currentTotal - rangeStart;
+    const totalRange = rangeEnd - rangeStart;
+    return Math.min(Math.max((currentProgress / totalRange) * 100, 0), 100);
+  };
+
   return (
     <TooltipProvider>
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
         {STAGES.map((stage) => {
           const unlocked = isStageUnlocked(stage);
           const current = isStageCurrent(stage);
+          const progress = progressToNextStage(stage, totalSavings);
 
           return (
             <Card
@@ -33,10 +45,10 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
               className={`
                 relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-lg
                 ${current ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}
-                ${unlocked ? 'bg-gradient-to-br from-card/80 to-card/50' : 'bg-muted/30 opacity-60'}
+                ${unlocked ? 'bg-gradient-to-br from-card/80 to-card/50' : 'bg-muted/30'}
               `}
             >
-              <CardContent className="p-4 space-y-3">
+              <CardContent className={`p-4 space-y-3 ${unlocked ? '' : 'backdrop-blur-sm select-none'}`}>
                 {/* Status Icon */}
                 <div className="absolute top-2 right-2">
                   {current ? (
@@ -56,22 +68,22 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
 
                 {/* Emoji & Name */}
                 <div className="space-y-2">
-                  <div className={`text-4xl ${current ? 'animate-pulse' : ''}`}>
+                  <div className={`text-3xl ${current ? 'animate-pulse' : 'blur-sm opacity-40'}`}>
                     {unlocked ? stage.emoji : '🔒'}
                   </div>
                   <div>
-                    <h3 className={`font-bold ${current ? 'text-primary' : ''}`}>
+                    <h3 className={`font-bold text-base ${!unlocked ? 'blur-sm opacity-40' : ''}`}>
                       {stage.name}
                     </h3>
                     {current && (
-                      <p className="text-xs text-primary font-medium">Fase Saat Ini</p>
+                      <p className="text-[10px] text-primary font-medium">Fase Saat Ini</p>
                     )}
                   </div>
                 </div>
 
                 {/* Range */}
                 <div className="text-xs text-muted-foreground">
-                  <p>
+                  <p className={unlocked ? '' : 'blur-sm opacity-50'}>
                     {stage.range[1] === Infinity
                       ? `> ${getCurrencyFormat(stage.range[0])}`
                       : `${getCurrencyFormat(stage.range[0])} - ${getCurrencyFormat(stage.range[1])}`
@@ -89,7 +101,7 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
                       </div>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs" side="top">
+                  <TooltipContent className={`max-w-xs" side="top" ${!unlocked ? 'blur-sm opacity-50' : ''}`}>
                     <div className="space-y-2">
                       <p className="font-semibold">{stage.name}</p>
                       <div className="text-sm space-y-1">
@@ -98,7 +110,7 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
                       </div>
                       {current && (
                         <p className="text-xs text-primary mt-2">
-                          💡 {getCurrencyFormat(stage.range[1] === Infinity ? stage.range[0] : stage.range[1] - totalSavings)} lagi menuju fase selanjutnya
+                          {progress.toFixed(0)}% lagi menuju fase selanjutnya
                         </p>
                       )}
                     </div>
