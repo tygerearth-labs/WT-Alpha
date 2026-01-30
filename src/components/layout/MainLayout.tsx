@@ -115,7 +115,7 @@ export function MainLayout() {
               className="w-8 h-8"
             />
             <h1 className="text-base font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Whealth Tracker
+              Wealth Tracker
             </h1>
           </div>
         </div>
@@ -234,7 +234,7 @@ export function MainLayout() {
         {/* Footer */}
         <footer className="mt-auto border-t border-border/50 px-3 lg:px-4 py-3 bg-card/50">
           <div className="text-center text-xs text-muted-foreground">
-            Creator: Tyger Earth | Ahtjong Labs
+            Tyger Earth | Ahtjong Labs
           </div>
         </footer>
       </main>
