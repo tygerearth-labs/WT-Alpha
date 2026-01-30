@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String
+  password      String
+  image         String?
+  pin           String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  transactions  Transaction[]
+  categories    Category[]
+  savingsTargets SavingsTarget[]
+  allocations   Allocation[]
+}
+
+model Category {
+  id            String       @id @default(cuid())
+  name          String
+  type          String       // 'income' or 'expense'
+  color         String?
+  icon          String?
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([name, userId, type])
+}
+
+model Transaction {
+  id          String       @id @default(cuid())
+  type        String       // 'income' or 'expense'
+  amount      Float
+  description String?
+  categoryId  String
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  allocation  Allocation?
+}
+
+model SavingsTarget {
+  id           String      @id @default(cuid())
+  name         String
+  targetAmount Float
+  currentAmount Float      @default(0)
+  targetDate   DateTime
+  initialInvestment Float  @default(0)
+  monthlyContribution Float
+  yearlyInterestRate Float @default(0)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  allocations  Allocation[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Allocation {
+  id              String        @id @default(cuid())
+  transactionId   String        @unique
+  transaction     Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  targetId        String
+  target          SavingsTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Float
+  percentage      Float
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
