@@ -56,8 +56,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Calculate total savings
-    const totalSavings = savingsTargets.reduce((sum, t) => sum + t.currentAmount, 0);
+    // Calculate total savings from both savings targets and net balance
+    const savingsFromTargets = savingsTargets.reduce((sum, t) => sum + t.currentAmount, 0);
+    const netBalance = totalIncome - totalExpense;
+    const totalSavings = Math.max(savingsFromTargets, netBalance, 0);
 
     // Get transactions by category
     const transactionsByCategory = await db.transaction.groupBy({
