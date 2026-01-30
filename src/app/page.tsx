@@ -26,7 +26,7 @@ export default function Home() {
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2 mb-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Whealth Tracker
+              Wealth Tracker
             </h1>
             <p className="text-muted-foreground">Kelola keuangan Anda dengan bijak</p>
           </div>
@@ -41,7 +41,7 @@ export default function Home() {
             </Button>
           </div>
           <div className="text-center text-xs text-muted-foreground">
-            Creator: Tyger Earth | Ahtjong Labs
+            Tyger Earth | Ahtjong Labs
           </div>
         </div>
       </div>
