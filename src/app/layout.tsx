@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Whealth Tracker - Kelola Keuangan Anda",
+  title: "Wealth Tracker - Kelola Keuangan Anda",
   description: "Aplikasi pencatatan keuangan modern dengan fitur lengkap untuk tracking kas masuk, keluar, dan target tabungan",
   keywords: ["keuangan", "tracker", "kas", "tabungan", "investasi"],
   authors: [{ name: "Tyger Earth | Ahtjong Labs" }],
