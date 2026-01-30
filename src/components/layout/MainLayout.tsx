@@ -36,7 +36,7 @@ type PageType = 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' 
 export function MainLayout() {
   const { user, logout } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar default HIDE
 
   const handleLogout = async () => {
     try {
@@ -88,10 +88,10 @@ export function MainLayout() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Mobile Sidebar Overlay */}
+      {/* Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -99,42 +99,42 @@ export function MainLayout() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 z-50
+          fixed inset-y-0 left-0 z-50
           w-72 bg-card/95 backdrop-blur-sm border-r border-border/50
           transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           flex flex-col
         `}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-border/50">
-          <div className="flex items-center gap-3">
+        <div className="p-4 border-b border-border/50">
+          <div className="flex items-center gap-2">
             <img
               src="/logo.svg"
               alt="Whealth Tracker Logo"
-              className="w-10 h-10"
+              className="w-8 h-8"
             />
-            <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <h1 className="text-base font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
               Whealth Tracker
             </h1>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
               <Button
                 key={item.id}
                 variant={currentPage === item.id ? 'default' : 'ghost'}
-                className="w-full justify-start gap-3"
+                className="w-full justify-start gap-2 text-sm"
                 onClick={() => {
                   setCurrentPage(item.id);
                   setSidebarOpen(false);
                 }}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
                 {item.label}
               </Button>
             );
@@ -142,24 +142,24 @@ export function MainLayout() {
         </nav>
 
         {/* User Menu */}
-        <div className="p-4 border-t border-border/50">
+        <div className="p-3 border-t border-border/50">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
+              <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {user?.username ? getInitials(user.username) : 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start text-left">
-                  <span className="font-medium">{user?.username || 'User'}</span>
-                  <span className="text-xs text-muted-foreground truncate">
+                  <span className="font-medium text-sm">{user?.username || 'User'}</span>
+                  <span className="text-[10px] text-muted-foreground truncate">
                     {user?.email || 'user@example.com'}
                   </span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setCurrentPage('profile')}>
@@ -179,18 +179,18 @@ export function MainLayout() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen">
         {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50 px-4 lg:px-6 py-4">
+        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50 px-2 lg:px-3 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              {/* Sidebar Toggle - Mobile & Desktop */}
               <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
+                variant="outline"
+                size="default"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
               >
                 {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
-              <h2 className="text-xl font-semibold capitalize">
+              <h2 className="text-base font-semibold capitalize text-foreground/90">
                 {navigation.find((n) => n.id === currentPage)?.label || 'Dashboard'}
               </h2>
             </div>
@@ -199,13 +199,13 @@ export function MainLayout() {
             <div className="hidden lg:block">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
+                  <Button variant="ghost" className="gap-2 h-9 px-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {user?.username ? getInitials(user.username) : 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">{user?.username || 'User'}</span>
+                    <span className="font-medium text-sm">{user?.username || 'User'}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -227,13 +227,13 @@ export function MainLayout() {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 p-4 lg:p-6 overflow-auto">
+        <div className="flex-1 p-2 lg:p-3 overflow-auto w-full">
           {renderPage()}
         </div>
 
         {/* Footer */}
-        <footer className="mt-auto border-t border-border/50 px-4 lg:px-6 py-4 bg-card/50">
-          <div className="text-center text-sm text-muted-foreground">
+        <footer className="mt-auto border-t border-border/50 px-3 lg:px-4 py-3 bg-card/50">
+          <div className="text-center text-xs text-muted-foreground">
             Creator: Tyger Earth | Ahtjong Labs
           </div>
         </footer>
