@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       targetDate,
       initialInvestment,
       monthlyContribution,
-      yearlyInterestRate,
+      allocationPercentage,
     } = body;
 
     if (!name || !targetAmount || !targetDate) {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         targetDate: new Date(targetDate),
         initialInvestment: initialInvestment || 0,
         monthlyContribution: monthlyContribution || 0,
-        yearlyInterestRate: yearlyInterestRate || 0,
+        allocationPercentage: allocationPercentage || 0,
         userId,
       },
     });
