@@ -79,12 +79,24 @@ export async function PUT(request: NextRequest) {
       user.password = hashedPassword;
     }
 
+    // Validate image URL if provided
+    let finalImage = user.image;
+    if (image !== undefined) {
+      if (image && image.trim() !== '') {
+        // Allow image URL to be set
+        finalImage = image.trim();
+      } else {
+        // Clear image if empty string
+        finalImage = null;
+      }
+    }
+
     // Update user
     const updatedUser = await db.user.update({
       where: { id: userId },
       data: {
         ...(username && { username }),
-        ...(image !== undefined && { image }),
+        ...(finalImage !== undefined && { image: finalImage }),
       },
       select: {
         id: true,
