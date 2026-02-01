@@ -176,6 +176,7 @@ export function KasMasuk() {
 
   const openEditCategoryDialog = (category: Category) => {
     setSelectedCategory(category);
+    setIsCategoryDialogOpen(true);
   };
 
   // Calculate totals and chart data
@@ -206,21 +207,21 @@ export function KasMasuk() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Kas Masuk</h2>
-          <p className="text-muted-foreground mt-1">Kelola semua pemasukan Anda</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Tambah Kategori
-          </Button>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Tambah Pemasukan
-          </Button>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold">Kas Masuk</h2>
+        <p className="text-muted-foreground mt-1">Kelola semua pemasukan Anda</p>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Tambah Kategori
+        </Button>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Tambah Pemasukan
+        </Button>
       </div>
 
       {/* Summary Cards */}
