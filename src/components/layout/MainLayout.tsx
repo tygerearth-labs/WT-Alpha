@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -34,9 +34,14 @@ import { toast } from 'sonner';
 type PageType = 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile';
 
 export function MainLayout() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, checkAuth } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar default HIDE
+
+  // Refresh user data when component mounts to ensure profile photo is up-to-date
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -115,7 +120,7 @@ export function MainLayout() {
               className="w-8 h-8"
             />
             <h1 className="text-base font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Wealth Tracker
+              Whealth Tracker
             </h1>
           </div>
         </div>
@@ -147,6 +152,16 @@ export function MainLayout() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2">
                 <Avatar className="h-7 w-7">
+                  {user?.image ? (
+                    <AvatarImage
+                      src={user.image}
+                      alt={user.username}
+                      className="object-cover"
+                      onError={(e) => {
+                        console.error('Avatar image error:', e);
+                      }}
+                    />
+                  ) : null}
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {user?.username ? getInitials(user.username) : 'U'}
                   </AvatarFallback>
@@ -201,6 +216,16 @@ export function MainLayout() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 h-9 px-2">
                     <Avatar className="h-7 w-7">
+                      {user?.image ? (
+                        <AvatarImage
+                          src={user.image}
+                          alt={user.username}
+                          className="object-cover"
+                          onError={(e) => {
+                            console.error('Avatar image error:', e);
+                          }}
+                        />
+                      ) : null}
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {user?.username ? getInitials(user.username) : 'U'}
                       </AvatarFallback>
@@ -234,7 +259,7 @@ export function MainLayout() {
         {/* Footer */}
         <footer className="mt-auto border-t border-border/50 px-3 lg:px-4 py-3 bg-card/50">
           <div className="text-center text-xs text-muted-foreground">
-            Tyger Earth | Ahtjong Labs
+            Creator: Tyger Earth | Ahtjong Labs
           </div>
         </footer>
       </main>
