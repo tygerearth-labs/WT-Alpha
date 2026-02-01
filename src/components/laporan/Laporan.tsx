@@ -249,7 +249,7 @@ export function Laporan() {
       {/* Transactions Table */}
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
-          <CardTitle>Riwayat Transaksi</CardTitle>
+          <CardTitle className="text-base md:text-lg">Riwayat Transaksi</CardTitle>
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
@@ -261,21 +261,21 @@ export function Laporan() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Tipe</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>Deskripsi</TableHead>
-                    <TableHead className="text-right">Nominal</TableHead>
+                    <TableHead className="text-xs md:text-sm">Tanggal</TableHead>
+                    <TableHead className="text-xs md:text-sm">Tipe</TableHead>
+                    <TableHead className="text-xs md:text-sm">Kategori</TableHead>
+                    <TableHead className="text-xs md:text-sm">Deskripsi</TableHead>
+                    <TableHead className="text-xs md:text-sm text-right">Nominal</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
-                      <TableCell>
+                      <TableCell className="text-xs md:text-sm py-2 md:py-3">
                         {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: id })}
                       </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <TableCell className="py-2 md:py-3">
+                        <span className={`px-2 py-1 rounded-full text-[10px] md:text-xs font-medium ${
                           transaction.type === 'income' 
                             ? 'bg-green-500/20 text-green-500' 
                             : 'bg-red-500/20 text-red-500'
@@ -283,14 +283,14 @@ export function Laporan() {
                           {transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                      <TableCell className="py-2 md:py-3">
+                        <div className="flex items-center gap-2 text-xs md:text-sm">
                           <span>{transaction.category.icon}</span>
                           <span>{transaction.category.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{transaction.description || '-'}</TableCell>
-                      <TableCell className={`text-right font-semibold ${
+                      <TableCell className="py-2 md:py-3 text-xs md:text-sm">{transaction.description || '-'}</TableCell>
+                      <TableCell className={`text-right py-2 md:py-3 font-semibold text-xs md:text-sm ${
                         transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
                       }`}>
                         {transaction.type === 'income' ? '+' : '-'}
@@ -309,18 +309,18 @@ export function Laporan() {
       {savingsTargets.length > 0 && (
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Target Tabungan</CardTitle>
+            <CardTitle className="text-base md:text-lg">Target Tabungan</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nama Target</TableHead>
-                    <TableHead>Target Jumlah</TableHead>
-                    <TableHead>Terkumpul</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Tanggal Target</TableHead>
+                    <TableHead className="text-xs md:text-sm">Nama Target</TableHead>
+                    <TableHead className="text-xs md:text-sm">Target Jumlah</TableHead>
+                    <TableHead className="text-xs md:text-sm">Terkumpul</TableHead>
+                    <TableHead className="text-xs md:text-sm">Progress</TableHead>
+                    <TableHead className="text-xs md:text-sm">Tanggal Target</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -328,23 +328,23 @@ export function Laporan() {
                     const progress = (target.currentAmount / target.targetAmount) * 100;
                     return (
                       <TableRow key={target.id}>
-                        <TableCell className="font-medium">{target.name}</TableCell>
-                        <TableCell>{getCurrencyFormat(target.targetAmount)}</TableCell>
-                        <TableCell>{getCurrencyFormat(target.currentAmount)}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium text-xs md:text-sm py-2 md:py-3">{target.name}</TableCell>
+                        <TableCell className="text-xs md:text-sm py-2 md:py-3">{getCurrencyFormat(target.targetAmount)}</TableCell>
+                        <TableCell className="text-xs md:text-sm py-2 md:py-3">{getCurrencyFormat(target.currentAmount)}</TableCell>
+                        <TableCell className="py-2 md:py-3">
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-background rounded-full overflow-hidden">
+                            <div className="flex-1 h-1.5 md:h-2 bg-background rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-primary transition-all"
                                 style={{ width: `${Math.min(progress, 100)}%` }}
                               />
                             </div>
-                            <span className="text-xs text-muted-foreground min-w-[50px]">
+                            <span className="text-[10px] md:text-xs text-muted-foreground min-w-[40px] md:min-w-[50px]">
                               {progress.toFixed(1)}%
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-xs md:text-sm py-2 md:py-3">
                           {format(new Date(target.targetDate), 'dd/MM/yyyy', { locale: id })}
                         </TableCell>
                       </TableRow>
