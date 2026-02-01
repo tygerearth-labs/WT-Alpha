@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -14,6 +14,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const body = await request.json();
     const {
       name,
@@ -22,13 +24,14 @@ export async function PUT(
       currentAmount,
       initialInvestment,
       monthlyContribution,
-      yearlyInterestRate,
+      allocationPercentage,
+      isAllocated,
     } = body;
 
     // Verify savings target belongs to user
     const existingTarget = await db.savingsTarget.findFirst({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -41,7 +44,7 @@ export async function PUT(
     }
 
     const savingsTarget = await db.savingsTarget.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(targetAmount && { targetAmount }),
@@ -49,7 +52,8 @@ export async function PUT(
         ...(currentAmount !== undefined && { currentAmount }),
         ...(initialInvestment !== undefined && { initialInvestment }),
         ...(monthlyContribution !== undefined && { monthlyContribution }),
-        ...(yearlyInterestRate !== undefined && { yearlyInterestRate }),
+        ...(allocationPercentage !== undefined && { allocationPercentage }),
+        ...(isAllocated !== undefined && { isAllocated }),
       },
     });
 
@@ -66,7 +70,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -76,10 +80,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     // Verify savings target belongs to user
     const existingTarget = await db.savingsTarget.findFirst({
       where: {
-        id: params.id,
+        id,
         userId,
       },
       include: {
@@ -95,7 +101,7 @@ export async function DELETE(
     }
 
     await db.savingsTarget.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
