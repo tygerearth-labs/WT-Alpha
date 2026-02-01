@@ -90,15 +90,15 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Filter */}
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <CardTitle>Filter Data</CardTitle>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <CardTitle className="text-base">Filter Data</CardTitle>
             <div className="flex gap-2">
               <Select value={filter.month} onValueChange={(value) => setFilter({ ...filter, month: value })}>
-                <SelectTrigger className="w-[120px] bg-background/50">
+                <SelectTrigger className="w-[110px] bg-background/50 h-8 text-xs">
                   <SelectValue placeholder="Bulan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,7 +118,7 @@ export function Dashboard() {
                 </SelectContent>
               </Select>
               <Select value={filter.year} onValueChange={(value) => setFilter({ ...filter, year: value })}>
-                <SelectTrigger className="w-[100px] bg-background/50">
+                <SelectTrigger className="w-[90px] bg-background/50 h-8 text-xs">
                   <SelectValue placeholder="Tahun" />
                 </SelectTrigger>
                 <SelectContent>
@@ -147,10 +147,10 @@ export function Dashboard() {
       />
 
       {/* Financial Health Ratio */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg">Rasio Kesehatan Keuangan</CardTitle>
+            <CardTitle className="text-base">Rasio Kesehatan Keuangan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -171,14 +171,14 @@ export function Dashboard() {
 
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg">Rasio Hutang Piutang</CardTitle>
+            <CardTitle className="text-base">Rasio Hutang Piutang</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center space-y-2">
-              <div className="text-4xl font-bold text-green-500">
+              <div className="text-2xl font-bold text-green-500">
                 {data.debtRatio.toFixed(1)}%
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {data.debtRatio === 0 ? 'Bebas hutang!' : 'Tingkatkan kewaspadaan'}
               </p>
             </div>
@@ -187,33 +187,39 @@ export function Dashboard() {
       </div>
 
       {/* Income & Expense Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg">Grafik Arus Kas</CardTitle>
+            <CardTitle className="text-base">Distribusi Arus Kas</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={[
-                { name: 'Pemasukan', value: data.totalIncome, fill: '#10b981' },
-                { name: 'Pengeluaran', value: data.totalExpense, fill: '#ef4444' },
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="name" stroke="#888888" />
-                <YAxis stroke="#888888" />
-                <Tooltip
-                  formatter={(value: number) => getCurrencyFormat(value)}
-                  contentStyle={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}
-                />
-                <Bar dataKey="value" radius={[8, 8, 8, 8]} />
-              </BarChart>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Pemasukan', value: data.totalIncome, fill: '#10b981' },
+                    { name: 'Pengeluaran', value: data.totalExpense, fill: '#ef4444' },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  <Cell fill="#10b981" />
+                  <Cell fill="#ef4444" />
+                </Pie>
+                <Tooltip formatter={(value: number) => getCurrencyFormat(value)} />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg">Distribusi Pengeluaran</CardTitle>
+            <CardTitle className="text-base">Distribusi Pengeluaran</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -243,7 +249,7 @@ export function Dashboard() {
       {data.savingsTargets.length > 0 && (
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Progress Target Tabungan</CardTitle>
+            <CardTitle className="text-base">Progress Target Tabungan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {data.savingsTargets.slice(0, 3).map((target: any) => {
@@ -270,13 +276,13 @@ export function Dashboard() {
       {/* Tips Section */}
       <Card className="bg-gradient-to-r from-primary/20 to-purple-500/20 backdrop-blur-sm border-border/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
             💡 Tips Menabung & Investasi
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-lg font-medium">{currentTip}</p>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-sm font-medium">{currentTip}</p>
+          <p className="text-xs text-muted-foreground mt-2">
             - Kutipan dari investor hebat
           </p>
         </CardContent>
@@ -285,7 +291,7 @@ export function Dashboard() {
       {/* All Stages Grid */}
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
-          <CardTitle>Semua Fase Keuangan</CardTitle>
+          <CardTitle className="text-base">Semua Fase Keuangan</CardTitle>
         </CardHeader>
         <CardContent>
           <AllStagesGrid

@@ -35,17 +35,17 @@ export function QuickStats({ totalSavings, currentStageName, nextTarget }: Quick
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-3 md:grid-cols-3">
       {stats.map((stat, index) => (
         <Card key={index} className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-colors">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className={`text-3xl ${stat.bgColor} p-3 rounded-xl`}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className={`text-2xl ${stat.bgColor} p-2 rounded-lg`}>
                 {stat.icon}
               </div>
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{stat.title}</p>
-                <p className={`text-2xl font-bold ${stat.color}`}>
+                <p className="text-xs text-muted-foreground">{stat.title}</p>
+                <p className={`text-base font-bold ${stat.color}`}>
                   {stat.value}
                 </p>
               </div>

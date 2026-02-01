@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,6 +63,16 @@ export async function POST(request: NextRequest) {
         { name: 'Pendidikan', type: 'expense', color: '#a855f7', icon: '📚', userId: user.id },
         { name: 'Lainnya', type: 'expense', color: '#6b7280', icon: '📦', userId: user.id },
       ]
+    });
+
+    // Set session cookie
+    const cookieStore = await cookies();
+    cookieStore.set('userId', user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
     });
 
     return NextResponse.json({

@@ -17,7 +17,7 @@ export const STAGES: Stage[] = [
     range: [0, 1000000],
     color: 'from-stone-500 to-stone-600',
     theme: 'stone',
-    advice: 'Sadar & hemat',
+  advice: 'Sadar & hemat',
     focus: 'Bangun kebiasaan baik dan mulai menabung sedikit demi sedikit',
   },
   {

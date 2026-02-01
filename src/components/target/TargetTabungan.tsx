@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Trash2, Loader2, Calculator } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Trash2, Loader2, Calculator, Calendar, TrendingUp, Wallet, CheckCircle2 } from 'lucide-react';
 import { getCurrencyFormat } from '@/lib/utils';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, differenceInMonths, differenceInDays } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 interface SavingsTarget {
@@ -23,12 +24,15 @@ interface SavingsTarget {
   targetDate: string;
   initialInvestment: number;
   monthlyContribution: number;
-  yearlyInterestRate: number;
+  allocationPercentage: number;
+  isAllocated: boolean;
   createdAt: string;
 }
 
 export function TargetTabungan() {
   const [targets, setTargets] = useState<SavingsTarget[]>([]);
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [totalExpense, setTotalExpense] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
@@ -39,19 +43,12 @@ export function TargetTabungan() {
     targetDate: '',
     initialInvestment: '0',
     monthlyContribution: '0',
-    yearlyInterestRate: '0',
-  });
-
-  // Investment Calculator State
-  const [calculator, setCalculator] = useState({
-    initialInvestment: '0',
-    monthlyContribution: '0',
-    yearlyInterestRate: '5',
-    duration: '12',
+    allocationPercentage: '0',
   });
 
   useEffect(() => {
     fetchTargets();
+    fetchFinancialOverview();
   }, []);
 
   const fetchTargets = async () => {
@@ -68,6 +65,19 @@ export function TargetTabungan() {
     }
   };
 
+  const fetchFinancialOverview = async () => {
+    try {
+      const response = await fetch('/api/dashboard');
+      if (response.ok) {
+        const data = await response.json();
+        setTotalBalance(data.totalIncome - data.totalExpense);
+        setTotalExpense(data.totalExpense);
+      }
+    } catch (error) {
+      console.error('Error fetching financial overview:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -80,7 +90,7 @@ export function TargetTabungan() {
           targetDate: formData.targetDate,
           initialInvestment: parseFloat(formData.initialInvestment),
           monthlyContribution: parseFloat(formData.monthlyContribution),
-          yearlyInterestRate: parseFloat(formData.yearlyInterestRate),
+          allocationPercentage: parseFloat(formData.allocationPercentage),
         }),
       });
 
@@ -92,7 +102,7 @@ export function TargetTabungan() {
           targetDate: '',
           initialInvestment: '0',
           monthlyContribution: '0',
-          yearlyInterestRate: '0',
+          allocationPercentage: '0',
         });
         setIsDialogOpen(false);
         fetchTargets();
@@ -125,28 +135,59 @@ export function TargetTabungan() {
     }
   };
 
-  const calculateInvestment = () => {
-    const initial = parseFloat(calculator.initialInvestment) || 0;
-    const monthly = parseFloat(calculator.monthlyContribution) || 0;
-    const rate = parseFloat(calculator.yearlyInterestRate) / 100 / 12;
-    const months = parseInt(calculator.duration) || 12;
+  const toggleAllocated = async (targetId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/savings/${targetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAllocated: !currentStatus }),
+      });
 
-    let total = initial;
-    for (let i = 0; i < months; i++) {
-      total = (total + monthly) * (1 + rate);
+      if (response.ok) {
+        toast.success(!currentStatus ? 'Dana berhasil disisihkan' : 'Status alokasi diubah');
+        fetchTargets();
+      } else {
+        toast.error('Gagal mengubah status alokasi');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Terjadi kesalahan');
+    }
+  };
+
+  const calculateETA = (target: SavingsTarget) => {
+    const remaining = target.targetAmount - target.currentAmount;
+    const monthlyContribution = target.monthlyContribution || 0;
+
+    if (remaining <= 0) {
+      return { text: 'Tercapai!', months: 0, days: 0 };
     }
 
-    const totalInvested = initial + (monthly * months);
-    const profit = total - totalInvested;
+    if (monthlyContribution <= 0) {
+      const targetDate = new Date(target.targetDate);
+      const today = new Date();
+      const days = differenceInDays(targetDate, today);
+      return { text: `${days} hari tersisa`, months: 0, days };
+    }
+
+    const monthsNeeded = Math.ceil(remaining / monthlyContribution);
+    const etaDate = new Date();
+    etaDate.setMonth(etaDate.getMonth() + monthsNeeded);
+
+    const daysLeft = differenceInDays(etaDate, new Date());
 
     return {
-      totalInvested,
-      profit,
-      finalAmount: total,
+      text: `${monthsNeeded} bulan (${daysLeft} hari)`,
+      months: monthsNeeded,
+      days: daysLeft,
     };
   };
 
-  const result = calculateInvestment();
+  const calculateProjectedSavings = (target: SavingsTarget) => {
+    const monthlyAllocation = (totalBalance * target.allocationPercentage) / 100;
+    const projectedMonthly = monthlyAllocation + (target.monthlyContribution || 0);
+    return projectedMonthly;
+  };
 
   if (isLoading) {
     return (
@@ -157,300 +198,270 @@ export function TargetTabungan() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-4">
+      {/* Header with Stats */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold">Target Tabungan</h2>
-          <p className="text-muted-foreground mt-1">Atur target dan alokasi tabungan Anda</p>
+          <h2 className="text-2xl font-bold">Target Tabungan</h2>
+          <p className="text-muted-foreground mt-1 text-sm">Atur target dan alokasi tabungan Anda</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Target
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Target Tabungan Baru</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="name">Nama Target</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Contoh: Dana Darurat"
-                    required
-                  />
+        <div className="flex gap-3">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Tambah Target
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Target Tabungan Baru</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="name">Nama Target</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Contoh: Dana Darurat"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="targetAmount">Target Jumlah</Label>
+                    <Input
+                      id="targetAmount"
+                      type="number"
+                      value={formData.targetAmount}
+                      onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
+                      placeholder="0"
+                      required
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="targetDate">Tanggal Target</Label>
+                    <Input
+                      id="targetDate"
+                      type="date"
+                      value={formData.targetDate}
+                      onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="initialInvestment">Modal Awal (Opsional)</Label>
+                    <Input
+                      id="initialInvestment"
+                      type="number"
+                      value={formData.initialInvestment}
+                      onChange={(e) => setFormData({ ...formData, initialInvestment: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="monthlyContribution">Kontribusi Bulanan (Opsional)</Label>
+                    <Input
+                      id="monthlyContribution"
+                      type="number"
+                                           value={formData.monthlyContribution}
+                      onChange={(e) => setFormData({ ...formData, monthlyContribution: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="allocationPercentage">Alokasi Dana Otomatis % dari Pemasukan</Label>
+                    <Input
+                      id="allocationPercentage"
+                      type="number"
+                      value={formData.allocationPercentage}
+                      onChange={(e) => setFormData({ ...formData, allocationPercentage: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Persentase dari setiap pemasukan yang akan dialokasikan otomatis ke target ini
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="targetAmount">Target Jumlah</Label>
-                  <Input
-                    id="targetAmount"
-                    type="number"
-                    value={formData.targetAmount}
-                    onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
-                    placeholder="0"
-                    required
-                    min="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="targetDate">Tanggal Target</Label>
-                  <Input
-                    id="targetDate"
-                    type="date"
-                    value={formData.targetDate}
-                    onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="initialInvestment">Modal Awal (Opsional)</Label>
-                  <Input
-                    id="initialInvestment"
-                    type="number"
-                    value={formData.initialInvestment}
-                    onChange={(e) => setFormData({ ...formData, initialInvestment: e.target.value })}
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monthlyContribution">Kontribusi Bulanan (Opsional)</Label>
-                  <Input
-                    id="monthlyContribution"
-                    type="number"
-                    value={formData.monthlyContribution}
-                    onChange={(e) => setFormData({ ...formData, monthlyContribution: e.target.value })}
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="yearlyInterestRate">Bunga Tahunan % (Opsional)</Label>
-                  <Input
-                    id="yearlyInterestRate"
-                    type="number"
-                    value={formData.yearlyInterestRate}
-                    onChange={(e) => setFormData({ ...formData, yearlyInterestRate: e.target.value })}
-                    placeholder="0"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Simpan Target</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <Button type="submit">Simpan Target</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      <Tabs defaultValue="targets" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="targets">Target Tabungan</TabsTrigger>
-          <TabsTrigger value="calculator">
-            <Calculator className="mr-2 h-4 w-4" />
-            Kalkulator Investasi
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="targets" className="space-y-4">
-          {targets.length === 0 ? (
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                Belum ada target tabungan. Buat target pertama Anda!
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {targets.map((target) => {
-                const progress = (target.currentAmount / target.targetAmount) * 100;
-                const remainingDays = Math.ceil((new Date(target.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-
-                return (
-                  <Card key={target.id} className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-lg">{target.name}</CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteDialog({ open: true, id: target.id })}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progress</span>
-                          <span className="font-semibold">{progress.toFixed(1)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-3" />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Terkumpul</p>
-                          <p className="text-lg font-bold text-primary">
-                            {getCurrencyFormat(target.currentAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Target</p>
-                          <p className="text-lg font-bold">
-                            {getCurrencyFormat(target.targetAmount)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Tanggal Target</p>
-                          <p className="font-medium">
-                            {format(new Date(target.targetDate), 'dd MMMM yyyy', { locale: id })}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Sisa Waktu</p>
-                          <p className="font-medium">
-                            {remainingDays > 0 ? `${remainingDays} hari` : 'Terlampaui'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {(target.monthlyContribution > 0 || target.yearlyInterestRate > 0) && (
-                        <div className="pt-4 border-t border-border/50">
-                          <p className="text-xs text-muted-foreground mb-2">Parameter Investasi:</p>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            {target.initialInvestment > 0 && (
-                              <div>
-                                <span className="text-muted-foreground">Modal Awal:</span>{' '}
-                                {getCurrencyFormat(target.initialInvestment)}
-                              </div>
-                            )}
-                            {target.monthlyContribution > 0 && (
-                              <div>
-                                <span className="text-muted-foreground">Kontribusi:</span>{' '}
-                                {getCurrencyFormat(target.monthlyContribution)}/bulan
-                              </div>
-                            )}
-                            {target.yearlyInterestRate > 0 && (
-                              <div>
-                                <span className="text-muted-foreground">Bunga:</span>{' '}
-                                {target.yearlyInterestRate}%/tahun
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+      {/* Financial Overview Cards */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/10 backdrop-blur-sm border-green-500/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-green-500 text-base flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Total Saldo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-500">
+              {getCurrencyFormat(totalBalance)}
             </div>
-          )}
-        </TabsContent>
+            <p className="text-xs text-muted-foreground mt-1">
+              Pemasukan - Pengeluaran
+            </p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="calculator" className="space-y-4">
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Kalkulator Investasi</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="calcInitial">Modal Awal</Label>
-                  <Input
-                    id="calcInitial"
-                    type="number"
-                    value={calculator.initialInvestment}
-                    onChange={(e) => setCalculator({ ...calculator, initialInvestment: e.target.value })}
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="calcMonthly">Kontribusi Bulanan</Label>
-                  <Input
-                    id="calcMonthly"
-                    type="number"
-                    value={calculator.monthlyContribution}
-                    onChange={(e) => setCalculator({ ...calculator, monthlyContribution: e.target.value })}
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="calcRate">Bunga Tahunan (%)</Label>
-                  <Input
-                    id="calcRate"
-                    type="number"
-                    value={calculator.yearlyInterestRate}
-                    onChange={(e) => setCalculator({ ...calculator, yearlyInterestRate: e.target.value })}
-                    placeholder="5"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="calcDuration">Durasi (Bulan)</Label>
-                  <Input
-                    id="calcDuration"
-                    type="number"
-                    value={calculator.duration}
-                    onChange={(e) => setCalculator({ ...calculator, duration: e.target.value })}
-                    placeholder="12"
-                    min="1"
-                  />
-                </div>
-              </div>
+        <Card className="bg-gradient-to-br from-red-500/20 to-rose-500/10 backdrop-blur-sm border-red-500/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-red-500 text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Total Pengeluaran
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              {getCurrencyFormat(totalExpense)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total transaksi keluar
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-              <div className="grid gap-4 md:grid-cols-3 pt-6 border-t border-border/50">
-                <div className="bg-background/50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Total Investasi</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {getCurrencyFormat(result.totalInvested)}
-                  </p>
-                </div>
-                <div className="bg-background/50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Keuntungan</p>
-                  <p className="text-2xl font-bold text-green-500">
-                    {getCurrencyFormat(result.profit)}
-                  </p>
-                </div>
-                <div className="bg-background/50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Jumlah Akhir</p>
-                  <p className="text-2xl font-bold text-purple-500">
-                    {getCurrencyFormat(result.finalAmount)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Targets List */}
+      {targets.length === 0 ? (
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Belum ada target tabungan. Buat target pertama Anda!
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {targets.map((target) => {
+            const progress = (target.currentAmount / target.targetAmount) * 100;
+            const eta = calculateETA(target);
+            const projectedMonthly = calculateProjectedSavings(target);
+
+            return (
+              <Card key={target.id} className={`bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-colors ${target.isAllocated ? 'border-green-500/30' : ''}`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-base">{target.name}</CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleAllocated(target.id, target.isAllocated)}
+                      className={target.isAllocated ? 'text-green-500 hover:text-green-600' : 'text-muted-foreground'}
+                    >
+                      <CheckCircle2 className="h-4 w-4" fill={target.isAllocated ? 'currentColor' : 'none'} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteDialog({ open: true, id: target.id })}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progress</span>
+                      <span className="font-semibold">{progress.toFixed(1)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-3" />
+                  </div>
+
+                  {/* Amount Info */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs">Terkumpul</p>
+                      <p className="text-lg font-bold text-primary">
+                        {getCurrencyFormat(target.currentAmount)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Target</p>
+                      <p className="text-lg font-bold">
+                        {getCurrencyFormat(target.targetAmount)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ETA and Date */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs">ETA (Estimasi Tercapai)</p>
+                      <p className="font-medium text-base font-semibold text-green-500">
+                        {eta.text}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Tanggal Target</p>
+                      <p className="font-medium text-sm">
+                        {format(new Date(target.targetDate), 'dd MMM yyyy', { locale: id })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Allocation Info */}
+                  {(target.allocationPercentage > 0 || target.monthlyContribution > 0) && (
+                    <div className="pt-3 border-t border-border/50">
+                      <p className="text-xs text-muted-foreground mb-2">Alokasi Dana:</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {target.allocationPercentage > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">Auto Alokasi:</span>{' '}
+                            <span className="font-semibold text-primary">{target.allocationPercentage}%</span>{' '}
+                            <span className="text-muted-foreground">({getCurrencyFormat(projectedMonthly)}/bulan)</span>
+                          </div>
+                        )}
+                        {target.monthlyContribution > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">Manual:</span>{' '}
+                            <span className="font-semibold">{getCurrencyFormat(target.monthlyContribution)}/bulan</span>
+                          </div>
+                        )}
+                        {target.isAllocated && (
+                          <div className="col-span-2 mt-1">
+                            <span className="text-green-500 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" fill="currentColor" />
+                              Dana aktif dialokasikan
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, id: '' })}>
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Target Tabungan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Target tabungan akan dihapus secara permanen.
+              Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin menghapus target tabungan ini?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
               Hapus
             </AlertDialogAction>
           </AlertDialogFooter>

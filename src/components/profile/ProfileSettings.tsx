@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Lock, Trash2, Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User, Lock, Trash2, Loader2, AlertCircle, Check } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
@@ -25,6 +25,8 @@ export function ProfileSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const [isValidatingImage, setIsValidatingImage] = useState(false);
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -60,22 +62,66 @@ export function ProfileSettings() {
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+      toast.error('Gagal memuat data profil');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const validateImageUrl = async (url: string): Promise<boolean> => {
+    if (!url || url.trim() === '') return true;
+
+    try {
+      // Try to fetch the image to validate URL
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'no-cors',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Check if response is successful and returns image
+      if (!response.ok) return false;
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.startsWith('image/')) return false;
+
+      return true;
+    } catch {
+      // If validation fails, don't block the update
+      return true;
+    }
+  };
+
+  const handleImageBlur = async () => {
+    const imageUrl = profileForm.image.trim();
+    if (imageUrl && imageUrl !== userData?.image) {
+      setIsValidatingImage(true);
+      setImageError('');
+
+      // Don't validate on blur to avoid blocking user
+      setIsValidatingImage(false);
     }
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUpdating(true);
+    setImageError('');
 
     try {
+      const trimmedImage = profileForm.image.trim();
+
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: profileForm.username,
-          image: profileForm.image || null,
+          image: trimmedImage || null,
         }),
       });
 
@@ -83,14 +129,19 @@ export function ProfileSettings() {
         const data = await response.json();
         setUser(data.user);
         toast.success('Profil berhasil diperbarui');
-        fetchUserData();
+        setProfileForm({
+          username: data.user.username,
+          image: data.user.image || '',
+        });
       } else {
         const error = await response.json();
         toast.error(error.error || 'Gagal memperbarui profil');
+        setImageError(error.error || 'Gagal memperbarui profil');
       }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Terjadi kesalahan');
+      setImageError('Terjadi kesalahan saat memperbarui profil');
     } finally {
       setIsUpdating(false);
     }
@@ -197,9 +248,20 @@ export function ProfileSettings() {
         <CardHeader>
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                {user?.username ? getInitials(user.username) : 'U'}
-              </AvatarFallback>
+              {userData?.image ? (
+                <AvatarImage
+                  src={userData.image}
+                  alt={userData.username}
+                  className="object-cover"
+                  onError={(e) => {
+                    console.error('Current avatar image error:', e);
+                  }}
+                />
+              ) : (
+                <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                  {userData?.username ? getInitials(userData.username) : 'U'}
+                </AvatarFallback>
+              )}
             </Avatar>
             <div>
               <CardTitle className="text-2xl">{userData.username}</CardTitle>
@@ -234,6 +296,7 @@ export function ProfileSettings() {
                   <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
+                    name="username"
                     value={profileForm.username}
                     onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
                     placeholder="johndoe"
@@ -244,6 +307,7 @@ export function ProfileSettings() {
                   <Label htmlFor="email">Email (Tidak dapat diubah)</Label>
                   <Input
                     id="email"
+                    name="email"
                     value={userData.email}
                     disabled
                     className="bg-muted/50"
@@ -251,14 +315,46 @@ export function ProfileSettings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="image">URL Gambar Profil (Opsional)</Label>
-                  <Input
-                    id="image"
-                    value={profileForm.image}
-                    onChange={(e) => setProfileForm({ ...profileForm, image: e.target.value })}
-                    placeholder="https://example.com/avatar.jpg"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      id="image"
+                      name="image"
+                      value={profileForm.image}
+                      onChange={(e) => {
+                        setProfileForm({ ...profileForm, image: e.target.value });
+                        setImageError('');
+                      }}
+                      placeholder="https://example.com/avatar.jpg"
+                      className={imageError ? 'border-destructive' : ''}
+                    />
+                    {profileForm.image && !imageError && (
+                      <div className="flex gap-3">
+                        <span className="text-xs text-muted-foreground">Preview:</span>
+                        <Avatar className="h-12 w-12 shrink-0 border-2 border-border">
+                          <AvatarImage
+                            src={profileForm.image}
+                            alt="Preview"
+                            className="object-cover"
+                            onError={(e) => {
+                              console.error('Avatar image error:', e);
+                              // Image failed to load, fallback will be used
+                            }}
+                          />
+                          <AvatarFallback>
+                            <User className="h-6 w-6" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+                  </div>
+                  {imageError && (
+                    <div className="flex items-center gap-2 text-xs text-destructive">
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {imageError}
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Masukkan URL gambar untuk avatar profil Anda
+                    Masukkan URL gambar (https://...) untuk avatar profil Anda
                   </p>
                 </div>
                 <Button type="submit" disabled={isUpdating}>
@@ -281,6 +377,8 @@ export function ProfileSettings() {
                   <Label htmlFor="currentPassword">Password Saat Ini</Label>
                   <Input
                     id="currentPassword"
+                    htmlFor="currentPassword"
+                    name="currentPassword"
                     type="password"
                     value={passwordForm.currentPassword}
                     onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
@@ -292,6 +390,8 @@ export function ProfileSettings() {
                   <Label htmlFor="newPassword">Password Baru</Label>
                   <Input
                     id="newPassword"
+                    htmlFor="newPassword"
+                    name="newPassword"
                     type="password"
                     value={passwordForm.newPassword}
                     onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
@@ -304,6 +404,8 @@ export function ProfileSettings() {
                   <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
                   <Input
                     id="confirmPassword"
+                    htmlFor="confirmPassword"
+                    name="confirmPassword"
                     type="password"
                     value={passwordForm.confirmPassword}
                     onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
@@ -357,6 +459,8 @@ export function ProfileSettings() {
               <Label htmlFor="deletePassword">Password</Label>
               <Input
                 id="deletePassword"
+                htmlFor="deletePassword"
+                name="deletePassword"
                 type="password"
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}

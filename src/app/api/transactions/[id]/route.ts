@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -14,13 +14,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { type, amount, description, categoryId, date } = body;
 
     // Verify transaction belongs to user
     const existingTransaction = await db.transaction.findFirst({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -48,7 +49,7 @@ export async function PUT(
     }
 
     const transaction = await db.transaction.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         type,
         amount,
@@ -74,7 +75,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -84,10 +85,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     // Verify transaction belongs to user
     const existingTransaction = await db.transaction.findFirst({
       where: {
-        id: params.id,
+        id,
         userId,
       },
     });
@@ -100,7 +103,7 @@ export async function DELETE(
     }
 
     await db.transaction.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

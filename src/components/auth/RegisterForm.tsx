@@ -46,6 +46,8 @@ export function RegisterForm() {
       if (response.ok) {
         setUser(data.user);
         toast.success('Registrasi berhasil!');
+        // Force reload untuk memuat cookie yang baru diset
+        window.location.href = '/';
       } else {
         toast.error(data.error || 'Registrasi gagal');
       }

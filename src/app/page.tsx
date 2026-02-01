@@ -14,7 +14,7 @@ export default function Home() {
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []); // Hanya jalankan sekali saat mount
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -26,7 +26,7 @@ export default function Home() {
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2 mb-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Wealth Tracker
+              Whealth Tracker
             </h1>
             <p className="text-muted-foreground">Kelola keuangan Anda dengan bijak</p>
           </div>
@@ -41,7 +41,7 @@ export default function Home() {
             </Button>
           </div>
           <div className="text-center text-xs text-muted-foreground">
-            Tyger Earth | Ahtjong Labs
+            Creator: Tyger Earth | Ahtjong Labs
           </div>
         </div>
       </div>
@@ -50,3 +50,7 @@ export default function Home() {
 
   return <MainLayout />;
 }
+// Trigger compilation at Sun Feb  1 15:35:55 UTC 2026
+// Compilation check Sun Feb  1 15:38:37 UTC 2026
+// Trigger check Sun Feb  1 20:12:41 UTC 2026
+// Final compile check Sun Feb  1 20:13:52 UTC 2026
