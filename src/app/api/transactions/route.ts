@@ -58,36 +58,77 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, amount, description, categoryId, date } = body;
+    const { type, amount, description, categoryId, date, targetId, allocationPercentage } = body;
 
-    if (!type || !amount || !categoryId) {
+    if (!type || !amount) {
       return NextResponse.json(
-        { error: 'Type, amount, and categoryId are required' },
+        { error: 'Type and amount are required' },
         { status: 400 }
       );
     }
 
-    // Verify category belongs to user
-    const category = await db.category.findFirst({
-      where: {
-        id: categoryId,
-        userId,
-      },
-    });
+    // Handle category - find or create default category if not provided
+    let category;
+    if (categoryId && categoryId !== 'none') {
+      // Verify category belongs to user
+      category = await db.category.findFirst({
+        where: {
+          id: categoryId,
+          userId,
+        },
+      });
 
-    if (!category) {
-      return NextResponse.json(
-        { error: 'Category not found' },
-        { status: 404 }
-      );
+      if (!category) {
+        return NextResponse.json(
+          { error: 'Category not found' },
+          { status: 404 }
+        );
+      }
+    } else {
+      // Find or create default category for quick deposits
+      const defaultCategoryName = type === 'income' ? 'Setoran Cepat' : 'Pengeluaran Lainnya';
+      const defaultCategoryColor = type === 'income' ? '#10b981' : '#ef4444';
+      const defaultCategoryIcon = type === 'income' ? '💰' : '📤';
+
+      category = await db.category.findFirst({
+        where: {
+          name: defaultCategoryName,
+          type,
+          userId,
+        },
+      });
+
+      if (!category) {
+        category = await db.category.create({
+          data: {
+            name: defaultCategoryName,
+            type,
+            color: defaultCategoryColor,
+            icon: defaultCategoryIcon,
+            userId,
+          },
+        });
+      }
     }
 
+    // Handle allocation to savings target
+    let targetSavingsId = null;
+    let allocationAmount = 0;
+    let allocationPct = 0;
+
+    if (type === 'income' && targetId && allocationPercentage) {
+      targetSavingsId = targetId;
+      allocationPct = allocationPercentage;
+      allocationAmount = (amount * allocationPercentage) / 100;
+    }
+
+    // Create transaction
     const transaction = await db.transaction.create({
       data: {
         type,
         amount,
         description,
-        categoryId,
+        categoryId: category.id,
         userId,
         date: date ? new Date(date) : new Date(),
       },
@@ -95,6 +136,47 @@ export async function POST(request: NextRequest) {
         category: true,
       },
     });
+
+    // If allocated to savings target, create allocation record and update target
+    if (targetSavingsId && allocationAmount > 0) {
+      // Verify target belongs to user
+      const savingsTarget = await db.savingsTarget.findFirst({
+        where: {
+          id: targetSavingsId,
+          userId,
+        },
+      });
+
+      if (!savingsTarget) {
+        return NextResponse.json(
+          { error: 'Savings target not found' },
+          { status: 404 }
+        );
+      }
+
+      // Create allocation record
+      await db.allocation.create({
+        data: {
+          transactionId: transaction.id,
+          targetId: targetSavingsId,
+          userId,
+          amount: allocationAmount,
+          percentage: allocationPct,
+        },
+      });
+
+      // Update savings target current amount
+      await db.savingsTarget.update({
+        where: {
+          id: targetSavingsId,
+        },
+        data: {
+          currentAmount: {
+            increment: allocationAmount,
+          },
+        },
+      });
+    }
 
     return NextResponse.json({ transaction }, { status: 201 });
 

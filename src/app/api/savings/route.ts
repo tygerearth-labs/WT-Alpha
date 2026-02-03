@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { calculateTargetMetrics, getCurrentMonthAllocation } from '@/lib/targetLogic';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,6 +23,9 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+          orderBy: {
+            createdAt: 'desc',
+          },
         },
       },
       orderBy: {
@@ -29,7 +33,25 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ savingsTargets });
+    // Calculate comprehensive metrics for each target
+    const savingsTargetsWithMetrics = savingsTargets.map((target) => {
+      const currentMonthlyAllocation = getCurrentMonthAllocation(target.allocations);
+      const metrics = calculateTargetMetrics(target, target.allocations);
+
+      // Calculate monthly achievement percentage
+      const monthlyAchievement = target.monthlyContribution > 0
+        ? (currentMonthlyAllocation / target.monthlyContribution) * 100
+        : 0;
+
+      return {
+        ...target,
+        currentMonthlyAllocation,
+        monthlyAchievement,
+        metrics,
+      };
+    });
+
+    return NextResponse.json({ savingsTargets: savingsTargetsWithMetrics });
 
   } catch (error) {
     console.error('Savings GET error:', error);

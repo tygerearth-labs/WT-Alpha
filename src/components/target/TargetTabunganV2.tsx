@@ -1,20 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Target, Plus, Edit, Trash2, CheckCircle2, ChevronDown, ChevronUp, PiggyBank, Zap, AlertTriangle, Clock, Loader2 } from 'lucide-react';
+import { Target, Plus, Edit, Trash2, Calendar, TrendingUp, CheckCircle2, ChevronDown, ChevronUp, PiggyBank, Zap, AlertTriangle, Flame, Clock, Pause, Play, ArrowRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { SavingsTarget } from '@/types/transaction.types';
 import { TargetMetrics, getBrutalInsight, getSpeedCopy, getStatusCopy, getETAText, generateMiniChallenge, getCurrencyFormat } from '@/lib/targetLogic';
-import { TargetSummaryCard } from '@/components/target/TargetSummaryCard';
 
 interface TargetFormData {
   name: string;
@@ -25,7 +26,7 @@ interface TargetFormData {
   allocationPercentage: number;
 }
 
-export function TargetTabungan() {
+export function TargetTabunganV2() {
   const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -186,6 +187,15 @@ export function TargetTabungan() {
     setIsEditDialogOpen(true);
   };
 
+  const getCurrencyFormat = (value: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
   const getDaysRemaining = (targetDate: string) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -302,11 +312,6 @@ export function TargetTabungan() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Summary Card - Aggregate of All Targets */}
-      {savingsTargets.length > 0 && (
-        <TargetSummaryCard savingsTargets={savingsTargets} />
-      )}
 
       {/* Savings Targets Grid */}
       {savingsTargets.length === 0 ? (

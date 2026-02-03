@@ -49,7 +49,7 @@ export function LoginForm() {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
         <CardDescription className="text-center">
-          Masuk ke akun Whealth Tracker Anda
+          Masuk ke akun Wealth Tracker Anda
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -12,6 +12,7 @@ interface SummaryCardProps {
   bgColor?: string;
   subtitle?: string;
   className?: string;
+  action?: React.ReactNode;
 }
 
 export function SummaryCard({
@@ -22,14 +23,22 @@ export function SummaryCard({
   bgColor = 'bg-card/50',
   subtitle,
   className,
+  action,
 }: SummaryCardProps) {
   return (
     <Card className={`${bgColor} backdrop-blur-sm border border-border/50 ${className}`}>
       <CardHeader className="pb-2">
-        <CardTitle className={`text-sm font-medium flex items-center gap-2 ${iconColor}`}>
-          <Icon className="h-4 w-4" />
-          {title}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className={`text-sm font-medium flex items-center gap-2 ${iconColor}`}>
+            <Icon className="h-4 w-4" />
+            {title}
+          </CardTitle>
+          {action && (
+            <div>
+              {action}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-foreground">

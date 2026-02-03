@@ -1,0 +1,12 @@
+
+/home/z/my-project/src/components/kas/KasMasuk.tsx
+  1:0  error  Parsing error: Unexpected keyword or identifier
+
+/home/z/my-project/src/components/target/TargetTabungan.tsx
+  1:0  error  Parsing error: Unexpected keyword or identifier
+
+/home/z/my-project/src/hooks/useAllocationData.ts
+  33:0  error  Parsing error: ')' expected
+
+✖ 3 problems (3 errors, 0 warnings)
+

@@ -116,11 +116,11 @@ export function MainLayout() {
           <div className="flex items-center gap-2">
             <img
               src="/logo.svg"
-              alt="Whealth Tracker Logo"
+              alt="Wealth Tracker Logo"
               className="w-8 h-8"
             />
             <h1 className="text-base font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Whealth Tracker
+              Wealth Tracker
             </h1>
           </div>
         </div>

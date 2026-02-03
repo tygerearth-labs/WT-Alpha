@@ -64,7 +64,7 @@ export function RegisterForm() {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">Registrasi</CardTitle>
         <CardDescription className="text-center">
-          Buat akun baru Whealth Tracker
+          Buat akun baru Wealth Tracker
         </CardDescription>
       </CardHeader>
       <CardContent>

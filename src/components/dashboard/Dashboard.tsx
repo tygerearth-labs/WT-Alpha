@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuickStats } from '@/components/cards/QuickStats';
-import { CurrentStageCard } from '@/components/cards/CurrentStageCard';
-import { AllStagesGrid } from '@/components/cards/AllStagesGrid';
 import { getCurrentStage, getNextStage } from '@/components/cards/types';
 import { Loader2 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { getCurrencyFormat } from '@/lib/utils';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { HeroCard } from './HeroCard';
+import { NextLevelCard } from './NextLevelCard';
+import { MomentumCard } from './MomentumCard';
+import { OpportunityCard } from './OpportunityCard';
+import { WeaknessCard } from './WeaknessCard';
+import { ProgressRewardCard } from './ProgressRewardCard';
 
 interface DashboardData {
   totalIncome: number;
@@ -21,38 +21,23 @@ interface DashboardData {
   savingsTargets: any[];
   transactions: any[];
   expenseByCategory: any[];
+  // Growth metrics
+  last7DaysGrowth: number;
+  last30DaysGrowth: number;
+  momentumIndicator: 'accelerating' | 'stable' | 'slowing';
+  momentumChange: number;
+  savingsHistory: Array<{ date: string; savings: number }>;
+  savingsRate: number;
+  unallocatedFunds: number;
 }
-
-const TIPS = [
-  "💡 Mulailah menabung sejak dini, meskipun jumlahnya kecil.",
-  "💰 Sisihkan minimal 20% dari penghasilan untuk tabungan.",
-  "📈 Diversifikasi investasi untuk mengurangi risiko.",
-  "🎯 Tetapkan tujuan keuangan yang spesifik dan terukur.",
-  "⚖️ Jaga keseimbangan antara menabung dan menikmati hidup.",
-  "🚀 Investasi jangka panjang lebih baik daripada spekulasi.",
-  "💎 Emas dan properti adalah aset yang baik untuk jangka panjang.",
-  "📚 Teruslah belajar tentang keuangan dan investasi.",
-  "🛡️ Buat dana darurat minimal 6 bulan pengeluaran.",
-  "🏠 Prioritaskan pembayaran hutang dengan bunga tinggi.",
-];
-
-const COLORS = ['#ef4444', '#f97316', '#ec4899', '#3b82f6', '#14b8a6', '#22c55e', '#a855f7', '#6b7280'];
 
 export function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState({ month: 'all', year: 'all' });
-  const [currentTip, setCurrentTip] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
-    // Rotate tips every 10 seconds
-    const tipInterval = setInterval(() => {
-      setCurrentTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
-    }, 10000);
-    setCurrentTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
-
-    return () => clearInterval(tipInterval);
   }, [filter]);
 
   const fetchDashboardData = async () => {
@@ -77,10 +62,6 @@ export function Dashboard() {
   const currentStage = data ? getCurrentStage(data.totalSavings) : getCurrentStage(0);
   const nextStage = data ? getNextStage(currentStage) : null;
 
-  const healthRatio = data && data.totalIncome > 0
-    ? ((data.totalIncome - data.totalExpense) / data.totalIncome) * 100
-    : 0;
-
   if (isLoading || !data) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -95,7 +76,7 @@ export function Dashboard() {
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <CardTitle className="text-base">Filter Data</CardTitle>
+            <CardTitle className="text-base">Dashboard</CardTitle>
             <div className="flex gap-2">
               <Select value={filter.month} onValueChange={(value) => setFilter({ ...filter, month: value })}>
                 <SelectTrigger className="w-[110px] bg-background/50 h-8 text-xs">
@@ -133,123 +114,63 @@ export function Dashboard() {
         </CardHeader>
       </Card>
 
-      {/* Quick Stats */}
-      <QuickStats
+      {/* HERO Card - No Escape Number */}
+      <HeroCard
         totalSavings={data.totalSavings}
-        currentStageName={currentStage.name}
-        nextTarget={nextStage ? `${nextStage.name} (${getCurrencyFormat(nextStage.range[0])})` : 'Maksimal'}
+        last30DaysGrowth={data.last30DaysGrowth}
+        momentumIndicator={data.momentumIndicator}
       />
 
-      {/* Current Stage Card */}
-      <CurrentStageCard
+      {/* NEXT LEVEL - Current & Next Phase */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground">Your Growth Path</h3>
+        <NextLevelCard
+          totalSavings={data.totalSavings}
+          currentStage={currentStage}
+          nextStage={nextStage}
+        />
+      </div>
+
+      {/* MOMENTUM - Speed Check */}
+      <MomentumCard
+        last7DaysGrowth={data.last7DaysGrowth}
+        last30DaysGrowth={data.last30DaysGrowth}
+        momentumIndicator={data.momentumIndicator}
+        momentumChange={data.momentumChange}
+        savingsHistory={data.savingsHistory}
+      />
+
+      {/* OPPORTUNITY - Growth Lever */}
+      <OpportunityCard
         totalSavings={data.totalSavings}
+        unallocatedFunds={data.unallocatedFunds}
         currentStage={currentStage}
+        nextStage={nextStage}
+        savingsRate={data.savingsRate}
       />
 
-      {/* Financial Health Ratio */}
-      <div className="grid gap-3 md:grid-cols-2">
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle className="text-base">Rasio Kesehatan Keuangan</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Sehat</span>
-                <span className="font-semibold">{healthRatio.toFixed(1)}%</span>
-              </div>
-              <Progress value={healthRatio} className="h-3" />
-              <p className="text-xs text-muted-foreground">
-                {healthRatio >= 30 ? 'Kesehatan keuangan sangat baik' :
-                 healthRatio >= 20 ? 'Kesehatan keuangan baik' :
-                 healthRatio >= 10 ? 'Kesehatan keuangan cukup' :
-                 'Perlu evaluasi pengeluaran'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* WEAKNESS - Needs Attention */}
+      <WeaknessCard
+        unallocatedFunds={data.unallocatedFunds}
+        savingsRate={data.savingsRate}
+        last30DaysGrowth={data.last30DaysGrowth}
+        totalIncome={data.totalIncome}
+      />
 
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle className="text-base">Rasio Hutang Piutang</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-green-500">
-                {data.debtRatio.toFixed(1)}%
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {data.debtRatio === 0 ? 'Bebas hutang!' : 'Tingkatkan kewaspadaan'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* PROGRESS REWARD - Achievements */}
+      <ProgressRewardCard
+        last30DaysGrowth={data.last30DaysGrowth}
+        last7DaysGrowth={data.last7DaysGrowth}
+        momentumIndicator={data.momentumIndicator}
+        savingsRate={data.savingsRate}
+        totalIncome={data.totalIncome}
+      />
 
-      {/* Income & Expense Charts */}
-      <div className="grid gap-3 md:grid-cols-2">
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle className="text-base">Distribusi Arus Kas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Pemasukan', value: data.totalIncome, fill: '#10b981' },
-                    { name: 'Pengeluaran', value: data.totalExpense, fill: '#ef4444' },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  <Cell fill="#10b981" />
-                  <Cell fill="#ef4444" />
-                </Pie>
-                <Tooltip formatter={(value: number) => getCurrencyFormat(value)} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle className="text-base">Distribusi Pengeluaran</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={data.expenseByCategory}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="amount"
-                >
-                  {data.expenseByCategory.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => getCurrencyFormat(value)} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Savings Targets Progress */}
+      {/* Savings Targets Progress - Keep as separate card */}
       {data.savingsTargets.length > 0 && (
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle className="text-base">Progress Target Tabungan</CardTitle>
+            <CardTitle className="text-base">Savings Targets</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {data.savingsTargets.slice(0, 3).map((target: any) => {
@@ -259,47 +180,27 @@ export function Dashboard() {
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{target.name}</span>
                     <span className="text-muted-foreground">
-                      {getCurrencyFormat(target.currentAmount)} / {getCurrencyFormat(target.targetAmount)}
+                      {progress.toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={progress} className="h-2" />
-                  <div className="text-xs text-muted-foreground text-right">
-                    {progress.toFixed(1)}% tercapai
+                  {/* Progress bar with simplified design */}
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
                 </div>
               );
             })}
+            {data.savingsTargets.length > 3 && (
+              <div className="text-center text-xs text-muted-foreground mt-4">
+                + {data.savingsTargets.length - 3} more targets
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
-
-      {/* Tips Section */}
-      <Card className="bg-gradient-to-r from-primary/20 to-purple-500/20 backdrop-blur-sm border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            💡 Tips Menabung & Investasi
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm font-medium">{currentTip}</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            - Kutipan dari investor hebat
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* All Stages Grid */}
-      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-        <CardHeader>
-          <CardTitle className="text-base">Semua Fase Keuangan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AllStagesGrid
-            totalSavings={data.totalSavings}
-            currentStageId={currentStage.id}
-          />
-        </CardContent>
-      </Card>
     </div>
   );
 }

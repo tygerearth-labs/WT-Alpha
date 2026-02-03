@@ -9,13 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getCurrencyFormat } from '@/lib/utils';
 import { Transaction, Category, TransactionFormData } from '@/types/transaction.types';
+import { SavingsTarget } from '@/types/transaction.types';
 
 interface TransactionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   type: 'income' | 'expense';
   categories: Category[];
+  savingsTargets?: SavingsTarget[];
   initialData?: Transaction | null;
   onSubmit: (data: TransactionFormData) => Promise<void>;
 }
@@ -25,6 +28,7 @@ export function TransactionForm({
   onOpenChange,
   type,
   categories,
+  savingsTargets = [],
   initialData,
   onSubmit,
 }: TransactionFormProps) {
@@ -34,6 +38,8 @@ export function TransactionForm({
     description: '',
     categoryId: '',
     date: new Date().toISOString().split('T')[0],
+    targetId: '',
+    allocationPercentage: '',
   });
 
   // Reset form when dialog opens/closes
@@ -44,6 +50,8 @@ export function TransactionForm({
         description: initialData.description || '',
         categoryId: initialData.categoryId,
         date: initialData.date.split('T')[0],
+        targetId: '',
+        allocationPercentage: '',
       });
     } else if (!open) {
       setFormData({
@@ -51,9 +59,24 @@ export function TransactionForm({
         description: '',
         categoryId: '',
         date: new Date().toISOString().split('T')[0],
+        targetId: '',
+        allocationPercentage: '',
       });
     }
   }, [open, initialData]);
+
+  // Auto-set allocation percentage when target is selected
+  useEffect(() => {
+    if (type === 'income' && formData.targetId && formData.targetId !== 'none') {
+      const selectedTarget = savingsTargets.find((t) => t.id === formData.targetId);
+      if (selectedTarget && selectedTarget.allocationPercentage > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          allocationPercentage: selectedTarget.allocationPercentage.toString(),
+        }));
+      }
+    }
+  }, [formData.targetId, savingsTargets, type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +89,8 @@ export function TransactionForm({
         description: formData.description,
         categoryId: formData.categoryId,
         date: formData.date,
+        targetId: type === 'income' && formData.targetId && formData.targetId !== 'none' ? formData.targetId : undefined,
+        allocationPercentage: type === 'income' && formData.allocationPercentage ? parseFloat(formData.allocationPercentage) : undefined,
       });
     } finally {
       setIsSubmitting(false);
@@ -135,6 +160,71 @@ export function TransactionForm({
               rows={3}
             />
           </div>
+          {type === 'income' && (
+            <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <span className="text-primary">🎯</span>
+                <span>Alokasi ke Target Tabungan</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="targetId">Target Tabungan</Label>
+                  <Select
+                    value={formData.targetId}
+                    onValueChange={(value) => setFormData({ ...formData, targetId: value })}
+                  >
+                    <SelectTrigger id="targetId">
+                      <SelectValue placeholder="Pilih target tabungan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Tidak dialokasikan</SelectItem>
+                      {savingsTargets.map((target) => (
+                        <SelectItem key={target.id} value={target.id}>
+                          {target.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="allocationPercentage">Persentase Alokasi</Label>
+                  {formData.targetId && formData.targetId !== 'none' ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="allocationPercentage"
+                        type="number"
+                        value={formData.allocationPercentage}
+                        readOnly
+                        disabled
+                        className="bg-muted cursor-not-allowed"
+                      />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        ⚡ Otomatis dari setting
+                      </span>
+                    </div>
+                  ) : (
+                    <Input
+                      id="allocationPercentage"
+                      type="number"
+                      value={formData.allocationPercentage}
+                      onChange={(e) => setFormData({ ...formData, allocationPercentage: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                      step="1"
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                    />
+                  )}
+                  {formData.targetId && formData.targetId !== 'none' && formData.allocationPercentage && formData.amount && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Alokasi otomatis: <span className="font-semibold text-primary">{formData.allocationPercentage}%</span> = {getCurrencyFormat((parseFloat(formData.amount) * parseFloat(formData.allocationPercentage)) / 100)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

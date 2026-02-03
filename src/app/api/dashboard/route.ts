@@ -101,6 +101,91 @@ export async function GET(request: NextRequest) {
     const totalDebt = 0; // Can be calculated from transactions if needed
     const debtRatio = totalIncome > 0 ? (totalDebt / totalIncome) * 100 : 0;
 
+    // Calculate growth metrics for momentum
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Get all transactions for cumulative savings calculation
+    const allTransactions = await db.transaction.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    // Calculate savings over time (last 30 days) - optimized
+    const savingsHistory: Array<{ date: string; savings: number }> = [];
+    let cumulativeIncome = 0;
+    let cumulativeExpense = 0;
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+
+      // Calculate savings for this day using all transactions
+      let dayIncome = 0;
+      let dayExpense = 0;
+
+      for (const transaction of allTransactions) {
+        const txDate = new Date(transaction.date);
+        if (txDate >= dayStart && txDate <= dayEnd) {
+          if (transaction.type === 'income') {
+            dayIncome += transaction.amount;
+          } else if (transaction.type === 'expense') {
+            dayExpense += transaction.amount;
+          }
+        }
+      }
+
+      const daySavings = Math.max(dayIncome - dayExpense, 0);
+
+      savingsHistory.push({
+        date: dateStr,
+        savings: daySavings,
+      });
+    }
+
+    // Calculate 7-day and 30-day growth
+    const last7DaysGrowth = savingsHistory
+      .slice(-7)
+      .reduce((sum, h) => sum + h.savings, 0);
+    const last30DaysGrowth = savingsHistory
+      .reduce((sum, h) => sum + h.savings, 0);
+
+    // Calculate momentum indicator
+    const first7DaysGrowth = savingsHistory
+      .slice(0, 7)
+      .reduce((sum, h) => sum + h.savings, 0);
+    const momentumChange = first7DaysGrowth > 0 
+      ? ((last7DaysGrowth - first7DaysGrowth) / first7DaysGrowth) * 100 
+      : 0;
+
+    let momentumIndicator: 'accelerating' | 'stable' | 'slowing' = 'stable';
+    if (momentumChange > 20) {
+      momentumIndicator = 'accelerating';
+    } else if (momentumChange < -20) {
+      momentumIndicator = 'slowing';
+    }
+
+    // Calculate savings rate (savings / income)
+    const savingsRate = totalIncome > 0 
+      ? ((totalIncome - totalExpense) / totalIncome) * 100 
+      : 0;
+
+    // Check for unallocated funds (potential weakness)
+    const totalAllocated = savingsTargets.reduce(
+      (sum, t) => sum + t.allocations.reduce((s, a) => s + a.amount, 0),
+      0
+    );
+    const unallocatedFunds = Math.max(totalSavings - totalAllocated, 0);
+
     return NextResponse.json({
       totalIncome,
       totalExpense,
@@ -110,6 +195,14 @@ export async function GET(request: NextRequest) {
       savingsTargets,
       transactions,
       expenseByCategory,
+      // Growth metrics
+      last7DaysGrowth,
+      last30DaysGrowth,
+      momentumIndicator,
+      momentumChange,
+      savingsHistory,
+      savingsRate,
+      unallocatedFunds,
     });
 
   } catch (error) {

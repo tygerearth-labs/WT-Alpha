@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, PlusCircle, BarChart3, Loader2 } from 'lucide-react';
+import { Plus, BarChart3, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TransactionForm } from '@/components/transaction/TransactionForm';
 import { CategoryDialog } from '@/components/transaction/CategoryDialog';
@@ -11,11 +12,15 @@ import { TransactionList } from '@/components/transaction/TransactionList';
 import { CategoryList } from '@/components/transaction/CategoryList';
 import { SummaryCard } from '@/components/shared/SummaryCard';
 import { PieChartCard } from '@/components/shared/PieChartCard';
-import { Transaction, Category, TransactionFormData, CategoryFormData } from '@/types/transaction.types';
+import { Transaction, Category, TransactionFormData, CategoryFormData, SavingsTarget } from '@/types/transaction.types';
+
+type DateFilter = 'today' | 'week' | 'month' | 'all';
 
 export function KasKeluar() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -23,23 +28,69 @@ export function KasKeluar() {
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; type: 'transaction' | 'category' }>({ open: false, id: '', type: 'transaction' });
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [dateFilter]);
 
   const fetchData = async () => {
     try {
-      const [transRes, catRes] = await Promise.all([
-        fetch('/api/transactions?type=expense'),
+      // Build query parameters based on date filter
+      const searchParams = new URLSearchParams();
+      searchParams.append('type', 'expense');
+
+      if (dateFilter === 'today') {
+        const today = new Date();
+        searchParams.append('year', today.getFullYear().toString());
+        searchParams.append('month', (today.getMonth() + 1).toString());
+      } else if (dateFilter === 'month') {
+        const today = new Date();
+        searchParams.append('year', today.getFullYear().toString());
+        searchParams.append('month', (today.getMonth() + 1).toString());
+      }
+
+      const [transRes, catRes, savingsRes] = await Promise.all([
+        fetch(`/api/transactions?${searchParams.toString()}`),
         fetch('/api/categories?type=expense'),
+        fetch('/api/savings'),
       ]);
 
-      if (transRes.ok && catRes.ok) {
+      if (transRes.ok && catRes.ok && savingsRes.ok) {
         const transData = await transRes.json();
         const catData = await catRes.json();
-        setTransactions(transData.transactions);
+        const savingsData = await savingsRes.json();
+
+        let filteredTransactions = transData.transactions;
+
+        // Apply client-side filtering for today and week
+        if (dateFilter === 'today') {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          filteredTransactions = filteredTransactions.filter(t => {
+            const transDate = new Date(t.date);
+            return transDate >= today && transDate < tomorrow;
+          });
+        } else if (dateFilter === 'week') {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+
+          filteredTransactions = filteredTransactions.filter(t => {
+            const transDate = new Date(t.date);
+            return transDate >= startOfWeek && transDate <= today;
+          });
+        }
+
+        setAllTransactions(filteredTransactions);
+        setTransactions(filteredTransactions);
         setCategories(catData.categories);
+        setSavingsTargets(savingsData.savingsTargets);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -206,25 +257,7 @@ export function KasKeluar() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">Kas Keluar</h2>
-        <p className="text-muted-foreground mt-1">Kelola semua pengeluaran Anda</p>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Tambah Kategori
-        </Button>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Pengeluaran
-        </Button>
-      </div>
-
-      {/* Summary Cards */}
+      {/* Summary Card & Distribution Chart - 2 Column Grid */}
       <div className="grid gap-4 md:grid-cols-2">
         <SummaryCard
           title="Total Uang Keluar"
@@ -233,6 +266,14 @@ export function KasKeluar() {
           iconColor="text-red-500"
           bgColor="bg-gradient-to-br from-red-500/20 to-orange-500/10"
           subtitle={`${transactions.length} transaksi`}
+          action={
+            <Button
+              size="icon"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          }
         />
         <PieChartCard
           title="Distribusi Pengeluaran"
@@ -241,24 +282,81 @@ export function KasKeluar() {
       </div>
 
       {/* Categories */}
-      <CardWrapper title="Kategori">
+      <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Kategori</h3>
+          <Button
+            size="icon"
+            onClick={() => setIsCategoryDialogOpen(true)}
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
+        </div>
         <CategoryList
           categories={categories}
           onEdit={openEditCategoryDialog}
           onDelete={(id) => setDeleteDialog({ open: true, id, type: 'category' })}
           type="expense"
         />
-      </CardWrapper>
+      </div>
 
-      {/* Transactions */}
-      <CardWrapper title="Riwayat Transaksi">
-        <TransactionList
-          transactions={transactions}
-          onEdit={openEditTransactionDialog}
-          onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
-          type="expense"
-        />
-      </CardWrapper>
+      {/* Transactions - With Date Filter */}
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Riwayat Transaksi</CardTitle>
+            <div className="flex gap-1">
+              <Button
+                variant={dateFilter === 'today' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setDateFilter('today'); setShowAllTransactions(false); }}
+              >
+                Hari Ini
+              </Button>
+              <Button
+                variant={dateFilter === 'week' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setDateFilter('week'); setShowAllTransactions(false); }}
+              >
+                Minggu Ini
+              </Button>
+              <Button
+                variant={dateFilter === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setDateFilter('month'); setShowAllTransactions(false); }}
+              >
+                Bulan Ini
+              </Button>
+              <Button
+                variant={dateFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setDateFilter('all'); setShowAllTransactions(false); }}
+              >
+                Semua
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TransactionList
+            transactions={showAllTransactions ? transactions : transactions.slice(0, 6)}
+            onEdit={openEditTransactionDialog}
+            onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
+            type="expense"
+          />
+          {transactions.length > 6 && (
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowAllTransactions(!showAllTransactions)}
+              >
+                {showAllTransactions ? 'Tampilkan Lebih Sedikit' : 'Lihat Lainnya'}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Add Transaction Dialog */}
       <TransactionForm
@@ -309,16 +407,6 @@ export function KasKeluar() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-// Helper component for wrapping content in a card
-function CardWrapper({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4">{title}</h3>
-      {children}
     </div>
   );
 }

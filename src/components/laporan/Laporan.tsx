@@ -251,7 +251,7 @@ export function Laporan() {
         <CardHeader>
           <CardTitle className="text-base md:text-lg">Riwayat Transaksi</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4">
           {transactions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Tidak ada data transaksi
@@ -311,7 +311,7 @@ export function Laporan() {
           <CardHeader>
             <CardTitle className="text-base md:text-lg">Target Tabungan</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>

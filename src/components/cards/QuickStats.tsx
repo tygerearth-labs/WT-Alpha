@@ -15,38 +15,48 @@ export function QuickStats({ totalSavings, currentStageName, nextTarget }: Quick
       title: 'Total Tabungan',
       value: getCurrencyFormat(totalSavings),
       icon: '💰',
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500',
+      description: 'Total tabungan Anda',
     },
     {
       title: 'Fase Saat Ini',
       value: currentStageName,
       icon: '📊',
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
+      color: 'text-violet-500',
+      bgColor: 'bg-violet-500',
+      description: 'Fase keuangan saat ini',
     },
     {
       title: 'Target Berikutnya',
       value: nextTarget,
       icon: '🎯',
       color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
+      bgColor: 'bg-blue-500',
+      description: 'Target fase selanjutnya',
     },
   ];
 
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-3">
       {stats.map((stat, index) => (
-        <Card key={index} className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-colors">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={`text-2xl ${stat.bgColor} p-2 rounded-lg`}>
-                {stat.icon}
+        <Card key={index} className="border border-border hover:border-primary/50 transition-colors">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${stat.bgColor} text-white`}>
+                <span className="text-2xl">
+                  {stat.icon}
+                </span>
               </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">{stat.title}</p>
-                <p className={`text-base font-bold ${stat.color}`}>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {stat.title}
+                </p>
+                <p className={`text-lg font-bold ${stat.color}`}>
                   {stat.value}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {stat.description}
                 </p>
               </div>
             </div>
