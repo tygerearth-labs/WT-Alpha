@@ -112,14 +112,14 @@ export function TargetSummaryCard({ savingsTargets }: TargetSummaryCardProps) {
       </CardHeader>
       <CardContent>
         {/* 6 COLUMN GRID LAYOUT */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* COLUMN 1: Brutal Insight */}
           <div className="lg:col-span-1 bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-border/50">
             <div className="flex items-start gap-2">
               <span className="text-2xl flex-shrink-0">{summaryInsight.emoji}</span>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">🎯 Brutal Insight</p>
+                <p className="text-xs text-muted-foreground mb-1">🎯 Insight</p>
                 <p className={`text-sm font-semibold ${summaryInsight.color}`}>
                   {summaryInsight.text}
                 </p>
