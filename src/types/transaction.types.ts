@@ -1,3 +1,5 @@
+import { TargetMetrics } from '@/lib/targetLogic';
+
 export interface Transaction {
   id: string;
   type: 'income' | 'expense';
@@ -30,12 +32,32 @@ export interface TransactionFormData {
   description: string;
   categoryId: string;
   date: string;
+  targetId?: string;
+  allocationPercentage?: string;
 }
 
 export interface CategoryFormData {
   name: string;
   color: string;
   icon: string;
+}
+
+export interface SavingsTarget {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: string;
+  initialInvestment: number;
+  monthlyContribution: number;
+  allocationPercentage: number;
+  isAllocated: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  allocations?: any[];
+  currentMonthlyAllocation?: number;
+  monthlyAchievement?: number;
+  metrics?: TargetMetrics;
 }
 
 export interface PieChartData {
