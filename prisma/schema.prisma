@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -63,7 +63,8 @@ model SavingsTarget {
   targetDate   DateTime
   initialInvestment Float  @default(0)
   monthlyContribution Float
-  yearlyInterestRate Float @default(0)
+  allocationPercentage Float @default(0)
+  isAllocated  Boolean     @default(false)
   userId       String
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   allocations  Allocation[]
