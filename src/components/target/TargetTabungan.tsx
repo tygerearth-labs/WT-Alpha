@@ -36,11 +36,11 @@ export function TargetTabungan() {
 
   const [formData, setFormData] = useState<TargetFormData>({
     name: '',
-    targetAmount: 0,
+    targetAmount: '',
     targetDate: '',
-    initialInvestment: 0,
-    monthlyContribution: 0,
-    allocationPercentage: 0,
+    initialInvestment: '',
+    monthlyContribution: '',
+    allocationPercentage: '',
   });
 
   useEffect(() => {
