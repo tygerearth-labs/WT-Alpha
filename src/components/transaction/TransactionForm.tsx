@@ -8,10 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { getCurrencyFormat } from '@/lib/utils';
-import { Transaction, Category, TransactionFormData } from '@/types/transaction.types';
-import { SavingsTarget } from '@/types/transaction.types';
+import { Transaction, Category, TransactionFormData, SavingsTarget } from '@/types/transaction.types';
 
 interface TransactionFormProps {
   open: boolean;
@@ -22,6 +20,13 @@ interface TransactionFormProps {
   initialData?: Transaction | null;
   onSubmit: (data: TransactionFormData) => Promise<void>;
 }
+
+const T = {
+  primary: '#BB86FC',
+  accent: '#03DAC6',
+  destructive: '#CF6679',
+  muted: '#9E9E9E',
+};
 
 export function TransactionForm({
   open,
@@ -42,7 +47,6 @@ export function TransactionForm({
     allocationPercentage: '',
   });
 
-  // Reset form when dialog opens/closes
   useEffect(() => {
     if (open && initialData) {
       setFormData({
@@ -65,7 +69,6 @@ export function TransactionForm({
     }
   }, [open, initialData]);
 
-  // Auto-set allocation percentage when target is selected
   useEffect(() => {
     if (type === 'income' && formData.targetId && formData.targetId !== 'none') {
       const selectedTarget = savingsTargets.find((t) => t.id === formData.targetId);
@@ -81,7 +84,6 @@ export function TransactionForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       await onSubmit({
         type,
@@ -97,21 +99,37 @@ export function TransactionForm({
     }
   };
 
-  const title = type === 'income' ? 'Tambah Pemasukan' : 'Tambah Pengeluaran';
+  const title = initialData
+    ? (type === 'income' ? 'Edit Pemasukan' : 'Edit Pengeluaran')
+    : (type === 'income' ? 'Tambah Pemasukan' : 'Tambah Pengeluaran');
   const submitLabel = initialData ? 'Update' : 'Simpan';
-  const placeholderText = type === 'income' ? 'Contoh: Bonus' : 'Contoh: Makanan';
+  const accentColor = type === 'income' ? T.accent : T.destructive;
+  const placeholderText = type === 'income' ? 'Contoh: Bonus bulanan' : 'Contoh: Makan siang';
+
+  const allocAmount = (formData.targetId && formData.targetId !== 'none' && formData.allocationPercentage && formData.amount)
+    ? (parseFloat(formData.amount) * parseFloat(formData.allocationPercentage)) / 100
+    : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+      <DialogContent className="bg-[#0D0D0D] border-white/[0.06] sm:max-w-md gap-0 p-0">
+        <DialogHeader className="px-5 pt-5 pb-3">
+          <DialogTitle className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
+            <span className="inline-flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ background: accentColor }}
+              />
+              {title}
+            </span>
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="amount">Nominal</Label>
+
+        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
+          {/* Amount */}
+          <div className="space-y-1.5">
+            <Label className="text-[11px]" style={{ color: T.muted }}>Nominal</Label>
             <Input
-              id="amount"
               type="number"
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
@@ -119,115 +137,115 @@ export function TransactionForm({
               required
               min="0"
               step="0.01"
+              className="h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg"
+              autoFocus
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="category">Kategori</Label>
-            <Select
-              value={formData.categoryId}
-              onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-              required
-            >
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Pilih kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          {/* Category & Date - Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px]" style={{ color: T.muted }}>Kategori</Label>
+              <Select
+                value={formData.categoryId}
+                onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                required
+              >
+                <SelectTrigger className="h-9 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg">
+                  <SelectValue placeholder="Pilih" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1E1E1E] border-white/[0.08]">
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id} className="text-white focus:bg-white/[0.08]">
+                      {cat.icon} {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px]" style={{ color: T.muted }}>Tanggal</Label>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+                className="h-9 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg [color-scheme:dark]"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="date">Tanggal</Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Deskripsi</Label>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label className="text-[11px]" style={{ color: T.muted }}>Deskripsi</Label>
             <Textarea
-              id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder={placeholderText}
-              rows={3}
+              rows={2}
+              className="text-xs bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg resize-none"
             />
           </div>
+
+          {/* Savings target allocation (income only) */}
           {type === 'income' && (
-            <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <span className="text-primary">🎯</span>
-                <span>Alokasi ke Target Tabungan</span>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="targetId">Target Tabungan</Label>
+            <div
+              className="rounded-xl p-3 space-y-3"
+              style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
+            >
+              <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: T.primary }}>
+                <span>🎯</span> Alokasi ke Target Tabungan
+              </p>
+              <div className="space-y-2">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px]" style={{ color: T.muted }}>Target</Label>
                   <Select
                     value={formData.targetId}
                     onValueChange={(value) => setFormData({ ...formData, targetId: value })}
                   >
-                    <SelectTrigger id="targetId">
-                      <SelectValue placeholder="Pilih target tabungan" />
+                    <SelectTrigger className="h-8 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg">
+                      <SelectValue placeholder="Pilih target" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Tidak dialokasikan</SelectItem>
+                    <SelectContent className="bg-[#1E1E1E] border-white/[0.08]">
+                      <SelectItem value="none" className="text-white focus:bg-white/[0.08]">Tidak dialokasikan</SelectItem>
                       {savingsTargets.map((target) => (
-                        <SelectItem key={target.id} value={target.id}>
+                        <SelectItem key={target.id} value={target.id} className="text-white focus:bg-white/[0.08]">
                           {target.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="allocationPercentage">Persentase Alokasi</Label>
-                  {formData.targetId && formData.targetId !== 'none' ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="allocationPercentage"
-                        type="number"
-                        value={formData.allocationPercentage}
-                        readOnly
-                        disabled
-                        className="bg-muted cursor-not-allowed"
-                      />
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        ⚡ Otomatis dari setting
-                      </span>
-                    </div>
-                  ) : (
-                    <Input
-                      id="allocationPercentage"
-                      type="number"
-                      value={formData.allocationPercentage}
-                      onChange={(e) => setFormData({ ...formData, allocationPercentage: e.target.value })}
-                      placeholder="0"
-                      min="0"
-                      max="100"
-                      step="1"
-                      disabled
-                      className="bg-muted cursor-not-allowed"
-                    />
-                  )}
-                  {formData.targetId && formData.targetId !== 'none' && formData.allocationPercentage && formData.amount && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Alokasi otomatis: <span className="font-semibold text-primary">{formData.allocationPercentage}%</span> = {getCurrencyFormat((parseFloat(formData.amount) * parseFloat(formData.allocationPercentage)) / 100)}
-                    </p>
-                  )}
-                </div>
+                {formData.targetId && formData.targetId !== 'none' && (
+                  <div className="flex items-center justify-between rounded-lg px-2.5 py-2" style={{ background: '#1E1E1E' }}>
+                    <span className="text-[10px]" style={{ color: T.muted }}>Alokasi otomatis</span>
+                    <span className="text-[11px] font-bold" style={{ color: T.primary }}>
+                      {formData.allocationPercentage || 0}% = {getCurrencyFormat(allocAmount)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+
+          {/* Submit */}
+          <DialogFooter className="pt-1 gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="flex-1 rounded-lg text-xs"
+              style={{ color: T.muted }}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 rounded-lg text-xs font-semibold border-0"
+              style={{ background: accentColor, color: '#000' }}
+            >
+              {isSubmitting && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
               {submitLabel}
             </Button>
           </DialogFooter>

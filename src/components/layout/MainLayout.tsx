@@ -20,8 +20,6 @@ import {
   FileText,
   Settings,
   LogOut,
-  Menu,
-  X,
 } from 'lucide-react';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { KasMasuk } from '@/components/kas/KasMasuk';
@@ -30,15 +28,14 @@ import { TargetTabungan } from '@/components/target/TargetTabungan';
 import { Laporan } from '@/components/laporan/Laporan';
 import { ProfileSettings } from '@/components/profile/ProfileSettings';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 type PageType = 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile';
 
 export function MainLayout() {
   const { user, logout, checkAuth } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar default HIDE
 
-  // Refresh user data when component mounts to ensure profile photo is up-to-date
   useEffect(() => {
     checkAuth();
   }, []);
@@ -58,9 +55,9 @@ export function MainLayout() {
     { id: 'dashboard' as PageType, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'kas-masuk' as PageType, label: 'Kas Masuk', icon: TrendingUp },
     { id: 'kas-keluar' as PageType, label: 'Kas Keluar', icon: TrendingDown },
-    { id: 'target' as PageType, label: 'Target Tabungan', icon: PiggyBank },
+    { id: 'target' as PageType, label: 'Target', icon: PiggyBank },
     { id: 'laporan' as PageType, label: 'Laporan', icon: FileText },
-    { id: 'profile' as PageType, label: 'Pengaturan', icon: Settings },
+    { id: 'profile' as PageType, label: 'Profil', icon: Settings },
   ];
 
   const renderPage = () => {
@@ -91,178 +88,101 @@ export function MainLayout() {
       .slice(0, 2);
   };
 
-  return (
-    <div className="min-h-screen flex bg-background">
-      {/* Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+  const navigateTo = (page: PageType) => {
+    setCurrentPage(page);
+  };
 
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed inset-y-0 left-0 z-50
-          w-72 bg-card/95 backdrop-blur-sm border-r border-border/50
-          transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          flex flex-col
-        `}
-      >
-        {/* Logo */}
-        <div className="p-4 border-b border-border/50">
-          <div className="flex items-center gap-2">
+  return (
+    <div className="min-h-screen flex flex-col bg-background overflow-x-hidden w-full">
+      {/* ── Top Header: Logo + Avatar ── */}
+      <header className="sticky top-0 z-30 bg-[#0D0D0D]/95 backdrop-blur-md border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 h-14">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
             <img
               src="/logo.svg"
               alt="Wealth Tracker Logo"
               className="w-8 h-8"
             />
-            <h1 className="text-base font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <h1 className="text-base font-bold bg-gradient-to-r from-[#BB86FC] via-[#03DAC6] to-[#BB86FC] bg-clip-text text-transparent hidden sm:block">
               Wealth Tracker
             </h1>
           </div>
-        </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Button
-                key={item.id}
-                variant={currentPage === item.id ? 'default' : 'ghost'}
-                className="w-full justify-start gap-2 text-sm"
-                onClick={() => {
-                  setCurrentPage(item.id);
-                  setSidebarOpen(false);
-                }}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Button>
-            );
-          })}
-        </nav>
-
-        {/* User Menu */}
-        <div className="p-3 border-t border-border/50">
-          <DropdownMenu>
+          {/* User Avatar + Dropdown */}
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-2 h-9 px-2">
-                <Avatar className="h-7 w-7">
+              <Button variant="ghost" className="h-9 w-9 p-0 rounded-full">
+                <Avatar className="h-8 w-8">
                   {user?.image ? (
                     <AvatarImage
                       src={user.image}
                       alt={user.username}
                       className="object-cover"
-                      onError={(e) => {
-                        console.error('Avatar image error:', e);
-                      }}
                     />
                   ) : null}
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  <AvatarFallback className="bg-[#BB86FC]/20 text-[#BB86FC] text-xs font-semibold">
                     {user?.username ? getInitials(user.username) : 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col items-start text-left">
-                  <span className="font-medium text-sm">{user?.username || 'User'}</span>
-                  <span className="text-[10px] text-muted-foreground truncate">
-                    {user?.email || 'user@example.com'}
-                  </span>
-                </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setCurrentPage('profile')}>
+            <DropdownMenuContent align="end" className="w-52 bg-[#0D0D0D] border-white/[0.06]">
+              <DropdownMenuLabel className="text-white/80">
+                <p className="font-semibold text-sm">{user?.username || 'User'}</p>
+                <p className="text-xs text-white/40 font-normal">{user?.email || ''}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/[0.06]" />
+              <DropdownMenuItem onClick={() => navigateTo('profile')} className="text-white/70 focus:text-white focus:bg-white/[0.06]">
                 <Settings className="mr-2 h-4 w-4" />
                 Pengaturan Profil
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <DropdownMenuSeparator className="bg-white/[0.06]" />
+              <DropdownMenuItem onClick={handleLogout} className="text-[#CF6679] focus:text-[#CF6679] focus:bg-[#CF6679]/10">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50 px-2 lg:px-3 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Sidebar Toggle - Mobile & Desktop */}
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
+      {/* ── Page Content ── */}
+      <div className="flex-1 p-3 lg:p-4 overflow-y-auto w-full min-w-0 max-w-full pb-[72px]">
+        {renderPage()}
+      </div>
+
+      {/* ── Bottom Navigation Bar ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-t border-white/[0.06] safe-area-inset-bottom">
+        <div className="flex items-center justify-around px-2 h-[60px]">
+          {navigation.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPage === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => navigateTo(item.id)}
+                className="flex items-center justify-center py-2 px-3 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95"
               >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-              <h2 className="text-base font-semibold capitalize text-foreground/90">
-                {navigation.find((n) => n.id === currentPage)?.label || 'Dashboard'}
-              </h2>
-            </div>
-
-            {/* Desktop User Menu */}
-            <div className="hidden lg:block">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 h-9 px-2">
-                    <Avatar className="h-7 w-7">
-                      {user?.image ? (
-                        <AvatarImage
-                          src={user.image}
-                          alt={user.username}
-                          className="object-cover"
-                          onError={(e) => {
-                            console.error('Avatar image error:', e);
-                          }}
-                        />
-                      ) : null}
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {user?.username ? getInitials(user.username) : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium text-sm">{user?.username || 'User'}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setCurrentPage('profile')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Pengaturan Profil
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <div className="flex-1 p-2 lg:p-3 overflow-auto w-full">
-          {renderPage()}
+                <Icon
+                  className={cn(
+                    'h-5 w-5 transition-all duration-200',
+                    isActive ? 'text-[#BB86FC]' : 'text-[#555]',
+                  )}
+                  strokeWidth={isActive ? 2.2 : 1.5}
+                />
+              </button>
+            );
+          })}
         </div>
+      </nav>
 
-        {/* Footer */}
-        <footer className="mt-auto border-t border-border/50 px-3 lg:px-4 py-3 bg-card/50">
-          <div className="text-center text-xs text-muted-foreground">
-            Creator: Tyger Earth | Ahtjong Labs
-          </div>
-        </footer>
-      </main>
+      {/* ── Footer ── */}
+      <footer className="border-t border-white/[0.06] px-2 py-2 bg-[#0D0D0D]/50 pb-[60px]">
+        <div className="text-center text-[11px] text-white/20">
+          Creator: Tyger Earth | Ahtjong Labs
+        </div>
+      </footer>
     </div>
   );
 }

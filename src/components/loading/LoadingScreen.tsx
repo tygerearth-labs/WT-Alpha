@@ -1,7 +1,6 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/store/useAuthStore';
 
 export function LoadingScreen() {
   return (

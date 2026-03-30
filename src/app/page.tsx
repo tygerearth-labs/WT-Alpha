@@ -24,8 +24,8 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/10 p-4">
         <div className="w-full max-w-md space-y-6">
-          <div className="text-center space-y-2 mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+          <div className="text-center space-y-2 mb-6 sm:mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
               Wealth Tracker
             </h1>
             <p className="text-muted-foreground">Kelola keuangan Anda dengan bijak</p>

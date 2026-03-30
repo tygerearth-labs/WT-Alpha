@@ -1,637 +1,541 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Target, Plus, Edit, Trash2, CheckCircle2, ChevronDown, ChevronUp, PiggyBank, Zap, AlertTriangle, Clock, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, PiggyBank, Loader2, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { SavingsTarget } from '@/types/transaction.types';
-import { TargetMetrics, getBrutalInsight, getSpeedCopy, getStatusCopy, getETAText, generateMiniChallenge, getCurrencyFormat } from '@/lib/targetLogic';
+import { TargetMetrics, getBrutalInsight, getSpeedCopy, getETAText, generateMiniChallenge, getCurrencyFormat } from '@/lib/targetLogic';
 import { TargetSummaryCard } from '@/components/target/TargetSummaryCard';
+import { cn } from '@/lib/utils';
 
-interface TargetFormData {
-  name: string;
-  targetAmount: number;
-  targetDate: string;
-  initialInvestment: number;
-  monthlyContribution: number;
-  allocationPercentage: number;
+// ── Theme ──
+const T = {
+  bg: '#121212',
+  primary: '#BB86FC',
+  secondary: '#03DAC6',
+  destructive: '#CF6679',
+  warning: '#F9A825',
+  muted: '#9E9E9E',
+  border: 'rgba(255,255,255,0.06)',
+  borderHover: 'rgba(255,255,255,0.12)',
+  text: '#E6E1E5',
+  textSub: '#B3B3B3',
+} as const;
+
+// ── Circular Progress Ring ──
+function ProgressRing({ pct, size = 56, stroke = 4, color }: { pct: number; size?: number; stroke?: number; color: string }) {
+  const r = (size - stroke) / 2;
+  const circ = r * 2 * Math.PI;
+  const offset = circ - (Math.min(pct, 100) / 100) * circ;
+  return (
+    <svg width={size} height={size} className="-rotate-90">
+      <circle stroke={T.border} fill="transparent" strokeWidth={stroke} r={r} cx={size / 2} cy={size / 2} />
+      <circle
+        stroke={color}
+        fill="transparent"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={circ + ' ' + circ}
+        style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 1s ease-out' }}
+        r={r} cx={size / 2} cy={size / 2}
+      />
+    </svg>
+  );
 }
 
-export function TargetTabungan() {
-  const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
-  const [selectedTarget, setSelectedTarget] = useState<SavingsTarget | null>(null);
-  const [expandedTargets, setExpandedTargets] = useState<Set<string>>(new Set());
+// ── Status Chip ──
+function StatusChip({ status }: { status: 'healthy' | 'warning' | 'critical' }) {
+  const cfg = {
+    healthy: { label: 'Sehat', color: T.secondary, bg: `${T.secondary}15` },
+    warning: { label: 'Waspada', color: T.warning, bg: `${T.warning}15` },
+    critical: { label: 'Kritis', color: T.destructive, bg: `${T.destructive}15` },
+  }[status];
+  return (
+    <span
+      className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full"
+      style={{ color: cfg.color, background: cfg.bg }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
 
-  const [formData, setFormData] = useState<TargetFormData>({
-    name: '',
-    targetAmount: '',
-    targetDate: '',
-    initialInvestment: '',
-    monthlyContribution: '',
-    allocationPercentage: '',
-  });
-
-  useEffect(() => {
-    fetchSavingsTargets();
-  }, []);
-
-  const fetchSavingsTargets = async () => {
+// ── Quick Deposit Chips ──
+function QuickDeposit({ targetId }: { targetId: string }) {
+  const amounts = [50, 100, 200, 500];
+  const handleDeposit = async (amount: number) => {
     try {
-      const response = await fetch('/api/savings');
-      if (response.ok) {
-        const data = await response.json();
-        setSavingsTargets(data.savingsTargets);
-      }
-    } catch (error) {
-      console.error('Error fetching savings targets:', error);
-      toast.error('Gagal memuat target tabungan');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || formData.targetAmount <= 0 || !formData.targetDate) {
-      toast.error('Mohon lengkapi semua field wajib');
-      return;
-    }
-
-    try {
-      const url = isEditDialogOpen
-        ? `/api/savings/${selectedTarget?.id}`
-        : '/api/savings';
-
-      const method = isEditDialogOpen ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        toast.success(isEditDialogOpen ? 'Target berhasil diperbarui' : 'Target berhasil ditambahkan');
-        setIsAddDialogOpen(false);
-        setIsEditDialogOpen(false);
-        resetForm();
-        fetchSavingsTargets();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Gagal menyimpan target');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Terjadi kesalahan');
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteDialog.id) return;
-
-    try {
-      const response = await fetch(`/api/savings/${deleteDialog.id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        toast.success('Target berhasil dihapus');
-        setDeleteDialog({ open: false, id: null });
-        fetchSavingsTargets();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Gagal menghapus target');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Terjadi kesalahan');
-    }
-  };
-
-  const handleQuickDeposit = async (targetId: string, amount: number) => {
-    try {
-      const response = await fetch('/api/transactions', {
+      const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'income',
-          amount,
+          amount: amount * 1000,
           description: 'Setoran Cepat',
-          categoryId: '', // Use default category
+          categoryId: '',
           date: new Date().toISOString().split('T')[0],
           targetId,
-          allocationPercentage: 100, // Full allocation to target
+          allocationPercentage: 100,
         }),
       });
-
-      if (response.ok) {
-        toast.success(`Setoran Rp${amount.toLocaleString('id-ID')} berhasil!`);
-        fetchSavingsTargets();
+      if (res.ok) {
+        toast.success(`+Rp${(amount * 1000).toLocaleString('id-ID')} berhasil!`);
+        window.dispatchEvent(new Event('savings-updated'));
       } else {
-        toast.error('Gagal melakukan setoran cepat');
+        toast.error('Gagal melakukan setoran');
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       toast.error('Terjadi kesalahan');
     }
   };
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {amounts.map(a => (
+        <button
+          key={a}
+          onClick={() => handleDeposit(a)}
+          className="text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95"
+          style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
+        >
+          +{a}k
+        </button>
+      ))}
+    </div>
+  );
+}
 
-  const toggleExpand = (id: string) => {
-    setExpandedTargets(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
+// ── Mini Progress Bar ──
+function MiniBar({ value, color, height = 3 }: { value: number; color: string; height?: number }) {
+  return (
+    <div className="w-full rounded-full overflow-hidden" style={{ height, background: T.border }}>
+      <div
+        className="h-full rounded-full transition-all duration-700"
+        style={{ width: `${Math.min(value, 100)}%`, background: color }}
+      />
+    </div>
+  );
+}
+
+// ── Target Card ──
+function TargetCard({
+  target,
+  onEdit,
+  onDelete,
+}: {
+  target: SavingsTarget;
+  onEdit: (t: SavingsTarget) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const metrics = target.metrics as TargetMetrics | undefined;
+  if (!metrics) return null;
+
+  const pct = metrics.progressPercent;
+  const ringColor = pct >= 80 ? T.secondary : pct >= 50 ? T.primary : pct >= 25 ? T.warning : T.destructive;
+  const speedCopy = getSpeedCopy(metrics.speedStatus);
+  const brutalInsight = getBrutalInsight(metrics, target);
+  const miniChallenge = generateMiniChallenge(target, metrics);
+  const daysLeft = (() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.ceil((new Date(target.targetDate).getTime() - today.getTime()) / 86400000);
+  })();
+  const isCompleted = pct >= 100;
+  const monthlyAch = target.monthlyAchievement || 0;
+  const monthlyColor = monthlyAch >= 100 ? T.secondary : monthlyAch >= 70 ? T.primary : monthlyAch >= 40 ? T.warning : T.destructive;
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden transition-all duration-200"
+      style={{
+        background: T.bg,
+        border: `1px solid ${T.border}`,
+      }}
+    >
+      {/* Clickable header */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full text-left p-3 sm:p-4 flex items-center gap-3 active:bg-white/[0.02] transition-colors"
+      >
+        {/* Ring */}
+        <div className="relative shrink-0">
+          <ProgressRing pct={pct} size={48} stroke={3.5} color={ringColor} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[11px] font-bold" style={{ color: ringColor }}>{pct.toFixed(0)}</span>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-sm font-semibold truncate" style={{ color: T.text }}>{target.name}</span>
+            {!isCompleted && <StatusChip status={metrics.targetStatus} />}
+            {isCompleted && (
+              <span className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ color: T.secondary, background: `${T.secondary}15` }}>
+                Selesai
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-[10px]" style={{ color: T.muted }}>
+            <span>{getCurrencyFormat(target.currentAmount)}</span>
+            <ChevronRight className="h-3 w-3" />
+            <span style={{ color: T.textSub }}>{getCurrencyFormat(target.targetAmount)}</span>
+          </div>
+        </div>
+
+        {/* Chevron */}
+        <ChevronRight
+          className="h-4 w-4 shrink-0 transition-transform duration-200"
+          style={{ color: T.muted, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+
+      {/* Expanded Details */}
+      {expanded && (
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3" style={{ borderTop: `1px solid ${T.border}` }}>
+          {/* ETA & Speed */}
+          <div className="grid grid-cols-3 gap-2 pt-3">
+            <div className="text-center">
+              <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>ETA</p>
+              <p className="text-xs font-bold mt-0.5" style={{ color: T.text }}>{getETAText(metrics.etaInMonths)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Kecepatan</p>
+              <p className="text-xs font-bold mt-0.5" style={{ color: T.text }}>{speedCopy.emoji} {speedCopy.text.split('.')[0]}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Deadline</p>
+              <p className="text-xs font-bold mt-0.5" style={{ color: daysLeft < 30 ? T.destructive : T.text }}>
+                {daysLeft > 0 ? `${daysLeft} hari` : 'Lewat'}
+              </p>
+            </div>
+          </div>
+
+          {/* Monthly bar */}
+          {target.monthlyContribution > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px]">
+                <span style={{ color: T.muted }}>Bulanan ini</span>
+                <span style={{ color: monthlyColor }} className="font-semibold">
+                  {getCurrencyFormat(target.currentMonthlyAllocation || 0)} / {getCurrencyFormat(target.monthlyContribution)}
+                </span>
+              </div>
+              <MiniBar value={Math.min(monthlyAch, 100)} color={monthlyColor} />
+            </div>
+          )}
+
+          {/* Brutal Insight */}
+          {brutalInsight && !isCompleted && (
+            <div
+              className="rounded-xl p-2.5"
+              style={{ background: `${T.destructive}08`, border: `1px solid ${T.destructive}15` }}
+            >
+              <p className="text-[11px] leading-relaxed" style={{ color: T.destructive }}>
+                {brutalInsight}
+              </p>
+            </div>
+          )}
+
+          {/* Quick Deposit */}
+          {!isCompleted && <QuickDeposit targetId={target.id} />}
+
+          {/* Mini Challenge */}
+          {!isCompleted && miniChallenge && (
+            <div
+              className="rounded-xl p-2.5 flex items-center justify-between"
+              style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
+            >
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold" style={{ color: T.primary }}>{miniChallenge.title}</p>
+                <p className="text-[10px]" style={{ color: T.muted }}>{miniChallenge.description}</p>
+              </div>
+              <button
+                className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+                style={{ background: T.primary, color: '#000' }}
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/transactions', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'income',
+                        amount: miniChallenge.targetAmount,
+                        description: miniChallenge.title,
+                        categoryId: '',
+                        date: new Date().toISOString().split('T')[0],
+                        targetId: target.id,
+                        allocationPercentage: 100,
+                      }),
+                    });
+                    if (res.ok) {
+                      toast.success('Challenge selesai!');
+                      window.dispatchEvent(new Event('savings-updated'));
+                    }
+                  } catch { toast.error('Gagal'); }
+                }}
+              >
+                Ambil
+              </button>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => onEdit(target)}
+              className="flex-1 text-[11px] font-medium py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              style={{ background: `${T.primary}10`, color: T.primary }}
+            >
+              <Edit className="h-3 w-3" /> Edit
+            </button>
+            <button
+              onClick={() => onDelete(target.id)}
+              className="flex-1 text-[11px] font-medium py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              style={{ background: `${T.destructive}10`, color: T.destructive }}
+            >
+              <Trash2 className="h-3 w-3" /> Hapus
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Target Form Dialog (reusable for add & edit) ──
+function TargetFormDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  initialData,
+  isEdit,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSubmit: (data: any) => void;
+  initialData: Partial<SavingsTarget> | null;
+  isEdit: boolean;
+}) {
+  const buildForm = (data: Partial<SavingsTarget> | null) => ({
+    name: data?.name || '',
+    targetAmount: data?.targetAmount || 0,
+    targetDate: data?.targetDate ? format(new Date(data.targetDate), 'yyyy-MM-dd') : '',
+    initialInvestment: data?.initialInvestment || 0,
+    monthlyContribution: data?.monthlyContribution || 0,
+    allocationPercentage: data?.allocationPercentage || 0,
+  });
+
+  const [form, setForm] = useState(() => buildForm(initialData));
+  const [key, setKey] = useState(0);
+
+  const handleOpenChange = (v: boolean) => {
+    if (v) {
+      setForm(buildForm(initialData));
+      setKey(k => k + 1);
+    }
+    onOpenChange(v);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || form.targetAmount <= 0 || !form.targetDate) {
+      toast.error('Lengkapi field wajib (*)');
+      return;
+    }
+    onSubmit(form);
+  };
+
+  const inputCls = "h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20";
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[420px] bg-[#0D0D0D] border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle className="text-white">{isEdit ? 'Edit Target' : 'Target Baru'}</DialogTitle>
+          <DialogDescription className="text-[#9E9E9E]">
+            {isEdit ? 'Perbarui target tabungan' : 'Buat target tabungan baru'}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()}>
+          <div className="space-y-3 py-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-[#9E9E9E]">Nama Target *</Label>
+              <Input className={inputCls} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Dana Darurat" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-[#9E9E9E]">Jumlah *</Label>
+                <Input type="number" className={inputCls} value={form.targetAmount || ''} onChange={e => setForm({ ...form, targetAmount: parseFloat(e.target.value) || 0 })} placeholder="10000000" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-[#9E9E9E]">Deadline *</Label>
+                <Input type="date" className={inputCls} value={form.targetDate} onChange={e => setForm({ ...form, targetDate: e.target.value })} min={format(new Date(), 'yyyy-MM-dd')} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-[#9E9E9E]">Investasi Awal</Label>
+                <Input type="number" className={inputCls} value={form.initialInvestment || ''} onChange={e => setForm({ ...form, initialInvestment: parseFloat(e.target.value) || 0 })} placeholder="0" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-[#9E9E9E]">Bulanan</Label>
+                <Input type="number" className={inputCls} value={form.monthlyContribution || ''} onChange={e => setForm({ ...form, monthlyContribution: parseFloat(e.target.value) || 0 })} placeholder="0" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-[#9E9E9E]">Alokasi Otomatis (%)</Label>
+              <Input type="number" className={inputCls} value={form.allocationPercentage || ''} onChange={e => setForm({ ...form, allocationPercentage: parseFloat(e.target.value) || 0 })} placeholder="0" min="0" max="100" />
+              <p className="text-[9px]" style={{ color: T.muted }}>Persentase dari kas masuk yang dialokasikan otomatis</p>
+            </div>
+          </div>
+          <DialogFooter className="pt-2">
+            <Button type="submit" className="w-full bg-[#BB86FC] text-black hover:bg-[#BB86FC]/90 font-semibold">
+              {isEdit ? 'Simpan' : 'Buat Target'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── Main Page ──
+// ══════════════════════════════════════════════════════════════
+export function TargetTabungan() {
+  const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [selectedTarget, setSelectedTarget] = useState<SavingsTarget | null>(null);
+
+  const fetchTargets = async () => {
+    try {
+      const res = await fetch('/api/savings');
+      if (res.ok) {
+        const data = await res.json();
+        setSavingsTargets(data.savingsTargets);
       }
-      return newSet;
-    });
+    } catch { toast.error('Gagal memuat target'); }
+    finally { setIsLoading(false); }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      targetAmount: 0,
-      targetDate: '',
-      initialInvestment: 0,
-      monthlyContribution: 0,
-      allocationPercentage: 0,
-    });
-    setSelectedTarget(null);
+  useEffect(() => {
+    fetchTargets();
+    const handler = () => fetchTargets();
+    window.addEventListener('savings-updated', handler);
+    return () => window.removeEventListener('savings-updated', handler);
+  }, []);
+
+  const handleAdd = async (data: any) => {
+    try {
+      const res = await fetch('/api/savings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (res.ok) { toast.success('Target berhasil dibuat'); setIsAddOpen(false); fetchTargets(); }
+      else { const e = await res.json(); toast.error(e.error || 'Gagal'); }
+    } catch { toast.error('Terjadi kesalahan'); }
   };
 
-  const openEditDialog = (target: SavingsTarget) => {
-    setSelectedTarget(target);
-    setFormData({
-      name: target.name,
-      targetAmount: target.targetAmount,
-      targetDate: format(new Date(target.targetDate), 'yyyy-MM-dd'),
-      initialInvestment: target.initialInvestment,
-      monthlyContribution: target.monthlyContribution,
-      allocationPercentage: target.allocationPercentage,
-    });
-    setIsEditDialogOpen(true);
+  const handleEdit = async (data: any) => {
+    if (!selectedTarget) return;
+    try {
+      const res = await fetch(`/api/savings/${selectedTarget.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (res.ok) { toast.success('Target diperbarui'); setIsEditOpen(false); setSelectedTarget(null); fetchTargets(); }
+      else { const e = await res.json(); toast.error(e.error || 'Gagal'); }
+    } catch { toast.error('Terjadi kesalahan'); }
   };
 
-  const getDaysRemaining = (targetDate: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(targetDate);
-    const diffTime = target.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const handleDelete = async () => {
+    if (!deleteDialog.id) return;
+    try {
+      const res = await fetch(`/api/savings/${deleteDialog.id}`, { method: 'DELETE' });
+      if (res.ok) { toast.success('Target dihapus'); setDeleteDialog({ open: false, id: null }); fetchTargets(); }
+      else toast.error('Gagal menghapus');
+    } catch { toast.error('Terjadi kesalahan'); }
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground mt-2">Memuat target tabungan...</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: T.primary }} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Header + Add Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Target Tabungan</h2>
-          <p className="text-muted-foreground mt-1">Atur dan pantau target keuangan Anda</p>
+          <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Target Tabungan</p>
+          <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{savingsTargets.length} target</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Target
+            <Button
+              size="sm"
+              className="h-8 px-3 text-xs font-semibold gap-1.5 rounded-xl"
+              style={{ background: T.primary, color: '#000' }}
+            >
+              <Plus className="h-3.5 w-3.5" /> Buat
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Tambah Target Tabungan</DialogTitle>
-              <DialogDescription>
-                Buat target tabungan baru untuk mengatur keuangan Anda
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nama Target *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Contoh: Dana Darurat"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="targetAmount">Target Jumlah *</Label>
-                  <Input
-                    id="targetAmount"
-                    type="number"
-                    value={formData.targetAmount}
-                    onChange={(e) => setFormData({ ...formData, targetAmount: parseFloat(e.target.value) || 0 })}
-                    placeholder="Contoh: 10000000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="targetDate">Target Tanggal *</Label>
-                  <Input
-                    id="targetDate"
-                    type="date"
-                    value={formData.targetDate}
-                    onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="initialInvestment">Investasi Awal</Label>
-                  <Input
-                    id="initialInvestment"
-                    type="number"
-                    value={formData.initialInvestment}
-                    onChange={(e) => setFormData({ ...formData, initialInvestment: parseFloat(e.target.value) || 0 })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monthlyContribution">Kontribusi Bulanan</Label>
-                  <Input
-                    id="monthlyContribution"
-                    type="number"
-                    value={formData.monthlyContribution}
-                    onChange={(e) => setFormData({ ...formData, monthlyContribution: parseFloat(e.target.value) || 0 })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="allocationPercentage">Persentase Alokasi (%)</Label>
-                  <Input
-                    id="allocationPercentage"
-                    type="number"
-                    value={formData.allocationPercentage}
-                    onChange={(e) => setFormData({ ...formData, allocationPercentage: parseFloat(e.target.value) || 0 })}
-                    placeholder="0"
-                    min="0"
-                    max="100"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Persentase dari kas masuk yang otomatis dialokasikan
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Simpan Target</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
+          <TargetFormDialog open={isAddOpen} onOpenChange={setIsAddOpen} onSubmit={handleAdd} initialData={null} isEdit={false} />
         </Dialog>
       </div>
 
-      {/* Summary Card - Aggregate of All Targets */}
-      {savingsTargets.length > 0 && (
-        <TargetSummaryCard savingsTargets={savingsTargets} />
-      )}
+      {/* Summary */}
+      {savingsTargets.length > 0 && <TargetSummaryCard savingsTargets={savingsTargets} />}
 
-      {/* Savings Targets Grid */}
-      {savingsTargets.length === 0 ? (
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <PiggyBank className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Belum ada target tabungan</h3>
-            <p className="text-sm text-muted-foreground text-center mb-4">
-              Mulai dengan membuat target tabungan pertama Anda
-            </p>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Buat Target
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {savingsTargets.map((target) => {
-            const isExpanded = expandedTargets.has(target.id);
-            const metrics = target.metrics;
-            if (!metrics) return null;
-
-            const statusCopy = getStatusCopy(metrics.targetStatus);
-            const speedCopy = getSpeedCopy(metrics.speedStatus);
-            const brutalInsight = getBrutalInsight(metrics, target);
-            const miniChallenge = generateMiniChallenge(target, metrics);
-            const daysRemaining = getDaysRemaining(target.targetDate);
-
-            return (
-              <Card key={target.id} className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
-                <CardHeader className="pb-3">
-                  {/* Target Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Target className="h-5 w-5 text-primary flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="text-base truncate">{target.name}</CardTitle>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <Badge className={statusCopy.color}>
-                            {statusCopy.emoji} {statusCopy.text}
-                          </Badge>
-                          <Badge variant="outline" className={speedCopy.color}>
-                            {speedCopy.emoji} {speedCopy.text}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 flex-shrink-0"
-                      onClick={() => toggleExpand(target.id)}
-                    >
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Progress Section */}
-                  <div>
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-semibold">{metrics.progressPercent.toFixed(0)}%</span>
-                    </div>
-                    <Progress value={metrics.progressPercent} className="h-2" />
-                    <div className="flex items-center justify-between text-sm mt-2">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Terkumpul</p>
-                        <p className="font-semibold text-lg">{getCurrencyFormat(target.currentAmount)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Sisa</p>
-                        <p className="font-semibold text-lg">{getCurrencyFormat(metrics.remainingAmount)}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Time Projection */}
-                  <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">ETA Terwujud</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Kecepatan saat ini</p>
-                        <p className="font-semibold text-sm">{getETAText(metrics.etaInMonths)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Jika tidak diubah</p>
-                        <p className="font-semibold text-sm">{getETAText(metrics.doNothingETA)}</p>
-                      </div>
-                    </div>
-                    {daysRemaining > 0 && (
-                      <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Deadline: {daysRemaining} hari lagi
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Monthly Performance */}
-                  {target.monthlyContribution > 0 && (
-                    <div className="bg-secondary/50 rounded-lg p-3 border border-border/50">
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="font-medium">Bulanan Ini</span>
-                        <Badge className={
-                          target.monthlyAchievement >= 100 ? 'bg-green-500' :
-                          target.monthlyAchievement >= 80 ? 'bg-blue-500' :
-                          target.monthlyAchievement >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                        }>
-                          {target.monthlyAchievement >= 100 ? 'Luar biasa! 🎉' :
-                           target.monthlyAchievement >= 80 ? 'Hampir! 👍' :
-                           target.monthlyAchievement >= 50 ? 'On track' : 'Perlu tingkatkan'}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Realisasi: <span className="font-semibold text-foreground">{getCurrencyFormat(target.currentMonthlyAllocation || 0)}</span>
-                        </span>
-                        <span className="text-muted-foreground">
-                          Target: <span className="font-semibold text-foreground">{getCurrencyFormat(target.monthlyContribution)}</span>
-                        </span>
-                      </div>
-                      <Progress value={Math.min(target.monthlyAchievement || 0, 100)} className="h-1.5 mt-2" />
-                    </div>
-                  )}
-
-                  {/* Brutal Insight */}
-                  {isExpanded && brutalInsight && (
-                    <div className="bg-destructive/10 rounded-lg p-3 border border-destructive/20">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-destructive-foreground">
-                          {brutalInsight}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Quick Actions */}
-                  {isExpanded && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Aksi Cepat
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => handleQuickDeposit(target.id, 50000)}
-                        >
-                          <Plus className="mr-2 h-3 w-3" />
-                          +50k
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => handleQuickDeposit(target.id, 100000)}
-                        >
-                          <Plus className="mr-2 h-3 w-3" />
-                          +100k
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Mini Challenge */}
-                  {isExpanded && miniChallenge && (
-                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border border-primary/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Zap className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold text-primary">Mini Challenge</span>
-                      </div>
-                      <p className="text-sm font-medium mb-1">{miniChallenge.title}</p>
-                      <p className="text-xs text-muted-foreground mb-2">{miniChallenge.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-primary font-medium">
-                          🏆 {miniChallenge.reward}
-                        </span>
-                        <Button
-                          size="sm"
-                          onClick={() => handleQuickDeposit(target.id, miniChallenge.targetAmount)}
-                        >
-                          Ambil Challenge
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-
-                {isExpanded && (
-                  <CardFooter className="flex gap-2 pt-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => openEditDialog(target)}
-                    >
-                      <Edit className="mr-2 h-3 w-3" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleteDialog({ open: true, id: target.id })}
-                    >
-                      <Trash2 className="mr-2 h-3 w-3" />
-                      Hapus
-                    </Button>
-                  </CardFooter>
-                )}
-              </Card>
-            );
-          })}
+      {/* Empty State */}
+      {savingsTargets.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+            style={{ background: `${T.primary}10` }}
+          >
+            <PiggyBank className="h-8 w-8" style={{ color: T.primary }} />
+          </div>
+          <p className="text-sm font-semibold" style={{ color: T.text }}>Belum ada target</p>
+          <p className="text-xs mt-1" style={{ color: T.muted }}>Mulai dengan membuat target pertama</p>
         </div>
       )}
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-        setIsEditDialogOpen(open);
-        if (!open) resetForm();
-      }}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Target Tabungan</DialogTitle>
-            <DialogDescription>
-              Perbarui informasi target tabungan Anda
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Nama Target *</Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Contoh: Dana Darurat"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-targetAmount">Target Jumlah *</Label>
-                <Input
-                  id="edit-targetAmount"
-                  type="number"
-                  value={formData.targetAmount}
-                  onChange={(e) => setFormData({ ...formData, targetAmount: parseFloat(e.target.value) || 0 })}
-                  placeholder="Contoh: 10000000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-targetDate">Target Tanggal *</Label>
-                <Input
-                  id="edit-targetDate"
-                  type="date"
-                  value={formData.targetDate}
-                  onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
-                  min={format(new Date(), 'yyyy-MM-dd')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-initialInvestment">Investasi Awal</Label>
-                <Input
-                  id="edit-initialInvestment"
-                  type="number"
-                  value={formData.initialInvestment}
-                  onChange={(e) => setFormData({ ...formData, initialInvestment: parseFloat(e.target.value) || 0 })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-monthlyContribution">Kontribusi Bulanan</Label>
-                <Input
-                  id="edit-monthlyContribution"
-                  type="number"
-                  value={formData.monthlyContribution}
-                  onChange={(e) => setFormData({ ...formData, monthlyContribution: parseFloat(e.target.value) || 0 })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-allocationPercentage">Persentase Alokasi (%)</Label>
-                <Input
-                  id="edit-allocationPercentage"
-                  type="number"
-                  value={formData.allocationPercentage}
-                  onChange={(e) => setFormData({ ...formData, allocationPercentage: parseFloat(e.target.value) || 0 })}
-                  placeholder="0"
-                  min="0"
-                  max="100"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Persentase dari kas masuk yang otomatis dialokasikan
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">Simpan Perubahan</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Target Cards */}
+      <div className="space-y-3">
+        {savingsTargets.map(target => (
+          <TargetCard
+            key={target.id}
+            target={target}
+            onEdit={(t) => { setSelectedTarget(t); setIsEditOpen(true); }}
+            onDelete={(id) => setDeleteDialog({ open: true, id })}
+          />
+        ))}
+      </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, id: deleteDialog.id })}>
-        <AlertDialogContent>
+      {/* Edit Dialog */}
+      <TargetFormDialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if (!v) setSelectedTarget(null); }} onSubmit={handleEdit} initialData={selectedTarget} isEdit />
+
+      {/* Delete Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.06]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Target Tabungan?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Target tabungan yang dihapus tidak dapat dikembalikan. Semua riwayat alokasi akan tetap tersimpan.
+            <AlertDialogTitle className="text-white">Hapus Target?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#9E9E9E]">
+              Target yang dihapus tidak dapat dikembalikan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Hapus
-            </AlertDialogAction>
+            <AlertDialogCancel className="bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1]">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90">Hapus</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   );
 }
-

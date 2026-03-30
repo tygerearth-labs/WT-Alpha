@@ -138,7 +138,8 @@ export function calculateTargetMetrics(
  * Get brutal insight based on target data
  */
 export function getBrutalInsight(metrics: TargetMetrics, target: SavingsTarget): string {
-  const { progressPercent, speedStatus, etaInMonths, avgMonthlySaving, monthlyContribution } = metrics;
+  const { progressPercent, speedStatus, etaInMonths, avgMonthlySaving, doNothingETA } = metrics;
+  const monthlyContribution = target.monthlyContribution;
 
   // Critical status insights
   if (metrics.targetStatus === "critical") {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getCurrencyFormat } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -14,96 +14,125 @@ interface TransactionListProps {
   type: 'income' | 'expense';
 }
 
+const T = {
+  surface: '#121212',
+  accent: '#03DAC6',
+  destructive: '#CF6679',
+  primary: '#BB86FC',
+  muted: '#9E9E9E',
+  border: 'rgba(255,255,255,0.06)',
+  text: '#E6E1E5',
+  textSub: '#B3B3B3',
+};
+
 export function TransactionList({ transactions, onEdit, onDelete, type }: TransactionListProps) {
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const title = type === 'income' ? 'Daftar Pemasukan' : 'Daftar Pengeluaran';
-  const emptyMessage =
-    type === 'income' ? 'Belum ada data pemasukan' : 'Belum ada data pengeluaran';
-  const colorClass = type === 'income' ? 'text-green-500' : 'text-red-500';
-  const bgClass = type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10';
+  const color = type === 'income' ? T.accent : T.destructive;
+  const sign = type === 'income' ? '+' : '-';
+  const emptyMessage = type === 'income' ? 'Belum ada pemasukan' : 'Belum ada pengeluaran';
+
+  // Group transactions by date
+  const grouped = sortedTransactions.reduce<Record<string, Transaction[]>>((acc, t) => {
+    const dateKey = format(new Date(t.date), 'yyyy-MM-dd', { locale: id });
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(t);
+    return acc;
+  }, {});
+
+  if (sortedTransactions.length === 0) {
+    return (
+      <div
+        className="rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center"
+        style={{ background: T.surface, border: `1px solid ${T.border}` }}
+      >
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2" style={{ background: `${T.primary}10` }}>
+          <Inbox className="h-5 w-5" style={{ color: T.primary, opacity: 0.5 }} />
+        </div>
+        <p className="text-xs font-medium" style={{ color: T.textSub }}>{emptyMessage}</p>
+        <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>Tambahkan transaksi baru</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-          {transactions.length} transaksi
-        </span>
-      </div>
+    <div className="space-y-2">
+      {Object.entries(grouped).map(([dateKey, items]) => {
+        const dateLabel = format(new Date(dateKey), 'EEEE, dd MMM yyyy', { locale: id });
+        const dayTotal = items.reduce((sum, t) => sum + t.amount, 0);
 
-      {sortedTransactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground bg-muted/10 rounded-lg">
-          <p className="text-base">{emptyMessage}</p>
-          <p className="text-sm mt-1">Belum ada data. Tambahkan transaksi baru!</p>
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {sortedTransactions.map((transaction) => (
-            <div
-              key={transaction.id}
-              className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-lg p-4 hover:border-primary/50 transition-all hover:shadow-md"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {/* Category Icon */}
+        return (
+          <div key={dateKey}>
+            {/* Date header */}
+            <div className="flex items-center justify-between px-1 py-1.5">
+              <span className="text-[10px] font-semibold capitalize" style={{ color: T.muted }}>{dateLabel}</span>
+              <span className="text-[10px] font-semibold" style={{ color }}>
+                {sign}{getCurrencyFormat(dayTotal)}
+              </span>
+            </div>
+
+            {/* Transaction items */}
+            <div className="space-y-1">
+              {items.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 cursor-pointer hover:bg-white/[0.03]"
+                  style={{ background: T.surface, border: `1px solid ${T.border}` }}
+                >
+                  {/* Category icon */}
                   <div
-                    className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl shadow-sm"
-                    style={{ backgroundColor: `${transaction.category.color}20` }}
+                    className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-sm"
+                    style={{ backgroundColor: `${transaction.category.color}18` }}
                   >
                     {transaction.category.icon}
                   </div>
 
-                  {/* Transaction Details */}
+                  {/* Details */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="font-semibold text-sm truncate pr-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold truncate" style={{ color: T.text }}>
                         {transaction.category.name}
-                      </p>
-                      <p className={`font-bold text-base ${colorClass} flex-shrink-0`}>
-                        {type === 'income' ? '+' : '-'}
-                        {getCurrencyFormat(transaction.amount)}
-                      </p>
+                      </span>
+                      <span className="text-xs font-bold shrink-0 tabular-nums" style={{ color }}>
+                        {sign}{getCurrencyFormat(transaction.amount)}
+                      </span>
                     </div>
                     {transaction.description && (
-                      <p className="text-sm text-muted-foreground truncate">
+                      <p className="text-[10px] truncate mt-0.5" style={{ color: T.muted }}>
                         {transaction.description}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground bg-background/60 px-2 py-1 rounded">
-                        {format(new Date(transaction.date), 'dd MMM yyyy', { locale: id })}
-                      </span>
-                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-lg"
+                      style={{ color: T.primary }}
+                      onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-lg"
+                      style={{ color: T.destructive }}
+                      onClick={(e) => { e.stopPropagation(); onDelete(transaction.id); }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-1 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 hover:bg-primary/10"
-                    onClick={() => onEdit(transaction)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => onDelete(transaction.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        );
+      })}
     </div>
   );
 }
