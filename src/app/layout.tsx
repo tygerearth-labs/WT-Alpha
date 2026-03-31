@@ -14,6 +14,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Metadata = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "Wealth Tracker - Kelola Keuangan Anda",
   description: "Aplikasi pencatatan keuangan modern dengan fitur lengkap untuk tracking kas masuk, keluar, dan target tabungan",
