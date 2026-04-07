@@ -100,7 +100,7 @@ export function MainLayout() {
           {/* Logo */}
           <div className="flex items-center gap-2.5">
             <img
-              src="/logo.png"
+              src="/logo.PNG"
               alt="Wealth Tracker Logo"
               className="w-8 h-8"
             />
