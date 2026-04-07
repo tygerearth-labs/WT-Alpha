@@ -27,9 +27,9 @@ export const metadata: Metadata = {
   keywords: ["keuangan", "tracker", "kas", "tabungan", "investasi"],
   authors: [{ name: "Tyger Earth | Ahtjong Labs" }],
   icons: {
-    icon: "/logo.svg",
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
 };
 
