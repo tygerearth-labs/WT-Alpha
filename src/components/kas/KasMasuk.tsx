@@ -27,7 +27,7 @@ const T = {
 const FILTERS: { key: DateFilter; label: string }[] = [
   { key: 'today', label: 'Hari' },
   { key: 'week', label: 'Minggu' },
-  { key: 'month', label: 'Bulan' },
+  { key: 'month', label: 'Bulan Ini' },
   { key: 'all', label: 'Semua' },
 ];
 
@@ -42,7 +42,7 @@ export function KasMasuk() {
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; type: 'transaction' | 'category' }>({ open: false, id: '', type: 'transaction' });
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('month');
   const [showAllTransactions, setShowAllTransactions] = useState(false);
 
   useEffect(() => {
@@ -54,11 +54,10 @@ export function KasMasuk() {
       const searchParams = new URLSearchParams();
       searchParams.append('type', 'income');
 
-      if (dateFilter === 'today' || dateFilter === 'month') {
-        const today = new Date();
-        searchParams.append('year', today.getFullYear().toString());
-        searchParams.append('month', (today.getMonth() + 1).toString());
-      }
+      // Always send year/month to limit API query scope
+      const today = new Date();
+      searchParams.append('year', today.getFullYear().toString());
+      searchParams.append('month', (today.getMonth() + 1).toString());
 
       const [transRes, catRes, savingsRes] = await Promise.all([
         fetch(`/api/transactions?${searchParams.toString()}`),
@@ -86,7 +85,9 @@ export function KasMasuk() {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const startOfWeek = new Date(today);
-          startOfWeek.setDate(today.getDate() - today.getDay());
+          const dayOfWeek = today.getDay();
+          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday start (Indonesian locale)
+          startOfWeek.setDate(today.getDate() - diff);
           filteredTransactions = filteredTransactions.filter(t => {
             const transDate = new Date(t.date);
             return transDate >= startOfWeek && transDate <= today;
@@ -234,6 +235,14 @@ export function KasMasuk() {
     })
     .filter(item => item.amount > 0);
 
+  // Build category amounts map for CategoryList
+  const categoryAmounts: Record<string, { amount: number; count: number }> = {};
+  categories.forEach(cat => {
+    const catTransactions = transactions.filter(t => t.categoryId === cat.id);
+    const total = catTransactions.reduce((sum, t) => sum + t.amount, 0);
+    categoryAmounts[cat.id] = { amount: total, count: catTransactions.length };
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -322,6 +331,7 @@ export function KasMasuk() {
               onDelete={(id) => setDeleteDialog({ open: true, id, type: 'category' })}
               type="income"
               compact
+              categoryAmounts={categoryAmounts}
             />
           </div>
 
@@ -457,6 +467,7 @@ export function KasMasuk() {
             onDelete={(id) => setDeleteDialog({ open: true, id, type: 'category' })}
             type="income"
             compact
+            categoryAmounts={categoryAmounts}
           />
         </div>
 

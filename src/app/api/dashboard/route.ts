@@ -152,14 +152,13 @@ export async function GET(request: NextRequest) {
     const totalDebt = 0;
     const debtRatio = totalIncome > 0 ? (totalDebt / totalIncome) * 100 : 0;
 
-    // Savings history (last 30 days) — kept from original
-    const allTimeTransactions = await db.transaction.findMany({
-      where: { userId },
-      orderBy: { date: 'asc' },
-    });
-
+    // Savings history (last 30 days) — only fetch recent transactions
     const savingsHistory: Array<{ date: string; savings: number }> = [];
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const recentTransactions = await db.transaction.findMany({
+      where: { userId, date: { gte: thirtyDaysAgo } },
+      orderBy: { date: 'asc' },
+    });
 
     for (let i = 29; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
@@ -171,7 +170,7 @@ export async function GET(request: NextRequest) {
 
       let dayIncome = 0;
       let dayExpense = 0;
-      for (const transaction of allTimeTransactions) {
+      for (const transaction of recentTransactions) {
         const txDate = new Date(transaction.date);
         if (txDate >= dayStart && txDate <= dayEnd) {
           if (transaction.type === 'income') dayIncome += transaction.amount;

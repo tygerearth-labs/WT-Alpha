@@ -19,6 +19,7 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import type { SavingsTarget, Transaction, PieChartData } from '@/types/transaction.types';
 
 // ── Theme Constants ──────────────────────────────────────────────
 const THEME = {
@@ -112,8 +113,8 @@ interface DashboardData {
   totalExpense: number;
   balance: number;
   totalSavings: number;
-  savingsTargets: any[];
-  transactions: any[];
+  savingsTargets: SavingsTarget[];
+  transactions: Transaction[];
   last7DaysGrowth: number;
   last30DaysGrowth: number;
   momentumIndicator: 'accelerating' | 'stable' | 'slowing';
@@ -121,7 +122,7 @@ interface DashboardData {
   savingsHistory: Array<{ date: string; savings: number }>;
   savingsRate: number;
   unallocatedFunds: number;
-  expenseByCategory: any[];
+  expenseByCategory: PieChartData[];
   monthlyTrends?: MonthlyTrend[];
   financialHealthScore?: number;
   healthBreakdown?: HealthBreakdown;

@@ -3,6 +3,7 @@
 import { Pencil, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Category } from '@/types/transaction.types';
+import { getCurrencyFormat } from '@/lib/utils';
 
 interface CategoryListProps {
   categories: Category[];
@@ -10,9 +11,10 @@ interface CategoryListProps {
   onDelete: (id: string) => void;
   type: 'income' | 'expense';
   compact?: boolean;
+  categoryAmounts?: Record<string, { amount: number; count: number }>;
 }
 
-export function CategoryList({ categories, onEdit, onDelete, type, compact }: CategoryListProps) {
+export function CategoryList({ categories, onEdit, onDelete, type, compact, categoryAmounts }: CategoryListProps) {
   // ── Compact horizontal chips (mobile) ──
   if (compact || categories.length > 4) {
     return (
@@ -21,6 +23,9 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
         <div className="flex lg:hidden gap-2 overflow-x-auto scrollbar-hide pb-1">
           {categories.map((category) => {
             const isActive = true;
+            const stats = categoryAmounts?.[category.id];
+            const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
+            const totalAmount = stats?.amount ?? 0;
             return (
               <div
                 key={category.id}
@@ -38,8 +43,13 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
                     {category.name}
                   </span>
                   <span className="text-[9px] text-white/40">
-                    {category._count?.transactions || 0} trans
+                    {transactionCount} trans
                   </span>
+                  {totalAmount > 0 && (
+                    <span className="text-[9px] font-medium" style={{ color: category.color }}>
+                      {getCurrencyFormat(totalAmount)}
+                    </span>
+                  )}
                 </div>
                 <ChevronRight className="h-3 w-3 text-white/20 group-hover:text-white/40 shrink-0" />
               </div>
@@ -55,7 +65,9 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
         {/* Desktop: compact list rows */}
         <div className="hidden lg:grid grid-cols-2 xl:grid-cols-3 gap-2">
           {categories.map((category) => {
-            const transactionCount = category._count?.transactions || 0;
+            const stats = categoryAmounts?.[category.id];
+            const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
+            const totalAmount = stats?.amount ?? 0;
             return (
               <div
                 key={category.id}
@@ -74,6 +86,11 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
                     <p className="text-[10px] text-muted-foreground">
                       {transactionCount} transaksi
                     </p>
+                    {totalAmount > 0 && (
+                      <p className="text-[10px] font-semibold" style={{ color: category.color }}>
+                        Total: {getCurrencyFormat(totalAmount)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
@@ -119,7 +136,9 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
 
       <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
         {categories.map((category) => {
-          const transactionCount = category._count?.transactions || 0;
+          const stats = categoryAmounts?.[category.id];
+          const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
+          const totalAmount = stats?.amount ?? 0;
           return (
             <div
               key={category.id}
@@ -138,6 +157,11 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
                   <p className="text-[10px] text-muted-foreground">
                     {transactionCount} transaksi
                   </p>
+                  {totalAmount > 0 && (
+                    <p className="text-[10px] font-semibold" style={{ color: category.color }}>
+                      Total: {getCurrencyFormat(totalAmount)}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">

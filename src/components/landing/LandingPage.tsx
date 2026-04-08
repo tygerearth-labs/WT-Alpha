@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { LoginForm } from '@/components/auth/LoginForm';
 import {
   Dialog,
@@ -212,13 +213,15 @@ export function LandingPage() {
       {/* ========== NAVBAR ========== */}
       <nav className="fixed top-0 inset-x-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16">
-          <div className="flex items-center gap-2">
-            <div
-              className="h-8 w-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}
-            >
-              <Wallet className="h-4 w-4 text-black" />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/logo.PNG"
+              alt="Wealth Tracker"
+              width={36}
+              height={36}
+              className="rounded-lg"
+              priority
+            />
             <span className="font-bold text-lg tracking-tight">Wealth Tracker</span>
           </div>
 
@@ -300,7 +303,7 @@ export function LandingPage() {
       </nav>
 
       {/* ========== HERO ========== */}
-      <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-32 px-4 sm:px-6">
+      <section className="relative pt-16 sm:pt-36 pb-8 sm:pb-32 px-4 sm:px-6">
         {/* Animated gradient orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-[120px] animate-pulse"
@@ -313,8 +316,26 @@ export function LandingPage() {
 
         <div className="relative mx-auto max-w-4xl text-center">
           <FadeUp>
+            <div className="flex justify-center mb-3 sm:mb-8">
+              <div
+                className="relative rounded-2xl p-0.5 sm:p-1"
+                style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6, #CF6679)' }}
+              >
+                <Image
+                  src="/logo.PNG"
+                  alt="Wealth Tracker"
+                  width={56}
+                  height={56}
+                  className="rounded-xl sm:rounded-2xl"
+                  priority
+                />
+              </div>
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={50}>
             <div
-              className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium mb-6 sm:mb-8 border"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] sm:text-xs font-medium mb-3 sm:mb-8 border"
               style={{ borderColor: 'rgba(187,134,252,0.25)', background: 'rgba(187,134,252,0.08)', color: '#BB86FC' }}
             >
               <Sparkles className="h-3.5 w-3.5" />
@@ -323,7 +344,7 @@ export function LandingPage() {
           </FadeUp>
 
           <FadeUp delay={100}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-2 sm:mb-6">
               <span className="block">Kendalikan</span>
               <span
                 className="block bg-clip-text text-transparent"
@@ -335,7 +356,7 @@ export function LandingPage() {
           </FadeUp>
 
           <FadeUp delay={200}>
-            <p className="mx-auto max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed mb-8 sm:mb-10">
+            <p className="mx-auto max-w-xl text-xs sm:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-10">
               Wealth Tracker membantumu memahami, mengelola, dan mengoptimalkan setiap rupiah yang masuk dan keluar.
               Bayar sekali, gunakan selamanya — tanpa langganan tersembunyi.
             </p>
@@ -345,7 +366,7 @@ export function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <button
                 onClick={() => openAuth(true)}
-                className="group relative w-full sm:w-auto rounded-full px-8 py-3.5 text-sm font-bold transition-all hover:scale-105 active:scale-95 overflow-hidden"
+                className="group relative w-full sm:w-auto rounded-full px-8 py-3 text-sm font-bold transition-all hover:scale-105 active:scale-95 overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000' }}
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
@@ -358,14 +379,14 @@ export function LandingPage() {
 
           {/* Access info */}
           <FadeUp delay={400}>
-            <p className="mt-4 text-center text-xs text-muted-foreground/60">
+            <p className="mt-2 text-center text-[10px] sm:text-xs text-muted-foreground/60">
               Akses hanya melalui undangan admin. Hubungi kami untuk mendapatkan akun.
             </p>
           </FadeUp>
 
           {/* Trust badges */}
           <FadeUp delay={500}>
-            <div className="mt-12 sm:mt-16 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm text-muted-foreground">
+            <div className="mt-6 sm:mt-16 flex flex-wrap items-center justify-center gap-3 sm:gap-10 text-xs sm:text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" style={{ color: '#03DAC6' }} />
                 <span>Data terenkripsi</span>
@@ -384,7 +405,7 @@ export function LandingPage() {
       </section>
 
       {/* ========== STORY SECTION ========== */}
-      <section id="story" className="relative py-20 sm:py-28 px-4 sm:px-6">
+      <section id="story" className="relative py-8 sm:py-28 px-4 sm:px-6">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md"
           style={{ background: 'linear-gradient(90deg, transparent, rgba(207,102,121,0.3), transparent)' }}
@@ -392,7 +413,7 @@ export function LandingPage() {
 
         <div className="mx-auto max-w-4xl">
           <FadeUp>
-            <div className="text-center mb-12 sm:mb-16">
+            <div className="text-center mb-8 sm:mb-16">
               <p
                 className="inline-block text-xs font-semibold uppercase tracking-[0.2em] mb-3"
                 style={{ color: '#03DAC6' }}
@@ -412,10 +433,10 @@ export function LandingPage() {
           </FadeUp>
 
           {/* Story narrative */}
-          <div className="space-y-8 sm:space-y-10 max-w-3xl mx-auto">
+          <div className="space-y-4 sm:space-y-10 max-w-3xl mx-auto">
             <FadeUp>
               <div
-                className="rounded-2xl p-6 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
+                className="rounded-2xl p-4 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
                 style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.2)';
@@ -424,16 +445,16 @@ export function LandingPage() {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
                 }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <div
-                    className="mt-1 flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center"
+                    className="mt-0.5 flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center"
                     style={{ background: 'rgba(207,102,121,0.15)' }}
                   >
-                    <Wallet className="h-5 w-5" style={{ color: '#CF6679' }} />
+                    <Wallet className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#CF6679' }} />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold mb-2">Kecemasan Finansial yang Tak Terucap</h3>
-                    <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                    <h3 className="text-sm sm:text-lg font-semibold mb-1.5 sm:mb-2">Kecemasan Finansial yang Tak Terucap</h3>
+                    <p className="text-muted-foreground text-xs sm:text-base leading-relaxed">
                       Pernahkah kamu merasa cemas di akhir bulan? Gaji baru saja cair, tapi entah ke mana perginya. Uang seperti
                       memiliki sayap — datang dan pergi tanpa jejak yang jelas. Kamu bukan sendiri. Jutaan orang Indonesia mengalami
                       hal yang sama setiap hari, dan rasa tidak nyaman itu seringkali kita pendam sendiri.
@@ -445,7 +466,7 @@ export function LandingPage() {
 
             <FadeUp delay={100}>
               <div
-                className="rounded-2xl p-6 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
+                className="rounded-2xl p-4 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
                 style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(187,134,252,0.2)';
@@ -454,16 +475,16 @@ export function LandingPage() {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
                 }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <div
-                    className="mt-1 flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center"
+                    className="mt-0.5 flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center"
                     style={{ background: 'rgba(187,134,252,0.15)' }}
                   >
-                    <Sparkles className="h-5 w-5" style={{ color: '#BB86FC' }} />
+                    <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#BB86FC' }} />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold mb-2">Kesadaran Adalah Awal Perubahan</h3>
-                    <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                    <h3 className="text-sm sm:text-lg font-semibold mb-1.5 sm:mb-2">Kesadaran Adalah Awal Perubahan</h3>
+                    <p className="text-muted-foreground text-xs sm:text-base leading-relaxed">
                       Ketika kamu mulai mencatat setiap transaksi, sesuatu yang menakjubkan terjadi — kamu menjadi sadar.
                       Tiba-tiba kamu tahu bahwa kopi premium setiap pagi ternyata menghabiskan Rp900.000 per bulan. Langganan
                       yang lupa dibatalkan menggerogoti Rp200.000 setiap bulan. Kesadaran ini bukan tentang menyalahkan diri,
@@ -476,7 +497,7 @@ export function LandingPage() {
 
             <FadeUp delay={200}>
               <div
-                className="rounded-2xl p-6 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
+                className="rounded-2xl p-4 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
                 style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(3,218,198,0.2)';
@@ -485,16 +506,16 @@ export function LandingPage() {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
                 }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <div
-                    className="mt-1 flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center"
+                    className="mt-0.5 flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center"
                     style={{ background: 'rgba(3,218,198,0.15)' }}
                   >
-                    <Target className="h-5 w-5" style={{ color: '#03DAC6' }} />
+                    <Target className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#03DAC6' }} />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold mb-2">Dari Aksi Menjadi Kebiasaan</h3>
-                    <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                    <h3 className="text-sm sm:text-lg font-semibold mb-1.5 sm:mb-2">Dari Aksi Menjadi Kebiasaan</h3>
+                    <p className="text-muted-foreground text-xs sm:text-base leading-relaxed">
                       Mencatat bukan soal angka — itu soal membangun hubungan dengan uangmu sendiri. Setiap pencatatan
                       adalah keputusan sadar untuk menghargai kerja kerasmu. Seiring waktu, ini menjadi kebiasaan otomatis
                       yang mengubah cara kamu melihat dan mengelola keuangan. Dan dari kebiasaan kecil itulah, transformasi
@@ -507,7 +528,7 @@ export function LandingPage() {
 
             <FadeUp delay={300}>
               <div
-                className="rounded-2xl p-6 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
+                className="rounded-2xl p-4 sm:p-8 border transition-all duration-300 hover:scale-[1.01]"
                 style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(249,168,37,0.2)';
@@ -516,16 +537,16 @@ export function LandingPage() {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
                 }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <div
-                    className="mt-1 flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center"
+                    className="mt-0.5 flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center"
                     style={{ background: 'rgba(249,168,37,0.15)' }}
                   >
-                    <TrendingUp className="h-5 w-5" style={{ color: '#F9A825' }} />
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#F9A825' }} />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold mb-2">Kebebasan Finansial Bukan Mimpi</h3>
-                    <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                    <h3 className="text-sm sm:text-lg font-semibold mb-1.5 sm:mb-2">Kebebasan Finansial Bukan Mimpi</h3>
+                    <p className="text-muted-foreground text-xs sm:text-base leading-relaxed">
                       Orang yang secara konsisten mencatat keuangannya memiliki peluang <strong className="text-foreground">2x lebih besar</strong> untuk
                       berhasil menabung dan mencapai tujuan finansial mereka. Kebebasan finansial bukan tentang pendapatan besar —
                       itu tentang memahami dan mengelola apa yang kamu miliki. Dan semuanya dimulai dari satu langkah: mencatat.
@@ -538,9 +559,9 @@ export function LandingPage() {
 
           {/* Statistics */}
           <FadeUp delay={200}>
-            <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div className="mt-8 sm:mt-16 grid grid-cols-3 gap-2 sm:gap-6">
               <div
-                className="rounded-2xl p-5 sm:p-6 text-center border transition-all duration-300 hover:scale-[1.02]"
+                className="rounded-2xl p-3 sm:p-6 text-center border transition-all duration-300 hover:scale-[1.02]"
                 style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.2)';
@@ -550,12 +571,12 @@ export function LandingPage() {
                 }}
               >
                 <div
-                  className="text-3xl sm:text-4xl font-extrabold mb-1"
+                  className="text-2xl sm:text-4xl font-extrabold mb-0.5 sm:mb-1"
                   style={{ color: '#CF6679' }}
                 >
                   <AnimatedCounter target={73} suffix="%" />
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-[10px] sm:text-sm text-muted-foreground">
                   Orang Indonesia tidak mencatat keuangannya
                 </p>
               </div>
@@ -570,7 +591,7 @@ export function LandingPage() {
                 }}
               >
                 <div
-                  className="text-3xl sm:text-4xl font-extrabold mb-1"
+                  className="text-2xl sm:text-4xl font-extrabold mb-0.5 sm:mb-1"
                   style={{ color: '#03DAC6' }}
                 >
                   <AnimatedCounter target={2} />x
@@ -590,7 +611,7 @@ export function LandingPage() {
                 }}
               >
                 <div
-                  className="text-3xl sm:text-4xl font-extrabold mb-1"
+                  className="text-2xl sm:text-4xl font-extrabold mb-0.5 sm:mb-1"
                   style={{ color: '#BB86FC' }}
                 >
                   <AnimatedCounter target={30} suffix="%" />
@@ -605,7 +626,7 @@ export function LandingPage() {
       </section>
 
       {/* ========== FEATURES SECTION ========== */}
-      <section id="features" className="relative py-20 sm:py-28 px-4 sm:px-6">
+      <section id="features" className="relative py-8 sm:py-28 px-4 sm:px-6">
         {/* subtle divider gradient */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md"
@@ -614,7 +635,7 @@ export function LandingPage() {
 
         <div className="mx-auto max-w-6xl">
           <FadeUp>
-            <div className="text-center mb-12 sm:mb-16">
+            <div className="text-center mb-8 sm:mb-16">
               <p
                 className="inline-block text-xs font-semibold uppercase tracking-[0.2em] mb-3"
                 style={{ color: '#03DAC6' }}
@@ -672,7 +693,7 @@ export function LandingPage() {
       </section>
 
       {/* ========== PRICING SECTION ========== */}
-      <section id="pricing" className="relative py-20 sm:py-28 px-4 sm:px-6">
+      <section id="pricing" className="relative py-10 sm:py-28 px-4 sm:px-6">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md"
           style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.3), transparent)' }}
@@ -680,7 +701,7 @@ export function LandingPage() {
 
         <div className="mx-auto max-w-4xl">
           <FadeUp>
-            <div className="text-center mb-4 sm:mb-6">
+            <div className="text-center mb-3 sm:mb-6">
               <p
                 className="inline-block text-xs font-semibold uppercase tracking-[0.2em] mb-3"
                 style={{ color: '#03DAC6' }}
@@ -705,7 +726,7 @@ export function LandingPage() {
           {/* Access notice */}
           <FadeUp delay={50}>
             <div
-              className="mx-auto max-w-md mb-10 sm:mb-12 rounded-xl p-3 text-center border"
+              className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border"
               style={{ background: 'rgba(187,134,252,0.06)', borderColor: 'rgba(187,134,252,0.15)' }}
             >
               <div className="flex items-center justify-center gap-2 mb-1">
@@ -801,7 +822,7 @@ export function LandingPage() {
       </section>
 
       {/* ========== FINAL CTA SECTION ========== */}
-      <section className="relative py-20 sm:py-28 px-4 sm:px-6">
+      <section className="relative py-10 sm:py-28 px-4 sm:px-6">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md"
           style={{ background: 'linear-gradient(90deg, transparent, rgba(207,102,121,0.3), transparent)' }}
@@ -825,7 +846,7 @@ export function LandingPage() {
           </FadeUp>
 
           <FadeUp delay={100}>
-            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-8 sm:mb-10">
+            <p className="text-muted-foreground text-sm sm:text-lg leading-relaxed mb-6 sm:mb-10">
               Bergabunglah dengan ribuan orang yang telah mengambil langkah pertama menuju
               kebebasan finansial. Bayar sekali, akses selamanya.
             </p>
@@ -853,12 +874,13 @@ export function LandingPage() {
       >
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div
-              className="h-6 w-6 rounded-md flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}
-            >
-              <Wallet className="h-3 w-3 text-black" />
-            </div>
+            <Image
+              src="/logo.PNG"
+              alt="Wealth Tracker"
+              width={24}
+              height={24}
+              className="rounded-md"
+            />
             <span className="text-sm font-semibold">Wealth Tracker</span>
           </div>
           <p className="text-xs text-muted-foreground text-center">
@@ -878,13 +900,14 @@ export function LandingPage() {
           showCloseButton={true}
         >
           <DialogHeader className="p-6 pb-0">
-            <div className="flex items-center gap-2 mb-1">
-              <div
-                className="h-7 w-7 rounded-lg flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}
-              >
-                <Wallet className="h-3.5 w-3.5 text-black" />
-              </div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <Image
+                src="/logo.PNG"
+                alt="Wealth Tracker"
+                width={32}
+                height={32}
+                className="rounded-lg"
+              />
               <DialogTitle
                 className="text-lg font-bold"
                 style={{ color: '#E6E1E5' }}

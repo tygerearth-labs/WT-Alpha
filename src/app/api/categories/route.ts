@@ -22,6 +22,13 @@ export async function GET(request: NextRequest) {
       orderBy: {
         name: 'asc',
       },
+      include: {
+        _count: {
+          select: {
+            transactions: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json({ categories });
