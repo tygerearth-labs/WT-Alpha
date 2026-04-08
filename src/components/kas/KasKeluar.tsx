@@ -27,7 +27,7 @@ const T = {
 const FILTERS: { key: DateFilter; label: string }[] = [
   { key: 'today', label: 'Hari' },
   { key: 'week', label: 'Minggu' },
-  { key: 'month', label: 'Bulan Ini' },
+  { key: 'month', label: 'Bulan' },
   { key: 'all', label: 'Semua' },
 ];
 
@@ -53,10 +53,13 @@ export function KasKeluar() {
       const searchParams = new URLSearchParams();
       searchParams.append('type', 'expense');
 
-      // Always send year/month to limit API query scope
-      const today = new Date();
-      searchParams.append('year', today.getFullYear().toString());
-      searchParams.append('month', (today.getMonth() + 1).toString());
+      // Only send year/month for 'month' filter — for 'all', fetch everything
+      if (dateFilter === 'month' || dateFilter === 'today' || dateFilter === 'week') {
+        const now = new Date();
+        searchParams.append('year', now.getFullYear().toString());
+        searchParams.append('month', (now.getMonth() + 1).toString());
+      }
+      // 'all' = no year/month params → API returns all transactions
 
       const [transRes, catRes] = await Promise.all([
         fetch(`/api/transactions?${searchParams.toString()}`),
@@ -70,26 +73,27 @@ export function KasKeluar() {
         let filteredTransactions = transData.transactions;
 
         if (dateFilter === 'today') {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const tomorrow = new Date(today);
+          const now = new Date();
+          now.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(now);
           tomorrow.setDate(tomorrow.getDate() + 1);
           filteredTransactions = filteredTransactions.filter(t => {
             const transDate = new Date(t.date);
-            return transDate >= today && transDate < tomorrow;
+            return transDate >= now && transDate < tomorrow;
           });
         } else if (dateFilter === 'week') {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const startOfWeek = new Date(today);
-          const dayOfWeek = today.getDay();
+          const now = new Date();
+          now.setHours(0, 0, 0, 0);
+          const startOfWeek = new Date(now);
+          const dayOfWeek = now.getDay();
           const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday start (Indonesian locale)
-          startOfWeek.setDate(today.getDate() - diff);
+          startOfWeek.setDate(now.getDate() - diff);
           filteredTransactions = filteredTransactions.filter(t => {
             const transDate = new Date(t.date);
-            return transDate >= startOfWeek && transDate <= today;
+            return transDate >= startOfWeek && transDate <= now;
           });
         }
+        // 'month' and 'all' use API results directly (no extra client filtering)
 
         setTransactions(filteredTransactions);
         setCategories(catData.categories);
