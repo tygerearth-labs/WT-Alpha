@@ -37,7 +37,7 @@ type PageType = 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' 
 export function MainLayout() {
   const { user, logout, checkAuth } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     checkAuth();
@@ -100,7 +100,11 @@ export function MainLayout() {
       style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px' } as React.CSSProperties}>
       {/* ── Top Header: Logo + Avatar ── */}
       <header className="sticky top-0 z-30 bg-[#0D0D0D]/95 backdrop-blur-md border-b border-white/[0.06]">
-        <div className="flex items-center justify-between px-4 h-14 lg:pl-[240px] xl:pl-[280px]">
+        <div className={cn(
+          'flex items-center justify-between px-4 h-14 transition-all duration-300 ease-in-out',
+          'lg:pl-[72px] xl:pl-[72px]',
+          !sidebarCollapsed && 'lg:pl-[240px] xl:pl-[280px]',
+        )}>
           {/* Logo */}
           <div className="flex items-center gap-2.5">
             <img
@@ -224,8 +228,9 @@ export function MainLayout() {
         {/* ── Page Content ── */}
         <main
           className={cn(
-            'flex-1 p-3 lg:p-6 xl:p-8 lg:ml-56 xl:ml-64 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out',
+            'flex-1 p-3 lg:p-6 xl:p-8 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out',
             'pb-[72px] lg:pb-6',
+            sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64',
           )}
         >
           <div className="max-w-7xl mx-auto">
