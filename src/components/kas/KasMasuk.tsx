@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, TrendingUp, Calendar, ArrowUpRight, Loader2, Wallet } from 'lucide-react';
@@ -45,22 +45,17 @@ export function KasMasuk() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('month');
   const [showAllTransactions, setShowAllTransactions] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [dateFilter]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async (filter: DateFilter) => {
     try {
       const searchParams = new URLSearchParams();
       searchParams.append('type', 'income');
 
-      // Only send year/month for 'month' filter — for 'all', fetch everything
-      if (dateFilter === 'month' || dateFilter === 'today' || dateFilter === 'week') {
+      // Only send year/month for 'month', 'today', 'week' — 'all' sends nothing so API returns everything
+      if (filter !== 'all') {
         const now = new Date();
         searchParams.append('year', now.getFullYear().toString());
         searchParams.append('month', (now.getMonth() + 1).toString());
       }
-      // 'all' = no year/month params → API returns all transactions
 
       const [transRes, catRes, savingsRes] = await Promise.all([
         fetch(`/api/transactions?${searchParams.toString()}`),
@@ -75,7 +70,7 @@ export function KasMasuk() {
 
         let filteredTransactions = transData.transactions;
 
-        if (dateFilter === 'today') {
+        if (filter === 'today') {
           const now = new Date();
           now.setHours(0, 0, 0, 0);
           const tomorrow = new Date(now);
@@ -84,7 +79,7 @@ export function KasMasuk() {
             const transDate = new Date(t.date);
             return transDate >= now && transDate < tomorrow;
           });
-        } else if (dateFilter === 'week') {
+        } else if (filter === 'week') {
           const now = new Date();
           now.setHours(0, 0, 0, 0);
           const startOfWeek = new Date(now);
@@ -108,7 +103,11 @@ export function KasMasuk() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData(dateFilter);
+  }, [dateFilter, fetchData]);
 
   const handleAddTransaction = async (data: TransactionFormData) => {
     try {
@@ -120,7 +119,7 @@ export function KasMasuk() {
       if (response.ok) {
         toast.success('Pemasukan berhasil ditambahkan');
         setIsAddDialogOpen(false);
-        fetchData();
+        fetchData(dateFilter);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Gagal menambahkan pemasukan');
@@ -142,7 +141,7 @@ export function KasMasuk() {
         toast.success('Pemasukan berhasil diperbarui');
         setIsEditDialogOpen(false);
         setSelectedTransaction(null);
-        fetchData();
+        fetchData(dateFilter);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Gagal memperbarui pemasukan');
@@ -166,7 +165,7 @@ export function KasMasuk() {
       if (response.ok) {
         toast.success(successMessage);
         setDeleteDialog({ open: false, id: '', type: 'transaction' });
-        fetchData();
+        fetchData(dateFilter);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Gagal menghapus');
@@ -186,7 +185,7 @@ export function KasMasuk() {
       if (response.ok) {
         toast.success('Kategori berhasil ditambahkan');
         setIsCategoryDialogOpen(false);
-        fetchData();
+        fetchData(dateFilter);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Gagal menambahkan kategori');
@@ -207,7 +206,7 @@ export function KasMasuk() {
       if (response.ok) {
         toast.success('Kategori berhasil diperbarui');
         setSelectedCategory(null);
-        fetchData();
+        fetchData(dateFilter);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Gagal memperbarui kategori');
