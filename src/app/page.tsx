@@ -1,16 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { LoginForm } from '@/components/auth/LoginForm';
-import { RegisterForm } from '@/components/auth/RegisterForm';
 import { LoadingScreen } from '@/components/loading/LoadingScreen';
-import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { LandingPage } from '@/components/landing/LandingPage';
 
 export default function Home() {
-  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
-  const [showLogin, setShowLogin] = useState(true);
+  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -21,40 +18,8 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/10 p-4">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center space-y-2 mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Wealth Tracker
-            </h1>
-            <p className="text-muted-foreground">Kelola keuangan Anda dengan bijak</p>
-          </div>
-          {showLogin ? <LoginForm /> : <RegisterForm />}
-          <div className="text-center">
-            <Button
-              variant="ghost"
-              onClick={() => setShowLogin(!showLogin)}
-              className="text-primary hover:text-primary/80"
-            >
-              {showLogin ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Login'}
-            </Button>
-          </div>
-          <div className="text-center text-xs text-muted-foreground">
-            Creator: Tyger Earth | Ahtjong Labs
-          </div>
-        </div>
-      </div>
-    );
+    return <LandingPage />;
   }
 
   return <MainLayout />;
 }
-// Trigger compilation at Sun Feb  1 15:35:55 UTC 2026
-// Compilation check Sun Feb  1 15:38:37 UTC 2026
-// Trigger check Sun Feb  1 20:12:41 UTC 2026
-// Final compile check Sun Feb  1 20:13:52 UTC 2026
-// Check errors Sun Feb  1 21:11:52 UTC 2026
-// Final fix Sun Feb  1 21:12:31 UTC 2026
-// UI improvements Sun Feb  1 21:26:27 UTC 2026
-// Final dashboard check Sun Feb  1 21:57:44 UTC 2026

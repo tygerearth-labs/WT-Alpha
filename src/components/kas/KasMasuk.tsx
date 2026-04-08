@@ -248,40 +248,40 @@ export function KasMasuk() {
     <div className="w-full max-w-full space-y-3 sm:space-y-4">
       {/* ── Hero Strip ── */}
       <div
-        className="rounded-2xl p-4 sm:p-5 overflow-hidden relative"
+        className="rounded-2xl p-4 sm:p-5 lg:p-6 overflow-hidden relative"
         style={{ background: `linear-gradient(135deg, ${T.accent}18 0%, ${T.accent}05 100%)`, border: `1px solid ${T.accent}25` }}
       >
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-[0.07] blur-2xl"
+        <div className="absolute top-0 right-0 w-32 h-32 lg:w-48 lg:h-48 rounded-full opacity-[0.07] blur-2xl"
           style={{ background: T.accent, transform: 'translate(30%, -30%)' }}
         />
         <div className="flex items-center justify-between relative z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${T.accent}20` }}>
-              <Wallet className="h-4.5 w-4.5" style={{ color: T.accent }} />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center" style={{ background: `${T.accent}20` }}>
+              <Wallet className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: T.accent }} />
             </div>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: T.muted }}>Total Pemasukan</p>
-              <p className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: T.text }}>
+              <p className="text-[10px] lg:text-xs font-medium uppercase tracking-wider" style={{ color: T.muted }}>Total Pemasukan</p>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight" style={{ color: T.text }}>
                 {getCurrencyFormat(totalIncome)}
               </p>
             </div>
           </div>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
-            className="h-10 w-10 rounded-xl shrink-0"
+            className="h-10 w-10 lg:h-11 lg:w-11 rounded-xl shrink-0"
             style={{ background: T.accent, color: '#000' }}
           >
             <Plus className="h-5 w-5" />
           </Button>
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-[11px]" style={{ color: T.textSub }}>
+        <div className="mt-3 flex items-center gap-1.5 text-[11px] lg:text-xs" style={{ color: T.textSub }}>
           <Calendar className="h-3 w-3" />
           <span>{transactions.length} transaksi</span>
         </div>
       </div>
 
       {/* ── Quick Stats ── */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 lg:gap-4">
         {[
           { label: 'Rata-rata', value: getCurrencyFormat(avgIncome), color: T.accent, icon: TrendingUp },
           { label: 'Transaksi', value: transactions.length.toString(), color: T.primary, icon: ArrowUpRight },
@@ -289,109 +289,215 @@ export function KasMasuk() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="rounded-xl p-3 text-center transition-colors"
+            className="rounded-xl p-3 lg:p-4 text-center transition-colors"
             style={{ background: T.surface, border: `1px solid ${T.border}` }}
           >
             <stat.icon className="h-3.5 w-3.5 mx-auto mb-1.5" style={{ color: stat.color, opacity: 0.7 }} />
             <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: T.muted }}>{stat.label}</p>
-            <p className="text-xs sm:text-sm font-bold truncate" style={{ color: stat.color }}>{stat.value}</p>
+            <p className="text-xs sm:text-sm lg:text-base font-bold truncate" style={{ color: stat.color }}>{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Category Distribution (inline bar) ── */}
-      {incomeByCategory.length > 0 && (
-        <div
-          className="rounded-xl p-3 sm:p-4"
-          style={{ background: T.surface, border: `1px solid ${T.border}` }}
-        >
-          <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>Distribusi Kategori</p>
+      {/* ═══ Desktop 2-column layout ═══ */}
+      <div className="hidden lg:grid lg:grid-cols-[320px_1fr] lg:gap-4 xl:grid-cols-[380px_1fr] xl:gap-5">
+        {/* Left column: Categories + Distribution */}
+        <div className="space-y-4">
+          {/* Categories */}
           <div className="space-y-2">
-            {incomeByCategory.slice(0, 5).map((cat) => {
-              const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
-              return (
-                <div key={cat.name} className="flex items-center gap-2.5">
-                  <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0"
-                    style={{ background: `${cat.color}20` }}>
-                    {cat.icon}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[11px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
-                      <span className="text-[10px] font-semibold shrink-0 ml-2" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
-                      <div className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.max(pct, 2)}%`, background: `linear-gradient(90deg, ${cat.color}, ${cat.color}99)` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Kategori</p>
+              <Button
+                size="icon"
+                className="h-7 w-7 rounded-lg"
+                style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
+                onClick={() => setIsCategoryDialogOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <CategoryList
+              categories={categories}
+              onEdit={openEditCategoryDialog}
+              onDelete={(id) => setDeleteDialog({ open: true, id, type: 'category' })}
+              type="income"
+              compact
+            />
           </div>
-        </div>
-      )}
 
-      {/* ── Categories ── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Kategori</p>
-          <Button
-            size="icon"
-            className="h-7 w-7 rounded-lg"
-            style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
-            onClick={() => setIsCategoryDialogOpen(true)}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
+          {/* Category Distribution */}
+          {incomeByCategory.length > 0 && (
+            <div
+              className="rounded-xl p-4"
+              style={{ background: T.surface, border: `1px solid ${T.border}` }}
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ color: T.muted }}>Distribusi Kategori</p>
+              <div className="space-y-2.5">
+                {incomeByCategory.slice(0, 5).map((cat) => {
+                  const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
+                  return (
+                    <div key={cat.name} className="flex items-center gap-2.5">
+                      <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0"
+                        style={{ background: `${cat.color}20` }}>
+                        {cat.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[11px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
+                          <span className="text-[10px] font-semibold shrink-0 ml-2" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
+                          <div className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(pct, 2)}%`, background: `linear-gradient(90deg, ${cat.color}, ${cat.color}99)` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <CategoryList
-          categories={categories}
-          onEdit={openEditCategoryDialog}
-          onDelete={(id) => setDeleteDialog({ open: true, id, type: 'category' })}
-          type="income"
-          compact
-        />
+
+        {/* Right column: Transactions */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Riwayat</p>
+            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
+                  className="text-[10px] font-semibold px-2.5 py-1 rounded-lg shrink-0 transition-all"
+                  style={{
+                    background: dateFilter === f.key ? T.accent : 'transparent',
+                    color: dateFilter === f.key ? '#000' : T.muted,
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="max-h-[600px] overflow-y-auto">
+            <TransactionList
+              transactions={displayedTransactions}
+              onEdit={openEditTransactionDialog}
+              onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
+              type="income"
+            />
+          </div>
+
+          {transactions.length > 6 && (
+            <button
+              onClick={() => setShowAllTransactions(!showAllTransactions)}
+              className="w-full text-center py-2.5 text-[11px] font-medium rounded-xl transition-colors"
+              style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
+            >
+              {showAllTransactions ? 'Tampilkan Lebih Sedikit' : `Lihat Semua (${transactions.length})`}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── Transactions ── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Riwayat</p>
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
-                className="text-[10px] font-semibold px-2.5 py-1 rounded-lg shrink-0 transition-all"
-                style={{
-                  background: dateFilter === f.key ? T.accent : 'transparent',
-                  color: dateFilter === f.key ? '#000' : T.muted,
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
+      {/* ═══ Mobile stacked layout ═══ */}
+      <div className="lg:hidden space-y-3">
+        {/* Category Distribution */}
+        {incomeByCategory.length > 0 && (
+          <div
+            className="rounded-xl p-3 sm:p-4"
+            style={{ background: T.surface, border: `1px solid ${T.border}` }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>Distribusi Kategori</p>
+            <div className="space-y-2">
+              {incomeByCategory.slice(0, 5).map((cat) => {
+                const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
+                return (
+                  <div key={cat.name} className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0"
+                      style={{ background: `${cat.color}20` }}>
+                      {cat.icon}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[11px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
+                        <span className="text-[10px] font-semibold shrink-0 ml-2" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.max(pct, 2)}%`, background: `linear-gradient(90deg, ${cat.color}, ${cat.color}99)` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+        )}
+
+        {/* Categories */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Kategori</p>
+            <Button
+              size="icon"
+              className="h-7 w-7 rounded-lg"
+              style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
+              onClick={() => setIsCategoryDialogOpen(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <CategoryList
+            categories={categories}
+            onEdit={openEditCategoryDialog}
+            onDelete={(id) => setDeleteDialog({ open: true, id, type: 'category' })}
+            type="income"
+            compact
+          />
         </div>
 
-        <TransactionList
-          transactions={displayedTransactions}
-          onEdit={openEditTransactionDialog}
-          onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
-          type="income"
-        />
+        {/* Transactions */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Riwayat</p>
+            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
+                  className="text-[10px] font-semibold px-2.5 py-1 rounded-lg shrink-0 transition-all"
+                  style={{
+                    background: dateFilter === f.key ? T.accent : 'transparent',
+                    color: dateFilter === f.key ? '#000' : T.muted,
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {transactions.length > 6 && (
-          <button
-            onClick={() => setShowAllTransactions(!showAllTransactions)}
-            className="w-full text-center py-2.5 text-[11px] font-medium rounded-xl transition-colors"
-            style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
-          >
-            {showAllTransactions ? 'Tampilkan Lebih Sedikit' : `Lihat Semua (${transactions.length})`}
-          </button>
-        )}
+          <TransactionList
+            transactions={displayedTransactions}
+            onEdit={openEditTransactionDialog}
+            onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
+            type="income"
+          />
+
+          {transactions.length > 6 && (
+            <button
+              onClick={() => setShowAllTransactions(!showAllTransactions)}
+              className="w-full text-center py-2.5 text-[11px] font-medium rounded-xl transition-colors"
+              style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
+            >
+              {showAllTransactions ? 'Tampilkan Lebih Sedikit' : `Lihat Semua (${transactions.length})`}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Dialogs ── */}

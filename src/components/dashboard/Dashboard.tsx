@@ -294,8 +294,8 @@ function AnalyticsCarousel({
 
   return (
     <div className="space-y-3 w-full">
-      {/* Carousel Header with Tabs + Arrows */}
-      <div className="flex items-center justify-between gap-2 px-0">
+      {/* Carousel Header with Tabs + Arrows — hidden on desktop grid */}
+      <div className="flex items-center justify-between gap-2 px-0 lg:hidden">
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
           {slides.map((s, i) => (
             <button
@@ -337,8 +337,126 @@ function AnalyticsCarousel({
         </div>
       </div>
 
-      {/* Carousel Slides */}
-      <div ref={viewportRef} className="w-full overflow-hidden">
+      {/* Desktop: 3-column grid */}
+      <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-6">
+        {/* Cash Flow Card */}
+        <Card className="overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" style={{ color: THEME.primary }} />
+              <CardTitle className="text-sm" style={{ color: THEME.text }}>Cash Flow</CardTitle>
+              <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: THEME.muted }}>6 bln</span>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="h-52 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={cashFlowData} barGap={4} barCategoryGap="20%">
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: THEME.muted }} axisLine={false} tickLine={false} width={35} />
+                  <YAxis tick={{ fontSize: 9, fill: THEME.muted }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}rb` : String(v)} width={38} />
+                  <Tooltip content={<ChartTooltip formatter={(v: number) => getCurrencyFormat(v)} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                  <Bar dataKey="income" name="Income" fill={THEME.secondary} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="expense" name="Expense" fill={THEME.destructive} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-4 mt-2 justify-center">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: THEME.secondary }} />
+                <span className="text-[10px]" style={{ color: THEME.muted }}>Income</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: THEME.destructive }} />
+                <span className="text-[10px]" style={{ color: THEME.muted }}>Expense</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Spending Card */}
+        <Card className="overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center gap-2">
+              <PieChartIcon className="h-4 w-4" style={{ color: THEME.primary }} />
+              <CardTitle className="text-sm" style={{ color: THEME.text }}>Top Spending</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {categoryData.length === 0 ? (
+              <p className="text-xs text-center py-8" style={{ color: THEME.muted }}>Belum ada data pengeluaran</p>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-36 w-36 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={categoryData} cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={2} dataKey="value" stroke="none">
+                        {categoryData.map((entry: any, i: number) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<ChartTooltip formatter={(v: number) => getCurrencyFormat(v)} />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 w-full space-y-2 min-w-0">
+                  {categoryData.map((cat: any, i: number) => {
+                    const pct = totalCategoryAmount > 0 ? (cat.value / totalCategoryAmount) * 100 : 0;
+                    return (
+                      <div key={i} className="space-y-0.5">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
+                          <span className="text-[10px] shrink-0" style={{ color: THEME.muted }}>{pct.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Financial Health Card */}
+        <Card className="overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4" style={{ color: THEME.primary }} />
+              <CardTitle className="text-sm" style={{ color: THEME.text }}>Financial Health</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center justify-center">
+                <HealthScoreRing score={healthScore} grade={healthGrade} label={healthLabel} />
+              </div>
+              <div className="flex-1 w-full space-y-2.5 min-w-0">
+                {[
+                  { label: 'Savings Rate', score: healthBreakdown.savingsRateScore },
+                  { label: 'Consistency', score: healthBreakdown.consistencyScore },
+                  { label: 'Target Progress', score: healthBreakdown.targetProgressScore },
+                  { label: 'Growth', score: healthBreakdown.growthScore },
+                ].map((item) => (
+                  <div key={item.label} className="space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px]" style={{ color: THEME.muted }}>{item.label}</span>
+                      <span className="text-[10px] font-semibold" style={{ color: THEME.textSecondary }}>{item.score}/25</span>
+                    </div>
+                    <div className="h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(item.score / 25) * 100}%`, background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary})` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mobile/Tablet: Carousel Slides */}
+      <div ref={viewportRef} className="w-full overflow-hidden lg:hidden">
         <div
           className="flex transition-transform duration-300 ease-out"
           style={{
@@ -556,8 +674,8 @@ function AnalyticsCarousel({
         </div>
       </div>
 
-      {/* Dot indicators */}
-      <div className="flex items-center justify-center gap-2">
+      {/* Dot indicators (mobile only) */}
+      <div className="flex items-center justify-center gap-2 lg:hidden">
         {slides.map((_, i) => (
           <button
             key={i}
@@ -929,7 +1047,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-4 overflow-hidden w-full max-w-full">
+    <div className="space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full">
       {/* ═══ Section 1: Filter Bar ═══ */}
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold shrink-0" style={{ color: THEME.text }}>Dashboard</h2>
@@ -976,7 +1094,7 @@ export function Dashboard() {
       </div>
 
       {/* ═══ Section 2: KPI Strip ═══ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 xl:gap-4">
         {/* Net Worth */}
         <Card
           className="group cursor-default transition-all duration-200"
@@ -1116,7 +1234,8 @@ export function Dashboard() {
               Smart Insights
             </h3>
           </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3">
+          {/* Mobile: horizontal scroll */}
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 lg:hidden">
             {insights.map((insight) => {
               const typeLabel = insight.type === 'opportunity' ? 'Opportunity' : insight.type === 'warning' ? 'Warning' : 'Achievement';
               const typeBg = insight.type === 'opportunity' ? THEME.primary + '20' : insight.type === 'warning' ? THEME.warning + '20' : THEME.secondary + '20';
@@ -1175,6 +1294,55 @@ export function Dashboard() {
               );
             })}
           </div>
+          {/* Desktop: 3-column grid */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-5">
+            {insights.map((insight) => {
+              const typeLabel = insight.type === 'opportunity' ? 'Opportunity' : insight.type === 'warning' ? 'Warning' : 'Achievement';
+              const typeBg = insight.type === 'opportunity' ? THEME.primary + '20' : insight.type === 'warning' ? THEME.warning + '20' : THEME.secondary + '20';
+              return (
+                <div
+                  key={insight.id}
+                  className="rounded-xl p-4 transition-all duration-200 relative overflow-hidden"
+                  style={{
+                    background: THEME.surface,
+                    border: `1px solid ${THEME.border}`,
+                    borderLeft: `3px solid ${insight.accent}`,
+                  }}
+                >
+                  <div
+                    className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-20 pointer-events-none"
+                    style={{ background: insight.accent }}
+                  />
+                  <div className="relative z-10 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                        style={{ background: typeBg, color: insight.accent }}
+                      >
+                        {typeLabel}
+                      </span>
+                      <div
+                        className="p-1.5 rounded-lg"
+                        style={{ background: insight.accent + '15' }}
+                      >
+                        <span style={{ color: insight.accent }}>{insight.icon}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-[13px] font-semibold leading-tight mb-1" style={{ color: THEME.text }}>{insight.title}</h4>
+                      <p className="text-[11px] leading-relaxed" style={{ color: THEME.muted }}>{insight.description}</p>
+                    </div>
+                    <div
+                      className="text-[10px] font-medium px-2.5 py-1 rounded-lg"
+                      style={{ background: insight.accent + '10', color: insight.accent }}
+                    >
+                      {insight.detail}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -1201,7 +1369,8 @@ export function Dashboard() {
               )}
             </div>
           </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3">
+          {/* Mobile: horizontal scroll */}
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 lg:hidden">
             {data.savingsTargets.slice(0, 6).map((target: any) => {
               const progress = Math.min((target.currentAmount / target.targetAmount) * 100, 100);
               const remaining = Math.max(target.targetAmount - target.currentAmount, 0);
@@ -1287,6 +1456,58 @@ export function Dashboard() {
               );
             })}
           </div>
+          {/* Desktop: grid layout */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-5">
+            {data.savingsTargets.slice(0, 6).map((target: any) => {
+              const progress = Math.min((target.currentAmount / target.targetAmount) * 100, 100);
+              const remaining = Math.max(target.targetAmount - target.currentAmount, 0);
+              const progressColor =
+                progress >= 80 ? THEME.secondary :
+                progress >= 40 ? THEME.warning :
+                THEME.primary;
+              const ringRadius = 22;
+              const ringStroke = 3;
+              const ringNorm = ringRadius - ringStroke / 2;
+              const ringCirc = ringNorm * 2 * Math.PI;
+              const ringOffset = ringCirc - (progress / 100) * ringCirc;
+
+              return (
+                <div
+                  key={target.id}
+                  className="rounded-xl p-4 transition-all duration-200 relative overflow-hidden"
+                  style={{
+                    background: THEME.surface,
+                    border: `1px solid ${THEME.border}`,
+                  }}
+                >
+                  <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full blur-2xl opacity-10 pointer-events-none" style={{ background: progressColor }} />
+                  <div className="relative z-10 flex items-start gap-3">
+                    <div className="relative shrink-0">
+                      <svg width={ringRadius * 2} height={ringRadius * 2} className="-rotate-90">
+                        <circle stroke="rgba(255,255,255,0.06)" fill="transparent" strokeWidth={ringStroke} r={ringNorm} cx={ringRadius} cy={ringRadius} />
+                        <circle stroke={progressColor} fill="transparent" strokeWidth={ringStroke} strokeLinecap="round" strokeDasharray={ringCirc + ' ' + ringCirc} style={{ strokeDashoffset: ringOffset, transition: 'stroke-dashoffset 0.8s ease-out' }} r={ringNorm} cx={ringRadius} cy={ringRadius} />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[8px] font-bold" style={{ color: progressColor }}>{progress.toFixed(0)}%</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <h4 className="text-xs font-semibold truncate" style={{ color: THEME.text }}>{target.name}</h4>
+                      <p className="text-[10px]" style={{ color: THEME.muted }}>{getCurrencyFormat(target.currentAmount)}</p>
+                      <p className="text-[10px]" style={{ color: THEME.muted }}>of {getCurrencyFormat(target.targetAmount)}</p>
+                      {remaining > 0 && (
+                        <div className="flex items-center gap-1 pt-0.5">
+                          <div className="h-1 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: progressColor }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
           {data.savingsTargets.length > 6 && (
             <p className="text-[10px] text-center" style={{ color: THEME.muted }}>
               + {data.savingsTargets.length - 6} more targets
@@ -1302,7 +1523,7 @@ export function Dashboard() {
           border: `1px solid ${THEME.border}`,
         }}
       >
-        <CardContent className="p-4">
+        <CardContent className="p-4 lg:p-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="text-center">
               <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>

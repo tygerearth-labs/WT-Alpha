@@ -354,7 +354,7 @@ function TargetFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[420px] bg-[#0D0D0D] border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
+      <DialogContent className="sm:max-w-[420px] lg:max-w-[520px] bg-[#0D0D0D] border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle className="text-white">{isEdit ? 'Edit Target' : 'Target Baru'}</DialogTitle>
           <DialogDescription className="text-[#9E9E9E]">
@@ -468,7 +468,7 @@ export function TargetTabungan() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header + Add Button */}
       <div className="flex items-center justify-between">
         <div>
@@ -507,7 +507,7 @@ export function TargetTabungan() {
       )}
 
       {/* Target Cards */}
-      <div className="space-y-3">
+      <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {savingsTargets.map(target => (
           <TargetCard
             key={target.id}

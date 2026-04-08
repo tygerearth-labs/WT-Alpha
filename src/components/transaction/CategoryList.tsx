@@ -76,7 +76,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -140,7 +140,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact }: Ca
                   </p>
                 </div>
               </div>
-              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="icon"

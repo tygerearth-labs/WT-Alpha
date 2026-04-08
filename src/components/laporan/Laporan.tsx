@@ -6,6 +6,7 @@ import { getCurrencyFormat } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 // ── Theme ──
 const T = {
@@ -94,7 +95,7 @@ export function Laporan() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -122,37 +123,39 @@ export function Laporan() {
             </button>
           ))}
         </div>
-        {/* Month/Year filter */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-          {([['all', 'Semua'], ['1', 'Jan'], ['2', 'Feb'], ['3', 'Mar'], ['4', 'Apr'], ['5', 'Mei'], ['6', 'Jun'], ['7', 'Jul'], ['8', 'Agu'], ['9', 'Sep'], ['10', 'Okt'], ['11', 'Nov'], ['12', 'Des']] as const).map(([val, label]) => (
-            <button key={val} onClick={() => setFilter({ ...filter, month: val })} className={filterBtnCls(filter.month === val)} style={filterStyle(filter.month === val)}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-          {([['all', 'Semua'], ['2023', '2023'], ['2024', '2024'], ['2025', '2025']] as const).map(([val, label]) => (
-            <button key={val} onClick={() => setFilter({ ...filter, year: val })} className={filterBtnCls(filter.year === val)} style={filterStyle(filter.year === val)}>
-              {label}
-            </button>
-          ))}
+        {/* Month/Year filters — side by side on desktop */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+            {([['all', 'Semua'], ['1', 'Jan'], ['2', 'Feb'], ['3', 'Mar'], ['4', 'Apr'], ['5', 'Mei'], ['6', 'Jun'], ['7', 'Jul'], ['8', 'Agu'], ['9', 'Sep'], ['10', 'Okt'], ['11', 'Nov'], ['12', 'Des']] as const).map(([val, label]) => (
+              <button key={val} onClick={() => setFilter({ ...filter, month: val })} className={filterBtnCls(filter.month === val)} style={filterStyle(filter.month === val)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+            {([['all', 'Semua'], ['2023', '2023'], ['2024', '2024'], ['2025', '2025']] as const).map(([val, label]) => (
+              <button key={val} onClick={() => setFilter({ ...filter, year: val })} className={filterBtnCls(filter.year === val)} style={filterStyle(filter.year === val)}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-4">
         {[
           { label: 'Pemasukan', value: totalIncome, color: T.secondary, icon: ArrowUpRight, sub: '+income' },
           { label: 'Pengeluaran', value: totalExpense, color: T.destructive, icon: ArrowDownRight, sub: '-expense' },
           { label: 'Saldo', value: balance, color: balance >= 0 ? T.secondary : T.destructive, icon: Wallet, sub: 'net balance' },
           { label: 'Tabungan', value: totalSavings, color: T.primary, icon: Target, sub: 'terkumpul' },
         ].map(item => (
-          <div key={item.label} className="p-3 rounded-xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
+          <div key={item.label} className="p-3 lg:p-4 rounded-xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-1.5 mb-1">
               <item.icon className="h-3 w-3" style={{ color: item.color }} />
               <span className="text-[9px] uppercase tracking-wider font-medium" style={{ color: T.muted }}>{item.label}</span>
             </div>
-            <p className="text-sm sm:text-base font-bold truncate" style={{ color: item.color }}>
+            <p className="text-sm sm:text-base lg:text-lg font-bold truncate" style={{ color: item.color }}>
               {getCurrencyFormat(item.value)}
             </p>
           </div>
@@ -160,24 +163,24 @@ export function Laporan() {
       </div>
 
       {/* Cash Flow Analytics */}
-      <div className="p-3 sm:p-4 rounded-xl grid grid-cols-3 gap-3" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
+      <div className="p-3 sm:p-4 lg:p-5 rounded-xl grid grid-cols-3 gap-3 lg:gap-6" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
         <div className="text-center">
           <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Savings Rate</p>
-          <p className="text-base font-bold" style={{ color: savingsRate >= 20 ? T.secondary : T.warning }}>{savingsRate.toFixed(1)}%</p>
+          <p className="text-base lg:text-xl font-bold" style={{ color: savingsRate >= 20 ? T.secondary : T.warning }}>{savingsRate.toFixed(1)}%</p>
         </div>
         <div className="text-center">
           <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Avg Harian</p>
-          <p className="text-base font-bold truncate" style={{ color: T.textSub }}>{getCurrencyFormat(avgDaily)}</p>
+          <p className="text-base lg:text-xl font-bold truncate" style={{ color: T.textSub }}>{getCurrencyFormat(avgDaily)}</p>
         </div>
         <div className="text-center">
           <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Transaksi</p>
-          <p className="text-base font-bold" style={{ color: T.primary }}>{txCount}</p>
+          <p className="text-base lg:text-xl font-bold" style={{ color: T.primary }}>{txCount}</p>
         </div>
       </div>
 
       {/* Transactions */}
       <div className="rounded-xl overflow-hidden" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
-        <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
+        <div className="flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2.5 lg:py-3" style={{ borderBottom: `1px solid ${T.border}` }}>
           <FileText className="h-4 w-4" style={{ color: T.primary }} />
           <p className="text-xs font-semibold" style={{ color: T.text }}>Riwayat Transaksi</p>
         </div>
@@ -187,47 +190,116 @@ export function Laporan() {
             <p className="text-xs" style={{ color: T.muted }}>Tidak ada data transaksi</p>
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto">
-            {transactions.map(tx => (
-              <div
-                key={tx.id}
-                className="flex items-center gap-3 px-3 sm:px-4 py-2.5 transition-colors active:bg-white/[0.02]"
-                style={{ borderBottom: `1px solid ${T.border}` }}
-              >
+          <>
+            {/* Desktop: table layout */}
+            <div className="hidden lg:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${T.border}` }}>
+                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-5 py-2.5" style={{ color: T.muted }}>Tanggal</th>
+                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: T.muted }}>Kategori</th>
+                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: T.muted }}>Deskripsi</th>
+                    <th className="text-right text-[10px] font-semibold uppercase tracking-wider px-5 py-2.5" style={{ color: T.muted }}>Nominal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map(tx => (
+                    <tr
+                      key={tx.id}
+                      className="transition-colors hover:bg-white/[0.02]"
+                      style={{ borderBottom: `1px solid ${T.border}` }}
+                    >
+                      <td className="px-5 py-3 whitespace-nowrap" style={{ color: T.muted, fontSize: '13px' }}>
+                        {format(new Date(tx.date), 'dd MMM yyyy', { locale: id })}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0"
+                            style={{ background: `${tx.category.color}15` }}
+                          >
+                            {tx.category.icon}
+                          </span>
+                          <span className="text-[13px] font-medium truncate" style={{ color: T.text }}>{tx.category.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[13px] truncate max-w-[200px]" style={{ color: T.textSub }}>
+                        {tx.description || '-'}
+                      </td>
+                      <td className="px-5 py-3 text-right whitespace-nowrap font-semibold text-[13px]" style={{ color: tx.type === 'income' ? T.secondary : T.destructive }}>
+                        {tx.type === 'income' ? '+' : '-'}{getCurrencyFormat(tx.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile: list layout */}
+            <div className="lg:hidden max-h-96 overflow-y-auto">
+              {transactions.map(tx => (
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm"
-                  style={{ background: `${tx.category.color}15` }}
+                  key={tx.id}
+                  className="flex items-center gap-3 px-3 sm:px-4 py-2.5 transition-colors active:bg-white/[0.02]"
+                  style={{ borderBottom: `1px solid ${T.border}` }}
                 >
-                  {tx.category.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate" style={{ color: T.text }}>{tx.description || tx.category.name}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[9px]" style={{ color: T.muted }}>{tx.category.name}</span>
-                    <span className="text-[9px]" style={{ color: `${T.border}` }}>·</span>
-                    <span className="text-[9px]" style={{ color: T.muted }}>{format(new Date(tx.date), 'dd MMM yyyy', { locale: id })}</span>
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm"
+                    style={{ background: `${tx.category.color}15` }}
+                  >
+                    {tx.category.icon}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate" style={{ color: T.text }}>{tx.description || tx.category.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[9px]" style={{ color: T.muted }}>{tx.category.name}</span>
+                      <span className="text-[9px]" style={{ color: `${T.border}` }}>·</span>
+                      <span className="text-[9px]" style={{ color: T.muted }}>{format(new Date(tx.date), 'dd MMM yyyy', { locale: id })}</span>
+                    </div>
+                  </div>
+                  <span
+                    className="text-xs font-semibold shrink-0"
+                    style={{ color: tx.type === 'income' ? T.secondary : T.destructive }}
+                  >
+                    {tx.type === 'income' ? '+' : '-'}{getCurrencyFormat(tx.amount)}
+                  </span>
                 </div>
-                <span
-                  className="text-xs font-semibold shrink-0"
-                  style={{ color: tx.type === 'income' ? T.secondary : T.destructive }}
-                >
-                  {tx.type === 'income' ? '+' : '-'}{getCurrencyFormat(tx.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       {/* Savings Targets */}
       {savingsTargets.length > 0 && (
         <div className="rounded-xl overflow-hidden" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
-          <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
+          <div className="flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2.5 lg:py-3" style={{ borderBottom: `1px solid ${T.border}` }}>
             <Target className="h-4 w-4" style={{ color: T.primary }} />
             <p className="text-xs font-semibold" style={{ color: T.text }}>Target Tabungan</p>
           </div>
-          <div className="max-h-64 overflow-y-auto">
+          {/* Desktop: grid layout */}
+          <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 gap-4 p-5">
+            {savingsTargets.map(target => {
+              const pct = (target.currentAmount / target.targetAmount) * 100;
+              const barColor = pct >= 80 ? T.secondary : pct >= 50 ? T.primary : pct >= 25 ? T.warning : T.destructive;
+              return (
+                <div key={target.id} className="rounded-xl p-4" style={{ background: `${T.border}30` }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold truncate" style={{ color: T.text }}>{target.name}</span>
+                    <span className="text-xs font-semibold shrink-0 ml-2" style={{ color: barColor }}>{pct.toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full overflow-hidden mb-2" style={{ background: T.border }}>
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px]" style={{ color: T.muted }}>{getCurrencyFormat(target.currentAmount)}</span>
+                    <span className="text-[11px]" style={{ color: T.muted }}>{getCurrencyFormat(target.targetAmount)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Mobile: list layout */}
+          <div className="lg:hidden max-h-64 overflow-y-auto">
             {savingsTargets.map(target => {
               const pct = (target.currentAmount / target.targetAmount) * 100;
               const barColor = pct >= 80 ? T.secondary : pct >= 50 ? T.primary : pct >= 25 ? T.warning : T.destructive;

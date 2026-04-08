@@ -119,27 +119,27 @@ export function ProfileSettings() {
   }
 
   return (
-    <div className="space-y-5 max-w-lg mx-auto">
+    <div className="space-y-5 max-w-2xl lg:max-w-3xl mx-auto">
       {/* Profile Header */}
-      <div className="flex items-center gap-4 p-4 rounded-2xl relative overflow-hidden" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
+      <div className="flex items-center gap-4 lg:gap-6 p-4 lg:p-5 rounded-2xl relative overflow-hidden" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
         <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-15 blur-2xl pointer-events-none" style={{ background: T.primary }} />
-        <div className="relative">
-          <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2" style={{ borderColor: `${T.primary}40` }}>
+        <div className="relative shrink-0">
+          <Avatar className="h-14 w-14 sm:h-16 sm:w-16 lg:h-20 lg:w-20 border-2" style={{ borderColor: `${T.primary}40` }}>
             {userData.image ? <AvatarImage src={userData.image} alt={userData.username} className="object-cover" /> : null}
-            <AvatarFallback className="text-lg sm:text-xl" style={{ background: `${T.primary}20`, color: T.primary }}>
+            <AvatarFallback className="text-lg sm:text-xl lg:text-2xl" style={{ background: `${T.primary}20`, color: T.primary }}>
               {getInitials(userData.username)}
             </AvatarFallback>
           </Avatar>
-          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: T.primary }}>
-            <Camera className="h-2.5 w-2.5" style={{ color: '#000' }} />
+          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 lg:w-6 lg:h-6 rounded-full flex items-center justify-center" style={{ background: T.primary }}>
+            <Camera className="h-2.5 w-2.5 lg:h-3 lg:w-3" style={{ color: '#000' }} />
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm sm:text-base truncate" style={{ color: T.text }}>{userData.username}</p>
-          <p className="text-xs truncate" style={{ color: T.muted }}>{userData.email}</p>
+          <p className="font-semibold text-sm sm:text-base lg:text-lg truncate" style={{ color: T.text }}>{userData.username}</p>
+          <p className="text-xs lg:text-sm truncate" style={{ color: T.muted }}>{userData.email}</p>
         </div>
-        <button onClick={handleLogout} className="p-2 rounded-xl transition-colors" style={{ background: `${T.destructive}10` }}>
-          <LogOut className="h-4 w-4" style={{ color: T.destructive }} />
+        <button onClick={handleLogout} className="p-2 lg:p-2.5 rounded-xl transition-colors shrink-0" style={{ background: `${T.destructive}10` }}>
+          <LogOut className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: T.destructive }} />
         </button>
       </div>
 
@@ -163,21 +163,23 @@ export function ProfileSettings() {
 
       {/* Profile Section */}
       {activeSection === 'profile' && (
-        <form onSubmit={handleUpdateProfile} className="space-y-4 p-4 rounded-2xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
+        <form onSubmit={handleUpdateProfile} className="space-y-4 p-4 lg:p-5 rounded-2xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
           <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Informasi Profil</p>
 
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>Username</Label>
-            <Input
-              id="username" value={profileForm.username}
-              onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-              required className={inputCls} style={inputStyle}
-            />
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>Username</Label>
+              <Input
+                id="username" value={profileForm.username}
+                onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
+                required className={inputCls} style={inputStyle}
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>Email</Label>
-            <Input id="email" value={userData.email} disabled className={inputCls} style={{ ...inputStyle, opacity: 0.5 }} />
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>Email</Label>
+              <Input id="email" value={userData.email} disabled className={inputCls} style={{ ...inputStyle, opacity: 0.5 }} />
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -192,7 +194,7 @@ export function ProfileSettings() {
             {imageError && <p className="text-[10px]" style={{ color: T.destructive }}>{imageError}</p>}
           </div>
 
-          <Button type="submit" disabled={isUpdating} className="w-full h-10 rounded-xl font-semibold text-sm" style={{ background: T.primary, color: '#000' }}>
+          <Button type="submit" disabled={isUpdating} className="w-full h-10 lg:h-11 rounded-xl font-semibold text-sm lg:text-base" style={{ background: T.primary, color: '#000' }}>
             {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan Perubahan'}
           </Button>
         </form>
@@ -202,7 +204,7 @@ export function ProfileSettings() {
       {activeSection === 'security' && (
         <div className="space-y-4">
           {/* Change Password */}
-          <form onSubmit={handleChangePassword} className="space-y-3.5 p-4 rounded-2xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
+          <form onSubmit={handleChangePassword} className="space-y-3.5 p-4 lg:p-5 rounded-2xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 mb-1">
               <Shield className="h-4 w-4" style={{ color: T.primary }} />
               <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Ubah Password</p>
