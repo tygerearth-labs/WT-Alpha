@@ -341,16 +341,19 @@ function AnalyticsCarousel({
       {/* Desktop: 3-column grid */}
       <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-6">
         {/* Cash Flow Card */}
-        <Card className="overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top left, ${THEME.primary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" style={{ color: THEME.primary }} />
-              <CardTitle className="text-sm" style={{ color: THEME.text }}>Cash Flow</CardTitle>
-              <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: THEME.muted }}>6 bln</span>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.primary}12` }}>
+                <BarChart3 className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+              </div>
+              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>Cash Flow</CardTitle>
+              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full" style={{ color: THEME.muted, background: `${THEME.border}` }}>6 bln</span>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="h-52 w-full">
+            <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={cashFlowData} barGap={4} barCategoryGap="20%">
                   <XAxis dataKey="name" tick={{ fontSize: 10, fill: THEME.muted }} axisLine={false} tickLine={false} width={35} />
@@ -361,25 +364,28 @@ function AnalyticsCarousel({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex items-center gap-4 mt-2 justify-center">
+            <div className="flex items-center gap-4 mt-3 justify-center">
               <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: THEME.secondary }} />
-                <span className="text-[10px]" style={{ color: THEME.muted }}>Income</span>
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: THEME.secondary }} />
+                <span className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>Income</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: THEME.destructive }} />
-                <span className="text-[10px]" style={{ color: THEME.muted }}>Expense</span>
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: THEME.destructive }} />
+                <span className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>Expense</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Top Spending Card */}
-        <Card className="overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top right, ${THEME.destructive}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <PieChartIcon className="h-4 w-4" style={{ color: THEME.primary }} />
-              <CardTitle className="text-sm" style={{ color: THEME.text }}>Top Spending</CardTitle>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.destructive}12` }}>
+                <PieChartIcon className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
+              </div>
+              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>Top Spending</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -387,7 +393,7 @@ function AnalyticsCarousel({
               <p className="text-xs text-center py-8" style={{ color: THEME.muted }}>Belum ada data pengeluaran</p>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <div className="h-36 w-36 shrink-0">
+                <div className="h-40 w-40 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={categoryData} cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={2} dataKey="value" stroke="none">
@@ -399,16 +405,16 @@ function AnalyticsCarousel({
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex-1 w-full space-y-2 min-w-0">
+                <div className="flex-1 w-full space-y-2.5 min-w-0">
                   {categoryData.map((cat: any, i: number) => {
                     const pct = totalCategoryAmount > 0 ? (cat.value / totalCategoryAmount) * 100 : 0;
                     return (
-                      <div key={i} className="space-y-0.5">
+                      <div key={i} className="space-y-1">
                         <div className="flex items-center justify-between gap-1">
                           <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
-                          <span className="text-[10px] shrink-0" style={{ color: THEME.muted }}>{pct.toFixed(0)}%</span>
+                          <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
                         </div>
-                        <div className="h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
                         </div>
                       </div>
@@ -421,11 +427,14 @@ function AnalyticsCarousel({
         </Card>
 
         {/* Financial Health Card */}
-        <Card className="overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at bottom center, ${THEME.secondary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4" style={{ color: THEME.primary }} />
-              <CardTitle className="text-sm" style={{ color: THEME.text }}>Financial Health</CardTitle>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.secondary}12` }}>
+                <Shield className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+              </div>
+              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>Financial Health</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -433,19 +442,19 @@ function AnalyticsCarousel({
               <div className="flex items-center justify-center">
                 <HealthScoreRing score={healthScore} grade={healthGrade} label={healthLabel} />
               </div>
-              <div className="flex-1 w-full space-y-2.5 min-w-0">
+              <div className="flex-1 w-full space-y-3 min-w-0">
                 {[
                   { label: 'Savings Rate', score: healthBreakdown.savingsRateScore },
                   { label: 'Consistency', score: healthBreakdown.consistencyScore },
                   { label: 'Target Progress', score: healthBreakdown.targetProgressScore },
                   { label: 'Growth', score: healthBreakdown.growthScore },
                 ].map((item) => (
-                  <div key={item.label} className="space-y-0.5">
+                  <div key={item.label} className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px]" style={{ color: THEME.muted }}>{item.label}</span>
-                      <span className="text-[10px] font-semibold" style={{ color: THEME.textSecondary }}>{item.score}/25</span>
+                      <span className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>{item.label}</span>
+                      <span className="text-[11px] font-bold" style={{ color: THEME.text }}>{item.score}/25</span>
                     </div>
-                    <div className="h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
                       <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(item.score / 25) * 100}%`, background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary})` }} />
                     </div>
                   </div>
