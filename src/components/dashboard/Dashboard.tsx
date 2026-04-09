@@ -410,17 +410,17 @@ function AnalyticsCarousel({
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex-1 w-full space-y-3 min-w-0">
+                <div className="flex-1 w-full space-y-2.5 min-w-0">
                   {categoryData.map((cat: any, i: number) => {
                     const pct = totalCategoryAmount > 0 ? (cat.value / totalCategoryAmount) * 100 : 0;
                     return (
                       <div key={i} className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {cat.icon && <DynamicIcon name={cat.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: cat.color }} />}
-                            <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-5 h-5 rounded-md grid place-items-center [&>svg]:block shrink-0" style={{ background: `${cat.color}18` }}>
+                            {cat.icon && <DynamicIcon name={cat.icon} className="h-2.5 w-2.5" style={{ color: cat.color }} />}
                           </div>
-                          <span className="text-[10px] font-semibold shrink-0 tabular-nums" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                          <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
+                          <span className="text-[10px] font-semibold shrink-0 tabular-nums ml-auto" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
@@ -592,33 +592,24 @@ function AnalyticsCarousel({
                       </ResponsiveContainer>
                     </div>
                     {/* Ranked list */}
-                    <div className="flex-1 w-full space-y-2.5 min-w-0">
+                    <div className="flex-1 w-full space-y-2 min-w-0">
                       {categoryData.map((cat: any, i: number) => {
                         const pct = totalCategoryAmount > 0 ? (cat.value / totalCategoryAmount) * 100 : 0;
                         return (
-                          <div key={i} className="space-y-1.5">
-                            <div className="flex items-center justify-between gap-1.5">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                {cat.icon && <DynamicIcon name={cat.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: cat.color }} />}
-                                <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>
-                                  {cat.name}
-                                </span>
+                          <div key={i} className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-4 h-4 rounded grid place-items-center [&>svg]:block shrink-0" style={{ background: `${cat.color}18` }}>
+                                {cat.icon && <DynamicIcon name={cat.icon} className="h-2 w-2" style={{ color: cat.color }} />}
                               </div>
-                              <span className="text-[10px] shrink-0 tabular-nums" style={{ color: THEME.muted }}>
+                              <span className="text-[10px] font-medium truncate" style={{ color: THEME.text }}>
+                                {cat.name}
+                              </span>
+                              <span className="text-[9px] shrink-0 tabular-nums ml-auto" style={{ color: cat.color }}>
                                 {pct.toFixed(0)}%
                               </span>
                             </div>
-                            <div
-                              className="h-1.5 rounded-full overflow-hidden"
-                              style={{ background: THEME.border }}
-                            >
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${pct}%`,
-                                  background: cat.color,
-                                }}
-                              />
+                            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
                             </div>
                           </div>
                         );
