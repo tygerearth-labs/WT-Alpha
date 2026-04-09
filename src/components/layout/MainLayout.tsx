@@ -274,7 +274,7 @@ export function MainLayout() {
             <div className="relative">
               <div className="absolute -inset-1 rounded-lg bg-[#BB86FC]/10 blur-md opacity-0 hover:opacity-100 transition-opacity duration-500" />
               <img
-                src="/logo.PNG"
+                src="/logo.png"
                 alt="Wealth Tracker Logo"
                 className="relative w-8 h-8 rounded-md"
               />

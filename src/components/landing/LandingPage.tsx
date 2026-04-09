@@ -261,7 +261,7 @@ export function LandingPage() {
       <nav className="fixed top-0 inset-x-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16">
           <div className="flex items-center gap-2.5">
-            <Image src="/logo.PNG" alt="Wealth Tracker" width={36} height={36} className="rounded-lg" priority />
+            <Image src="/logo.png" alt="Wealth Tracker" width={36} height={36} className="rounded-lg" priority />
             <span className="font-bold text-lg tracking-tight">{t('landing.creator')}</span>
           </div>
 
@@ -763,7 +763,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <div className="flex items-center gap-2">
-              <Image src="/logo.PNG" alt="Wealth Tracker" width={24} height={24} className="rounded-md" />
+              <Image src="/logo.png" alt="Wealth Tracker" width={24} height={24} className="rounded-md" />
               <span className="text-sm font-semibold">{t('landing.creator')}</span>
             </div>
             <p className="text-[11px] sm:text-xs text-muted-foreground text-center">
