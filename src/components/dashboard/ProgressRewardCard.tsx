@@ -110,7 +110,7 @@ export function ProgressRewardCard({
               key={reward.id}
               className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-border/50"
             >
-              <div className="flex-shrink-0 p-2 bg-primary/10 rounded-lg text-primary">
+              <div className="flex-shrink-0 w-9 h-9 rounded-lg grid place-items-center bg-primary/10 text-primary [&>*]:block leading-none">
                 {reward.icon}
               </div>
               <div className="space-y-1 flex-1">

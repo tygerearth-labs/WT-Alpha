@@ -599,8 +599,8 @@ function AnalyticsCarousel({
                         return (
                           <div key={i} className="space-y-1">
                             <div className="flex items-center gap-1.5">
-                              <div className="w-4 h-4 rounded grid place-items-center shrink-0 leading-none [&>*]:block" style={{ background: `${cat.color}18` }}>
-                                {cat.icon && <DynamicIcon name={cat.icon} className="h-2 w-2" style={{ color: cat.color }} />}
+                              <div className="w-5 h-5 rounded-md grid place-items-center shrink-0 leading-none [&>*]:block" style={{ background: `${cat.color}18` }}>
+                                {cat.icon && <DynamicIcon name={cat.icon} className="h-2.5 w-2.5" style={{ color: cat.color }} />}
                               </div>
                               <span className="text-[10px] font-medium truncate" style={{ color: THEME.text }}>
                                 {cat.name}
@@ -755,10 +755,10 @@ function ConsultantCard({ insight }: { insight: {
               {priorityLabel}
             </span>
             <div
-              className="p-1.5 rounded-lg"
+              className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none shrink-0"
               style={{ background: insight.accent + '15' }}
             >
-              <span style={{ color: insight.accent }}>{insight.icon}</span>
+              <span style={{ color: insight.accent, display: 'block', lineHeight: 1 }}>{insight.icon}</span>
             </div>
           </div>
           {insight.metric && (
@@ -860,10 +860,10 @@ function ConsultantCardCompact({ insight }: { insight: {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             <div
-              className="w-5 h-5 rounded-md grid place-items-center [&>*]:block shrink-0 leading-none"
+              className="w-6 h-6 rounded-md grid place-items-center [&>*]:block shrink-0 leading-none"
               style={{ background: insight.accent + '18' }}
             >
-              <span className="text-xs" style={{ color: insight.accent }}>{insight.icon}</span>
+              <span style={{ color: insight.accent, display: 'block', lineHeight: 1 }}>{insight.icon}</span>
             </div>
             <span
               className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
