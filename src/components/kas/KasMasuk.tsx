@@ -10,7 +10,9 @@ import { CategoryDialog } from '@/components/transaction/CategoryDialog';
 import { TransactionList } from '@/components/transaction/TransactionList';
 import { CategoryList } from '@/components/transaction/CategoryList';
 import { Transaction, Category, TransactionFormData, CategoryFormData, SavingsTarget } from '@/types/transaction.types';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 
 type DateFilter = 'today' | 'week' | 'month' | 'all';
 
@@ -24,14 +26,17 @@ const T = {
   textSub: '#B3B3B3',
 } as const;
 
-const FILTERS: { key: DateFilter; label: string }[] = [
-  { key: 'today', label: 'Hari' },
-  { key: 'week', label: 'Minggu' },
-  { key: 'month', label: 'Bulan' },
-  { key: 'all', label: 'Semua' },
-];
-
 export function KasMasuk() {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
+
+  const FILTERS: { key: DateFilter; label: string }[] = [
+    { key: 'today', label: t('kas.filterDay') },
+    { key: 'week', label: t('kas.filterWeek') },
+    { key: 'month', label: t('kas.filterMonth') },
+    { key: 'all', label: t('filter.all') },
+  ];
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
@@ -99,11 +104,11 @@ export function KasMasuk() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Gagal memuat data');
+      toast.error(t('kas.loadError'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData(dateFilter);
@@ -117,15 +122,15 @@ export function KasMasuk() {
         body: JSON.stringify(data),
       });
       if (response.ok) {
-        toast.success('Pemasukan berhasil ditambahkan');
+        toast.success(t('kas.addIncomeSuccess'));
         setIsAddDialogOpen(false);
         fetchData(dateFilter);
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Gagal menambahkan pemasukan');
+        toast.error(error.error || t('kas.addError'));
       }
     } catch {
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -138,16 +143,16 @@ export function KasMasuk() {
         body: JSON.stringify(data),
       });
       if (response.ok) {
-        toast.success('Pemasukan berhasil diperbarui');
+        toast.success(t('kas.updateIncomeSuccess'));
         setIsEditDialogOpen(false);
         setSelectedTransaction(null);
         fetchData(dateFilter);
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Gagal memperbarui pemasukan');
+        toast.error(error.error || t('kas.updateError'));
       }
     } catch {
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -157,10 +162,10 @@ export function KasMasuk() {
       let successMessage;
       if (deleteDialog.type === 'transaction') {
         response = await fetch(`/api/transactions/${deleteDialog.id}`, { method: 'DELETE' });
-        successMessage = 'Pemasukan berhasil dihapus';
+        successMessage = t('kas.deleteIncomeSuccess');
       } else {
         response = await fetch(`/api/categories/${deleteDialog.id}`, { method: 'DELETE' });
-        successMessage = 'Kategori berhasil dihapus';
+        successMessage = t('kas.deleteCategorySuccess');
       }
       if (response.ok) {
         toast.success(successMessage);
@@ -168,10 +173,10 @@ export function KasMasuk() {
         fetchData(dateFilter);
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Gagal menghapus');
+        toast.error(error.error || t('kas.deleteError'));
       }
     } catch {
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -183,15 +188,15 @@ export function KasMasuk() {
         body: JSON.stringify({ ...data, type: 'income' }),
       });
       if (response.ok) {
-        toast.success('Kategori berhasil ditambahkan');
+        toast.success(t('kas.addCategorySuccess'));
         setIsCategoryDialogOpen(false);
         fetchData(dateFilter);
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Gagal menambahkan kategori');
+        toast.error(error.error || t('kas.addCategoryError'));
       }
     } catch {
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -204,15 +209,15 @@ export function KasMasuk() {
         body: JSON.stringify(data),
       });
       if (response.ok) {
-        toast.success('Kategori berhasil diperbarui');
+        toast.success(t('kas.updateCategorySuccess'));
         setSelectedCategory(null);
         fetchData(dateFilter);
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Gagal memperbarui kategori');
+        toast.error(error.error || t('kas.updateCategoryError'));
       }
     } catch {
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -306,9 +311,9 @@ export function KasMasuk() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] lg:text-sm font-medium uppercase tracking-wider" style={{ color: T.muted }}>Total Pemasukan</p>
+                  <p className="text-[10px] lg:text-sm font-medium uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.totalIncome')}</p>
                   <p className="text-xl sm:text-2xl lg:text-4xl font-bold tracking-tight" style={{ color: T.text }}>
-                    {getCurrencyFormat(totalIncome)}
+                    {formatAmount(totalIncome)}
                   </p>
                 </div>
               </div>
@@ -325,26 +330,26 @@ export function KasMasuk() {
             <div className="hidden lg:flex lg:items-center lg:gap-6 mt-5 pt-4" style={{ borderTop: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" style={{ color: T.muted }} />
-                <span className="text-sm font-medium" style={{ color: T.textSub }}>{transactions.length} transaksi</span>
+                <span className="text-sm font-medium" style={{ color: T.textSub }}>{t('filter.transactionCount', { count: transactions.length })}</span>
               </div>
               <div className="w-px h-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" style={{ color: T.accent }} />
-                <span className="text-sm font-medium" style={{ color: T.textSub }}>Rata-rata: </span>
-                <span className="text-sm font-bold" style={{ color: T.accent }}>{getCurrencyFormat(avgIncome)}</span>
+                <span className="text-sm font-medium" style={{ color: T.textSub }}>{t('kas.average')}: </span>
+                <span className="text-sm font-bold" style={{ color: T.accent }}>{formatAmount(avgIncome)}</span>
               </div>
               <div className="w-px h-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4" style={{ color: T.primary }} />
-                <span className="text-sm font-medium" style={{ color: T.textSub }}>Terbesar: </span>
-                <span className="text-sm font-bold" style={{ color: T.primary }}>{getCurrencyFormat(maxIncome)}</span>
+                <span className="text-sm font-medium" style={{ color: T.textSub }}>{t('kas.largest')}: </span>
+                <span className="text-sm font-bold" style={{ color: T.primary }}>{formatAmount(maxIncome)}</span>
               </div>
             </div>
 
             {/* Mobile stats */}
             <div className="mt-3 flex items-center gap-1.5 text-[11px] lg:hidden" style={{ color: T.textSub }}>
               <Calendar className="h-3 w-3" />
-              <span>{transactions.length} transaksi</span>
+              <span>{t('filter.transactionCount', { count: transactions.length })}</span>
             </div>
           </div>
         </div>
@@ -353,9 +358,9 @@ export function KasMasuk() {
       {/* ── Quick Stats ── */}
       <div className="grid grid-cols-3 gap-2 lg:gap-5">
         {[
-          { label: 'Rata-rata', value: getCurrencyFormat(avgIncome), color: T.accent, icon: TrendingUp },
-          { label: 'Transaksi', value: transactions.length.toString(), color: T.primary, icon: ArrowUpRight },
-          { label: 'Terbesar', value: getCurrencyFormat(maxIncome), color: T.primary, icon: Wallet },
+          { label: t('kas.average'), value: formatAmount(avgIncome), color: T.accent, icon: TrendingUp },
+          { label: t('kas.transactions'), value: transactions.length.toString(), color: T.primary, icon: ArrowUpRight },
+          { label: t('kas.largest'), value: formatAmount(maxIncome), color: T.primary, icon: Wallet },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -395,7 +400,7 @@ export function KasMasuk() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.primary}, ${T.accent})` }} />
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>Kategori</p>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.categories')}</p>
               </div>
               <Button
                 size="icon"
@@ -421,7 +426,7 @@ export function KasMasuk() {
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>Distribusi Kategori</p>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.distribution')}</p>
               </div>
               <div className="space-y-3">
                 {incomeByCategory.slice(0, 5).map((cat) => {
@@ -430,12 +435,12 @@ export function KasMasuk() {
                     <div key={cat.name} className="flex items-center gap-3">
                       <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0"
                         style={{ background: `${cat.color}25` }}>
-                        {cat.icon}
+                        <DynamicIcon name={cat.icon} className="h-4 w-4" />
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
-                          <span className="text-xs font-semibold shrink-0 ml-2" style={{ color: cat.color }}>{pct.toFixed(0)}% · {getCurrencyFormat(cat.amount)}</span>
+                          <span className="text-xs font-semibold shrink-0 ml-2" style={{ color: cat.color }}>{pct.toFixed(0)}% · {formatAmount(cat.amount)}</span>
                         </div>
                         <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                           <div className="h-full rounded-full transition-all duration-500"
@@ -465,7 +470,7 @@ export function KasMasuk() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>Riwayat</p>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.history')}</p>
             </div>
             <div className="flex gap-1.5">
               {FILTERS.map((f) => (
@@ -501,7 +506,7 @@ export function KasMasuk() {
               className="w-full text-center py-3 text-sm font-medium rounded-xl transition-all hover:scale-[1.01]"
               style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
-              {showAllTransactions ? 'Tampilkan Lebih Sedikit' : `Lihat Semua (${transactions.length})`}
+              {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}
             </button>
           )}
         </div>
@@ -515,7 +520,7 @@ export function KasMasuk() {
             className="rounded-xl p-3 sm:p-4"
             style={{ background: T.surface, border: `1px solid ${T.border}` }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>Distribusi Kategori</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>{t('kas.distribution')}</p>
             <div className="space-y-2">
               {incomeByCategory.slice(0, 5).map((cat) => {
                 const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
@@ -523,7 +528,7 @@ export function KasMasuk() {
                   <div key={cat.name} className="flex items-center gap-2.5">
                     <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0"
                       style={{ background: `${cat.color}20` }}>
-                      {cat.icon}
+                      <DynamicIcon name={cat.icon} className="h-3.5 w-3.5" />
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
@@ -546,7 +551,7 @@ export function KasMasuk() {
         {/* Categories */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Kategori</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.categories')}</p>
             <Button
               size="icon"
               className="h-7 w-7 rounded-lg"
@@ -569,7 +574,7 @@ export function KasMasuk() {
         {/* Transactions */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>Riwayat</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.history')}</p>
             <div className="flex gap-1 overflow-x-auto scrollbar-hide">
               {FILTERS.map((f) => (
                 <button
@@ -600,7 +605,7 @@ export function KasMasuk() {
               className="w-full text-center py-2.5 text-[11px] font-medium rounded-xl transition-colors"
               style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
-              {showAllTransactions ? 'Tampilkan Lebih Sedikit' : `Lihat Semua (${transactions.length})`}
+              {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}
             </button>
           )}
         </div>
@@ -635,22 +640,22 @@ export function KasMasuk() {
         <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.06]">
           <AlertDialogHeader>
             <AlertDialogTitle style={{ color: T.text }}>
-              {deleteDialog.type === 'transaction' ? 'Hapus Pemasukan?' : 'Hapus Kategori?'}
+              {deleteDialog.type === 'transaction' ? t('kas.deleteIncome') : t('kas.deleteCategory')}
             </AlertDialogTitle>
             <AlertDialogDescription style={{ color: T.textSub }}>
               {deleteDialog.type === 'transaction'
-                ? 'Pemasukan yang dihapus tidak dapat dikembalikan.'
-                : 'Kategori yang dihapus tidak dapat dikembalikan.'}
+                ? t('kas.deleteIncomeDesc')
+                : t('kas.deleteCategoryDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/[0.06] text-white/70 hover:bg-white/[0.1] hover:text-white border-0">Batal</AlertDialogCancel>
+            <AlertDialogCancel className="bg-white/[0.06] text-white/70 hover:bg-white/[0.1] hover:text-white border-0">{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="border-0"
               style={{ background: '#CF6679', color: '#fff' }}
             >
-              Hapus
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

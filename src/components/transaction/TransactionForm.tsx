@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { getCurrencyFormat } from '@/lib/utils';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { Transaction, Category, TransactionFormData, SavingsTarget } from '@/types/transaction.types';
 
 interface TransactionFormProps {
@@ -37,6 +39,8 @@ export function TransactionForm({
   initialData,
   onSubmit,
 }: TransactionFormProps) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     amount: '',
@@ -100,9 +104,9 @@ export function TransactionForm({
   };
 
   const title = initialData
-    ? (type === 'income' ? 'Edit Pemasukan' : 'Edit Pengeluaran')
-    : (type === 'income' ? 'Tambah Pemasukan' : 'Tambah Pengeluaran');
-  const submitLabel = initialData ? 'Update' : 'Simpan';
+    ? (type === 'income' ? t('kas.editTransaction') : t('kas.editTransaction'))
+    : (type === 'income' ? t('kas.addTransaction') : t('kas.addTransaction'));
+  const submitLabel = initialData ? t('common.save') : t('common.save');
   const accentColor = type === 'income' ? T.accent : T.destructive;
   const placeholderText = type === 'income' ? 'Contoh: Bonus bulanan' : 'Contoh: Makan siang';
 
@@ -128,7 +132,7 @@ export function TransactionForm({
         <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
           {/* Amount */}
           <div className="space-y-1.5">
-            <Label className="text-[11px]" style={{ color: T.muted }}>Nominal</Label>
+            <Label className="text-[11px]" style={{ color: T.muted }}>{t('transaction.amount')}</Label>
             <Input
               type="number"
               value={formData.amount}
@@ -145,26 +149,26 @@ export function TransactionForm({
           {/* Category & Date - Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[11px]" style={{ color: T.muted }}>Kategori</Label>
+              <Label className="text-[11px]" style={{ color: T.muted }}>{t('kas.categories')}</Label>
               <Select
                 value={formData.categoryId}
                 onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                 required
               >
                 <SelectTrigger className="h-9 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg">
-                  <SelectValue placeholder="Pilih" />
+                  <SelectValue placeholder={t('transaction.select')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1E1E1E] border-white/[0.08]">
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id} className="text-white focus:bg-white/[0.08]">
-                      {cat.icon} {cat.name}
+                      <DynamicIcon name={cat.icon} className="h-4 w-4 inline" /> {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px]" style={{ color: T.muted }}>Tanggal</Label>
+              <Label className="text-[11px]" style={{ color: T.muted }}>{t('laporan.date')}</Label>
               <Input
                 type="date"
                 value={formData.date}
@@ -177,7 +181,7 @@ export function TransactionForm({
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-[11px]" style={{ color: T.muted }}>Deskripsi</Label>
+            <Label className="text-[11px]" style={{ color: T.muted }}>{t('laporan.excelDescription')}</Label>
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -194,20 +198,20 @@ export function TransactionForm({
               style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
               <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: T.primary }}>
-                <span>🎯</span> Alokasi ke Target Tabungan
+                <span>🎯</span> {t('transaction.allocateTarget')}
               </p>
               <div className="space-y-2">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px]" style={{ color: T.muted }}>Target</Label>
+                  <Label className="text-[11px]" style={{ color: T.muted }}>{t('nav.target')}</Label>
                   <Select
                     value={formData.targetId}
                     onValueChange={(value) => setFormData({ ...formData, targetId: value })}
                   >
                     <SelectTrigger className="h-8 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg">
-                      <SelectValue placeholder="Pilih target" />
+                      <SelectValue placeholder={t('nav.target')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1E1E1E] border-white/[0.08]">
-                      <SelectItem value="none" className="text-white focus:bg-white/[0.08]">Tidak dialokasikan</SelectItem>
+                      <SelectItem value="none" className="text-white focus:bg-white/[0.08]">{t('transaction.notAllocated')}</SelectItem>
                       {savingsTargets.map((target) => (
                         <SelectItem key={target.id} value={target.id} className="text-white focus:bg-white/[0.08]">
                           {target.name}
@@ -218,9 +222,9 @@ export function TransactionForm({
                 </div>
                 {formData.targetId && formData.targetId !== 'none' && (
                   <div className="flex items-center justify-between rounded-lg px-2.5 py-2" style={{ background: '#1E1E1E' }}>
-                    <span className="text-[10px]" style={{ color: T.muted }}>Alokasi otomatis</span>
+                    <span className="text-[10px]" style={{ color: T.muted }}>{t('transaction.autoAllocate')}</span>
                     <span className="text-[11px] font-bold" style={{ color: T.primary }}>
-                      {formData.allocationPercentage || 0}% = {getCurrencyFormat(allocAmount)}
+                      {formData.allocationPercentage || 0}% = {formatAmount(allocAmount)}
                     </span>
                   </div>
                 )}
@@ -237,7 +241,7 @@ export function TransactionForm({
               className="flex-1 rounded-lg text-xs"
               style={{ color: T.muted }}
             >
-              Batal
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"

@@ -1,7 +1,8 @@
 'use client';
 
 import { SavingsTarget } from '@/types/transaction.types';
-import { getCurrencyFormat } from '@/lib/targetLogic';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 
 // ── Theme ──
 const T = {
@@ -21,6 +22,8 @@ interface Props {
 }
 
 export function TargetSummaryCard({ savingsTargets }: Props) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const activeTargets = savingsTargets.filter(t => t.targetAmount > t.currentAmount);
   const totalTarget = savingsTargets.reduce((s, t) => s + t.targetAmount, 0);
   const totalCurrent = savingsTargets.reduce((s, t) => s + t.currentAmount, 0);
@@ -76,7 +79,7 @@ export function TargetSummaryCard({ savingsTargets }: Props) {
             <span className="text-lg sm:text-xl font-bold" style={{ color: ringColor }}>
               {overallPct.toFixed(0)}%
             </span>
-            <span className="text-[8px] uppercase tracking-wider" style={{ color: T.muted }}>Overall</span>
+            <span className="text-[8px] uppercase tracking-wider" style={{ color: T.muted }}>{t('target.overall')}</span>
           </div>
         </div>
 
@@ -84,21 +87,21 @@ export function TargetSummaryCard({ savingsTargets }: Props) {
         <div className="flex-1 min-w-0 grid grid-cols-3 gap-x-3 gap-y-2 sm:gap-y-3">
           {/* Terkumpul */}
           <div className="min-w-0">
-            <p className="text-[9px] uppercase tracking-wider truncate" style={{ color: T.muted }}>Terkumpul</p>
+            <p className="text-[9px] uppercase tracking-wider truncate" style={{ color: T.muted }}>{t('target.collected')}</p>
             <p className="text-sm sm:text-base font-bold truncate" style={{ color: T.text }}>
-              {getCurrencyFormat(totalCurrent)}
+              {formatAmount(totalCurrent)}
             </p>
           </div>
           {/* Kurang */}
           <div className="min-w-0">
-            <p className="text-[9px] uppercase tracking-wider truncate" style={{ color: T.muted }}>Kurang</p>
+            <p className="text-[9px] uppercase tracking-wider truncate" style={{ color: T.muted }}>{t('target.remaining')}</p>
             <p className="text-sm sm:text-base font-bold truncate" style={{ color: T.destructive }}>
-              {getCurrencyFormat(Math.max(0, totalRemaining))}
+              {formatAmount(Math.max(0, totalRemaining))}
             </p>
           </div>
           {/* Monthly */}
           <div className="min-w-0">
-            <p className="text-[9px] uppercase tracking-wider truncate" style={{ color: T.muted }}>Bulanan</p>
+            <p className="text-[9px] uppercase tracking-wider truncate" style={{ color: T.muted }}>{t('target.monthly')}</p>
             <p className="text-sm sm:text-base font-bold truncate" style={{ color: T.text }}>
               {monthlyPct.toFixed(0)}%
             </p>
@@ -125,7 +128,7 @@ export function TargetSummaryCard({ savingsTargets }: Props) {
               <span className="text-xs font-medium" style={{ color: T.destructive }}>{critical}</span>
             </div>
           )}
-          <p className="text-[9px]" style={{ color: T.muted }}>{activeTargets.length} aktif</p>
+          <p className="text-[9px]" style={{ color: T.muted }}>{t('target.activeCount', { count: activeTargets.length })}</p>
         </div>
       </div>
     </div>

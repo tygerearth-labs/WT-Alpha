@@ -6,6 +6,7 @@ interface User {
   email: string;
   username: string;
   image?: string | null;
+  plan?: string;
 }
 
 interface AuthState {

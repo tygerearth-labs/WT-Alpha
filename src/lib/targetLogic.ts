@@ -137,67 +137,78 @@ export function calculateTargetMetrics(
 /**
  * Get brutal insight based on target data
  */
-export function getBrutalInsight(metrics: TargetMetrics, target: SavingsTarget): string {
+export function getBrutalInsight(
+  metrics: TargetMetrics,
+  target: SavingsTarget,
+  t?: (key: string, params?: Record<string, string | number>) => string
+): string {
   const { progressPercent, speedStatus, etaInMonths, avgMonthlySaving, doNothingETA } = metrics;
   const monthlyContribution = target.monthlyContribution;
 
   // Critical status insights
   if (metrics.targetStatus === "critical") {
     if (speedStatus === "slow") {
-      return "Masalahnya bukan penghasilan, tapi konsistensi kamu drop drastis.";
+      return t ? t('target.insightCriticalSlow') : "Masalahnya bukan penghasilan, tapi konsistensi kamu drop drastis.";
     }
     if (etaInMonths > 24) {
-      return "Target ini tidak gagal, kamu yang terlalu santai. 2 tahun ke depan sama aja.";
+      return t ? t('target.insightCriticalFar') : "Target ini tidak gagal, kamu yang terlalu santai. 2 tahun ke depan sama aja.";
     }
-    return "Kalau target ini tidak tercapai, bukan karena nasib, tapi karena kamu menyerah duluan.";
+    return t ? t('target.insightCriticalDefault') : "Kalau target ini tidak tercapai, bukan karena nasib, tapi karena kamu menyerah duluan.";
   }
 
   // Warning status insights
   if (metrics.targetStatus === "warning") {
     if (speedStatus === "slow") {
-      return "Kecepatan kamu di bawah target bulanan. Naikkan atau siap-siap telat.";
+      return t ? t('target.insightWarningSlow') : "Kecepatan kamu di bawah target bulanan. Naikkan atau siap-siap telat.";
     }
-    return "Lumayan, tapi masih ada gap yang harus ditutup secepatnya.";
+    return t ? t('target.insightWarningDefault') : "Lumayan, tapi masih ada gap yang harus ditutup secepatnya.";
   }
 
   // Healthy status insights
   if (speedStatus === "fast") {
     const monthsSaved = Math.round(doNothingETA - etaInMonths);
     if (monthsSaved >= 3) {
-      return `Kamu lebih cepat ${monthsSaved} bulan dari rencana. Pertahankan ini!`;
+      return t
+        ? t('target.insightFastMonths', { months: monthsSaved })
+        : `Kamu lebih cepat ${monthsSaved} bulan dari rencana. Pertahankan ini!`;
     }
-    return "Kecepatan oke, jangan kendor sekarang.";
+    return t ? t('target.insightFast') : "Kecepatan oke, jangan kendor sekarang.";
   }
 
   // Default insight for on-track
   const gap = monthlyContribution - avgMonthlySaving;
   if (gap > 50000) {
-    return "Tambah Rp50.000/bulan = target lebih cepat 3 bulan.";
+    return t ? t('target.insightGap', { amount: 'Rp50.000' }) : "Tambah Rp50.000/bulan = target lebih cepat 3 bulan.";
   }
   if (gap > 0) {
-    return `Masih kurang Rp${gap.toLocaleString('id-ID')}/bulan dari target.`;
+    return t
+      ? t('target.insightGap', { amount: `Rp${gap.toLocaleString('id-ID')}` })
+      : `Masih kurang Rp${gap.toLocaleString('id-ID')}/bulan dari target.`;
   }
 
-  return "Target ini sehat. Lanjut!";
+  return t ? t('target.insightHealthy') : "Target ini sehat. Lanjut!";
 }
 
 /**
  * Get speed indicator copy
  */
-export function getSpeedCopy(speed: SpeedStatus): { text: string; emoji: string; color: string } {
+export function getSpeedCopy(
+  speed: SpeedStatus,
+  t?: (key: string, params?: Record<string, string | number>) => string
+): { text: string; emoji: string; color: string } {
   const speedCopy = {
     fast: {
-      text: "Lebih cepat dari rencana. Mantap.",
+      text: t ? t('target.speedFast') : "Lebih cepat dari rencana. Mantap.",
       emoji: "⚡",
       color: "text-green-500",
     },
     normal: {
-      text: "Masih sesuai rencana.",
+      text: t ? t('target.speedNormal') : "Masih sesuai rencana.",
       emoji: "➖",
       color: "text-yellow-500",
     },
     slow: {
-      text: "Terlalu santai. Waktu terus jalan.",
+      text: t ? t('target.speedSlow') : "Terlalu santai. Waktu terus jalan.",
       emoji: "🐌",
       color: "text-red-500",
     },
@@ -209,23 +220,26 @@ export function getSpeedCopy(speed: SpeedStatus): { text: string; emoji: string;
 /**
  * Get status badge copy
  */
-export function getStatusCopy(status: TargetStatus): { text: string; subtext: string; emoji: string; color: string } {
+export function getStatusCopy(
+  status: TargetStatus,
+  t?: (key: string, params?: Record<string, string | number>) => string
+): { text: string; subtext: string; emoji: string; color: string } {
   const statusCopy = {
     healthy: {
-      text: "Sehat",
-      subtext: "Target ini on track. Jangan kendor.",
+      text: t ? t('target.healthy') : "Sehat",
+      subtext: t ? t('target.healthySub') : "Target ini on track. Jangan kendor.",
       emoji: "🟢",
       color: "bg-green-500",
     },
     warning: {
-      text: "Terancam",
-      subtext: "Target masih jalan, tapi mulai melambat.",
+      text: t ? t('target.warning') : "Terancam",
+      subtext: t ? t('target.warningSub') : "Target masih jalan, tapi mulai melambat.",
       emoji: "🟡",
       color: "bg-yellow-500",
     },
     critical: {
-      text: "Sekarat",
-      subtext: "Dengan pola ini, target akan molor jauh.",
+      text: t ? t('target.critical') : "Sekarat",
+      subtext: t ? t('target.criticalSub') : "Dengan pola ini, target akan molor jauh.",
       emoji: "🔴",
       color: "bg-red-500",
     },
@@ -237,46 +251,53 @@ export function getStatusCopy(status: TargetStatus): { text: string; subtext: st
 /**
  * Get ETA display text
  */
-export function getETAText(etaInMonths: number): string {
-  if (etaInMonths === Infinity) return "∞";
-  if (etaInMonths < 1) return "Kurang dari 1 bulan";
-  if (etaInMonths === 1) return "1 bulan";
-  return `${etaInMonths} bulan`;
+export function getETAText(
+  etaInMonths: number,
+  t?: (key: string, params?: Record<string, string | number>) => string
+): string {
+  if (etaInMonths === Infinity) return t ? t('target.etaInfinity') : "∞";
+  if (etaInMonths < 1) return t ? t('target.lessThanMonth') : "Kurang dari 1 bulan";
+  if (etaInMonths === 1) return t ? t('target.oneMonth') : "1 bulan";
+  return t ? t('target.nMonths', { months: etaInMonths }) : `${etaInMonths} bulan`;
 }
 
 /**
  * Generate mini challenge based on target data
  */
-export function generateMiniChallenge(target: SavingsTarget, metrics: TargetMetrics): {
+export function generateMiniChallenge(
+  target: SavingsTarget,
+  metrics: TargetMetrics,
+  t?: (key: string, params?: Record<string, string | number>) => string
+): {
   title: string;
   description: string;
   targetAmount: number;
   reward: string;
   days: number;
 } | null {
-  const { remainingAmount, avgMonthlySaving } = metrics;
+  const { remainingAmount } = metrics;
 
   if (remainingAmount <= 0) return null;
 
   // Challenge options based on remaining amount and speed
   const challenges = [
     {
-      title: "7 Hari Ngebut",
-      description: "Tambah Rp200.000 dalam 7 hari",
+      title: t ? t('target.challengeSprintTitle') : "7 Hari Ngebut",
+      description: t ? t('target.challengeSprintDesc') : "Tambah Rp200.000 dalam 7 hari",
       targetAmount: 200000,
       reward: "+5 Consistency Score",
       days: 7,
     },
     {
-      title: "Setoran 100k",
-      description: "Setoran Rp100.000 sekarang",
+      title: t ? t('target.challengeSet100Title') : "Setoran 100k",
+      description: t ? t('target.challengeSet100Desc') : "Setoran Rp100.000 sekarang",
       targetAmount: 100000,
       reward: "+2 Momentum Points",
       days: 1,
     },
     {
-      title: "Semangat 50k",
-      description: "Setoran Rp50.000 hari ini",
+      title: t ? t('target.challengeSet50Title') : "Semangat 50k",
+      description: t ? t('target.challengeSet50Desc') : "Setoran Rp50.000 hari ini",
       targetAmount: 50000,
       reward: "+1 Consistency Score",
       days: 3,
@@ -287,14 +308,4 @@ export function generateMiniChallenge(target: SavingsTarget, metrics: TargetMetr
   return challenges.find((c) => c.targetAmount <= remainingAmount) || null;
 }
 
-/**
- * Get currency format for display
- */
-export function getCurrencyFormat(value: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+

@@ -2,6 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 
 interface PieChartData {
   name: string;
@@ -18,6 +20,8 @@ interface PieChartCardProps {
 }
 
 export function PieChartCard({ title, data, className }: PieChartCardProps) {
+  const { t } = useTranslation();
+  const { formatNum } = useCurrencyFormat();
   return (
     <Card className={`bg-card/50 backdrop-blur-sm border border-border/50 ${className}`}>
       <CardHeader>
@@ -43,7 +47,7 @@ export function PieChartCard({ title, data, className }: PieChartCardProps) {
               </Pie>
               <Tooltip
                 formatter={(value: number, name: string) => [
-                  `${value.toLocaleString('id-ID')}`,
+                  formatNum(value),
                   name,
                 ]}
               />
@@ -51,7 +55,7 @@ export function PieChartCard({ title, data, className }: PieChartCardProps) {
           </ResponsiveContainer>
         ) : (
           <div className="flex items-center justify-center h-[250px] text-muted-foreground">
-            <p className="text-sm">Belum ada data</p>
+            <p className="text-sm">{t('common.noData')}</p>
           </div>
         )}
       </CardContent>

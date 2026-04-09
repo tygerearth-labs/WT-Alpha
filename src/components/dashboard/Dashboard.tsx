@@ -11,7 +11,8 @@ import {
   Shield, ChevronLeft, ChevronRight, Banknote, Timer, Radar, Eye,
 } from 'lucide-react';
 // embla-carousel removed — replaced with lightweight CSS transform carousel
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { getCurrentStage, getNextStage, getProgressToNextStage } from '@/components/cards/types';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -20,6 +21,7 @@ import {
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import type { SavingsTarget, Transaction, PieChartData } from '@/types/transaction.types';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 
 // ── Theme Constants ──────────────────────────────────────────────
 const THEME = {
@@ -270,14 +272,16 @@ function AnalyticsCarousel({
   healthLabel: string;
   healthBreakdown: any;
 }) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [slideWidth, setSlideWidth] = useState(0);
 
   const slides = [
-    { label: 'Cash Flow', icon: BarChart3 },
-    { label: 'Top Spending', icon: PieChartIcon },
-    { label: 'Health', icon: Shield },
+    { label: t('dashboard.cashFlow'), icon: BarChart3 },
+    { label: t('dashboard.topSpending'), icon: PieChartIcon },
+    { label: t('dashboard.financialHealth'), icon: Shield },
   ];
 
   // Measure actual viewport width for pixel-perfect transform
@@ -348,8 +352,8 @@ function AnalyticsCarousel({
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.primary}12` }}>
                 <BarChart3 className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
               </div>
-              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>Cash Flow</CardTitle>
-              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full" style={{ color: THEME.muted, background: `${THEME.border}` }}>6 bln</span>
+              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.cashFlow')}</CardTitle>
+              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full" style={{ color: THEME.muted, background: `${THEME.border}` }}>{t('dashboard.sixMonthsShort')}</span>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -358,20 +362,20 @@ function AnalyticsCarousel({
                 <BarChart data={cashFlowData} barGap={4} barCategoryGap="20%">
                   <XAxis dataKey="name" tick={{ fontSize: 10, fill: THEME.muted }} axisLine={false} tickLine={false} width={35} />
                   <YAxis tick={{ fontSize: 9, fill: THEME.muted }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}rb` : String(v)} width={38} />
-                  <Tooltip content={<ChartTooltip formatter={(v: number) => getCurrencyFormat(v)} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                  <Bar dataKey="income" name="Income" fill={THEME.secondary} radius={[4, 4, 0, 0]} maxBarSize={28} />
-                  <Bar dataKey="expense" name="Expense" fill={THEME.destructive} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Tooltip content={<ChartTooltip formatter={(v: number) => formatAmount(v)} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                  <Bar dataKey="income" name={t('dashboard.income')} fill={THEME.secondary} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="expense" name={t('dashboard.expense')} fill={THEME.destructive} radius={[4, 4, 0, 0]} maxBarSize={28} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <div className="flex items-center gap-4 mt-3 justify-center">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: THEME.secondary }} />
-                <span className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>Income</span>
+                <span className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>{t('dashboard.income')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: THEME.destructive }} />
-                <span className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>Expense</span>
+                <span className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>{t('dashboard.expense')}</span>
               </div>
             </div>
           </CardContent>
@@ -385,12 +389,12 @@ function AnalyticsCarousel({
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.destructive}12` }}>
                 <PieChartIcon className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
               </div>
-              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>Top Spending</CardTitle>
+              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.topSpending')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {categoryData.length === 0 ? (
-              <p className="text-xs text-center py-8" style={{ color: THEME.muted }}>Belum ada data pengeluaran</p>
+              <p className="text-xs text-center py-8" style={{ color: THEME.muted }}>{t('dashboard.noExpenseData')}</p>
             ) : (
               <div className="flex flex-col items-center gap-3">
                 <div className="h-40 w-40 shrink-0">
@@ -401,7 +405,7 @@ function AnalyticsCarousel({
                           <Cell key={i} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip formatter={(v: number) => getCurrencyFormat(v)} />} />
+                      <Tooltip content={<ChartTooltip formatter={(v: number) => formatAmount(v)} />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -411,7 +415,10 @@ function AnalyticsCarousel({
                     return (
                       <div key={i} className="space-y-1">
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
+                          <div className="flex items-center gap-1 min-w-0">
+                            {cat.icon && <DynamicIcon name={cat.icon} className="h-3 w-3 shrink-0" style={{ color: cat.color }} />}
+                            <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
+                          </div>
                           <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
@@ -434,7 +441,7 @@ function AnalyticsCarousel({
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.secondary}12` }}>
                 <Shield className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
               </div>
-              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>Financial Health</CardTitle>
+              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.financialHealth')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -444,10 +451,10 @@ function AnalyticsCarousel({
               </div>
               <div className="flex-1 w-full space-y-3 min-w-0">
                 {[
-                  { label: 'Savings Rate', score: healthBreakdown.savingsRateScore },
-                  { label: 'Consistency', score: healthBreakdown.consistencyScore },
-                  { label: 'Target Progress', score: healthBreakdown.targetProgressScore },
-                  { label: 'Growth', score: healthBreakdown.growthScore },
+                  { label: t('dashboard.savingsRate'), score: healthBreakdown.savingsRateScore },
+                  { label: t('dashboard.consistency'), score: healthBreakdown.consistencyScore },
+                  { label: t('dashboard.targetProgress'), score: healthBreakdown.targetProgressScore },
+                  { label: t('dashboard.growth'), score: healthBreakdown.growthScore },
                 ].map((item) => (
                   <div key={item.label} className="space-y-1">
                     <div className="flex items-center justify-between">
@@ -487,10 +494,10 @@ function AnalyticsCarousel({
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" style={{ color: THEME.primary }} />
                   <CardTitle className="text-sm" style={{ color: THEME.text }}>
-                    Cash Flow
+                    {t('dashboard.cashFlow')}
                   </CardTitle>
                   <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: THEME.muted }}>
-                    6 bln
+                    {t('dashboard.sixMonthsShort')}
                   </span>
                 </div>
               </CardHeader>
@@ -513,22 +520,22 @@ function AnalyticsCarousel({
                         width={38}
                       />
                       <Tooltip
-                        content={<ChartTooltip formatter={(v: number) => getCurrencyFormat(v)} />}
+                        content={<ChartTooltip formatter={(v: number) => formatAmount(v)} />}
                         cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                       />
-                      <Bar dataKey="income" name="Income" fill={THEME.secondary} radius={[4, 4, 0, 0]} maxBarSize={28} />
-                      <Bar dataKey="expense" name="Expense" fill={THEME.destructive} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="income" name={t('dashboard.income')} fill={THEME.secondary} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="expense" name={t('dashboard.expense')} fill={THEME.destructive} radius={[4, 4, 0, 0]} maxBarSize={28} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="flex items-center gap-4 mt-1.5 justify-center">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: THEME.secondary }} />
-                    <span className="text-[10px]" style={{ color: THEME.muted }}>Income</span>
+                    <span className="text-[10px]" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: THEME.destructive }} />
-                    <span className="text-[10px]" style={{ color: THEME.muted }}>Expense</span>
+                    <span className="text-[10px]" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
                   </div>
                 </div>
               </CardContent>
@@ -548,14 +555,14 @@ function AnalyticsCarousel({
                 <div className="flex items-center gap-2">
                   <PieChartIcon className="h-4 w-4" style={{ color: THEME.primary }} />
                   <CardTitle className="text-sm" style={{ color: THEME.text }}>
-                    Top Spending
+                    {t('dashboard.topSpending')}
                   </CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
                 {categoryData.length === 0 ? (
                   <p className="text-xs text-center py-6" style={{ color: THEME.muted }}>
-                    Belum ada data pengeluaran
+                    {t('dashboard.noExpenseData')}
                   </p>
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-3 items-center">
@@ -578,7 +585,7 @@ function AnalyticsCarousel({
                             ))}
                           </Pie>
                           <Tooltip
-                            content={<ChartTooltip formatter={(v: number) => getCurrencyFormat(v)} />}
+                            content={<ChartTooltip formatter={(v: number) => formatAmount(v)} />}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -590,9 +597,12 @@ function AnalyticsCarousel({
                         return (
                           <div key={i} className="space-y-0.5">
                             <div className="flex items-center justify-between gap-1">
-                              <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>
-                                {cat.name}
-                              </span>
+                              <div className="flex items-center gap-1 min-w-0">
+                                {cat.icon && <DynamicIcon name={cat.icon} className="h-3 w-3 shrink-0" style={{ color: cat.color }} />}
+                                <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>
+                                  {cat.name}
+                                </span>
+                              </div>
                               <span className="text-[10px] shrink-0" style={{ color: THEME.muted }}>
                                 {pct.toFixed(0)}%
                               </span>
@@ -632,7 +642,7 @@ function AnalyticsCarousel({
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4" style={{ color: THEME.primary }} />
                   <CardTitle className="text-sm" style={{ color: THEME.text }}>
-                    Financial Health
+                    {t('dashboard.financialHealth')}
                   </CardTitle>
                 </div>
               </CardHeader>
@@ -650,10 +660,10 @@ function AnalyticsCarousel({
                   {/* Breakdown bars */}
                   <div className="flex-1 w-full space-y-2.5 min-w-0">
                     {[
-                      { label: 'Savings Rate', score: healthBreakdown.savingsRateScore },
-                      { label: 'Consistency', score: healthBreakdown.consistencyScore },
-                      { label: 'Target Progress', score: healthBreakdown.targetProgressScore },
-                      { label: 'Growth', score: healthBreakdown.growthScore },
+                      { label: t('dashboard.savingsRate'), score: healthBreakdown.savingsRateScore },
+                      { label: t('dashboard.consistency'), score: healthBreakdown.consistencyScore },
+                      { label: t('dashboard.targetProgress'), score: healthBreakdown.targetProgressScore },
+                      { label: t('dashboard.growth'), score: healthBreakdown.growthScore },
                     ].map((item) => (
                       <div key={item.label} className="space-y-0.5">
                         <div className="flex items-center justify-between">
@@ -704,6 +714,8 @@ function AnalyticsCarousel({
 
 // ── Main Dashboard Component ────────────────────────────────────
 export function Dashboard() {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState({ month: 'all', year: 'all' });
@@ -780,9 +792,9 @@ export function Dashboard() {
       items.push({
         id: 'unallocated',
         type: 'opportunity',
-        title: 'Allocate Your Idle Funds',
-        description: `${getCurrencyFormat(data.unallocatedFunds)} sitting unallocated`,
-        detail: `Potential yearly gain: +${getCurrencyFormat(potentialGrowth)}`,
+        title: t('dashboard.unallocatedTitle'),
+        description: t('dashboard.unallocatedDesc', { amount: formatAmount(data.unallocatedFunds) }),
+        detail: t('dashboard.unallocatedDetail', { amount: formatAmount(potentialGrowth) }),
         icon: <Sparkles className="h-4 w-4" />,
         accent: THEME.primary,
       });
@@ -796,9 +808,9 @@ export function Dashboard() {
         items.push({
           id: 'accelerate',
           type: 'opportunity',
-          title: 'Almost at Next Level',
-          description: `${getCurrencyFormat(amountNeeded)} away from ${nextStage.name}`,
-          detail: `Save ${getCurrencyFormat(monthlyBoost)}/mo to reach it in 3 months`,
+          title: t('dashboard.almostNextLevelTitle'),
+          description: t('dashboard.almostNextLevelDesc', { amount: formatAmount(amountNeeded), stage: nextStage.name }),
+          detail: t('dashboard.almostNextLevelDetail', { amount: formatAmount(monthlyBoost) }),
           icon: <Zap className="h-4 w-4" />,
           accent: THEME.primary,
         });
@@ -810,9 +822,9 @@ export function Dashboard() {
       items.push({
         id: 'low-savings-rate',
         type: 'warning',
-        title: 'Savings Rate Below Target',
-        description: `Current: ${data.savingsRate.toFixed(1)}% | Target: 20%`,
-        detail: 'Try to cut unnecessary expenses to boost savings',
+        title: t('dashboard.lowSavingsTitle'),
+        description: t('dashboard.lowSavingsDesc', { rate: data.savingsRate.toFixed(1) }),
+        detail: t('dashboard.lowSavingsDetail'),
         icon: <AlertTriangle className="h-4 w-4" />,
         accent: THEME.warning,
       });
@@ -823,9 +835,9 @@ export function Dashboard() {
       items.push({
         id: 'stagnant',
         type: 'warning',
-        title: 'Growth Stagnant',
-        description: 'No savings growth in the last 30 days',
-        detail: 'Review expenses and reduce unnecessary spending',
+        title: t('dashboard.stagnantTitle'),
+        description: t('dashboard.stagnantDesc'),
+        detail: t('dashboard.stagnantDetail'),
         icon: <TrendingDown className="h-4 w-4" />,
         accent: THEME.destructive,
       });
@@ -836,9 +848,9 @@ export function Dashboard() {
       items.push({
         id: 'accelerating',
         type: 'achievement',
-        title: 'Momentum Building',
-        description: 'Growth speed increased this week',
-        detail: `+${getCurrencyFormat(data.last7DaysGrowth)} in last 7 days`,
+        title: t('dashboard.momentumTitle'),
+        description: t('dashboard.momentumDesc'),
+        detail: t('dashboard.momentumDetail', { amount: formatAmount(data.last7DaysGrowth) }),
         icon: <Flame className="h-4 w-4" />,
         accent: THEME.secondary,
       });
@@ -849,9 +861,9 @@ export function Dashboard() {
       items.push({
         id: 'high-rate',
         type: 'achievement',
-        title: 'Strong Savings Rate',
-        description: `Saving ${data.savingsRate.toFixed(0)}% of income`,
-        detail: 'You are above the recommended 20% threshold',
+        title: t('dashboard.strongSavingsTitle'),
+        description: t('dashboard.strongSavingsDesc', { rate: data.savingsRate.toFixed(0) }),
+        detail: t('dashboard.strongSavingsDetail'),
         icon: <Trophy className="h-4 w-4" />,
         accent: THEME.secondary,
       });
@@ -866,9 +878,9 @@ export function Dashboard() {
         items.push({
           id: 'budget-almost-full',
           type: 'warning',
-          title: 'Budget Hampir Penuh',
-          description: `Pengeluaran ${burnRatio.toFixed(0)}% dari income bulan ini`,
-          detail: `Sisa ${getCurrencyFormat(mc.currentMonthIncome - mc.currentMonthExpense)} untuk ditabung`,
+          title: t('dashboard.budgetAlmostFull'),
+          description: t('dashboard.budgetAlmostFullDesc', { percent: burnRatio.toFixed(0) }),
+          detail: t('dashboard.budgetAlmostFullDetail', { amount: formatAmount(mc.currentMonthIncome - mc.currentMonthExpense) }),
           icon: <Timer className="h-4 w-4" />,
           accent: THEME.warning,
         });
@@ -876,9 +888,9 @@ export function Dashboard() {
         items.push({
           id: 'budget-over',
           type: 'warning',
-          title: 'Pengeluaran Melebihi Income',
-          description: `Defisit ${getCurrencyFormat(mc.currentMonthExpense - mc.currentMonthIncome)} bulan ini`,
-          detail: 'Segera review pengeluaran dan cari sumber income tambahan',
+          title: t('dashboard.budgetOver'),
+          description: t('dashboard.budgetOverDesc', { amount: formatAmount(mc.currentMonthExpense - mc.currentMonthIncome) }),
+          detail: t('dashboard.budgetOverDetail'),
           icon: <AlertTriangle className="h-4 w-4" />,
           accent: THEME.destructive,
         });
@@ -891,9 +903,9 @@ export function Dashboard() {
       items.push({
         id: 'expense-surge',
         type: 'warning',
-        title: 'Lonjakan Pengeluaran',
-        description: `Pengeluaran naik +${mc.expenseChange.toFixed(0)}% vs bulan lalu`,
-        detail: `+${getCurrencyFormat(extraSpending)} lebih banyak dari bulan kemarin`,
+        title: t('dashboard.expenseSurge'),
+        description: t('dashboard.expenseSurgeDesc', { percent: mc.expenseChange.toFixed(0) }),
+        detail: t('dashboard.expenseSurgeDetail', { amount: formatAmount(extraSpending) }),
         icon: <Radar className="h-4 w-4" />,
         accent: '#FF7043',
       });
@@ -906,9 +918,9 @@ export function Dashboard() {
         items.push({
           id: 'category-surge',
           type: 'warning',
-          title: `Lonjakan: ${surged.name}`,
-          description: `${surged.name} naik +${surged.trendPercentage.toFixed(0)}% dari bulan lalu`,
-          detail: `${getCurrencyFormat(surged.amount)} bulan ini di ${surged.name}`,
+          title: t('dashboard.categorySurgeTitle', { name: surged.name }),
+          description: t('dashboard.categorySurgeDesc', { name: surged.name, percent: surged.trendPercentage.toFixed(0) }),
+          detail: t('dashboard.categorySurgeDetail', { amount: formatAmount(surged.amount), name: surged.name }),
           icon: <Eye className="h-4 w-4" />,
           accent: '#FF7043',
         });
@@ -924,9 +936,9 @@ export function Dashboard() {
         items.push({
           id: 'big-expense',
           type: 'warning',
-          title: 'Transaksi Besar Terdeteksi',
-          description: `"${bigTx.description}" — ${getCurrencyFormat(bigTx.amount)}`,
-          detail: `${((bigTx.amount / averages.transactionSize) - 1).toFixed(0)}x lebih besar dari rata-rata`,
+          title: t('dashboard.bigTransaction'),
+          description: t('dashboard.bigTransactionDesc', { desc: bigTx.description, amount: formatAmount(bigTx.amount) }),
+          detail: t('dashboard.bigTransactionDetail', { times: ((bigTx.amount / averages.transactionSize) - 1).toFixed(0) }),
           icon: <Banknote className="h-4 w-4" />,
           accent: THEME.warning,
         });
@@ -946,9 +958,9 @@ export function Dashboard() {
       items.push({
         id: 'target-almost-done',
         type: 'achievement',
-        title: 'Target Hampir Tercapai!',
-        description: `${nearComplete.name} sudah ${pct.toFixed(0)}%`,
-        detail: `Tinggal ${getCurrencyFormat(remaining)} lagi!`,
+        title: t('dashboard.targetAlmostDone'),
+        description: t('dashboard.targetAlmostDoneDesc', { name: nearComplete.name, percent: pct.toFixed(0) }),
+        detail: t('dashboard.targetAlmostDoneDetail', { amount: formatAmount(remaining) }),
         icon: <CheckCircle2 className="h-4 w-4" />,
         accent: THEME.secondary,
       });
@@ -959,9 +971,9 @@ export function Dashboard() {
       items.push({
         id: 'all-on-track',
         type: 'achievement',
-        title: 'Semua Target On Track',
-        description: `${targetAnalytics.onTrack} target berjalan sesuai rencana`,
-        detail: 'Consistency is key — keep it up!',
+        title: t('dashboard.allOnTrackTitle'),
+        description: t('dashboard.allOnTrackDesc', { count: targetAnalytics.onTrack }),
+        detail: t('dashboard.allOnTrackDetail'),
         icon: <Trophy className="h-4 w-4" />,
         accent: THEME.secondary,
       });
@@ -972,9 +984,9 @@ export function Dashboard() {
       items.push({
         id: 'all-good',
         type: 'achievement',
-        title: 'All Systems Optimal',
-        description: 'Your financial health is looking good',
-        detail: 'Keep up the consistent saving habits',
+        title: t('dashboard.allGoodTitle'),
+        description: t('dashboard.allGoodDesc'),
+        detail: t('dashboard.allGoodDetail'),
         icon: <CheckCircle2 className="h-4 w-4" />,
         accent: THEME.secondary,
       });
@@ -1016,6 +1028,7 @@ export function Dashboard() {
         value: c.amount,
         color: c.color || CATEGORY_COLORS[i % CATEGORY_COLORS.length],
         percentage: c.percentage,
+        icon: c.icon,
       }));
     }
     if (!data?.expenseByCategory?.length) return [];
@@ -1024,6 +1037,7 @@ export function Dashboard() {
       value: c.amount,
       color: c.color || CATEGORY_COLORS[i % CATEGORY_COLORS.length],
       percentage: data.totalExpense > 0 ? ((c.amount / data.totalExpense) * 100).toFixed(1) : '0',
+      icon: c.icon,
     }));
   }, [topCats, data]);
 
@@ -1060,7 +1074,7 @@ export function Dashboard() {
     <div className="space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full">
       {/* ═══ Section 1: Filter Bar ═══ */}
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold shrink-0" style={{ color: THEME.text }}>Dashboard</h2>
+        <h2 className="text-lg font-semibold shrink-0" style={{ color: THEME.text }}>{t('nav.dashboard')}</h2>
         <div className="flex gap-1.5 shrink-0">
           <Select value={filter.month} onValueChange={(v) => setFilter({ ...filter, month: v })}>
             <SelectTrigger
@@ -1071,10 +1085,10 @@ export function Dashboard() {
                 color: THEME.textSecondary,
               }}
             >
-              <SelectValue placeholder="Bulan" />
+              <SelectValue placeholder={t('kas.filterMonth')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua</SelectItem>
+              <SelectItem value="all">{t('filter.all')}</SelectItem>
               {[...Array(12)].map((_, i) => (
                 <SelectItem key={i + 1} value={String(i + 1)}>
                   {format(new Date(2025, i, 1), 'MMMM', { locale: idLocale })}
@@ -1091,10 +1105,10 @@ export function Dashboard() {
                 color: THEME.textSecondary,
               }}
             >
-              <SelectValue placeholder="Tahun" />
+              <SelectValue placeholder={t('dashboard.sixMonthsShort')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua</SelectItem>
+              <SelectItem value="all">{t('filter.all')}</SelectItem>
               <SelectItem value="2023">2023</SelectItem>
               <SelectItem value="2024">2024</SelectItem>
               <SelectItem value="2025">2025</SelectItem>
@@ -1118,10 +1132,10 @@ export function Dashboard() {
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Wallet className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>Net Worth</span>
+              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.netWorth')}</span>
             </div>
             <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
-              {getCurrencyFormat(data.totalSavings)}
+              {formatAmount(data.totalSavings)}
             </p>
             <div className="flex items-center gap-1 mt-1 overflow-hidden">
               <span
@@ -1132,7 +1146,7 @@ export function Dashboard() {
               </span>
               {nextStage && (
                 <span className="text-[10px] truncate" style={{ color: THEME.muted }}>
-                  {progressToNext.toFixed(0)}% to {nextStage.name}
+                  {progressToNext.toFixed(0)}% {t('dashboard.toNext')} {nextStage.name}
                 </span>
               )}
             </div>
@@ -1153,16 +1167,16 @@ export function Dashboard() {
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <ArrowUpRight className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
-                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>Income</span>
+                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
               </div>
               {mc && getTrendIcon(mc.incomeChange)}
             </div>
             <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
-              {getCurrencyFormat(mc?.currentMonthIncome ?? data.totalIncome)}
+              {formatAmount(mc?.currentMonthIncome ?? data.totalIncome)}
             </p>
             {mc && mc.incomeChange !== 0 && (
               <p className="text-[10px] sm:text-[11px] mt-1 truncate" style={{ color: getTrendColor(mc.incomeChange) }}>
-                {mc.incomeChange > 0 ? '+' : ''}{mc.incomeChange.toFixed(1)}% vs lalu
+                {mc.incomeChange > 0 ? '+' : ''}{mc.incomeChange.toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
           </CardContent>
@@ -1182,16 +1196,16 @@ export function Dashboard() {
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <ArrowDownRight className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
-                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>Expense</span>
+                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
               </div>
               {mc && getTrendIcon(mc.expenseChange, true)}
             </div>
             <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
-              {getCurrencyFormat(mc?.currentMonthExpense ?? data.totalExpense)}
+              {formatAmount(mc?.currentMonthExpense ?? data.totalExpense)}
             </p>
             {mc && mc.expenseChange !== 0 && (
               <p className="text-[10px] sm:text-[11px] mt-1 truncate" style={{ color: getTrendColor(mc.expenseChange, true) }}>
-                {mc.expenseChange > 0 ? '+' : ''}{mc.expenseChange.toFixed(1)}% vs lalu
+                {mc.expenseChange > 0 ? '+' : ''}{mc.expenseChange.toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
           </CardContent>
@@ -1210,13 +1224,13 @@ export function Dashboard() {
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Activity className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
-              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>Savings Rate</span>
+              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.savingsRate')}</span>
             </div>
             <div className="flex items-end gap-3">
               <SavingsRateGauge rate={data.savingsRate} />
               <div className="pb-1">
                 <p className="text-xs" style={{ color: THEME.muted }}>
-                  Target: 20%
+                  {t('dashboard.savingsTarget20')}
                 </p>
               </div>
             </div>
@@ -1241,13 +1255,13 @@ export function Dashboard() {
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
             <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
-              Smart Insights
+              {t('dashboard.smartInsights')}
             </h3>
           </div>
           {/* Mobile: horizontal scroll */}
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 lg:hidden">
             {insights.map((insight) => {
-              const typeLabel = insight.type === 'opportunity' ? 'Opportunity' : insight.type === 'warning' ? 'Warning' : 'Achievement';
+              const typeLabel = insight.type === 'opportunity' ? t('dashboard.insightOpportunity') : insight.type === 'warning' ? t('dashboard.insightWarning') : t('dashboard.insightAchievement');
               const typeBg = insight.type === 'opportunity' ? THEME.primary + '20' : insight.type === 'warning' ? THEME.warning + '20' : THEME.secondary + '20';
               return (
                 <div
@@ -1307,7 +1321,7 @@ export function Dashboard() {
           {/* Desktop: 3-column grid */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-5">
             {insights.map((insight) => {
-              const typeLabel = insight.type === 'opportunity' ? 'Opportunity' : insight.type === 'warning' ? 'Warning' : 'Achievement';
+              const typeLabel = insight.type === 'opportunity' ? t('dashboard.insightOpportunity') : insight.type === 'warning' ? t('dashboard.insightWarning') : t('dashboard.insightAchievement');
               const typeBg = insight.type === 'opportunity' ? THEME.primary + '20' : insight.type === 'warning' ? THEME.warning + '20' : THEME.secondary + '20';
               return (
                 <div
@@ -1363,18 +1377,18 @@ export function Dashboard() {
             <div className="flex items-center gap-2">
               <Target className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
               <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
-                Savings Targets
+                {t('dashboard.savingsTargets')}
               </h3>
             </div>
             <div className="flex items-center gap-2">
               {targetAnalytics.onTrack > 0 && (
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: THEME.secondary + '15', color: THEME.secondary }}>
-                  {targetAnalytics.onTrack} on track
+                  {targetAnalytics.onTrack} {t('dashboard.onTrack')}
                 </span>
               )}
               {targetAnalytics.behind > 0 && (
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: THEME.destructive + '15', color: THEME.destructive }}>
-                  {targetAnalytics.behind} behind
+                  {targetAnalytics.behind} {t('dashboard.behind')}
                 </span>
               )}
             </div>
@@ -1445,10 +1459,10 @@ export function Dashboard() {
                         {target.name}
                       </h4>
                       <p className="text-[10px]" style={{ color: THEME.muted }}>
-                        {getCurrencyFormat(target.currentAmount)}
+                        {formatAmount(target.currentAmount)}
                       </p>
                       <p className="text-[10px]" style={{ color: THEME.muted }}>
-                        of {getCurrencyFormat(target.targetAmount)}
+                        of {formatAmount(target.targetAmount)}
                       </p>
                       {remaining > 0 && (
                         <div className="flex items-center gap-1 pt-0.5">
@@ -1503,8 +1517,8 @@ export function Dashboard() {
                     </div>
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <h4 className="text-xs font-semibold truncate" style={{ color: THEME.text }}>{target.name}</h4>
-                      <p className="text-[10px]" style={{ color: THEME.muted }}>{getCurrencyFormat(target.currentAmount)}</p>
-                      <p className="text-[10px]" style={{ color: THEME.muted }}>of {getCurrencyFormat(target.targetAmount)}</p>
+                      <p className="text-[10px]" style={{ color: THEME.muted }}>{formatAmount(target.currentAmount)}</p>
+                      <p className="text-[10px]" style={{ color: THEME.muted }}>of {formatAmount(target.targetAmount)}</p>
                       {remaining > 0 && (
                         <div className="flex items-center gap-1 pt-0.5">
                           <div className="h-1 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -1537,37 +1551,37 @@ export function Dashboard() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="text-center">
               <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                Pengeluaran / Hari
+                {t('dashboard.expensePerDay')}
               </p>
               <p className="text-sm font-semibold" style={{ color: THEME.text }}>
-                {getCurrencyFormat(averages.dailyExpense)}
+                {formatAmount(averages.dailyExpense)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                Pengeluaran / Minggu
+                {t('dashboard.expensePerWeek')}
               </p>
               <p className="text-sm font-semibold" style={{ color: THEME.text }}>
-                {getCurrencyFormat(averages.weeklyExpense)}
+                {formatAmount(averages.weeklyExpense)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                Ketahanan Dana
+                {t('dashboard.fundResilience')}
               </p>
               <p className="text-sm font-semibold" style={{ color: forecast.runwayMonths === -1 ? THEME.secondary : THEME.text }}>
-                {forecast.runwayMonths === -1 ? 'Aman' : forecast.runwayMonths > 0 ? `${forecast.runwayMonths} bulan` : '0 bulan'}
+                {forecast.runwayMonths === -1 ? t('dashboard.safe') : forecast.runwayMonths > 0 ? `${forecast.runwayMonths} ${t('dashboard.monthsUnit')}` : `0 ${t('dashboard.monthsUnit')}`}
               </p>
               {forecast.runwayMonths === -1 && (
-                <p className="text-[9px]" style={{ color: THEME.muted }}>Surplus bulan ini</p>
+                <p className="text-[9px]" style={{ color: THEME.muted }}>{t('dashboard.surplusThisMonth')}</p>
               )}
             </div>
             <div className="text-center">
               <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                Rata-rata Transaksi
+                {t('dashboard.avgTransaction')}
               </p>
               <p className="text-sm font-semibold" style={{ color: THEME.text }}>
-                {getCurrencyFormat(averages.transactionSize)}
+                {formatAmount(averages.transactionSize)}
               </p>
             </div>
           </div>

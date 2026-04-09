@@ -4,7 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Lock, Check } from 'lucide-react';
 import { Stage, STAGES } from './types';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 
 interface AllStagesGridProps {
   totalSavings: number;
@@ -12,6 +13,9 @@ interface AllStagesGridProps {
 }
 
 export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridProps) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
+
   const isStageUnlocked = (stage: Stage): boolean => {
     return totalSavings >= stage.range[0];
   };
@@ -76,7 +80,7 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
                       {stage.name}
                     </h3>
                     {current && (
-                      <p className="text-[10px] text-primary font-medium">Fase Saat Ini</p>
+                      <p className="text-[10px] text-primary font-medium">{t('stages.currentStage')}</p>
                     )}
                   </div>
                 </div>
@@ -85,8 +89,8 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
                 <div className="text-xs text-muted-foreground">
                   <p className={unlocked ? '' : 'blur-sm opacity-50'}>
                     {stage.range[1] === Infinity
-                      ? `> ${getCurrencyFormat(stage.range[0])}`
-                      : `${getCurrencyFormat(stage.range[0])} - ${getCurrencyFormat(stage.range[1])}`
+                      ? `> ${formatAmount(stage.range[0])}`
+                      : `${formatAmount(stage.range[0])} - ${formatAmount(stage.range[1])}`
                     }
                   </p>
                 </div>
@@ -105,12 +109,12 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
                     <div className="space-y-2">
                       <p className="font-semibold">{stage.name}</p>
                       <div className="text-sm space-y-1">
-                        <p><span className="font-medium">Mindset:</span> {stage.advice}</p>
-                        <p><span className="font-medium">Fokus:</span> {stage.focus}</p>
+                        <p><span className="font-medium">{t('stages.mindset')}:</span> {stage.advice}</p>
+                        <p><span className="font-medium">{t('stages.focus')}:</span> {stage.focus}</p>
                       </div>
                       {current && (
                         <p className="text-xs text-primary mt-2">
-                          {progress.toFixed(0)}% lagi menuju fase selanjutnya
+                          {t('stages.progressPercentToNext', { percent: progress.toFixed(0) })}
                         </p>
                       )}
                     </div>

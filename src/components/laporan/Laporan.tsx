@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Download, Loader2, Target, Wallet, ArrowUpRight, ArrowDownRight, FileText } from 'lucide-react';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 
 // ── Theme ──
 const T = {
@@ -27,6 +29,8 @@ interface Transaction {
 interface SavingsTarget { id: string; name: string; targetAmount: number; currentAmount: number; targetDate: string; }
 
 export function Laporan() {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,19 +61,19 @@ export function Laporan() {
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transactions.map(t => ({
-      Tipe: t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
-      Kategori: t.category.name,
-      Deskripsi: t.description || '-',
-      Nominal: t.amount,
-      Tanggal: format(new Date(t.date), 'dd/MM/yyyy', { locale: id }),
-    }))), 'Transaksi');
+      [t('laporan.excelType')]: t.type === 'income' ? t('laporan.income') : t('laporan.expense'),
+      [t('laporan.excelCategory')]: t.category.name,
+      [t('laporan.excelDescription')]: t.description || '-',
+      [t('laporan.excelAmount')]: t.amount,
+      [t('laporan.excelDate')]: format(new Date(t.date), 'dd/MM/yyyy', { locale: id }),
+    }))), t('laporan.transactionSheetName'));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(savingsTargets.map(s => ({
-      'Target': s.name, 'Jumlah': s.targetAmount, 'Terkumpul': s.currentAmount,
-      Progress: `${((s.currentAmount / s.targetAmount) * 100).toFixed(1)}%`,
-      'Deadline': format(new Date(s.targetDate), 'dd/MM/yyyy', { locale: id }),
-    }))), 'Target Tabungan');
-    XLSX.writeFile(wb, `Laporan_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
-    toast.success('File berhasil diunduh!');
+      [t('laporan.targetName')]: s.name, [t('laporan.targetAmount')]: s.targetAmount, [t('laporan.collected')]: s.currentAmount,
+      [t('laporan.progress')]: `${((s.currentAmount / s.targetAmount) * 100).toFixed(1)}%`,
+      [t('laporan.deadline')]: format(new Date(s.targetDate), 'dd/MM/yyyy', { locale: id }),
+    }))), t('laporan.targetSheetName'));
+    XLSX.writeFile(wb, `${t('laporan.excelFilename')}_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
+    toast.success(t('laporan.downloadSuccess'));
   };
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -91,7 +95,7 @@ export function Laporan() {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-7 w-7 animate-spin" style={{ color: T.primary }} /></div>;
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-7 h-7 animate-spin" style={{ color: T.primary }} /></div>;
   }
 
   return (
@@ -99,8 +103,8 @@ export function Laporan() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Laporan</p>
-          <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{txCount} transaksi</p>
+          <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('laporan.title')}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{t('laporan.transactionCount', { count: txCount })}</p>
         </div>
         <button
           onClick={exportToExcel}
@@ -109,7 +113,7 @@ export function Laporan() {
           style={{ background: `${T.secondary}12`, color: T.secondary, border: `1px solid ${T.secondary}20` }}
         >
           <Download className="h-3.5 w-3.5" />
-          Export
+          {t('laporan.export')}
         </button>
       </div>
 
@@ -117,7 +121,7 @@ export function Laporan() {
       <div className="space-y-2">
         {/* Type filter */}
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-          {([['all', 'Semua'], ['income', 'Masuk'], ['expense', 'Keluar']] as const).map(([val, label]) => (
+          {([['all', t('laporan.all')], ['income', t('laporan.income')], ['expense', t('laporan.expense')]] as const).map(([val, label]) => (
             <button key={val} onClick={() => setFilter({ ...filter, type: val })} className={filterBtnCls(filter.type === val)} style={filterStyle(filter.type === val)}>
               {label}
             </button>
@@ -126,14 +130,14 @@ export function Laporan() {
         {/* Month/Year filters — side by side on desktop */}
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-            {([['all', 'Semua'], ['1', 'Jan'], ['2', 'Feb'], ['3', 'Mar'], ['4', 'Apr'], ['5', 'Mei'], ['6', 'Jun'], ['7', 'Jul'], ['8', 'Agu'], ['9', 'Sep'], ['10', 'Okt'], ['11', 'Nov'], ['12', 'Des']] as const).map(([val, label]) => (
+            {([['all', t('laporan.all')], ['1', 'Jan'], ['2', 'Feb'], ['3', 'Mar'], ['4', 'Apr'], ['5', 'Mei'], ['6', 'Jun'], ['7', 'Jul'], ['8', 'Agu'], ['9', 'Sep'], ['10', 'Okt'], ['11', 'Nov'], ['12', 'Des']] as const).map(([val, label]) => (
               <button key={val} onClick={() => setFilter({ ...filter, month: val })} className={filterBtnCls(filter.month === val)} style={filterStyle(filter.month === val)}>
                 {label}
               </button>
             ))}
           </div>
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-            {([['all', 'Semua'], ['2023', '2023'], ['2024', '2024'], ['2025', '2025']] as const).map(([val, label]) => (
+            {([['all', t('laporan.all')], ['2023', '2023'], ['2024', '2024'], ['2025', '2025']] as const).map(([val, label]) => (
               <button key={val} onClick={() => setFilter({ ...filter, year: val })} className={filterBtnCls(filter.year === val)} style={filterStyle(filter.year === val)}>
                 {label}
               </button>
@@ -145,10 +149,10 @@ export function Laporan() {
       {/* KPI Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-4">
         {[
-          { label: 'Pemasukan', value: totalIncome, color: T.secondary, icon: ArrowUpRight, sub: '+income' },
-          { label: 'Pengeluaran', value: totalExpense, color: T.destructive, icon: ArrowDownRight, sub: '-expense' },
-          { label: 'Saldo', value: balance, color: balance >= 0 ? T.secondary : T.destructive, icon: Wallet, sub: 'net balance' },
-          { label: 'Tabungan', value: totalSavings, color: T.primary, icon: Target, sub: 'terkumpul' },
+          { label: t('laporan.income'), value: totalIncome, color: T.secondary, icon: ArrowUpRight, sub: '+income' },
+          { label: t('laporan.expense'), value: totalExpense, color: T.destructive, icon: ArrowDownRight, sub: '-expense' },
+          { label: t('laporan.balance'), value: balance, color: balance >= 0 ? T.secondary : T.destructive, icon: Wallet, sub: 'net balance' },
+          { label: t('laporan.savings'), value: totalSavings, color: T.primary, icon: Target, sub: 'terkumpul' },
         ].map(item => (
           <div key={item.label} className="p-3 lg:p-4 rounded-xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-1.5 mb-1">
@@ -156,7 +160,7 @@ export function Laporan() {
               <span className="text-[9px] uppercase tracking-wider font-medium" style={{ color: T.muted }}>{item.label}</span>
             </div>
             <p className="text-sm sm:text-base lg:text-lg font-bold truncate" style={{ color: item.color }}>
-              {getCurrencyFormat(item.value)}
+              {formatAmount(item.value)}
             </p>
           </div>
         ))}
@@ -165,15 +169,15 @@ export function Laporan() {
       {/* Cash Flow Analytics */}
       <div className="p-3 sm:p-4 lg:p-5 rounded-xl grid grid-cols-3 gap-3 lg:gap-6" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
         <div className="text-center">
-          <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Savings Rate</p>
+          <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.savingsRate')}</p>
           <p className="text-base lg:text-xl font-bold" style={{ color: savingsRate >= 20 ? T.secondary : T.warning }}>{savingsRate.toFixed(1)}%</p>
         </div>
         <div className="text-center">
-          <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Avg Harian</p>
-          <p className="text-base lg:text-xl font-bold truncate" style={{ color: T.textSub }}>{getCurrencyFormat(avgDaily)}</p>
+          <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.dailyAvg')}</p>
+          <p className="text-base lg:text-xl font-bold truncate" style={{ color: T.textSub }}>{formatAmount(avgDaily)}</p>
         </div>
         <div className="text-center">
-          <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>Transaksi</p>
+          <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.transaction')}</p>
           <p className="text-base lg:text-xl font-bold" style={{ color: T.primary }}>{txCount}</p>
         </div>
       </div>
@@ -182,12 +186,12 @@ export function Laporan() {
       <div className="rounded-xl overflow-hidden" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
         <div className="flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2.5 lg:py-3" style={{ borderBottom: `1px solid ${T.border}` }}>
           <FileText className="h-4 w-4" style={{ color: T.primary }} />
-          <p className="text-xs font-semibold" style={{ color: T.text }}>Riwayat Transaksi</p>
+          <p className="text-xs font-semibold" style={{ color: T.text }}>{t('laporan.history')}</p>
         </div>
 
         {txCount === 0 ? (
           <div className="py-10 text-center">
-            <p className="text-xs" style={{ color: T.muted }}>Tidak ada data transaksi</p>
+            <p className="text-xs" style={{ color: T.muted }}>{t('laporan.noData')}</p>
           </div>
         ) : (
           <>
@@ -196,10 +200,10 @@ export function Laporan() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${T.border}` }}>
-                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-5 py-2.5" style={{ color: T.muted }}>Tanggal</th>
-                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: T.muted }}>Kategori</th>
-                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: T.muted }}>Deskripsi</th>
-                    <th className="text-right text-[10px] font-semibold uppercase tracking-wider px-5 py-2.5" style={{ color: T.muted }}>Nominal</th>
+                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-5 py-2.5" style={{ color: T.muted }}>{t('laporan.date')}</th>
+                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: T.muted }}>{t('laporan.category')}</th>
+                    <th className="text-left text-[10px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: T.muted }}>{t('laporan.excelDescription')}</th>
+                    <th className="text-right text-[10px] font-semibold uppercase tracking-wider px-5 py-2.5" style={{ color: T.muted }}>{t('laporan.excelAmount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -218,7 +222,7 @@ export function Laporan() {
                             className="w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0"
                             style={{ background: `${tx.category.color}15` }}
                           >
-                            {tx.category.icon}
+                            <DynamicIcon name={tx.category.icon} className="h-3.5 w-3.5" />
                           </span>
                           <span className="text-[13px] font-medium truncate" style={{ color: T.text }}>{tx.category.name}</span>
                         </div>
@@ -227,7 +231,7 @@ export function Laporan() {
                         {tx.description || '-'}
                       </td>
                       <td className="px-5 py-3 text-right whitespace-nowrap font-semibold text-[13px]" style={{ color: tx.type === 'income' ? T.secondary : T.destructive }}>
-                        {tx.type === 'income' ? '+' : '-'}{getCurrencyFormat(tx.amount)}
+                        {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
                       </td>
                     </tr>
                   ))}
@@ -246,7 +250,7 @@ export function Laporan() {
                     className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm"
                     style={{ background: `${tx.category.color}15` }}
                   >
-                    {tx.category.icon}
+                    <DynamicIcon name={tx.category.icon} className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate" style={{ color: T.text }}>{tx.description || tx.category.name}</p>
@@ -260,7 +264,7 @@ export function Laporan() {
                     className="text-xs font-semibold shrink-0"
                     style={{ color: tx.type === 'income' ? T.secondary : T.destructive }}
                   >
-                    {tx.type === 'income' ? '+' : '-'}{getCurrencyFormat(tx.amount)}
+                    {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
                   </span>
                 </div>
               ))}
@@ -274,7 +278,7 @@ export function Laporan() {
         <div className="rounded-xl overflow-hidden" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2.5 lg:py-3" style={{ borderBottom: `1px solid ${T.border}` }}>
             <Target className="h-4 w-4" style={{ color: T.primary }} />
-            <p className="text-xs font-semibold" style={{ color: T.text }}>Target Tabungan</p>
+            <p className="text-xs font-semibold" style={{ color: T.text }}>{t('laporan.targetSavings')}</p>
           </div>
           {/* Desktop: grid layout */}
           <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 gap-4 p-5">
@@ -291,8 +295,8 @@ export function Laporan() {
                     <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px]" style={{ color: T.muted }}>{getCurrencyFormat(target.currentAmount)}</span>
-                    <span className="text-[11px]" style={{ color: T.muted }}>{getCurrencyFormat(target.targetAmount)}</span>
+                    <span className="text-[11px]" style={{ color: T.muted }}>{formatAmount(target.currentAmount)}</span>
+                    <span className="text-[11px]" style={{ color: T.muted }}>{formatAmount(target.targetAmount)}</span>
                   </div>
                 </div>
               );
@@ -314,8 +318,8 @@ export function Laporan() {
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-[9px]" style={{ color: T.muted }}>{getCurrencyFormat(target.currentAmount)}</span>
-                      <span className="text-[9px]" style={{ color: T.muted }}>{getCurrencyFormat(target.targetAmount)}</span>
+                      <span className="text-[9px]" style={{ color: T.muted }}>{formatAmount(target.currentAmount)}</span>
+                      <span className="text-[9px]" style={{ color: T.muted }}>{formatAmount(target.targetAmount)}</span>
                     </div>
                   </div>
                   <span className="text-[10px] shrink-0" style={{ color: T.muted }}>

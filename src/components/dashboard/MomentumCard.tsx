@@ -1,7 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface MomentumCardProps {
@@ -19,13 +20,16 @@ export function MomentumCard({
   momentumChange,
   savingsHistory,
 }: MomentumCardProps) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
+
   const getMomentumText = () => {
     if (momentumIndicator === 'accelerating') {
-      return 'Growth speed increased this week';
+      return t('dashboard.speedIncreased');
     } else if (momentumIndicator === 'slowing') {
-      return 'Growth is stable — small increase could boost results';
+      return t('dashboard.stableBoost');
     }
-    return 'Growth is stable — consistent pace';
+    return t('dashboard.stablePace');
   };
 
   const getMomentumColor = () => {
@@ -46,21 +50,21 @@ export function MomentumCard({
   return (
     <Card className="border-border bg-card">
       <CardHeader>
-        <CardTitle className="text-base">Speed Check</CardTitle>
+        <CardTitle className="text-base">{t('dashboard.speedCheck')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">7 Days</p>
+            <p className="text-xs text-muted-foreground">{t('dashboard.last7Days')}</p>
             <p className={`text-lg font-bold ${getMomentumColor()}`}>
-              {getCurrencyFormat(last7DaysGrowth)}
+              {formatAmount(last7DaysGrowth)}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">30 Days</p>
+            <p className="text-xs text-muted-foreground">{t('dashboard.last30Days')}</p>
             <p className="text-lg font-bold text-primary">
-              {getCurrencyFormat(last30DaysGrowth)}
+              {formatAmount(last30DaysGrowth)}
             </p>
           </div>
         </div>
@@ -89,7 +93,7 @@ export function MomentumCard({
                 }}
               />
               <Tooltip
-                formatter={(value: number) => getCurrencyFormat(value)}
+                formatter={(value: number) => formatAmount(value)}
                 labelFormatter={(label) => {
                   const date = new Date(label);
                   return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;

@@ -2,8 +2,10 @@
 
 import { Pencil, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { Category } from '@/types/transaction.types';
-import { getCurrencyFormat } from '@/lib/utils';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 
 interface CategoryListProps {
   categories: Category[];
@@ -15,6 +17,8 @@ interface CategoryListProps {
 }
 
 export function CategoryList({ categories, onEdit, onDelete, type, compact, categoryAmounts }: CategoryListProps) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   // ── Compact horizontal chips (mobile) ──
   if (compact || categories.length > 4) {
     return (
@@ -36,18 +40,18 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                   className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-sm"
                   style={{ backgroundColor: `${category.color}20` }}
                 >
-                  {category.icon}
+                  <DynamicIcon name={category.icon} className="h-3.5 w-3.5" />
                 </span>
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs font-medium text-white/90 truncate max-w-[100px]">
                     {category.name}
                   </span>
                   <span className="text-[9px] text-white/40">
-                    {transactionCount} trans
+                    {t('category.transactionCount', { count: transactionCount })}
                   </span>
                   {totalAmount > 0 && (
                     <span className="text-[9px] font-medium" style={{ color: category.color }}>
-                      {getCurrencyFormat(totalAmount)}
+                      {formatAmount(totalAmount)}
                     </span>
                   )}
                 </div>
@@ -57,7 +61,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
           })}
           {categories.length === 0 && (
             <div className="py-4 px-3 text-xs text-muted-foreground text-center w-full">
-              Belum ada kategori
+              {t('category.noData')}
             </div>
           )}
         </div>
@@ -79,16 +83,16 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                     className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-base"
                     style={{ backgroundColor: `${category.color}20` }}
                   >
-                    {category.icon}
+                    <DynamicIcon name={category.icon} className="h-4 w-4" />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{category.name}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {transactionCount} transaksi
+                      {t('category.transactionCount', { count: transactionCount })}
                     </p>
                     {totalAmount > 0 && (
                       <p className="text-[10px] font-semibold" style={{ color: category.color }}>
-                        Total: {getCurrencyFormat(totalAmount)}
+                        {t('category.total')}: {formatAmount(totalAmount)}
                       </p>
                     )}
                   </div>
@@ -117,7 +121,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
           })}
           {categories.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-              <p className="text-sm">Belum ada kategori. Tambah kategori baru!</p>
+              <p className="text-sm">{t('category.noData')} {t('category.noDataHint')}</p>
             </div>
           )}
         </div>
@@ -130,7 +134,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
     <div className="space-y-3">
       <div className="hidden lg:flex items-center justify-between">
         <span className="text-sm text-muted-foreground">
-          {categories.length} kategori
+          {categories.length} {t('kas.categories')}
         </span>
       </div>
 
@@ -150,16 +154,16 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                   className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-base"
                   style={{ backgroundColor: `${category.color}20` }}
                 >
-                  {category.icon}
+                  <DynamicIcon name={category.icon} className="h-4 w-4" />
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{category.name}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {transactionCount} transaksi
+                    {t('category.transactionCount', { count: transactionCount })}
                   </p>
                   {totalAmount > 0 && (
                     <p className="text-[10px] font-semibold" style={{ color: category.color }}>
-                      Total: {getCurrencyFormat(totalAmount)}
+                      {t('category.total')}: {formatAmount(totalAmount)}
                     </p>
                   )}
                 </div>
@@ -190,7 +194,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
 
       {categories.length === 0 && (
         <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-          <p className="text-sm">Belum ada kategori. Tambah kategori baru!</p>
+          <p className="text-sm">{t('category.noData')} {t('category.noDataHint')}</p>
         </div>
       )}
     </div>

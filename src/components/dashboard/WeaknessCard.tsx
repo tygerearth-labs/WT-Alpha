@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface WeaknessCardProps {
@@ -18,6 +19,9 @@ export function WeaknessCard({
   last30DaysGrowth,
   totalIncome,
 }: WeaknessCardProps) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
+
   // Identify weaknesses
   const weaknesses: Array<{
     id: string;
@@ -30,15 +34,15 @@ export function WeaknessCard({
 
   // Check 1: Unallocated funds
   if (unallocatedFunds > 50000) {
-    const daysIdle = 7; // Placeholder - would need to calculate from data
-    const potentialYearlyLoss = unallocatedFunds * 0.09; // Assuming 9% opportunity cost
+    const daysIdle = 7;
+    const potentialYearlyLoss = unallocatedFunds * 0.09;
 
     weaknesses.push({
       id: 'unallocated',
-      title: 'Allocation Pending',
-      description: `${getCurrencyFormat(unallocatedFunds)} idle for ${daysIdle}+ days`,
-      impact: `Estimated lost growth: ${getCurrencyFormat(potentialYearlyLoss)}/year`,
-      action: 'Allocate Funds',
+      title: t('dashboard.allocationPending'),
+      description: t('dashboard.allocationPendingDesc', { amount: formatAmount(unallocatedFunds), days: '7' }),
+      impact: t('dashboard.allocationPendingImpact', { amount: formatAmount(potentialYearlyLoss) }),
+      action: t('dashboard.allocateNow'),
       severity: 'high',
     });
   }
@@ -46,15 +50,14 @@ export function WeaknessCard({
   // Check 2: Low savings rate
   if (totalIncome > 0 && savingsRate < 10 && savingsRate >= 0) {
     const recommended = 20;
-    const gap = recommended - savingsRate;
     const potentialYearly = (totalIncome * (recommended / 100)) - (totalIncome * (savingsRate / 100));
 
     weaknesses.push({
       id: 'savings-rate',
-      title: 'Savings Rate Below Target',
-      description: `Current: ${savingsRate.toFixed(1)}% | Target: ${recommended}%`,
-      impact: `Could save additional ${getCurrencyFormat(potentialYearly)}/year`,
-      action: 'Improve Rate',
+      title: t('dashboard.lowSavingsTitle'),
+      description: t('dashboard.lowSavingsDesc', { rate: savingsRate.toFixed(1) }),
+      impact: t('dashboard.lowSavingsImpact', { amount: formatAmount(potentialYearly) }),
+      action: t('dashboard.improveRate'),
       severity: 'high',
     });
   }
@@ -63,10 +66,10 @@ export function WeaknessCard({
   if (last30DaysGrowth <= 0 && totalIncome > 0) {
     weaknesses.push({
       id: 'growth-stagnant',
-      title: 'Growth Stagnant',
-      description: 'No savings growth in the last 30 days',
-      impact: 'Track expenses and reduce unnecessary spending',
-      action: 'Review Expenses',
+      title: t('dashboard.stagnantTitle'),
+      description: t('dashboard.stagnantDesc'),
+      impact: t('dashboard.stagnantDetail'),
+      action: t('dashboard.reviewExpenses'),
       severity: 'medium',
     });
   }
@@ -74,14 +77,13 @@ export function WeaknessCard({
   // Check 4: Moderate savings rate (10-20%)
   if (savingsRate >= 10 && savingsRate < 20) {
     const recommended = 20;
-    const gap = recommended - savingsRate;
 
     weaknesses.push({
       id: 'savings-improvement',
-      title: 'Savings Rate Could Improve',
-      description: `Current: ${savingsRate.toFixed(1)}% | Target: ${recommended}%`,
-      impact: `Small adjustment could boost results`,
-      action: 'Set Goal',
+      title: t('dashboard.savingsCouldImprove'),
+      description: t('dashboard.savingsImproveDesc', { rate: savingsRate.toFixed(1), target: recommended }),
+      impact: t('dashboard.savingsImproveImpact'),
+      action: t('dashboard.setGoal'),
       severity: 'low',
     });
   }
@@ -93,12 +95,12 @@ export function WeaknessCard({
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-            <span>All Systems Optimal</span>
+            <span>{t('dashboard.allOptimal')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Your financial health is in excellent condition. Keep up the great work!
+            {t('dashboard.allOptimalDesc')}
           </p>
         </CardContent>
       </Card>
@@ -134,10 +136,10 @@ export function WeaknessCard({
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <AlertTriangle className={`h-5 w-5 ${getSeverityColor()}`} />
-          <span>Needs Attention</span>
+          <span>{t('dashboard.needsAttention')}</span>
           {primaryWeakness.severity === 'high' && (
             <span className="text-xs font-semibold px-2 py-0.5 bg-red-500/10 text-red-500 rounded">
-              Priority
+              {t('dashboard.priority')}
             </span>
           )}
         </CardTitle>

@@ -1,6 +1,8 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { Trophy, Flame, Target, TrendingUp } from 'lucide-react';
 
 interface ProgressRewardCardProps {
@@ -18,6 +20,8 @@ export function ProgressRewardCard({
   savingsRate,
   totalIncome,
 }: ProgressRewardCardProps) {
+  const { t } = useTranslation();
+
   // Calculate rewards based on performance
   const rewards: Array<{
     id: string;
@@ -31,8 +35,8 @@ export function ProgressRewardCard({
   if (last30DaysGrowth > 0) {
     rewards.push({
       id: 'consistent-saver',
-      title: 'Consistent Saver',
-      description: 'You saved for 30 consecutive days',
+      title: t('dashboard.consistentSaver'),
+      description: t('dashboard.consistentSaverDesc'),
       icon: <Trophy className="h-5 w-5" />,
       earned: true,
     });
@@ -42,8 +46,8 @@ export function ProgressRewardCard({
   if (momentumIndicator === 'accelerating' && last7DaysGrowth > 0) {
     rewards.push({
       id: 'momentum-builder',
-      title: 'Momentum Builder',
-      description: 'Growth speed increased this week',
+      title: t('dashboard.momentumBuilder'),
+      description: t('dashboard.speedIncreased'),
       icon: <Flame className="h-5 w-5" />,
       earned: true,
     });
@@ -53,8 +57,8 @@ export function ProgressRewardCard({
   if (savingsRate >= 20) {
     rewards.push({
       id: 'high-savings-rate',
-      title: 'High Savings Rate',
-      description: `Saving ${savingsRate.toFixed(0)}% of income`,
+      title: t('dashboard.highSavingsRate'),
+      description: t('dashboard.strongSavingsDesc', { rate: savingsRate.toFixed(0) }),
       icon: <Target className="h-5 w-5" />,
       earned: true,
     });
@@ -64,8 +68,8 @@ export function ProgressRewardCard({
   if (savingsRate >= 15 && savingsRate < 20) {
     rewards.push({
       id: 'goal-closer',
-      title: 'Goal Closer',
-      description: `Almost at target savings rate (20%)`,
+      title: t('dashboard.goalCloser'),
+      description: t('dashboard.goalCloserDesc'),
       icon: <TrendingUp className="h-5 w-5" />,
       earned: true,
     });
@@ -79,9 +83,9 @@ export function ProgressRewardCard({
           <div className="text-center space-y-2">
             <Trophy className="h-12 w-12 mx-auto text-muted-foreground/30" />
             <div>
-              <h4 className="text-sm font-medium">Start Earning Badges</h4>
+              <h4 className="text-sm font-medium">{t('dashboard.startEarning')}</h4>
               <p className="text-xs text-muted-foreground mt-1">
-                Save consistently to unlock achievements
+                {t('dashboard.startEarningDesc')}
               </p>
             </div>
           </div>
@@ -94,9 +98,9 @@ export function ProgressRewardCard({
     <Card className="border-border bg-card">
       <CardContent className="p-6 space-y-4">
         <div>
-          <h4 className="text-sm font-semibold mb-1">Your Progress</h4>
+          <h4 className="text-sm font-semibold mb-1">{t('dashboard.yourProgress')}</h4>
           <p className="text-xs text-muted-foreground">
-            Achievements unlocked this month
+            {t('dashboard.achievementsMonth')}
           </p>
         </div>
 

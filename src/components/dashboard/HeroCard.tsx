@@ -1,7 +1,8 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface HeroCardProps {
@@ -11,6 +12,8 @@ interface HeroCardProps {
 }
 
 export function HeroCard({ totalSavings, last30DaysGrowth, momentumIndicator }: HeroCardProps) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const growthPercentage = totalSavings > 0
     ? (last30DaysGrowth / totalSavings) * 100
     : 0;
@@ -35,11 +38,11 @@ export function HeroCard({ totalSavings, last30DaysGrowth, momentumIndicator }: 
 
   const getMomentumText = () => {
     if (momentumIndicator === 'accelerating') {
-      return '🔥 Accelerating';
+      return t('dashboard.accelerating');
     } else if (momentumIndicator === 'slowing') {
-      return '⚠️ Slowing';
+      return t('dashboard.slowing');
     }
-    return '➡️ Stable';
+    return t('dashboard.stable');
   };
 
   return (
@@ -48,17 +51,17 @@ export function HeroCard({ totalSavings, last30DaysGrowth, momentumIndicator }: 
         {/* Label */}
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">
-            Net Worth
+            {t('dashboard.netWorth')}
           </p>
         </div>
 
         {/* Main Value */}
         <div className="space-y-2">
           <p className="text-4xl md:text-5xl font-bold tracking-tight">
-            {getCurrencyFormat(totalSavings)}
+            {formatAmount(totalSavings)}
           </p>
           <p className="text-sm text-muted-foreground">
-            You are growing
+            {t('dashboard.youAreGrowing')}
           </p>
         </div>
 
@@ -67,8 +70,7 @@ export function HeroCard({ totalSavings, last30DaysGrowth, momentumIndicator }: 
           <div className={`flex items-center gap-1.5 ${getGrowthColor()}`}>
             {getGrowthIcon()}
             <span className="text-sm font-semibold">
-              {getCurrencyFormat(Math.abs(last30DaysGrowth))}
-              {' in 30 days'}
+              {formatAmount(Math.abs(last30DaysGrowth))} {t('dashboard.in30Days')}
             </span>
           </div>
           {last30DaysGrowth !== 0 && (

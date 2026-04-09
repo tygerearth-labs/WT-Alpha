@@ -3,6 +3,16 @@ import { db } from '@/lib/db';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 
+const VALID_LOCALES = ['id', 'en'];
+
+// Basic currency code validation
+const VALID_CURRENCIES = [
+  'IDR', 'USD', 'EUR', 'GBP', 'JPY', 'SGD', 'MYR', 'AUD', 'CAD', 'CHF',
+  'KRW', 'CNY', 'THB', 'PHP', 'INR', 'BRL', 'MXN', 'ZAR', 'AED', 'SAR',
+  'TWD', 'HKD', 'NZD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'RON',
+  'BGN', 'TRY', 'RUB', 'UAH', 'VND', 'NGN', 'EGP', 'PKR', 'BDT', 'LKR',
+];
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
@@ -19,6 +29,8 @@ export async function GET() {
         email: true,
         username: true,
         image: true,
+        locale: true,
+        currency: true,
         createdAt: true,
       },
     });
@@ -48,7 +60,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { username, currentPassword, newPassword, image } = body;
+    const { username, currentPassword, newPassword, image, locale, currency } = body;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -83,12 +95,34 @@ export async function PUT(request: NextRequest) {
     let finalImage = user.image;
     if (image !== undefined) {
       if (image && image.trim() !== '') {
-        // Allow image URL to be set
         finalImage = image.trim();
       } else {
-        // Clear image if empty string
         finalImage = null;
       }
+    }
+
+    // Validate locale if provided
+    let finalLocale = user.locale;
+    if (locale !== undefined) {
+      if (!VALID_LOCALES.includes(locale)) {
+        return NextResponse.json(
+          { error: 'Invalid locale. Must be "id" or "en"' },
+          { status: 400 }
+        );
+      }
+      finalLocale = locale;
+    }
+
+    // Validate currency if provided
+    let finalCurrency = user.currency;
+    if (currency !== undefined) {
+      if (!VALID_CURRENCIES.includes(currency)) {
+        return NextResponse.json(
+          { error: 'Invalid currency code' },
+          { status: 400 }
+        );
+      }
+      finalCurrency = currency;
     }
 
     // Update user
@@ -97,12 +131,16 @@ export async function PUT(request: NextRequest) {
       data: {
         ...(username && { username }),
         ...(finalImage !== undefined && { image: finalImage }),
+        ...(finalLocale !== undefined && { locale: finalLocale }),
+        ...(finalCurrency !== undefined && { currency: finalCurrency }),
       },
       select: {
         id: true,
         email: true,
         username: true,
         image: true,
+        locale: true,
+        currency: true,
       },
     });
 

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Category, CategoryFormData } from '@/types/transaction.types';
 
 interface CategoryDialogProps {
@@ -46,6 +48,7 @@ export function CategoryDialog({
   initialData,
   onSubmit,
 }: CategoryDialogProps) {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -80,9 +83,9 @@ export function CategoryDialog({
   };
 
   const title = initialData
-    ? (type === 'income' ? 'Edit Kategori Pemasukan' : 'Edit Kategori Pengeluaran')
-    : (type === 'income' ? 'Tambah Kategori Pemasukan' : 'Tambah Kategori Pengeluaran');
-  const submitLabel = initialData ? 'Update' : 'Simpan';
+    ? (type === 'income' ? t('category.editIncomeCategory') : t('category.editExpenseCategory'))
+    : (type === 'income' ? t('category.addIncomeCategory') : t('category.addExpenseCategory'));
+  const submitLabel = initialData ? t('common.save') : t('common.save');
   const accentColor = type === 'income' ? T.accent : T.destructive;
 
   return (
@@ -100,7 +103,7 @@ export function CategoryDialog({
         <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
           {/* Name */}
           <div className="space-y-1.5">
-            <Label className="text-[11px]" style={{ color: T.muted }}>Nama Kategori</Label>
+            <Label className="text-[11px]" style={{ color: T.muted }}>{t('category.name')}</Label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -114,13 +117,13 @@ export function CategoryDialog({
 
           {/* Icon */}
           <div className="space-y-1.5">
-            <Label className="text-[11px]" style={{ color: T.muted }}>Icon (Emoji)</Label>
+            <Label className="text-[11px]" style={{ color: T.muted }}>{t('category.icon')}</Label>
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
                 style={{ background: `${formData.color}20` }}
               >
-                {formData.icon || DEFAULT_ICONS[type]}
+                <DynamicIcon name={formData.icon || DEFAULT_ICONS[type]} className="h-5 w-5" />
               </div>
               <Input
                 value={formData.icon}
@@ -135,7 +138,7 @@ export function CategoryDialog({
 
           {/* Color Presets */}
           <div className="space-y-1.5">
-            <Label className="text-[11px]" style={{ color: T.muted }}>Warna</Label>
+            <Label className="text-[11px]" style={{ color: T.muted }}>{t('category.color')}</Label>
             <div className="flex flex-wrap gap-2 mb-2">
               {COLOR_PRESETS.map((c) => (
                 <button
@@ -180,7 +183,7 @@ export function CategoryDialog({
               className="flex-1 rounded-lg text-xs"
               style={{ color: T.muted }}
             >
-              Batal
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"

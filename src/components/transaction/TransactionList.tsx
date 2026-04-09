@@ -2,10 +2,12 @@
 
 import { Pencil, Trash2, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Transaction } from '@/types/transaction.types';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -26,13 +28,15 @@ const T = {
 };
 
 export function TransactionList({ transactions, onEdit, onDelete, type }: TransactionListProps) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   const color = type === 'income' ? T.accent : T.destructive;
   const sign = type === 'income' ? '+' : '-';
-  const emptyMessage = type === 'income' ? 'Belum ada pemasukan' : 'Belum ada pengeluaran';
+  const emptyMessage = t('kas.noData');
 
   // Group transactions by date
   const grouped = sortedTransactions.reduce<Record<string, Transaction[]>>((acc, t) => {
@@ -52,7 +56,7 @@ export function TransactionList({ transactions, onEdit, onDelete, type }: Transa
           <Inbox className="h-5 w-5 lg:h-7 lg:w-7" style={{ color: T.primary, opacity: 0.5 }} />
         </div>
         <p className="text-xs font-medium" style={{ color: T.textSub }}>{emptyMessage}</p>
-        <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>Tambahkan transaksi baru</p>
+        <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{t('kas.noDataHint')}</p>
       </div>
     );
   }
@@ -72,7 +76,7 @@ export function TransactionList({ transactions, onEdit, onDelete, type }: Transa
                 className="text-[10px] font-semibold lg:rounded-full lg:px-2.5 lg:py-0.5 lg:text-[11px]"
                 style={{ color, background: `${color}12` }}
               >
-                {sign}{getCurrencyFormat(dayTotal)}
+                {sign}{formatAmount(dayTotal)}
               </span>
             </div>
             {/* Desktop gradient divider below date header */}
@@ -101,7 +105,7 @@ export function TransactionList({ transactions, onEdit, onDelete, type }: Transa
                     className="shrink-0 w-9 h-9 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-sm lg:text-base"
                     style={{ backgroundColor: `${transaction.category.color}18` }}
                   >
-                    {transaction.category.icon}
+                    <DynamicIcon name={transaction.category.icon} className="h-4 w-4 lg:h-5 lg:w-5" />
                   </div>
 
                   {/* Details */}
@@ -111,7 +115,7 @@ export function TransactionList({ transactions, onEdit, onDelete, type }: Transa
                         {transaction.category.name}
                       </span>
                       <span className="text-xs lg:text-sm font-bold shrink-0 tabular-nums" style={{ color }}>
-                        {sign}{getCurrencyFormat(transaction.amount)}
+                        {sign}{formatAmount(transaction.amount)}
                       </span>
                     </div>
                     {transaction.description && (

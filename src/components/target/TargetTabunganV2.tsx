@@ -15,7 +15,9 @@ import { Target, Plus, Edit, Trash2, Calendar, TrendingUp, CheckCircle2, Chevron
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { SavingsTarget } from '@/types/transaction.types';
-import { TargetMetrics, getBrutalInsight, getSpeedCopy, getStatusCopy, getETAText, generateMiniChallenge, getCurrencyFormat } from '@/lib/targetLogic';
+import { TargetMetrics, getBrutalInsight, getSpeedCopy, getStatusCopy, getETAText, generateMiniChallenge } from '@/lib/targetLogic';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 
 interface TargetFormData {
   name: string;
@@ -27,6 +29,8 @@ interface TargetFormData {
 }
 
 export function TargetTabunganV2() {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
   const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -57,7 +61,7 @@ export function TargetTabunganV2() {
       }
     } catch (error) {
       console.error('Error fetching savings targets:', error);
-      toast.error('Gagal memuat target tabungan');
+      toast.error(t('target.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +71,7 @@ export function TargetTabunganV2() {
     e.preventDefault();
 
     if (!formData.name || formData.targetAmount <= 0 || !formData.targetDate) {
-      toast.error('Mohon lengkapi semua field wajib');
+      toast.error(t('target.fieldRequired'));
       return;
     }
 
@@ -85,18 +89,18 @@ export function TargetTabunganV2() {
       });
 
       if (response.ok) {
-        toast.success(isEditDialogOpen ? 'Target berhasil diperbarui' : 'Target berhasil ditambahkan');
+        toast.success(isEditDialogOpen ? t('target.updateSuccess') : t('target.addSuccess'));
         setIsAddDialogOpen(false);
         setIsEditDialogOpen(false);
         resetForm();
         fetchSavingsTargets();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Gagal menyimpan target');
+        toast.error(error.error || t('target.saveError'));
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -109,16 +113,16 @@ export function TargetTabunganV2() {
       });
 
       if (response.ok) {
-        toast.success('Target berhasil dihapus');
+        toast.success(t('target.deleteSuccess'));
         setDeleteDialog({ open: false, id: null });
         fetchSavingsTargets();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Gagal menghapus target');
+        toast.error(error.error || t('target.deleteError'));
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -130,7 +134,7 @@ export function TargetTabunganV2() {
         body: JSON.stringify({
           type: 'income',
           amount,
-          description: 'Setoran Cepat',
+          description: t('target.quickDeposit'),
           categoryId: '', // Use default category
           date: new Date().toISOString().split('T')[0],
           targetId,
@@ -139,14 +143,14 @@ export function TargetTabunganV2() {
       });
 
       if (response.ok) {
-        toast.success(`Setoran Rp${amount.toLocaleString('id-ID')} berhasil!`);
+        toast.success(`+${formatAmount(amount)} ${t('target.depositSuccess')}`);
         fetchSavingsTargets();
       } else {
-        toast.error('Gagal melakukan setoran cepat');
+        toast.error(t('target.depositFailed'));
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Terjadi kesalahan');
+      toast.error(t('common.error'));
     }
   };
 
@@ -187,15 +191,6 @@ export function TargetTabunganV2() {
     setIsEditDialogOpen(true);
   };
 
-  const getCurrencyFormat = (value: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   const getDaysRemaining = (targetDate: string) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -210,7 +205,7 @@ export function TargetTabunganV2() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground mt-2">Memuat target tabungan...</p>
+          <p className="text-sm text-muted-foreground mt-2">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -221,27 +216,27 @@ export function TargetTabunganV2() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Target Tabungan</h2>
-          <p className="text-muted-foreground mt-1">Atur dan pantau target keuangan Anda</p>
+          <h2 className="text-2xl font-bold">{t('target.title')}</h2>
+          <p className="text-muted-foreground mt-1">{t('target.subtitle')}</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Tambah Target
+              {t('target.addTarget')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Tambah Target Tabungan</DialogTitle>
+              <DialogTitle>{t('target.addTitle')}</DialogTitle>
               <DialogDescription>
-                Buat target tabungan baru untuk mengatur keuangan Anda
+                {t('target.addDesc')}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nama Target *</Label>
+                  <Label htmlFor="name">{t('target.nameField')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -250,7 +245,7 @@ export function TargetTabunganV2() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="targetAmount">Target Jumlah *</Label>
+                  <Label htmlFor="targetAmount">{t('target.amountField')}</Label>
                   <Input
                     id="targetAmount"
                     type="number"
@@ -260,7 +255,7 @@ export function TargetTabunganV2() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="targetDate">Target Tanggal *</Label>
+                  <Label htmlFor="targetDate">{t('target.targetDate')} *</Label>
                   <Input
                     id="targetDate"
                     type="date"
@@ -270,7 +265,7 @@ export function TargetTabunganV2() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="initialInvestment">Investasi Awal</Label>
+                  <Label htmlFor="initialInvestment">{t('target.initialInvestment')}</Label>
                   <Input
                     id="initialInvestment"
                     type="number"
@@ -280,7 +275,7 @@ export function TargetTabunganV2() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="monthlyContribution">Kontribusi Bulanan</Label>
+                  <Label htmlFor="monthlyContribution">{t('target.contributionMonthly')}</Label>
                   <Input
                     id="monthlyContribution"
                     type="number"
@@ -290,7 +285,7 @@ export function TargetTabunganV2() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="allocationPercentage">Persentase Alokasi (%)</Label>
+                  <Label htmlFor="allocationPercentage">{t('target.allocationAuto')}</Label>
                   <Input
                     id="allocationPercentage"
                     type="number"
@@ -301,12 +296,12 @@ export function TargetTabunganV2() {
                     max="100"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Persentase dari kas masuk yang otomatis dialokasikan
+                    {t('target.allocationDesc')}
                   </p>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Simpan Target</Button>
+                <Button type="submit">{t('target.saveTarget')}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -318,13 +313,13 @@ export function TargetTabunganV2() {
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <PiggyBank className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Belum ada target tabungan</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('target.noData')}</h3>
             <p className="text-sm text-muted-foreground text-center mb-4">
-              Mulai dengan membuat target tabungan pertama Anda
+              {t('target.noDataDesc')}
             </p>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Buat Target
+              {t('target.createTarget')}
             </Button>
           </CardContent>
         </Card>
@@ -335,10 +330,10 @@ export function TargetTabunganV2() {
             const metrics = target.metrics;
             if (!metrics) return null;
 
-            const statusCopy = getStatusCopy(metrics.targetStatus);
-            const speedCopy = getSpeedCopy(metrics.speedStatus);
-            const brutalInsight = getBrutalInsight(metrics, target);
-            const miniChallenge = generateMiniChallenge(target, metrics);
+            const statusCopy = getStatusCopy(metrics.targetStatus, t);
+            const speedCopy = getSpeedCopy(metrics.speedStatus, t);
+            const brutalInsight = getBrutalInsight(metrics, target, t);
+            const miniChallenge = generateMiniChallenge(target, metrics, t);
             const daysRemaining = getDaysRemaining(target.targetDate);
 
             return (
@@ -374,18 +369,18 @@ export function TargetTabunganV2() {
                   {/* Progress Section */}
                   <div>
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-muted-foreground">Progress</span>
+                      <span className="text-muted-foreground">{t('dashboard.progress')}</span>
                       <span className="font-semibold">{metrics.progressPercent.toFixed(0)}%</span>
                     </div>
                     <Progress value={metrics.progressPercent} className="h-2" />
                     <div className="flex items-center justify-between text-sm mt-2">
                       <div>
-                        <p className="text-xs text-muted-foreground">Terkumpul</p>
-                        <p className="font-semibold text-lg">{getCurrencyFormat(target.currentAmount)}</p>
+                        <p className="text-xs text-muted-foreground">{t('target.collected')}</p>
+                        <p className="font-semibold text-lg">{formatAmount(target.currentAmount)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Sisa</p>
-                        <p className="font-semibold text-lg">{getCurrencyFormat(metrics.remainingAmount)}</p>
+                        <p className="text-xs text-muted-foreground">{t('target.remaining')}</p>
+                        <p className="font-semibold text-lg">{formatAmount(metrics.remainingAmount)}</p>
                       </div>
                     </div>
                   </div>
@@ -394,21 +389,21 @@ export function TargetTabunganV2() {
                   <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
                     <div className="flex items-center gap-2 mb-2">
                       <Clock className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">ETA Terwujud</span>
+                      <span className="text-sm font-medium">{t('target.etaTitle')}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <p className="text-xs text-muted-foreground">Kecepatan saat ini</p>
-                        <p className="font-semibold text-sm">{getETAText(metrics.etaInMonths)}</p>
+                        <p className="text-xs text-muted-foreground">{t('target.currentPace')}</p>
+                        <p className="font-semibold text-sm">{getETAText(metrics.etaInMonths, t)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Jika tidak diubah</p>
-                        <p className="font-semibold text-sm">{getETAText(metrics.doNothingETA)}</p>
+                        <p className="text-xs text-muted-foreground">{t('target.ifUnchanged')}</p>
+                        <p className="font-semibold text-sm">{getETAText(metrics.doNothingETA, t)}</p>
                       </div>
                     </div>
                     {daysRemaining > 0 && (
                       <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Deadline: {daysRemaining} hari lagi
+                        {t('target.deadlineDays', { days: daysRemaining })}
                       </p>
                     )}
                   </div>
@@ -417,23 +412,23 @@ export function TargetTabunganV2() {
                   {target.monthlyContribution > 0 && (
                     <div className="bg-secondary/50 rounded-lg p-3 border border-border/50">
                       <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="font-medium">Bulanan Ini</span>
+                        <span className="font-medium">{t('target.monthlyThis')}</span>
                         <Badge className={
                           target.monthlyAchievement >= 100 ? 'bg-green-500' :
                           target.monthlyAchievement >= 80 ? 'bg-blue-500' :
                           target.monthlyAchievement >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                         }>
-                          {target.monthlyAchievement >= 100 ? 'Luar biasa! 🎉' :
-                           target.monthlyAchievement >= 80 ? 'Hampir! 👍' :
-                           target.monthlyAchievement >= 50 ? 'On track' : 'Perlu tingkatkan'}
+                          {target.monthlyAchievement >= 100 ? t('target.amazing') :
+                           target.monthlyAchievement >= 80 ? t('target.almost') :
+                           target.monthlyAchievement >= 50 ? t('target.onTrackLabel') : t('target.needBoost')}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">
-                          Realisasi: <span className="font-semibold text-foreground">{getCurrencyFormat(target.currentMonthlyAllocation || 0)}</span>
+                          {t('target.realization')}: <span className="font-semibold text-foreground">{formatAmount(target.currentMonthlyAllocation || 0)}</span>
                         </span>
                         <span className="text-muted-foreground">
-                          Target: <span className="font-semibold text-foreground">{getCurrencyFormat(target.monthlyContribution)}</span>
+                          {t('target.targetLabel')}: <span className="font-semibold text-foreground">{formatAmount(target.monthlyContribution)}</span>
                         </span>
                       </div>
                       <Progress value={Math.min(target.monthlyAchievement || 0, 100)} className="h-1.5 mt-2" />
@@ -456,7 +451,7 @@ export function TargetTabunganV2() {
                   {isExpanded && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Aksi Cepat
+                        {t('target.quickActions')}
                       </p>
                       <div className="flex gap-2">
                         <Button
@@ -486,7 +481,7 @@ export function TargetTabunganV2() {
                     <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border border-primary/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Zap className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold text-primary">Mini Challenge</span>
+                        <span className="text-sm font-semibold text-primary">{t('target.miniChallenge')}</span>
                       </div>
                       <p className="text-sm font-medium mb-1">{miniChallenge.title}</p>
                       <p className="text-xs text-muted-foreground mb-2">{miniChallenge.description}</p>
@@ -498,7 +493,7 @@ export function TargetTabunganV2() {
                           size="sm"
                           onClick={() => handleQuickDeposit(target.id, miniChallenge.targetAmount)}
                         >
-                          Ambil Challenge
+                          {t('target.takeChallenge')}
                         </Button>
                       </div>
                     </div>
@@ -514,7 +509,7 @@ export function TargetTabunganV2() {
                       onClick={() => openEditDialog(target)}
                     >
                       <Edit className="mr-2 h-3 w-3" />
-                      Edit
+                      {t('common.edit')}
                     </Button>
                     <Button
                       variant="outline"
@@ -523,7 +518,7 @@ export function TargetTabunganV2() {
                       onClick={() => setDeleteDialog({ open: true, id: target.id })}
                     >
                       <Trash2 className="mr-2 h-3 w-3" />
-                      Hapus
+                      {t('common.delete')}
                     </Button>
                   </CardFooter>
                 )}
@@ -540,9 +535,9 @@ export function TargetTabunganV2() {
       }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Target Tabungan</DialogTitle>
+            <DialogTitle>{t('target.editTitle')}</DialogTitle>
             <DialogDescription>
-              Perbarui informasi target tabungan Anda
+              {t('target.editDesc')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -613,7 +608,7 @@ export function TargetTabunganV2() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Simpan Perubahan</Button>
+              <Button type="submit">{t('target.saveChanges')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -623,15 +618,15 @@ export function TargetTabunganV2() {
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, id: deleteDialog.id })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Target Tabungan?</AlertDialogTitle>
+            <AlertDialogTitle>{t('target.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Target tabungan yang dihapus tidak dapat dikembalikan. Semua riwayat alokasi akan tetap tersimpan.
+              {t('target.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Hapus
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

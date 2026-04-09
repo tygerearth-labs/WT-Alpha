@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
-import { getCurrencyFormat } from '@/lib/utils';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 
 interface SummaryCardProps {
   title: string;
@@ -25,6 +25,8 @@ export function SummaryCard({
   className,
   action,
 }: SummaryCardProps) {
+  const { formatAmount } = useCurrencyFormat();
+
   return (
     <Card className={`${bgColor} backdrop-blur-sm border border-border/50 ${className}`}>
       <CardHeader className="pb-2">
@@ -42,7 +44,7 @@ export function SummaryCard({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-foreground">
-          {getCurrencyFormat(amount)}
+          {formatAmount(amount)}
         </div>
         {subtitle && (
           <p className="text-xs text-muted-foreground mt-1">
