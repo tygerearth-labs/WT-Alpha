@@ -219,12 +219,12 @@ export function Laporan() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span
-                            className="w-7 h-7 rounded-lg grid place-items-center text-xs shrink-0 [&>*]:block leading-none"
+                          <div
+                            className="w-7 h-7 rounded-lg grid place-items-center shrink-0 [&>*]:block leading-none"
                             style={{ background: `${tx.category.color}15` }}
                           >
                             <DynamicIcon name={tx.category.icon} className="h-3.5 w-3.5" />
-                          </span>
+                          </div>
                           <span className="text-[13px] font-medium truncate" style={{ color: T.text }}>{tx.category.name}</span>
                         </div>
                       </td>

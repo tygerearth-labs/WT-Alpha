@@ -758,7 +758,7 @@ function ConsultantCard({ insight }: { insight: {
               className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none shrink-0"
               style={{ background: insight.accent + '15' }}
             >
-              <span style={{ color: insight.accent, display: 'block', lineHeight: 1 }}>{insight.icon}</span>
+              <div style={{ color: insight.accent, display: 'block', lineHeight: 1 }}>{insight.icon}</div>
             </div>
           </div>
           {insight.metric && (
@@ -863,7 +863,7 @@ function ConsultantCardCompact({ insight }: { insight: {
               className="w-6 h-6 rounded-md grid place-items-center [&>*]:block shrink-0 leading-none"
               style={{ background: insight.accent + '18' }}
             >
-              <span style={{ color: insight.accent, display: 'block', lineHeight: 1 }}>{insight.icon}</span>
+              <div style={{ color: insight.accent, display: 'block', lineHeight: 1 }}>{insight.icon}</div>
             </div>
             <span
               className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"

@@ -430,10 +430,10 @@ export function KasMasuk() {
                   const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
                   return (
                     <div key={cat.name} className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-lg grid place-items-center text-xs shrink-0 [&>*]:block leading-none"
+                      <div className="w-6 h-6 rounded-lg grid place-items-center shrink-0 [&>*]:block leading-none"
                         style={{ background: `${cat.color}25` }}>
                         <DynamicIcon name={cat.icon} className="h-4 w-4" />
-                      </span>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
@@ -558,10 +558,10 @@ export function KasMasuk() {
                   const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
                   return (
                     <div key={cat.name} className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-md grid place-items-center text-[10px] shrink-0 [&>*]:block leading-none"
+                      <div className="w-5 h-5 rounded-md grid place-items-center shrink-0 [&>*]:block leading-none"
                         style={{ background: `${cat.color}20` }}>
                         <DynamicIcon name={cat.icon} className="h-3 w-3" />
-                      </span>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
                           <span className="text-[10px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
@@ -649,10 +649,10 @@ export function KasMasuk() {
                 const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
                 return (
                   <div key={cat.name} className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-md grid place-items-center text-[10px] shrink-0 [&>*]:block leading-none"
+                    <div className="w-5 h-5 rounded-md grid place-items-center shrink-0 [&>*]:block leading-none"
                       style={{ background: `${cat.color}20` }}>
                       <DynamicIcon name={cat.icon} className="h-3.5 w-3.5" />
-                    </span>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
                         <span className="text-[11px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>

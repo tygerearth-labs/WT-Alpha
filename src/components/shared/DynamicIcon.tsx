@@ -85,8 +85,8 @@ export function DynamicIcon({ name, className, style }: DynamicIconProps) {
 
   // Fallback: render as text (emoji or plain text)
   return (
-    <span className={className} style={blockStyle}>
+    <div className={className} style={blockStyle}>
       {name}
-    </span>
+    </div>
   );
 }
