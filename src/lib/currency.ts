@@ -67,9 +67,6 @@ export const POPULAR_CURRENCIES: CurrencyCode[] = [
   'KRW', 'CNY', 'THB', 'INR', 'PHP', 'BRL', 'AED',
 ];
 
-/** All currency codes */
-export const ALL_CURRENCY_CODES = Object.keys(CURRENCIES) as CurrencyCode[];
-
 /**
  * Format amount with dynamic currency
  */
@@ -176,9 +173,4 @@ export function getIdrToCurrencyRate(currencyCode: CurrencyCode): number {
   return rates[currencyCode] || 1;
 }
 
-/**
- * Convert amount from IDR to target currency.
- */
-export function convertFromIdr(amountIdr: number, targetCurrency: CurrencyCode): number {
-  return amountIdr * getIdrToCurrencyRate(targetCurrency);
-}
+

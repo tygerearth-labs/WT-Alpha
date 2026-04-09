@@ -99,14 +99,6 @@ export function getDoNothingETA(remaining: number, plannedMonthly: number): numb
 }
 
 /**
- * Get phase contribution percentage
- */
-export function getPhaseContribution(current: number, phaseTarget: number): number {
-  if (phaseTarget <= 0) return 0;
-  return Math.min(100, (current / phaseTarget) * 100);
-}
-
-/**
  * Calculate complete target metrics
  */
 export function calculateTargetMetrics(
