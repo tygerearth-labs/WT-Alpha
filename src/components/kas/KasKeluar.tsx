@@ -299,7 +299,7 @@ export function KasKeluar() {
                 {/* Icon with glow */}
                 <div className="relative">
                   <div className="absolute inset-0 rounded-xl blur-xl opacity-30 hidden lg:block" style={{ background: T.accent }} />
-                  <div className="relative w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl grid place-items-center [&>svg]:block" style={{ background: `${T.accent}20` }}>
+                  <div className="relative w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl grid place-items-center [&>*]:block leading-none" style={{ background: `${T.accent}20` }}>
                     <CreditCard className="h-5 w-5 lg:h-7 lg:w-7" style={{ color: T.accent }} />
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export function KasKeluar() {
                   const pct = totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0;
                   return (
                     <div key={cat.name} className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-lg grid place-items-center text-xs shrink-0"
+                      <span className="w-6 h-6 rounded-lg grid place-items-center text-xs shrink-0 [&>*]:block leading-none"
                         style={{ background: `${cat.color}25` }}>
                         <DynamicIcon name={cat.icon} className="h-4 w-4" />
                       </span>
@@ -554,7 +554,7 @@ export function KasKeluar() {
                   const pct = totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0;
                   return (
                     <div key={cat.name} className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-md grid place-items-center text-[10px] shrink-0"
+                      <span className="w-5 h-5 rounded-md grid place-items-center text-[10px] shrink-0 [&>*]:block leading-none"
                         style={{ background: `${cat.color}20` }}>
                         <DynamicIcon name={cat.icon} className="h-3 w-3" />
                       </span>
@@ -645,7 +645,7 @@ export function KasKeluar() {
                 const pct = totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0;
                 return (
                   <div key={cat.name} className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-md grid place-items-center text-[10px] shrink-0"
+                    <span className="w-5 h-5 rounded-md grid place-items-center text-[10px] shrink-0 [&>*]:block leading-none"
                       style={{ background: `${cat.color}20` }}>
                       <DynamicIcon name={cat.icon} className="h-3.5 w-3.5" />
                     </span>

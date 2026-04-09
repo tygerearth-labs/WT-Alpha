@@ -191,7 +191,7 @@ export function ProfileSettings() {
               {getInitials(userData.username)}
             </AvatarFallback>
           </Avatar>
-          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 lg:w-6 lg:h-6 rounded-full grid place-items-center [&>svg]:block" style={{ background: T_THEME.primary }}>
+          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 lg:w-6 lg:h-6 rounded-full grid place-items-center [&>*]:block leading-none" style={{ background: T_THEME.primary }}>
             <Camera className="h-2.5 w-2.5 lg:h-3 lg:w-3" style={{ color: '#000' }} />
           </div>
         </div>

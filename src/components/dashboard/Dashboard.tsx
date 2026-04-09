@@ -9,6 +9,7 @@ import {
   PieChart as PieChartIcon, BarChart3, Sparkles,
   AlertTriangle, Trophy, Flame, CheckCircle2, Zap,
   Shield, ChevronLeft, ChevronRight, Banknote, Timer, Radar, Eye, Brain,
+  BarChart2, Lightbulb, PiggyBank,
 } from 'lucide-react';
 // embla-carousel removed — replaced with lightweight CSS transform carousel
 import { useTranslation } from '@/hooks/useTranslation';
@@ -350,7 +351,7 @@ function AnalyticsCarousel({
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top left, ${THEME.primary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg grid place-items-center [&>svg]:block" style={{ background: `${THEME.primary}12` }}>
+              <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}12` }}>
                 <BarChart3 className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
               </div>
               <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.cashFlow')}</CardTitle>
@@ -387,7 +388,7 @@ function AnalyticsCarousel({
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top right, ${THEME.destructive}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg grid place-items-center [&>svg]:block" style={{ background: `${THEME.destructive}12` }}>
+              <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}12` }}>
                 <PieChartIcon className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
               </div>
               <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.topSpending')}</CardTitle>
@@ -416,7 +417,7 @@ function AnalyticsCarousel({
                     return (
                       <div key={i} className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-md grid place-items-center [&>svg]:block shrink-0" style={{ background: `${cat.color}18` }}>
+                          <div className="w-5 h-5 rounded-md grid place-items-center shrink-0 leading-none [&>*]:block" style={{ background: `${cat.color}18` }}>
                             {cat.icon && <DynamicIcon name={cat.icon} className="h-2.5 w-2.5" style={{ color: cat.color }} />}
                           </div>
                           <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
@@ -439,7 +440,7 @@ function AnalyticsCarousel({
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at bottom center, ${THEME.secondary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg grid place-items-center [&>svg]:block" style={{ background: `${THEME.secondary}12` }}>
+              <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}12` }}>
                 <Shield className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
               </div>
               <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.financialHealth')}</CardTitle>
@@ -598,7 +599,7 @@ function AnalyticsCarousel({
                         return (
                           <div key={i} className="space-y-1">
                             <div className="flex items-center gap-1.5">
-                              <div className="w-4 h-4 rounded grid place-items-center [&>svg]:block shrink-0" style={{ background: `${cat.color}18` }}>
+                              <div className="w-4 h-4 rounded grid place-items-center shrink-0 leading-none [&>*]:block" style={{ background: `${cat.color}18` }}>
                                 {cat.icon && <DynamicIcon name={cat.icon} className="h-2 w-2" style={{ color: cat.color }} />}
                               </div>
                               <span className="text-[10px] font-medium truncate" style={{ color: THEME.text }}>
@@ -775,7 +776,9 @@ function ConsultantCard({ insight }: { insight: {
         {/* Analysis */}
         <div className="space-y-0.5">
           <div className="flex items-start gap-1.5">
-            <span className="text-[11px] mt-px shrink-0" style={{ color: '#64B5F6' }}>📊</span>
+            <div className="w-4 h-4 rounded grid place-items-center shrink-0 mt-0.5 leading-none [&>*]:block" style={{ background: '#64B5F618' }}>
+              <BarChart2 className="h-2.5 w-2.5" style={{ color: '#64B5F6' }} />
+            </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#64B5F6' }}>
                 {t('dashboard.analysis')}
@@ -790,7 +793,9 @@ function ConsultantCard({ insight }: { insight: {
         {/* Recommendation */}
         <div className="space-y-0.5">
           <div className="flex items-start gap-1.5">
-            <span className="text-[11px] mt-px shrink-0" style={{ color: '#FFB74D' }}>⚡</span>
+            <div className="w-4 h-4 rounded grid place-items-center shrink-0 mt-0.5 leading-none [&>*]:block" style={{ background: '#FFB74D18' }}>
+              <Lightbulb className="h-2.5 w-2.5" style={{ color: '#FFB74D' }} />
+            </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#FFB74D' }}>
                 {t('dashboard.recommendation')}
@@ -804,13 +809,94 @@ function ConsultantCard({ insight }: { insight: {
 
         {/* Impact */}
         <div
-          className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1.5 text-[10px] font-medium px-2.5 py-1.5 rounded-lg"
           style={{
             background: insight.accent + '10',
             color: insight.accent,
           }}
         >
-          📈 {t('dashboard.impact')}: {insight.impact}
+          <TrendingUp className="h-3 w-3 shrink-0" />
+          <span>{t('dashboard.impact')}: {insight.impact}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Consultant Card Compact (Desktop) ──────────────────────────
+function ConsultantCardCompact({ insight }: { insight: {
+  id: string;
+  type: 'action' | 'warning' | 'achievement';
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  analysis: string;
+  recommendation: string;
+  impact: string;
+  metric?: string;
+  icon: any;
+  accent: string;
+} }) {
+  const { t } = useTranslation();
+
+  const priorityLabel = insight.priority === 'critical'
+    ? t('dashboard.priorityCritical')
+    : insight.priority === 'high'
+    ? t('dashboard.priorityHigh')
+    : insight.priority === 'medium'
+    ? t('dashboard.priorityMedium')
+    : t('dashboard.priorityLow');
+
+  return (
+    <div
+      className="rounded-xl p-3 transition-all duration-200 relative overflow-hidden group/insight"
+      style={{
+        background: THEME.surface,
+        border: `1px solid ${THEME.border}`,
+        borderLeft: `3px solid ${insight.accent}`,
+      }}
+    >
+      <div className="relative z-10 space-y-2">
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div
+              className="w-5 h-5 rounded-md grid place-items-center [&>*]:block shrink-0 leading-none"
+              style={{ background: insight.accent + '18' }}
+            >
+              <span className="text-xs" style={{ color: insight.accent }}>{insight.icon}</span>
+            </div>
+            <span
+              className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
+              style={{ background: insight.accent + '20', color: insight.accent }}
+            >
+              {priorityLabel}
+            </span>
+            {insight.metric && (
+              <span className="text-[10px] font-bold shrink-0" style={{ color: insight.accent }}>
+                {insight.metric}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Title */}
+        <h4 className="text-[12px] font-semibold leading-tight" style={{ color: THEME.text }}>
+          {insight.title}
+        </h4>
+
+        {/* Single-line analysis */}
+        <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: THEME.textSecondary }}>
+          {insight.analysis}
+        </p>
+
+        {/* Recommendation — hidden by default, show on hover */}
+        <div className="overflow-hidden max-h-0 group-hover/insight:max-h-20 transition-all duration-300">
+          <p className="text-[10px] leading-relaxed pt-1" style={{ color: THEME.textSecondary }}>
+            <span className="font-semibold inline-flex items-center gap-1" style={{ color: '#FFB74D' }}>
+              <Lightbulb className="h-2.5 w-2.5" /> {t('dashboard.recommendation')}:
+            </span>{' '}
+            {insight.recommendation}
+          </p>
         </div>
       </div>
     </div>
@@ -931,13 +1017,18 @@ export function Dashboard() {
     // 2. no-savings-growth — last30DaysGrowth <= 0 AND totalIncome > 0
     if (data.last30DaysGrowth <= 0 && data.totalIncome > 0) {
       const potentialSave = Math.round(data.totalIncome * 0.2);
+      const hasTargetsWithFunds = data.savingsTargets?.some((st: any) => st.currentAmount > 0) ?? false;
       items.push({
         id: 'no-savings-growth',
         type: 'action',
         priority: 'critical',
         title: t('dashboard.stagnantTitle'),
-        analysis: t('dashboard.noGrowthAnalysis'),
-        recommendation: t('dashboard.noGrowthRecommendation'),
+        analysis: hasTargetsWithFunds
+          ? t('dashboard.noGrowthAnalysis')
+          : t('dashboard.noGrowthAnalysis'),
+        recommendation: hasTargetsWithFunds
+          ? t('dashboard.stagnantDetail')
+          : t('dashboard.noGrowthRecommendation'),
         impact: t('dashboard.noGrowthImpact', { amount: formatAmount(potentialSave) }),
         metric: `${formatAmount(data.last30DaysGrowth)}`,
         icon: <TrendingDown className="h-4 w-4" />,
@@ -971,13 +1062,16 @@ export function Dashboard() {
     // 4. low-savings-rate — savingsRate < 10 AND totalIncome > 0
     if (data.totalIncome > 0 && data.savingsRate < 10 && data.savingsRate >= 0) {
       const extraSavings = Math.round(data.totalIncome * (0.2 - data.savingsRate / 100));
+      const hasTargets = (data.savingsTargets?.length ?? 0) > 0;
       items.push({
         id: 'low-savings-rate',
         type: 'warning',
         priority: 'high',
         title: t('dashboard.lowSavingsTitle'),
         analysis: t('dashboard.lowRateAnalysis', { rate: data.savingsRate.toFixed(1) }),
-        recommendation: t('dashboard.lowRateRecommendation'),
+        recommendation: hasTargets
+          ? t('dashboard.lowRateRecHasTarget')
+          : t('dashboard.lowRateRecommendation'),
         impact: t('dashboard.lowRateImpact', { amount: formatAmount(extraSavings) }),
         metric: `${data.savingsRate.toFixed(1)}%`,
         icon: <AlertTriangle className="h-4 w-4" />,
@@ -1023,13 +1117,18 @@ export function Dashboard() {
 
     // 7. target-behind — targetAnalytics.behind > 0
     if (targetAnalytics.behind > 0) {
+      const hasRoomToIncrease = mc && mc.currentMonthIncome > 0
+        ? ((mc.currentMonthIncome - mc.currentMonthExpense) / mc.currentMonthIncome) > 0.1
+        : false;
       items.push({
         id: 'target-behind',
         type: 'action',
         priority: 'high',
         title: t('dashboard.needsAttention'),
         analysis: t('dashboard.targetBehindAnalysis', { count: targetAnalytics.behind }),
-        recommendation: t('dashboard.targetBehindRecommendation'),
+        recommendation: hasRoomToIncrease
+          ? t('dashboard.targetBehindRecRoom')
+          : t('dashboard.targetBehindRecReview'),
         impact: t('dashboard.targetBehindImpact', { averageProgress: targetAnalytics.averageProgress.toFixed(0) }),
         metric: `${targetAnalytics.behind}`,
         icon: <Target className="h-4 w-4" />,
@@ -1039,21 +1138,25 @@ export function Dashboard() {
 
     // ── MEDIUM PRIORITY ──
 
-    // 8. unallocated-funds — unallocatedFunds > 100000
+    // 8. unallocated-funds — unallocatedFunds > 100000, skip if most funds already allocated
     if (data.unallocatedFunds > 100000) {
       const potentialGrowth = data.unallocatedFunds * 0.09;
-      items.push({
-        id: 'unallocated-funds',
-        type: 'action',
-        priority: 'medium',
-        title: t('dashboard.unallocatedTitle'),
-        analysis: t('dashboard.unallocatedAnalysis', { amount: formatAmount(data.unallocatedFunds) }),
-        recommendation: t('dashboard.unallocatedRecommendation'),
-        impact: t('dashboard.unallocatedImpact', { amount: formatAmount(potentialGrowth) }),
-        metric: formatAmount(data.unallocatedFunds),
-        icon: <Sparkles className="h-4 w-4" />,
-        accent: PRIORITY_COLORS.medium,
-      });
+      const totalSavings = data.totalSavings || 0;
+      const allocRatio = totalSavings > 0 ? ((totalSavings - data.unallocatedFunds) / totalSavings) : 0;
+      if (allocRatio < 0.7) {
+        items.push({
+          id: 'unallocated-funds',
+          type: 'action',
+          priority: 'medium',
+          title: t('dashboard.unallocatedTitle'),
+          analysis: t('dashboard.unallocatedAnalysis', { amount: formatAmount(data.unallocatedFunds) }),
+          recommendation: t('dashboard.unallocatedRecommendation'),
+          impact: t('dashboard.unallocatedImpact', { amount: formatAmount(potentialGrowth) }),
+          metric: formatAmount(data.unallocatedFunds),
+          icon: <Sparkles className="h-4 w-4" />,
+          accent: PRIORITY_COLORS.medium,
+        });
+      }
     }
 
     // 9. accelerate-next-level — close to next financial stage
@@ -1206,7 +1309,10 @@ export function Dashboard() {
       });
     }
 
-    return items.slice(0, 5);
+    return items.sort((a, b) => {
+      const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+      return (order[a.priority] ?? 4) - (order[b.priority] ?? 4);
+    }).slice(0, 3);
   }, [data, nextStage, mc, topCats, averages, targetAnalytics, forecast, healthScore, healthGrade]);
 
   // ── Cash flow chart data ──
@@ -1474,10 +1580,10 @@ export function Dashboard() {
               <ConsultantCard key={insight.id} insight={insight} />
             ))}
           </div>
-          {/* Desktop: 3-column grid */}
-          <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-5">
+          {/* Desktop: 3-column grid - compact cards */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-3 xl:gap-4">
             {insights.map((insight) => (
-              <ConsultantCard key={insight.id} insight={insight} />
+              <ConsultantCardCompact key={insight.id} insight={insight} />
             ))}
           </div>
         </div>

@@ -71,15 +71,21 @@ interface DynamicIconProps {
 export function DynamicIcon({ name, className, style }: DynamicIconProps) {
   if (!name) return null;
 
+  const blockStyle: React.CSSProperties = {
+    display: 'block',
+    maxWidth: '100%',
+    maxHeight: '100%',
+    ...style,
+  };
+
   const Component = ICON_MAP[name];
   if (Component) {
-    // Force block display so flex/grid centering works correctly for SVG icons
-    return <Component className={className} style={{ display: 'block', ...style }} />;
+    return <Component className={className} style={blockStyle} />;
   }
 
   // Fallback: render as text (emoji or plain text)
   return (
-    <span className={className} style={{ display: 'block', ...style }}>
+    <span className={className} style={blockStyle}>
       {name}
     </span>
   );

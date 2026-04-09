@@ -424,7 +424,7 @@ export function MainLayout() {
               )}
             >
               <div className={cn(
-                'grid place-items-center w-6 h-6 rounded-md transition-all duration-200 [&>svg]:block',
+                'grid place-items-center w-6 h-6 rounded-md transition-all duration-200 [&>*]:block leading-none',
                 'hover:bg-[#BB86FC]/10 hover:text-[#BB86FC] group/toggle',
               )}>
                 {sidebarCollapsed ? (
@@ -478,7 +478,7 @@ export function MainLayout() {
                 </div>
                 <button
                   onClick={() => setTabletSidebarOpen(false)}
-                  className="grid place-items-center w-7 h-7 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all duration-200 [&>svg]:block"
+                  className="grid place-items-center w-7 h-7 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all duration-200 [&>*]:block leading-none"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -564,7 +564,7 @@ export function MainLayout() {
               <button
                 key={item.id}
                 onClick={() => navigateTo(item.id)}
-                className="grid place-items-center py-2 px-3 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95 [&>svg]:block"
+                className="grid place-items-center py-2 px-3 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95 [&>*]:block leading-none"
               >
                 <Icon
                   className={cn(

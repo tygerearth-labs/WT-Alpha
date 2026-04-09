@@ -52,7 +52,7 @@ export function TransactionList({ transactions, onEdit, onDelete, type }: Transa
         className="rounded-xl p-6 sm:p-8 lg:py-16 flex flex-col items-center justify-center text-center"
         style={{ background: T.surface, border: `1px solid ${T.border}` }}
       >
-        <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-2xl grid place-items-center mb-2 [&>svg]:block" style={{ background: `${T.primary}10` }}>
+        <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-2xl grid place-items-center mb-2 [&>*]:block leading-none" style={{ background: `${T.primary}10` }}>
           <Inbox className="h-5 w-5 lg:h-7 lg:w-7" style={{ color: T.primary, opacity: 0.5 }} />
         </div>
         <p className="text-xs font-medium" style={{ color: T.textSub }}>{emptyMessage}</p>
@@ -102,7 +102,7 @@ export function TransactionList({ transactions, onEdit, onDelete, type }: Transa
                   />
                   {/* Category icon */}
                   <div
-                    className="shrink-0 w-9 h-9 lg:w-10 lg:h-10 rounded-xl grid place-items-center text-sm lg:text-base [&>svg]:block"
+                    className="shrink-0 w-9 h-9 lg:w-10 lg:h-10 rounded-xl grid place-items-center text-sm lg:text-base [&>*]:block leading-none"
                     style={{ backgroundColor: `${transaction.category.color}18` }}
                   >
                     <DynamicIcon name={transaction.category.icon} className="h-4 w-4 lg:h-5 lg:w-5" />
@@ -128,14 +128,14 @@ export function TransactionList({ transactions, onEdit, onDelete, type }: Transa
                   {/* Actions — always visible on mobile, hover-reveal on desktop */}
                   <div className="flex gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <button
-                      className="grid place-items-center h-8 w-8 lg:h-9 lg:w-9 rounded-lg active:scale-90 transition-all lg:hover:shadow-[0_0_12px_rgba(187,134,252,0.35)] [&>svg]:block"
+                      className="grid place-items-center h-8 w-8 lg:h-9 lg:w-9 rounded-lg active:scale-90 transition-all lg:hover:shadow-[0_0_12px_rgba(187,134,252,0.35)] [&>*]:block leading-none"
                       style={{ background: `${T.primary}15`, color: T.primary }}
                       onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      className="grid place-items-center h-8 w-8 lg:h-9 lg:w-9 rounded-lg active:scale-90 transition-all lg:hover:shadow-[0_0_12px_rgba(207,102,121,0.35)] [&>svg]:block"
+                      className="grid place-items-center h-8 w-8 lg:h-9 lg:w-9 rounded-lg active:scale-90 transition-all lg:hover:shadow-[0_0_12px_rgba(207,102,121,0.35)] [&>*]:block leading-none"
                       style={{ background: `${T.destructive}15`, color: T.destructive }}
                       onClick={(e) => { e.stopPropagation(); onDelete(transaction.id); }}
                     >

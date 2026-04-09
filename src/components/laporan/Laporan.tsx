@@ -220,7 +220,7 @@ export function Laporan() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span
-                            className="w-7 h-7 rounded-lg grid place-items-center text-xs shrink-0 [&>svg]:block"
+                            className="w-7 h-7 rounded-lg grid place-items-center text-xs shrink-0 [&>*]:block leading-none"
                             style={{ background: `${tx.category.color}15` }}
                           >
                             <DynamicIcon name={tx.category.icon} className="h-3.5 w-3.5" />
@@ -248,7 +248,7 @@ export function Laporan() {
                   style={{ borderBottom: `1px solid ${T.border}` }}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg grid place-items-center shrink-0 text-sm [&>svg]:block"
+                    className="w-8 h-8 rounded-lg grid place-items-center shrink-0 text-sm [&>*]:block leading-none"
                     style={{ background: `${tx.category.color}15` }}
                   >
                     <DynamicIcon name={tx.category.icon} className="h-4 w-4" />

@@ -506,7 +506,7 @@ export function TargetTabungan() {
       {savingsTargets.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div
-            className="w-16 h-16 rounded-2xl grid place-items-center mb-4 [&>svg]:block"
+            className="w-16 h-16 rounded-2xl grid place-items-center mb-4 [&>*]:block leading-none"
             style={{ background: `${T.primary}10` }}
           >
             <PiggyBank className="h-8 w-8" style={{ color: T.primary }} />

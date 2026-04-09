@@ -423,7 +423,7 @@ export function LandingPage() {
                 >
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div className="flex flex-col items-center gap-1 shrink-0">
-                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl grid place-items-center [&>svg]:block" style={{ background: `${story.color}18` }}>
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl grid place-items-center [&>*]:block leading-none" style={{ background: `${story.color}18` }}>
                         <story.icon className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: story.color }} />
                       </div>
                       {i < 3 && <div className="w-px h-4 sm:hidden" style={{ background: `${story.color}25` }} />}
@@ -501,7 +501,7 @@ export function LandingPage() {
                 >
                   <div className="flex items-start gap-3 sm:gap-0 sm:flex-col">
                     <div
-                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl grid place-items-center shrink-0 sm:mb-4 sm:shrink [&>svg]:block transition-transform duration-300 group-hover:scale-110"
+                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl grid place-items-center shrink-0 sm:mb-4 sm:shrink [&>*]:block leading-none transition-transform duration-300 group-hover:scale-110"
                       style={{ background: `${feature.color}18` }}
                     >
                       <feature.icon className="h-5 w-5" style={{ color: feature.color }} />

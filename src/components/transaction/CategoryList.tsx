@@ -37,7 +37,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                 className="group flex items-center gap-2 shrink-0 px-3 py-2 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] transition-all duration-150 cursor-pointer min-w-0"
               >
                 <span
-                  className="flex-shrink-0 w-7 h-7 rounded-lg grid place-items-center text-sm"
+                  className="flex-shrink-0 w-7 h-7 rounded-lg grid place-items-center text-sm leading-none [&>*]:block"
                   style={{ backgroundColor: `${category.color}20` }}
                 >
                   <DynamicIcon name={category.icon} className="h-3.5 w-3.5" />
@@ -80,7 +80,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
               >
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
                   <span
-                    className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-sm"
+                    className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-sm leading-none [&>*]:block"
                     style={{ backgroundColor: `${category.color}20` }}
                   >
                     <DynamicIcon name={category.icon} className="h-4 w-4" />
@@ -140,7 +140,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span
-                    className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base"
+                    className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base leading-none [&>*]:block"
                     style={{ backgroundColor: `${category.color}20` }}
                   >
                     <DynamicIcon name={category.icon} className="h-4 w-4" />
@@ -211,7 +211,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span
-                  className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base"
+                  className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base leading-none [&>*]:block"
                   style={{ backgroundColor: `${category.color}20` }}
                 >
                   <DynamicIcon name={category.icon} className="h-4 w-4" />
