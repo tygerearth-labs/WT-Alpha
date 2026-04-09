@@ -410,17 +410,17 @@ function AnalyticsCarousel({
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex-1 w-full space-y-2.5 min-w-0">
+                <div className="flex-1 w-full space-y-3 min-w-0">
                   {categoryData.map((cat: any, i: number) => {
                     const pct = totalCategoryAmount > 0 ? (cat.value / totalCategoryAmount) * 100 : 0;
                     return (
-                      <div key={i} className="space-y-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1 min-w-0">
-                            {cat.icon && <DynamicIcon name={cat.icon} className="h-3 w-3 shrink-0" style={{ color: cat.color }} />}
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {cat.icon && <DynamicIcon name={cat.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: cat.color }} />}
                             <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
                           </div>
-                          <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                          <span className="text-[10px] font-semibold shrink-0 tabular-nums" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
@@ -592,24 +592,24 @@ function AnalyticsCarousel({
                       </ResponsiveContainer>
                     </div>
                     {/* Ranked list */}
-                    <div className="flex-1 w-full space-y-2 min-w-0">
+                    <div className="flex-1 w-full space-y-2.5 min-w-0">
                       {categoryData.map((cat: any, i: number) => {
                         const pct = totalCategoryAmount > 0 ? (cat.value / totalCategoryAmount) * 100 : 0;
                         return (
-                          <div key={i} className="space-y-0.5">
-                            <div className="flex items-center justify-between gap-1">
-                              <div className="flex items-center gap-1 min-w-0">
-                                {cat.icon && <DynamicIcon name={cat.icon} className="h-3 w-3 shrink-0" style={{ color: cat.color }} />}
+                          <div key={i} className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {cat.icon && <DynamicIcon name={cat.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: cat.color }} />}
                                 <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>
                                   {cat.name}
                                 </span>
                               </div>
-                              <span className="text-[10px] shrink-0" style={{ color: THEME.muted }}>
+                              <span className="text-[10px] shrink-0 tabular-nums" style={{ color: THEME.muted }}>
                                 {pct.toFixed(0)}%
                               </span>
                             </div>
                             <div
-                              className="h-1 rounded-full overflow-hidden"
+                              className="h-1.5 rounded-full overflow-hidden"
                               style={{ background: THEME.border }}
                             >
                               <div
