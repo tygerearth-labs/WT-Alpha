@@ -11,6 +11,7 @@ import { TransactionList } from '@/components/transaction/TransactionList';
 import { CategoryList } from '@/components/transaction/CategoryList';
 import { Transaction, Category, TransactionFormData, CategoryFormData, SavingsTarget } from '@/types/transaction.types';
 import { useTranslation } from '@/hooks/useTranslation';
+import { TransactionPageSkeleton } from '@/components/shared/PageSkeleton';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
 
@@ -252,11 +253,7 @@ export function KasMasuk() {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: T.primary }} />
-      </div>
-    );
+    return <TransactionPageSkeleton />;
   }
 
   const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 6);
@@ -512,8 +509,134 @@ export function KasMasuk() {
         </div>
       </div>
 
-      {/* ═══ Mobile stacked layout ═══ */}
-      <div className="lg:hidden space-y-3">
+      {/* ═══ Tablet 2-column layout (md → lg / 768px–1024px) ═══ */}
+      <div className="hidden md:grid lg:hidden md:grid-cols-[240px_1fr] md:gap-4">
+        {/* Left column: Categories — Glass card */}
+        <div
+          className="rounded-2xl p-4 space-y-4"
+          style={{
+            background: 'rgba(18, 18, 18, 0.6)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}
+        >
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.primary}, ${T.accent})` }} />
+                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.categories')}</p>
+              </div>
+              <Button
+                size="icon"
+                className="h-7 w-7 rounded-lg transition-transform hover:scale-110"
+                style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
+                onClick={() => setIsCategoryDialogOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <CategoryList
+              categories={categories}
+              onEdit={openEditCategoryDialog}
+              onDelete={(id) => setDeleteDialog({ open: true, id, type: 'category' })}
+              type="income"
+              compact
+              categoryAmounts={categoryAmounts}
+            />
+          </div>
+
+          {/* Category Distribution (compact) */}
+          {incomeByCategory.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
+                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.distribution')}</p>
+              </div>
+              <div className="space-y-2">
+                {incomeByCategory.slice(0, 5).map((cat) => {
+                  const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
+                  return (
+                    <div key={cat.name} className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0"
+                        style={{ background: `${cat.color}20` }}>
+                        <DynamicIcon name={cat.icon} className="h-3 w-3" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
+                          <span className="text-[10px] font-semibold shrink-0 ml-1" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
+                          <div className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(pct, 2)}%`, background: `linear-gradient(90deg, ${cat.color}, ${cat.color}99)` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right column: Transactions — Glass card */}
+        <div
+          className="rounded-2xl p-4 space-y-3"
+          style={{
+            background: 'rgba(18, 18, 18, 0.6)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
+              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.history')}</p>
+            </div>
+            <div className="flex gap-1">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
+                  className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
+                  style={{
+                    background: dateFilter === f.key ? T.accent : 'rgba(255,255,255,0.04)',
+                    color: dateFilter === f.key ? '#000' : T.muted,
+                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="max-h-[600px] overflow-y-auto">
+            <TransactionList
+              transactions={displayedTransactions}
+              onEdit={openEditTransactionDialog}
+              onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
+              type="income"
+            />
+          </div>
+
+          {transactions.length > 6 && (
+            <button
+              onClick={() => setShowAllTransactions(!showAllTransactions)}
+              className="w-full text-center py-2.5 text-xs font-medium rounded-xl transition-all"
+              style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
+            >
+              {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ Mobile stacked layout (< md / <768px) ═══ */}
+      <div className="md:hidden space-y-3">
         {/* Category Distribution */}
         {incomeByCategory.length > 0 && (
           <div
