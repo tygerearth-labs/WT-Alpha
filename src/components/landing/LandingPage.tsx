@@ -322,7 +322,7 @@ export function LandingPage() {
                 style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6, #CF6679)' }}
               >
                 <Image
-                  src="/logo.PNG"
+                  src="/logo.png"
                   alt="Wealth Tracker"
                   width={56}
                   height={56}
