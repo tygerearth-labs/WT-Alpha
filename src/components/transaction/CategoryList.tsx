@@ -19,12 +19,12 @@ interface CategoryListProps {
 export function CategoryList({ categories, onEdit, onDelete, type, compact, categoryAmounts }: CategoryListProps) {
   const { t } = useTranslation();
   const { formatAmount } = useCurrencyFormat();
-  // ── Compact horizontal chips (mobile) ──
+  // ── Compact mode (chip / tablet / desktop) ──
   if (compact || categories.length > 4) {
     return (
       <div>
-        {/* Mobile: horizontal scrollable chip strip */}
-        <div className="flex lg:hidden gap-2 overflow-x-auto scrollbar-hide pb-1">
+        {/* Mobile: horizontal scrollable chip strip (< md / 768px) */}
+        <div className="flex md:hidden gap-2 overflow-x-auto scrollbar-hide pb-1">
           {categories.map((category) => {
             const isActive = true;
             const stats = categoryAmounts?.[category.id];
@@ -37,7 +37,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                 className="group flex items-center gap-2 shrink-0 px-3 py-2 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] transition-all duration-150 cursor-pointer min-w-0"
               >
                 <span
-                  className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                  className="flex-shrink-0 w-7 h-7 rounded-lg grid place-items-center text-sm"
                   style={{ backgroundColor: `${category.color}20` }}
                 >
                   <DynamicIcon name={category.icon} className="h-3.5 w-3.5" />
@@ -66,7 +66,67 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
           )}
         </div>
 
-        {/* Desktop: compact list rows */}
+        {/* Tablet: 2-column compact cards (md → lg / 768px–1024px) */}
+        <div className="hidden md:grid lg:hidden grid-cols-2 gap-2">
+          {categories.map((category) => {
+            const stats = categoryAmounts?.[category.id];
+            const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
+            const totalAmount = stats?.amount ?? 0;
+            return (
+              <div
+                key={category.id}
+                className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] transition-all duration-150 cursor-pointer"
+                onClick={() => onEdit(category)}
+              >
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  <span
+                    className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-sm"
+                    style={{ backgroundColor: `${category.color}20` }}
+                  >
+                    <DynamicIcon name={category.icon} className="h-4 w-4" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs truncate">{category.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {t('category.transactionCount', { count: transactionCount })}
+                    </p>
+                    {totalAmount > 0 && (
+                      <p className="text-[10px] font-semibold" style={{ color: category.color }}>
+                        {formatAmount(totalAmount)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-0.5 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={(e) => { e.stopPropagation(); onEdit(category); }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); onDelete(category.id); }}
+                    disabled={transactionCount > 0}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+          {categories.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
+              <p className="text-xs">{t('category.noData')} {t('category.noDataHint')}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: compact list rows (lg+ / ≥1024px) */}
         <div className="hidden lg:grid grid-cols-2 xl:grid-cols-3 gap-2">
           {categories.map((category) => {
             const stats = categoryAmounts?.[category.id];
@@ -80,7 +140,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span
-                    className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-base"
+                    className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base"
                     style={{ backgroundColor: `${category.color}20` }}
                   >
                     <DynamicIcon name={category.icon} className="h-4 w-4" />
@@ -129,16 +189,16 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
     );
   }
 
-  // ── Full card grid (desktop only, few categories) ──
+  // ── Full card grid (few categories, responsive) ──
   return (
     <div className="space-y-3">
-      <div className="hidden lg:flex items-center justify-between">
+      <div className="hidden md:flex items-center justify-between">
         <span className="text-sm text-muted-foreground">
           {categories.length} {t('kas.categories')}
         </span>
       </div>
 
-      <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {categories.map((category) => {
           const stats = categoryAmounts?.[category.id];
           const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
@@ -146,12 +206,12 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
           return (
             <div
               key={category.id}
-              className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] hover:border-primary/20 transition-all duration-150 cursor-pointer"
+              className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] lg:hover:border-primary/20 transition-all duration-150 cursor-pointer"
               onClick={() => onEdit(category)}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span
-                  className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-base"
+                  className="flex-shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base"
                   style={{ backgroundColor: `${category.color}20` }}
                 >
                   <DynamicIcon name={category.icon} className="h-4 w-4" />
@@ -168,7 +228,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                   )}
                 </div>
               </div>
-              <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="icon"

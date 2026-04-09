@@ -32,7 +32,7 @@ export function RegisterForm() {
         body: JSON.stringify({ email, username, password }),
       });
       const data = await res.json();
-      if (res.ok) { setUser(data.user); toast.success(t('auth.registerSuccess')); window.location.href = '/'; }
+      if (res.ok) { setUser(data.user); toast.success(t('auth.registerSuccess')); }
       else toast.error(data.error || t('auth.registerFailed'));
     } catch { toast.error(t('auth.registerError')); }
     finally { setIsLoading(false); }

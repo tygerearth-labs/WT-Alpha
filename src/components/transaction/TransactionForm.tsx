@@ -144,6 +144,9 @@ export function TransactionForm({
               className="h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg"
               autoFocus
             />
+            <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>
+              {type === 'income' ? t('form.tipIncome') : t('form.tipExpense')}
+            </p>
           </div>
 
           {/* Category & Date - Grid */}
@@ -166,6 +169,9 @@ export function TransactionForm({
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>
+                {type === 'income' ? t('form.tipCategoryIncome') : t('form.tipCategoryExpense')}
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[11px]" style={{ color: T.muted }}>{t('laporan.date')}</Label>
@@ -189,6 +195,7 @@ export function TransactionForm({
               rows={2}
               className="text-xs bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg resize-none"
             />
+            <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>{t('form.tipDescription')}</p>
           </div>
 
           {/* Savings target allocation (income only) */}
@@ -200,6 +207,7 @@ export function TransactionForm({
               <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: T.primary }}>
                 <span>🎯</span> {t('transaction.allocateTarget')}
               </p>
+              <p className="text-[9px]" style={{ color: `${T.primary}80` }}>{t('form.tipAllocation')}</p>
               <div className="space-y-2">
                 <div className="space-y-1.5">
                   <Label className="text-[11px]" style={{ color: T.muted }}>{t('nav.target')}</Label>

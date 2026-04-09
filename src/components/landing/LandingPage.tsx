@@ -167,6 +167,7 @@ export function LandingPage() {
     {
       name: t('landing.basicName'),
       price: t('landing.basicPrice'),
+      originalPrice: t('landing.basicOriginalPrice'),
       period: '',
       description: t('landing.basicDesc'),
       highlighted: false,
@@ -183,6 +184,7 @@ export function LandingPage() {
     {
       name: t('landing.proName'),
       price: t('landing.proPrice'),
+      originalPrice: t('landing.proOriginalPrice'),
       period: '',
       description: t('landing.proDesc'),
       highlighted: true,
@@ -421,7 +423,7 @@ export function LandingPage() {
                 >
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div className="flex flex-col items-center gap-1 shrink-0">
-                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center" style={{ background: `${story.color}18` }}>
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl grid place-items-center [&>svg]:block" style={{ background: `${story.color}18` }}>
                         <story.icon className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: story.color }} />
                       </div>
                       {i < 3 && <div className="w-px h-4 sm:hidden" style={{ background: `${story.color}25` }} />}
@@ -499,7 +501,7 @@ export function LandingPage() {
                 >
                   <div className="flex items-start gap-3 sm:gap-0 sm:flex-col">
                     <div
-                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center shrink-0 sm:mb-4 sm:shrink transition-transform duration-300 group-hover:scale-110"
+                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl grid place-items-center shrink-0 sm:mb-4 sm:shrink [&>svg]:block transition-transform duration-300 group-hover:scale-110"
                       style={{ background: `${feature.color}18` }}
                     >
                       <feature.icon className="h-5 w-5" style={{ color: feature.color }} />
@@ -635,8 +637,14 @@ export function LandingPage() {
                     <p className="text-[11px] sm:text-xs text-muted-foreground">{plan.description}</p>
                   </div>
 
-                  <div className="mb-4 sm:mb-6 flex items-baseline gap-2">
+                  <div className="mb-4 sm:mb-6 flex items-baseline gap-2 flex-wrap">
                     <span className="text-2xl sm:text-4xl font-extrabold">{plan.price}</span>
+                    {plan.originalPrice && (
+                      <span className="text-sm sm:text-base line-through text-white/30">{plan.originalPrice}</span>
+                    )}
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(207,102,121,0.15)', color: '#CF6679' }}>
+                      {Math.round((1 - parseFloat(plan.price.replace(/[^0-9]/g, '')) / parseFloat(plan.originalPrice.replace(/[^0-9]/g, ''))) * 100)}% OFF
+                    </span>
                     {!plan.period && (
                       <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(3,218,198,0.12)', color: '#03DAC6' }}>
                         {t('landing.oneTime')}
@@ -781,7 +789,7 @@ export function LandingPage() {
         <DialogContent className="rounded-2xl border-0 p-0 max-w-[420px] mx-auto" style={{ background: '#121212' }} showCloseButton={true}>
           <DialogHeader className="p-6 pb-0">
             <div className="flex items-center gap-2.5 mb-1">
-              <Image src="/logo.PNG" alt="Wealth Tracker" width={32} height={32} className="rounded-lg" />
+              <Image src="/logo.png" alt="Wealth Tracker" width={32} height={32} className="rounded-lg" />
               <DialogTitle className="text-lg font-bold" style={{ color: '#E6E1E5' }}>{t('landing.creator')}</DialogTitle>
             </div>
             <DialogDescription className="text-xs" style={{ color: '#9E9E9E' }}>

@@ -28,7 +28,10 @@ export function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (res.ok) { setUser(data.user); toast.success(t('auth.loginSuccess')); }
+      if (res.ok) {
+        setUser(data.user);
+        toast.success(t('auth.loginSuccess'));
+      }
       else toast.error(data.error || t('auth.loginFailed'));
     } catch { toast.error(t('auth.loginError')); }
     finally { setIsLoading(false); }

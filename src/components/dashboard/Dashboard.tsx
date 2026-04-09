@@ -8,7 +8,7 @@ import {
   ArrowUpRight, ArrowDownRight, Activity, Target,
   PieChart as PieChartIcon, BarChart3, Sparkles,
   AlertTriangle, Trophy, Flame, CheckCircle2, Zap,
-  Shield, ChevronLeft, ChevronRight, Banknote, Timer, Radar, Eye,
+  Shield, ChevronLeft, ChevronRight, Banknote, Timer, Radar, Eye, Brain,
 } from 'lucide-react';
 // embla-carousel removed — replaced with lightweight CSS transform carousel
 import { useTranslation } from '@/hooks/useTranslation';
@@ -19,6 +19,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { format } from 'date-fns';
+import { DashboardSkeleton } from '@/components/shared/PageSkeleton';
 import { id as idLocale } from 'date-fns/locale';
 import type { SavingsTarget, Transaction, PieChartData } from '@/types/transaction.types';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
@@ -349,7 +350,7 @@ function AnalyticsCarousel({
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top left, ${THEME.primary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.primary}12` }}>
+              <div className="w-7 h-7 rounded-lg grid place-items-center [&>svg]:block" style={{ background: `${THEME.primary}12` }}>
                 <BarChart3 className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
               </div>
               <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.cashFlow')}</CardTitle>
@@ -386,7 +387,7 @@ function AnalyticsCarousel({
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top right, ${THEME.destructive}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.destructive}12` }}>
+              <div className="w-7 h-7 rounded-lg grid place-items-center [&>svg]:block" style={{ background: `${THEME.destructive}12` }}>
                 <PieChartIcon className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
               </div>
               <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.topSpending')}</CardTitle>
@@ -438,7 +439,7 @@ function AnalyticsCarousel({
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at bottom center, ${THEME.secondary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.secondary}12` }}>
+              <div className="w-7 h-7 rounded-lg grid place-items-center [&>svg]:block" style={{ background: `${THEME.secondary}12` }}>
                 <Shield className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
               </div>
               <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.financialHealth')}</CardTitle>
@@ -712,6 +713,119 @@ function AnalyticsCarousel({
   );
 }
 
+// ── Consultant Insight Card ──────────────────────────────────────
+function ConsultantCard({ insight }: { insight: {
+  id: string;
+  type: 'action' | 'warning' | 'achievement';
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  analysis: string;
+  recommendation: string;
+  impact: string;
+  metric?: string;
+  icon: any;
+  accent: string;
+} }) {
+  const { t } = useTranslation();
+
+  const priorityLabel = insight.priority === 'critical'
+    ? t('dashboard.priorityCritical')
+    : insight.priority === 'high'
+    ? t('dashboard.priorityHigh')
+    : insight.priority === 'medium'
+    ? t('dashboard.priorityMedium')
+    : t('dashboard.priorityLow');
+
+  const priorityBg = insight.accent + '20';
+
+  return (
+    <div
+      className="shrink-0 w-[260px] sm:w-[280px] lg:w-auto rounded-xl p-3.5 transition-all duration-200 relative overflow-hidden"
+      style={{
+        background: THEME.surface,
+        border: `1px solid ${THEME.border}`,
+        borderLeft: `3px solid ${insight.accent}`,
+      }}
+    >
+      {/* Subtle gradient glow */}
+      <div
+        className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-20 pointer-events-none"
+        style={{ background: insight.accent }}
+      />
+      <div className="relative z-10 space-y-2.5">
+        {/* Header: Priority badge + icon + metric */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+              style={{ background: priorityBg, color: insight.accent }}
+            >
+              {priorityLabel}
+            </span>
+            <div
+              className="p-1.5 rounded-lg"
+              style={{ background: insight.accent + '15' }}
+            >
+              <span style={{ color: insight.accent }}>{insight.icon}</span>
+            </div>
+          </div>
+          {insight.metric && (
+            <span className="text-[11px] font-bold" style={{ color: insight.accent }}>
+              {insight.metric}
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h4 className="text-[13px] font-semibold leading-tight" style={{ color: THEME.text }}>
+          {insight.title}
+        </h4>
+
+        {/* Analysis */}
+        <div className="space-y-0.5">
+          <div className="flex items-start gap-1.5">
+            <span className="text-[11px] mt-px shrink-0" style={{ color: '#64B5F6' }}>📊</span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#64B5F6' }}>
+                {t('dashboard.analysis')}
+              </p>
+              <p className="text-[11px] leading-relaxed" style={{ color: THEME.textSecondary }}>
+                {insight.analysis}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Recommendation */}
+        <div className="space-y-0.5">
+          <div className="flex items-start gap-1.5">
+            <span className="text-[11px] mt-px shrink-0" style={{ color: '#FFB74D' }}>⚡</span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#FFB74D' }}>
+                {t('dashboard.recommendation')}
+              </p>
+              <p className="text-[11px] leading-relaxed" style={{ color: THEME.textSecondary }}>
+                {insight.recommendation}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Impact */}
+        <div
+          className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg"
+          style={{
+            background: insight.accent + '10',
+            color: insight.accent,
+          }}
+        >
+          📈 {t('dashboard.impact')}: {insight.impact}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Dashboard Component ────────────────────────────────────
 export function Dashboard() {
   const { t } = useTranslation();
@@ -777,178 +891,280 @@ export function Dashboard() {
     dailyIncome: 0, transactionSize: 0,
   };
 
-  // ── Smart Insights ──
+  // ── Financial Consultant Insights ──
   const insights = useMemo(() => {
     if (!data) return [];
     const items: Array<{
-      id: string; type: 'opportunity' | 'warning' | 'achievement';
-      title: string; description: string; detail: string;
-      icon: any; accent: string;
+      id: string;
+      type: 'action' | 'warning' | 'achievement';
+      priority: 'critical' | 'high' | 'medium' | 'low';
+      title: string;
+      analysis: string;
+      recommendation: string;
+      impact: string;
+      metric?: string;
+      icon: any;
+      accent: string;
     }> = [];
 
-    // Opportunity: Unallocated funds
-    if (data.unallocatedFunds > 100000) {
-      const potentialGrowth = data.unallocatedFunds * 0.09;
-      items.push({
-        id: 'unallocated',
-        type: 'opportunity',
-        title: t('dashboard.unallocatedTitle'),
-        description: t('dashboard.unallocatedDesc', { amount: formatAmount(data.unallocatedFunds) }),
-        detail: t('dashboard.unallocatedDetail', { amount: formatAmount(potentialGrowth) }),
-        icon: <Sparkles className="h-4 w-4" />,
-        accent: THEME.primary,
-      });
-    }
+    const PRIORITY_COLORS = {
+      critical: '#FF5252',
+      high: '#FF9800',
+      medium: '#BB86FC',
+      low: '#4CAF50',
+    } as const;
 
-    // Opportunity: Close to next phase
-    if (nextStage && data.totalSavings > 0) {
-      const amountNeeded = nextStage.range[0] - data.totalSavings;
-      if (amountNeeded > 0 && amountNeeded < data.totalSavings * 0.5) {
-        const monthlyBoost = Math.ceil(amountNeeded / 3);
+    // ── CRITICAL PRIORITY ──
+
+    // 1. budget-over — burn ratio >= 100%
+    if (mc && mc.currentMonthIncome > 0 && mc.currentMonthExpense > 0) {
+      const burnRatio = (mc.currentMonthExpense / mc.currentMonthIncome) * 100;
+      if (burnRatio >= 100) {
+        const overspent = mc.currentMonthExpense - mc.currentMonthIncome;
+        const potentialSave = Math.round(mc.currentMonthExpense * 0.3);
         items.push({
-          id: 'accelerate',
-          type: 'opportunity',
-          title: t('dashboard.almostNextLevelTitle'),
-          description: t('dashboard.almostNextLevelDesc', { amount: formatAmount(amountNeeded), stage: nextStage.name }),
-          detail: t('dashboard.almostNextLevelDetail', { amount: formatAmount(monthlyBoost) }),
-          icon: <Zap className="h-4 w-4" />,
-          accent: THEME.primary,
+          id: 'budget-over',
+          type: 'action',
+          priority: 'critical',
+          title: t('dashboard.budgetOver'),
+          analysis: t('dashboard.budgetOverAnalysis', { amount: formatAmount(mc.currentMonthExpense) }),
+          recommendation: t('dashboard.budgetOverRecommendation'),
+          impact: t('dashboard.budgetOverImpact', { amount: formatAmount(potentialSave) }),
+          metric: `-${formatAmount(overspent)}`,
+          icon: <AlertTriangle className="h-4 w-4" />,
+          accent: PRIORITY_COLORS.critical,
         });
       }
     }
 
-    // Warning: Low savings rate
-    if (data.totalIncome > 0 && data.savingsRate < 10 && data.savingsRate >= 0) {
-      items.push({
-        id: 'low-savings-rate',
-        type: 'warning',
-        title: t('dashboard.lowSavingsTitle'),
-        description: t('dashboard.lowSavingsDesc', { rate: data.savingsRate.toFixed(1) }),
-        detail: t('dashboard.lowSavingsDetail'),
-        icon: <AlertTriangle className="h-4 w-4" />,
-        accent: THEME.warning,
-      });
-    }
-
-    // Warning: Stagnant growth
+    // 2. no-savings-growth — last30DaysGrowth <= 0 AND totalIncome > 0
     if (data.last30DaysGrowth <= 0 && data.totalIncome > 0) {
+      const potentialSave = Math.round(data.totalIncome * 0.2);
       items.push({
-        id: 'stagnant',
-        type: 'warning',
+        id: 'no-savings-growth',
+        type: 'action',
+        priority: 'critical',
         title: t('dashboard.stagnantTitle'),
-        description: t('dashboard.stagnantDesc'),
-        detail: t('dashboard.stagnantDetail'),
+        analysis: t('dashboard.noGrowthAnalysis'),
+        recommendation: t('dashboard.noGrowthRecommendation'),
+        impact: t('dashboard.noGrowthImpact', { amount: formatAmount(potentialSave) }),
+        metric: `${formatAmount(data.last30DaysGrowth)}`,
         icon: <TrendingDown className="h-4 w-4" />,
-        accent: THEME.destructive,
+        accent: PRIORITY_COLORS.critical,
       });
     }
 
-    // Achievement: Accelerating
-    if (data.momentumIndicator === 'accelerating' && data.last7DaysGrowth > 0) {
-      items.push({
-        id: 'accelerating',
-        type: 'achievement',
-        title: t('dashboard.momentumTitle'),
-        description: t('dashboard.momentumDesc'),
-        detail: t('dashboard.momentumDetail', { amount: formatAmount(data.last7DaysGrowth) }),
-        icon: <Flame className="h-4 w-4" />,
-        accent: THEME.secondary,
-      });
-    }
+    // ── HIGH PRIORITY ──
 
-    // Achievement: High savings rate
-    if (data.savingsRate >= 20) {
-      items.push({
-        id: 'high-rate',
-        type: 'achievement',
-        title: t('dashboard.strongSavingsTitle'),
-        description: t('dashboard.strongSavingsDesc', { rate: data.savingsRate.toFixed(0) }),
-        detail: t('dashboard.strongSavingsDetail'),
-        icon: <Trophy className="h-4 w-4" />,
-        accent: THEME.secondary,
-      });
-    }
-
-    // ── NEW INSIGHTS ──
-
-    // Warning: Budget Almost Full — expense >= 80% of income
+    // 3. budget-almost-full — burn ratio >= 80% < 100%
     if (mc && mc.currentMonthIncome > 0 && mc.currentMonthExpense > 0) {
       const burnRatio = (mc.currentMonthExpense / mc.currentMonthIncome) * 100;
       if (burnRatio >= 80 && burnRatio < 100) {
+        const remaining = mc.currentMonthIncome - mc.currentMonthExpense;
+        const daysLeft = averages.dailyExpense > 0 ? Math.floor(remaining / averages.dailyExpense) : 0;
         items.push({
           id: 'budget-almost-full',
           type: 'warning',
+          priority: 'high',
           title: t('dashboard.budgetAlmostFull'),
-          description: t('dashboard.budgetAlmostFullDesc', { percent: burnRatio.toFixed(0) }),
-          detail: t('dashboard.budgetAlmostFullDetail', { amount: formatAmount(mc.currentMonthIncome - mc.currentMonthExpense) }),
+          analysis: t('dashboard.budgetAlmostAnalysis', { percent: burnRatio.toFixed(0) }),
+          recommendation: t('dashboard.budgetAlmostRecommendation'),
+          impact: t('dashboard.budgetAlmostImpact', { amount: formatAmount(remaining), days: daysLeft }),
+          metric: `${burnRatio.toFixed(0)}%`,
           icon: <Timer className="h-4 w-4" />,
-          accent: THEME.warning,
-        });
-      } else if (burnRatio >= 100) {
-        items.push({
-          id: 'budget-over',
-          type: 'warning',
-          title: t('dashboard.budgetOver'),
-          description: t('dashboard.budgetOverDesc', { amount: formatAmount(mc.currentMonthExpense - mc.currentMonthIncome) }),
-          detail: t('dashboard.budgetOverDetail'),
-          icon: <AlertTriangle className="h-4 w-4" />,
-          accent: THEME.destructive,
+          accent: PRIORITY_COLORS.high,
         });
       }
     }
 
-    // Warning: Expense Surge — monthly expense jumped > 30% vs last month
+    // 4. low-savings-rate — savingsRate < 10 AND totalIncome > 0
+    if (data.totalIncome > 0 && data.savingsRate < 10 && data.savingsRate >= 0) {
+      const extraSavings = Math.round(data.totalIncome * (0.2 - data.savingsRate / 100));
+      items.push({
+        id: 'low-savings-rate',
+        type: 'warning',
+        priority: 'high',
+        title: t('dashboard.lowSavingsTitle'),
+        analysis: t('dashboard.lowRateAnalysis', { rate: data.savingsRate.toFixed(1) }),
+        recommendation: t('dashboard.lowRateRecommendation'),
+        impact: t('dashboard.lowRateImpact', { amount: formatAmount(extraSavings) }),
+        metric: `${data.savingsRate.toFixed(1)}%`,
+        icon: <AlertTriangle className="h-4 w-4" />,
+        accent: PRIORITY_COLORS.high,
+      });
+    }
+
+    // 5. expense-surge — mc.expenseChange > 30
     if (mc && mc.expenseChange > 30 && mc.previousMonthExpense > 0) {
       const extraSpending = mc.currentMonthExpense - mc.previousMonthExpense;
       items.push({
         id: 'expense-surge',
         type: 'warning',
+        priority: 'high',
         title: t('dashboard.expenseSurge'),
-        description: t('dashboard.expenseSurgeDesc', { percent: mc.expenseChange.toFixed(0) }),
-        detail: t('dashboard.expenseSurgeDetail', { amount: formatAmount(extraSpending) }),
+        analysis: t('dashboard.expenseSurgeAnalysis', { percent: mc.expenseChange.toFixed(0) }),
+        recommendation: t('dashboard.expenseSurgeRecommendation'),
+        impact: t('dashboard.expenseSurgeImpact', { amount: formatAmount(extraSpending) }),
+        metric: `+${mc.expenseChange.toFixed(0)}%`,
         icon: <Radar className="h-4 w-4" />,
-        accent: '#FF7043',
+        accent: PRIORITY_COLORS.high,
       });
     }
 
-    // Warning: Category Surge — a specific category spiked > 50%
+    // 6. category-surge — any topCat with trend='up' && trendPercentage > 50
     if (topCats.length > 0) {
       const surged = topCats.find((c) => c.trend === 'up' && c.trendPercentage > 50);
       if (surged) {
         items.push({
           id: 'category-surge',
           type: 'warning',
+          priority: 'high',
           title: t('dashboard.categorySurgeTitle', { name: surged.name }),
-          description: t('dashboard.categorySurgeDesc', { name: surged.name, percent: surged.trendPercentage.toFixed(0) }),
-          detail: t('dashboard.categorySurgeDetail', { amount: formatAmount(surged.amount), name: surged.name }),
+          analysis: t('dashboard.categorySurgeAnalysis', { name: surged.name, percent: surged.trendPercentage.toFixed(0) }),
+          recommendation: t('dashboard.categorySurgeRecommendation'),
+          impact: t('dashboard.categorySurgeImpact', { amount: formatAmount(surged.amount) }),
+          metric: `+${surged.trendPercentage.toFixed(0)}%`,
           icon: <Eye className="h-4 w-4" />,
-          accent: '#FF7043',
+          accent: PRIORITY_COLORS.high,
         });
       }
     }
 
-    // Opportunity: Big Transaction Detected — single tx > 3x average
+    // 7. target-behind — targetAnalytics.behind > 0
+    if (targetAnalytics.behind > 0) {
+      items.push({
+        id: 'target-behind',
+        type: 'action',
+        priority: 'high',
+        title: t('dashboard.needsAttention'),
+        analysis: t('dashboard.targetBehindAnalysis', { count: targetAnalytics.behind }),
+        recommendation: t('dashboard.targetBehindRecommendation'),
+        impact: t('dashboard.targetBehindImpact', { averageProgress: targetAnalytics.averageProgress.toFixed(0) }),
+        metric: `${targetAnalytics.behind}`,
+        icon: <Target className="h-4 w-4" />,
+        accent: PRIORITY_COLORS.high,
+      });
+    }
+
+    // ── MEDIUM PRIORITY ──
+
+    // 8. unallocated-funds — unallocatedFunds > 100000
+    if (data.unallocatedFunds > 100000) {
+      const potentialGrowth = data.unallocatedFunds * 0.09;
+      items.push({
+        id: 'unallocated-funds',
+        type: 'action',
+        priority: 'medium',
+        title: t('dashboard.unallocatedTitle'),
+        analysis: t('dashboard.unallocatedAnalysis', { amount: formatAmount(data.unallocatedFunds) }),
+        recommendation: t('dashboard.unallocatedRecommendation'),
+        impact: t('dashboard.unallocatedImpact', { amount: formatAmount(potentialGrowth) }),
+        metric: formatAmount(data.unallocatedFunds),
+        icon: <Sparkles className="h-4 w-4" />,
+        accent: PRIORITY_COLORS.medium,
+      });
+    }
+
+    // 9. accelerate-next-level — close to next financial stage
+    if (nextStage && data.totalSavings > 0) {
+      const amountNeeded = nextStage.range[0] - data.totalSavings;
+      if (amountNeeded > 0 && amountNeeded < data.totalSavings * 0.5) {
+        const monthlyBoost = Math.ceil(amountNeeded / 3);
+        items.push({
+          id: 'accelerate-next-level',
+          type: 'action',
+          priority: 'medium',
+          title: t('dashboard.almostNextLevelTitle'),
+          analysis: t('dashboard.accelerateAnalysis', { amount: formatAmount(amountNeeded), stage: nextStage.name }),
+          recommendation: t('dashboard.accelerateRecommendation', { boost: formatAmount(monthlyBoost) }),
+          impact: t('dashboard.accelerateImpact', { boost: formatAmount(monthlyBoost) }),
+          metric: formatAmount(amountNeeded),
+          icon: <Zap className="h-4 w-4" />,
+          accent: PRIORITY_COLORS.medium,
+        });
+      }
+    }
+
+    // 10. big-transaction — single expense > 3x average
     if (data.transactions && data.transactions.length > 2 && averages.transactionSize > 0) {
       const bigTx = data.transactions.find(
-        (t: any) => t.type === 'expense' && t.amount > averages.transactionSize * 3
+        (tx: any) => tx.type === 'expense' && tx.amount > averages.transactionSize * 3
       );
       if (bigTx) {
+        const timesBigger = (bigTx.amount / averages.transactionSize).toFixed(0);
+        const daysEquiv = averages.dailyExpense > 0 ? Math.floor(bigTx.amount / averages.dailyExpense) : 0;
         items.push({
-          id: 'big-expense',
+          id: 'big-transaction',
           type: 'warning',
+          priority: 'medium',
           title: t('dashboard.bigTransaction'),
-          description: t('dashboard.bigTransactionDesc', { desc: bigTx.description, amount: formatAmount(bigTx.amount) }),
-          detail: t('dashboard.bigTransactionDetail', { times: ((bigTx.amount / averages.transactionSize) - 1).toFixed(0) }),
+          analysis: t('dashboard.bigTxAnalysis', { desc: bigTx.description || '', amount: formatAmount(bigTx.amount), times: timesBigger }),
+          recommendation: t('dashboard.bigTxRecommendation'),
+          impact: t('dashboard.bigTxImpact', { days: daysEquiv }),
+          metric: formatAmount(bigTx.amount),
           icon: <Banknote className="h-4 w-4" />,
-          accent: THEME.warning,
+          accent: PRIORITY_COLORS.medium,
         });
       }
     }
 
-    // Achievement: Target Almost Complete — any target >= 90%
+    // 11. runway-low — forecast.runwayMonths < 3 AND totalExpense > 0
+    if (forecast.runwayMonths < 3 && data.totalExpense > 0) {
+      const emergencyFundTarget = data.totalExpense * 6;
+      items.push({
+        id: 'runway-low',
+        type: 'warning',
+        priority: 'medium',
+        title: t('dashboard.fundResilience'),
+        analysis: t('dashboard.runwayLowAnalysis', { months: forecast.runwayMonths.toFixed(1) }),
+        recommendation: t('dashboard.runwayLowRecommendation'),
+        impact: t('dashboard.runwayLowImpact', { amount: formatAmount(emergencyFundTarget) }),
+        metric: `${forecast.runwayMonths.toFixed(1)} ${t('dashboard.monthsUnit')}`,
+        icon: <Shield className="h-4 w-4" />,
+        accent: PRIORITY_COLORS.medium,
+      });
+    }
+
+    // ── LOW PRIORITY ──
+
+    // 12. momentum-accelerating — momentumIndicator === 'accelerating' && last7DaysGrowth > 0
+    if (data.momentumIndicator === 'accelerating' && data.last7DaysGrowth > 0) {
+      const annualGrowth = data.last7DaysGrowth * 52;
+      items.push({
+        id: 'momentum-accelerating',
+        type: 'achievement',
+        priority: 'low',
+        title: t('dashboard.momentumTitle'),
+        analysis: t('dashboard.momentumAnalysis', { amount: formatAmount(data.last7DaysGrowth) }),
+        recommendation: t('dashboard.momentumRecommendation'),
+        impact: t('dashboard.momentumImpact', { amount: formatAmount(annualGrowth) }),
+        metric: `+${formatAmount(data.last7DaysGrowth)}`,
+        icon: <Flame className="h-4 w-4" />,
+        accent: PRIORITY_COLORS.low,
+      });
+    }
+
+    // 13. high-savings-rate — savingsRate >= 20
+    if (data.savingsRate >= 20) {
+      const topPercent = Math.max(5, Math.round(100 - data.savingsRate * 3.5));
+      items.push({
+        id: 'high-savings-rate',
+        type: 'achievement',
+        priority: 'low',
+        title: t('dashboard.strongSavingsTitle'),
+        analysis: t('dashboard.highRateAnalysis', { rate: data.savingsRate.toFixed(0) }),
+        recommendation: t('dashboard.highRateRecommendation'),
+        impact: t('dashboard.highRateImpact', { topPercent: topPercent }),
+        metric: `${data.savingsRate.toFixed(0)}%`,
+        icon: <Trophy className="h-4 w-4" />,
+        accent: PRIORITY_COLORS.low,
+      });
+    }
+
+    // 14. target-almost-done — any target at 90-99%
     const nearComplete = data.savingsTargets?.find(
-      (t: any) => {
-        const p = Math.min((t.currentAmount / t.targetAmount) * 100, 100);
+      (st: any) => {
+        const p = Math.min((st.currentAmount / st.targetAmount) * 100, 100);
         return p >= 90 && p < 100;
       }
     );
@@ -958,42 +1174,49 @@ export function Dashboard() {
       items.push({
         id: 'target-almost-done',
         type: 'achievement',
+        priority: 'low',
         title: t('dashboard.targetAlmostDone'),
-        description: t('dashboard.targetAlmostDoneDesc', { name: nearComplete.name, percent: pct.toFixed(0) }),
-        detail: t('dashboard.targetAlmostDoneDetail', { amount: formatAmount(remaining) }),
+        analysis: t('dashboard.targetDoneAnalysis', { name: nearComplete.name, percent: pct.toFixed(0) }),
+        recommendation: t('dashboard.targetDoneRecommendation'),
+        impact: t('dashboard.targetDoneImpact', { amount: formatAmount(remaining) }),
+        metric: `${pct.toFixed(0)}%`,
         icon: <CheckCircle2 className="h-4 w-4" />,
-        accent: THEME.secondary,
+        accent: PRIORITY_COLORS.low,
       });
     }
 
-    // Achievement: All targets on track
+    // 15. all-on-track — all targets on track
     if (targetAnalytics.onTrack > 0 && targetAnalytics.behind === 0 && data.savingsTargets.length > 0) {
       items.push({
         id: 'all-on-track',
         type: 'achievement',
+        priority: 'low',
         title: t('dashboard.allOnTrackTitle'),
-        description: t('dashboard.allOnTrackDesc', { count: targetAnalytics.onTrack }),
-        detail: t('dashboard.allOnTrackDetail'),
+        analysis: t('dashboard.onTrackAnalysis', { count: targetAnalytics.onTrack }),
+        recommendation: t('dashboard.onTrackRecommendation'),
+        impact: t('dashboard.onTrackImpact', { averageProgress: targetAnalytics.averageProgress.toFixed(0) }),
         icon: <Trophy className="h-4 w-4" />,
-        accent: THEME.secondary,
+        accent: PRIORITY_COLORS.low,
       });
     }
 
-    // All good fallback
+    // 16. all-good fallback — zero insights triggered
     if (items.length === 0) {
       items.push({
         id: 'all-good',
         type: 'achievement',
+        priority: 'low',
         title: t('dashboard.allGoodTitle'),
-        description: t('dashboard.allGoodDesc'),
-        detail: t('dashboard.allGoodDetail'),
+        analysis: t('dashboard.allGoodAnalysis'),
+        recommendation: t('dashboard.allGoodRecommendation'),
+        impact: t('dashboard.allGoodImpact', { score: healthScore, grade: healthGrade }),
         icon: <CheckCircle2 className="h-4 w-4" />,
-        accent: THEME.secondary,
+        accent: PRIORITY_COLORS.low,
       });
     }
 
     return items.slice(0, 5);
-  }, [data, nextStage, mc, topCats, averages, targetAnalytics]);
+  }, [data, nextStage, mc, topCats, averages, targetAnalytics, forecast, healthScore, healthGrade]);
 
   // ── Cash flow chart data ──
   const cashFlowData = useMemo(() => {
@@ -1045,11 +1268,7 @@ export function Dashboard() {
 
   // ── Loading State ──
   if (isLoading || !data) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: THEME.primary }} />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   // ── Trend helpers ──
@@ -1249,123 +1468,26 @@ export function Dashboard() {
         healthBreakdown={healthBreakdown}
       />
 
-      {/* ═══ Section 5: Smart Insights ═══ */}
+      {/* ═══ Section 5: Financial Consultant Insights ═══ */}
       {insights.length > 0 && (
         <div className="space-y-2.5">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+            <Brain className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
             <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
-              {t('dashboard.smartInsights')}
+              {t('dashboard.consultantInsights')}
             </h3>
           </div>
           {/* Mobile: horizontal scroll */}
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 lg:hidden">
-            {insights.map((insight) => {
-              const typeLabel = insight.type === 'opportunity' ? t('dashboard.insightOpportunity') : insight.type === 'warning' ? t('dashboard.insightWarning') : t('dashboard.insightAchievement');
-              const typeBg = insight.type === 'opportunity' ? THEME.primary + '20' : insight.type === 'warning' ? THEME.warning + '20' : THEME.secondary + '20';
-              return (
-                <div
-                  key={insight.id}
-                  className="shrink-0 w-[260px] sm:w-[280px] rounded-xl p-3.5 transition-all duration-200 relative overflow-hidden"
-                  style={{
-                    background: THEME.surface,
-                    border: `1px solid ${THEME.border}`,
-                    borderLeft: `3px solid ${insight.accent}`,
-                  }}
-                >
-                  {/* subtle gradient glow */}
-                  <div
-                    className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-20 pointer-events-none"
-                    style={{ background: insight.accent }}
-                  />
-                  <div className="relative z-10 space-y-2.5">
-                    {/* Type badge + icon */}
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                        style={{ background: typeBg, color: insight.accent }}
-                      >
-                        {typeLabel}
-                      </span>
-                      <div
-                        className="p-1.5 rounded-lg"
-                        style={{ background: insight.accent + '15' }}
-                      >
-                        <span style={{ color: insight.accent }}>{insight.icon}</span>
-                      </div>
-                    </div>
-                    {/* Title + Description */}
-                    <div>
-                      <h4 className="text-[13px] font-semibold leading-tight mb-1" style={{ color: THEME.text }}>
-                        {insight.title}
-                      </h4>
-                      <p className="text-[11px] leading-relaxed" style={{ color: THEME.muted }}>
-                        {insight.description}
-                      </p>
-                    </div>
-                    {/* Detail pill */}
-                    <div
-                      className="text-[10px] font-medium px-2.5 py-1 rounded-lg"
-                      style={{
-                        background: insight.accent + '10',
-                        color: insight.accent,
-                      }}
-                    >
-                      {insight.detail}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {insights.map((insight) => (
+              <ConsultantCard key={insight.id} insight={insight} />
+            ))}
           </div>
           {/* Desktop: 3-column grid */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-5">
-            {insights.map((insight) => {
-              const typeLabel = insight.type === 'opportunity' ? t('dashboard.insightOpportunity') : insight.type === 'warning' ? t('dashboard.insightWarning') : t('dashboard.insightAchievement');
-              const typeBg = insight.type === 'opportunity' ? THEME.primary + '20' : insight.type === 'warning' ? THEME.warning + '20' : THEME.secondary + '20';
-              return (
-                <div
-                  key={insight.id}
-                  className="rounded-xl p-4 transition-all duration-200 relative overflow-hidden"
-                  style={{
-                    background: THEME.surface,
-                    border: `1px solid ${THEME.border}`,
-                    borderLeft: `3px solid ${insight.accent}`,
-                  }}
-                >
-                  <div
-                    className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-20 pointer-events-none"
-                    style={{ background: insight.accent }}
-                  />
-                  <div className="relative z-10 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                        style={{ background: typeBg, color: insight.accent }}
-                      >
-                        {typeLabel}
-                      </span>
-                      <div
-                        className="p-1.5 rounded-lg"
-                        style={{ background: insight.accent + '15' }}
-                      >
-                        <span style={{ color: insight.accent }}>{insight.icon}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-[13px] font-semibold leading-tight mb-1" style={{ color: THEME.text }}>{insight.title}</h4>
-                      <p className="text-[11px] leading-relaxed" style={{ color: THEME.muted }}>{insight.description}</p>
-                    </div>
-                    <div
-                      className="text-[10px] font-medium px-2.5 py-1 rounded-lg"
-                      style={{ background: insight.accent + '10', color: insight.accent }}
-                    >
-                      {insight.detail}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {insights.map((insight) => (
+              <ConsultantCard key={insight.id} insight={insight} />
+            ))}
           </div>
         </div>
       )}

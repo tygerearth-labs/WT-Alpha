@@ -60,11 +60,11 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
                       <span className="text-sm">📍</span>
                     </div>
                   ) : unlocked ? (
-                    <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <div className="w-6 h-6 bg-green-500/20 rounded-full grid place-items-center [&>svg]:block">
                       <Check className="h-3 w-3 text-green-500" />
                     </div>
                   ) : (
-                    <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                    <div className="w-6 h-6 bg-muted rounded-full grid place-items-center [&>svg]:block">
                       <Lock className="h-3 w-3 text-muted-foreground" />
                     </div>
                   )}

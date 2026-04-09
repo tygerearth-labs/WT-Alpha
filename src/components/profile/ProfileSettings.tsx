@@ -9,13 +9,14 @@ import {
 } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Lock, Trash2, Loader2, LogOut, Camera, Shield, Globe, Coins } from 'lucide-react';
+import { User, Lock, Trash2, Loader2, LogOut, Camera, Shield, Globe, Coins, Crown, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useI18nStore } from '@/store/useI18nStore';
 import { CURRENCIES, POPULAR_CURRENCIES, type CurrencyCode } from '@/lib/currency';
 import type { Locale } from '@/i18n';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ProfileSkeleton } from '@/components/shared/PageSkeleton';
 
 const T_THEME = {
   bg: '#121212', input: '#1E1E1E', primary: '#BB86FC', secondary: '#03DAC6',
@@ -175,7 +176,7 @@ export function ProfileSettings() {
   const inputStyle = { background: T_THEME.input, color: T_THEME.text, border: `1px solid ${T_THEME.border}` };
 
   if (isLoading || !userData) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-7 w-7 animate-spin" style={{ color: T_THEME.primary }} /></div>;
+    return <ProfileSkeleton />;
   }
 
   return (
@@ -190,7 +191,7 @@ export function ProfileSettings() {
               {getInitials(userData.username)}
             </AvatarFallback>
           </Avatar>
-          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 lg:w-6 lg:h-6 rounded-full flex items-center justify-center" style={{ background: T_THEME.primary }}>
+          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 lg:w-6 lg:h-6 rounded-full grid place-items-center [&>svg]:block" style={{ background: T_THEME.primary }}>
             <Camera className="h-2.5 w-2.5 lg:h-3 lg:w-3" style={{ color: '#000' }} />
           </div>
         </div>
@@ -204,14 +205,40 @@ export function ProfileSettings() {
             <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${T_THEME.secondary}15`, color: T_THEME.secondary }}>
               {CURRENCIES[currentCurrency]?.symbol || currentCurrency} {currentCurrency}
             </span>
-            {/* Plan badge */}
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{
-              background: user?.plan === 'pro' ? 'linear-gradient(135deg, rgba(249,168,37,0.2), rgba(207,102,121,0.2))' : 'rgba(255,255,255,0.06)',
-              color: user?.plan === 'pro' ? '#F9A825' : '#9E9E9E',
-              border: `1px solid ${user?.plan === 'pro' ? 'rgba(249,168,37,0.2)' : 'rgba(255,255,255,0.06)'}`,
-            }}>
-              {user?.plan === 'pro' ? '👑 Pro' : '✨ Basic'}
-            </span>
+            {/* Plan Badge — Premium Style */}
+            <div className="relative group/badge">
+              {/* Glow effect for Pro */}
+              {user?.plan === 'pro' && (
+                <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-amber-500/30 via-rose-500/30 to-purple-500/30 blur-sm opacity-60 group-hover/badge:opacity-100 transition-opacity" />
+              )}
+              <div
+                className="relative flex items-center gap-1 px-2 py-0.5 rounded-lg font-bold text-[10px] tracking-wide transition-all duration-300"
+                style={{
+                  background: user?.plan === 'pro'
+                    ? 'linear-gradient(135deg, #1a1207 0%, #1a0a14 50%, #0f0a1a 100%)'
+                    : 'linear-gradient(135deg, #0D0D0D 0%, #1a1a1a 100%)',
+                  color: user?.plan === 'pro' ? '#FFD700' : '#888',
+                  border: user?.plan === 'pro'
+                    ? '1px solid rgba(255,215,0,0.25)'
+                    : '1px solid rgba(255,255,255,0.06)',
+                  boxShadow: user?.plan === 'pro'
+                    ? '0 0 12px rgba(255,215,0,0.08), inset 0 1px 0 rgba(255,215,0,0.1)'
+                    : 'none',
+                }}
+              >
+                {user?.plan === 'pro' ? (
+                  <>
+                    <Crown className="h-3 w-3" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 3px rgba(255,215,0,0.4))' }} />
+                    <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFD700, #FFA500, #FF6B6B)' }}>PRO</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3 w-3" style={{ color: '#888' }} />
+                    <span>BASIC</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         <button onClick={handleLogout} className="p-2 lg:p-2.5 rounded-xl transition-colors shrink-0" style={{ background: `${T_THEME.destructive}10` }}>

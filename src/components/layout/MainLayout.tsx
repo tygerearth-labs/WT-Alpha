@@ -40,7 +40,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 type PageType = 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile';
 
 export function MainLayout() {
-  const { user, logout, checkAuth } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
@@ -60,9 +60,8 @@ export function MainLayout() {
     }, 200);
   }, [currentPage]);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  // Auth state is managed by Home (page.tsx) — no duplicate checkAuth here
+  // This prevents race conditions that could log the user out
 
   // Close tablet sidebar on outside click
   useEffect(() => {
@@ -322,18 +321,31 @@ export function MainLayout() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-sm truncate">{user?.username || 'User'}</p>
-                      {/* Plan badge */}
+                      {/* Plan Badge — Premium */}
                       {isPro ? (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #F9A825, #CF6679)', color: '#000' }}>
-                          <Crown className="h-2.5 w-2.5" />
-                          Pro
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-[0.15em] px-2 py-[3px] rounded-md shrink-0 relative"
+                          style={{
+                            background: 'linear-gradient(135deg, #1a1207, #1a0a14)',
+                            color: '#FFD700',
+                            border: '1px solid rgba(255,215,0,0.2)',
+                            boxShadow: '0 0 10px rgba(255,215,0,0.06)',
+                          }}
+                        >
+                          <Crown className="h-2.5 w-2.5" style={{ filter: 'drop-shadow(0 0 2px rgba(255,215,0,0.5))' }} />
+                          <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFD700, #FFA500)' }}>PRO</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-                          style={{ background: 'rgba(255,255,255,0.08)', color: '#9E9E9E' }}>
-                          <Sparkles className="h-2.5 w-2.5" />
-                          Basic
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-[2px] rounded-md shrink-0"
+                          style={{
+                            background: 'rgba(255,255,255,0.04)',
+                            color: '#666',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                          }}
+                        >
+                          <Sparkles className="h-2 w-2" />
+                          <span>BASIC</span>
                         </span>
                       )}
                     </div>
@@ -412,7 +424,7 @@ export function MainLayout() {
               )}
             >
               <div className={cn(
-                'flex items-center justify-center w-6 h-6 rounded-md transition-all duration-200',
+                'grid place-items-center w-6 h-6 rounded-md transition-all duration-200 [&>svg]:block',
                 'hover:bg-[#BB86FC]/10 hover:text-[#BB86FC] group/toggle',
               )}>
                 {sidebarCollapsed ? (
@@ -458,7 +470,7 @@ export function MainLayout() {
               {/* Close button */}
               <div className="relative flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
-                  <img src="/logo.PNG" alt="Logo" className="w-6 h-6 rounded-md" />
+                  <img src="/logo.png" alt="Logo" className="w-6 h-6 rounded-md" />
                   <span className="text-sm font-bold bg-clip-text text-transparent"
                     style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
                     Wealth Tracker
@@ -466,7 +478,7 @@ export function MainLayout() {
                 </div>
                 <button
                   onClick={() => setTabletSidebarOpen(false)}
-                  className="flex items-center justify-center w-7 h-7 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all duration-200"
+                  className="grid place-items-center w-7 h-7 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all duration-200 [&>svg]:block"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -478,23 +490,26 @@ export function MainLayout() {
                 setTimeout(() => navigateTo(page), 100);
               })}
 
-              {/* User plan info at bottom */}
+              {/* User plan info at bottom — Premium */}
               <div className="relative p-3 border-t border-white/[0.06]">
-                <div className="flex items-center gap-2.5 p-2.5 rounded-xl" style={{
-                  background: isPro ? 'linear-gradient(135deg, rgba(249,168,37,0.08), rgba(207,102,121,0.08))' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${isPro ? 'rgba(249,168,37,0.15)' : 'rgba(255,255,255,0.06)'}`,
-                }}>
+                <div
+                  className="flex items-center gap-2 px-3 py-2.5 mx-2 mb-2 rounded-xl"
+                  style={{
+                    background: isPro ? 'linear-gradient(135deg, rgba(255,215,0,0.06), rgba(207,102,121,0.06))' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${isPro ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.04)'}`,
+                  }}
+                >
                   {isPro ? (
-                    <Crown className="h-4 w-4 shrink-0" style={{ color: '#F9A825' }} />
+                    <Crown className="h-4 w-4 shrink-0" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 4px rgba(255,215,0,0.3))' }} />
                   ) : (
-                    <Sparkles className="h-4 w-4 shrink-0" style={{ color: '#9E9E9E' }} />
+                    <Sparkles className="h-4 w-4 shrink-0" style={{ color: '#666' }} />
                   )}
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold" style={{ color: isPro ? '#F9A825' : '#9E9E9E' }}>
-                      {isPro ? 'Pro Plan' : 'Basic Plan'}
+                    <p className="text-[11px] font-bold" style={{ color: isPro ? '#FFD700' : '#888' }}>
+                      {isPro ? 'PRO' : 'BASIC'}
                     </p>
-                    <p className="text-[10px] text-white/30">
-                      {isPro ? 'All features unlocked' : 'Upgrade for more features'}
+                    <p className="text-[9px]" style={{ color: isPro ? 'rgba(255,215,0,0.5)' : '#555' }}>
+                      {isPro ? 'Full Access' : 'Limited'}
                     </p>
                   </div>
                 </div>
@@ -549,7 +564,7 @@ export function MainLayout() {
               <button
                 key={item.id}
                 onClick={() => navigateTo(item.id)}
-                className="flex items-center justify-center py-2 px-3 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95"
+                className="grid place-items-center py-2 px-3 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95 [&>svg]:block"
               >
                 <Icon
                   className={cn(

@@ -23,13 +23,14 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true, // Start with loading to prevent flash of landing page
 
       setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
 
       logout: () => set({ user: null, isAuthenticated: false, isLoading: false }),
 
       checkAuth: async () => {
+        set({ isLoading: true }); // Set loading before API call
         try {
           const response = await fetch('/api/auth/me');
           if (response.ok) {
@@ -46,10 +47,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      // Only persist user and auth state, NOT isLoading (transient)
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        isLoading: state.isLoading,
       }),
     }
   )

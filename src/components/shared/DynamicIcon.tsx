@@ -73,12 +73,13 @@ export function DynamicIcon({ name, className, style }: DynamicIconProps) {
 
   const Component = ICON_MAP[name];
   if (Component) {
-    return <Component className={className} style={style} />;
+    // Force block display so flex/grid centering works correctly for SVG icons
+    return <Component className={className} style={{ display: 'block', ...style }} />;
   }
 
   // Fallback: render as text (emoji or plain text)
   return (
-    <span className={className} style={style}>
+    <span className={className} style={{ display: 'block', ...style }}>
       {name}
     </span>
   );

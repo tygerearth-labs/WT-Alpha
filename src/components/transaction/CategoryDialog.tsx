@@ -120,7 +120,7 @@ export function CategoryDialog({
             <Label className="text-[11px]" style={{ color: T.muted }}>{t('category.icon')}</Label>
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                className="w-10 h-10 rounded-xl grid place-items-center text-lg shrink-0 [&>svg]:block"
                 style={{ background: `${formData.color}20` }}
               >
                 <DynamicIcon name={formData.icon || DEFAULT_ICONS[type]} className="h-5 w-5" />

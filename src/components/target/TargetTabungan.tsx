@@ -15,6 +15,7 @@ import { TargetSummaryCard } from '@/components/target/TargetSummaryCard';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
+import { TargetSkeleton } from '@/components/shared/PageSkeleton';
 
 // ── Theme ──
 const T = {
@@ -375,11 +376,13 @@ function TargetFormDialog({
             <div className="space-y-1.5">
               <Label className="text-[11px] text-[#9E9E9E]">{t('target.nameField')}</Label>
               <Input className={inputCls} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={t('target.noData')} />
+              <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetName')}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-[#9E9E9E]">{t('target.amountField')}</Label>
                 <Input type="number" className={inputCls} value={form.targetAmount || ''} onChange={e => setForm({ ...form, targetAmount: parseFloat(e.target.value) || 0 })} placeholder="10000000" />
+                <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetAmount')}</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-[#9E9E9E]">{t('target.targetDate')} *</Label>
@@ -394,6 +397,7 @@ function TargetFormDialog({
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-[#9E9E9E]">{t('target.contributionMonthly')}</Label>
                 <Input type="number" className={inputCls} value={form.monthlyContribution || ''} onChange={e => setForm({ ...form, monthlyContribution: parseFloat(e.target.value) || 0 })} placeholder="0" />
+                <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetMonthly')}</p>
               </div>
             </div>
             <div className="space-y-1.5">
@@ -470,11 +474,7 @@ export function TargetTabungan() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: T.primary }} />
-      </div>
-    );
+    return <TargetSkeleton />;
   }
 
   return (
@@ -506,7 +506,7 @@ export function TargetTabungan() {
       {savingsTargets.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+            className="w-16 h-16 rounded-2xl grid place-items-center mb-4 [&>svg]:block"
             style={{ background: `${T.primary}10` }}
           >
             <PiggyBank className="h-8 w-8" style={{ color: T.primary }} />

@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         username: user.username,
-        image: user.image
+        image: user.image,
+        plan: user.plan
       }
     }, { status: 201 });
 

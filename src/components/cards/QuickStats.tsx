@@ -48,7 +48,7 @@ export function QuickStats({ totalSavings, currentStageName, nextTarget }: Quick
         <Card key={index} className="border border-border hover:border-primary/50 transition-colors">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${stat.bgColor} text-white`}>
+              <div className={`grid place-items-center w-12 h-12 rounded-xl [&>svg]:block ${stat.bgColor} text-white`}>
                 <DynamicIcon name={stat.icon} className="text-2xl" />
               </div>
               <div className="flex-1 min-w-0">
