@@ -19,7 +19,7 @@ export function QuickStats({ totalSavings, currentStageName, nextTarget }: Quick
     {
       title: t('dashboard.totalSavings'),
       value: formatAmount(totalSavings),
-      icon: '💰',
+      icon: 'PiggyBank',
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-500',
       description: t('dashboard.totalSavingsDesc'),
@@ -27,7 +27,7 @@ export function QuickStats({ totalSavings, currentStageName, nextTarget }: Quick
     {
       title: t('stages.currentStage'),
       value: currentStageName,
-      icon: '📊',
+      icon: 'BarChart2',
       color: 'text-violet-500',
       bgColor: 'bg-violet-500',
       description: t('stages.currentStageDesc'),
@@ -35,7 +35,7 @@ export function QuickStats({ totalSavings, currentStageName, nextTarget }: Quick
     {
       title: t('stages.nextTarget'),
       value: nextTarget,
-      icon: '🎯',
+      icon: 'Target',
       color: 'text-blue-500',
       bgColor: 'bg-blue-500',
       description: t('stages.nextTargetDesc'),

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { emojiToLucide } from '@/lib/emojiMap';
 import {
   Wallet, Laptop, UtensilsCrossed, Car, ShoppingBag, Receipt, Gamepad2, PiggyBank,
   Briefcase, Home, Heart, Coffee, Plane, GraduationCap, Music, Dumbbell, BookOpen,
@@ -11,7 +12,7 @@ import {
   Truck, Wrench, Hammer, Paintbrush, Utensils, Pizza, Beef, Apple,
   Bus, Train, Bike, Ship, Fuel, Building, Building2, Hotel, Store,
   Stethoscope, Syringe, Baby, Dog, Cat, Fish, TreePine, Flower2, Sun, Cloud, CloudRain,
-  Snowflake, Umbrella, Tv, Monitor, Camera, Headphones, Speaker, Mic,
+  Snowflake, Umbrella, Tv, Monitor, Camera, Headphones, Speaker, Mic, Film,
   Trophy, Medal, Crown, Gem, Lock, Key, Bell, Clock, Calendar,
   MapPin, Compass, Globe, Wifi, Bluetooth, Battery, BatteryCharging,
   Download, Upload, Share2, Send, MessageCircle, Phone, Mail,
@@ -41,7 +42,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
   Truck, Wrench, Hammer, Paintbrush, Utensils, Pizza, Beef, Apple,
   Bus, Train, Bike, Ship, Fuel, Building, Building2, Hotel, Store,
   Stethoscope, Syringe, Baby, Dog, Cat, Fish, TreePine, Flower2, Sun, Cloud, CloudRain,
-  Snowflake, Umbrella, Tv, Monitor, Camera, Headphones, Speaker, Mic,
+  Snowflake, Umbrella, Tv, Monitor, Camera, Headphones, Speaker, Mic, Film,
   Trophy, Medal, Crown, Gem, Lock, Key, Bell, Clock, Calendar,
   MapPin, Compass, Globe, Wifi, Bluetooth, Battery, BatteryCharging,
   Download, Upload, Share2, Send, MessageCircle, Phone, Mail,
@@ -71,6 +72,9 @@ interface DynamicIconProps {
 export function DynamicIcon({ name, className, style }: DynamicIconProps) {
   if (!name) return null;
 
+  // Auto-convert emoji → Lucide icon name (backward compat for old users)
+  const resolvedName = emojiToLucide(name);
+
   const blockStyle: React.CSSProperties = {
     display: 'block',
     maxWidth: '100%',
@@ -78,15 +82,15 @@ export function DynamicIcon({ name, className, style }: DynamicIconProps) {
     ...style,
   };
 
-  const Component = ICON_MAP[name];
+  const Component = ICON_MAP[resolvedName];
   if (Component) {
     return <Component className={className} style={blockStyle} />;
   }
 
-  // Fallback: render as text (emoji or plain text)
+  // Final fallback: render as text (emoji or plain text)
   return (
     <div className={className} style={blockStyle}>
-      {name}
+      {resolvedName}
     </div>
   );
 }

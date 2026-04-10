@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         name,
         type,
         color: color || '#6b7280',
-        icon: icon || '📦',
+        icon: icon || 'Package',
         userId,
       },
     });

@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { DynamicIcon } from '@/components/shared/DynamicIcon';
+import { IconPicker } from '@/components/shared/IconPicker';
+import { emojiToLucide, isEmoji } from '@/lib/emojiMap';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Category, CategoryFormData } from '@/types/transaction.types';
 
@@ -30,9 +31,9 @@ const DEFAULT_COLORS = {
   expense: '#ef4444',
 };
 
-const DEFAULT_ICONS = {
-  income: '💰',
-  expense: '🛒',
+const DEFAULT_ICONS: Record<string, string> = {
+  income: 'Wallet',
+  expense: 'ShoppingBag',
 };
 
 const COLOR_PRESETS = [
@@ -58,10 +59,15 @@ export function CategoryDialog({
 
   useEffect(() => {
     if (open && initialData) {
+      // Auto-convert emoji → Lucide icon name for backward compatibility
+      // Old users have emoji icons in DB; we convert them to Lucide equivalents
+      const resolvedIcon = isEmoji(initialData.icon)
+        ? emojiToLucide(initialData.icon)
+        : initialData.icon;
       setFormData({
         name: initialData.name,
         color: initialData.color,
-        icon: initialData.icon,
+        icon: resolvedIcon || DEFAULT_ICONS[type],
       });
     } else if (!open) {
       setFormData({
@@ -90,7 +96,7 @@ export function CategoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0D0D0D] border-white/[0.06] sm:max-w-md gap-0 p-0">
+      <DialogContent className="bg-[#0D0D0D] border-white/[0.06] sm:max-w-md gap-0 p-0 overflow-y-auto max-h-[90vh]" style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}>
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
             <span className="inline-flex items-center gap-2">
@@ -100,7 +106,7 @@ export function CategoryDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
+        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3 overflow-visible">
           {/* Name */}
           <div className="space-y-1.5">
             <Label className="text-[11px]" style={{ color: T.muted }}>{t('category.name')}</Label>
@@ -115,25 +121,14 @@ export function CategoryDialog({
             />
           </div>
 
-          {/* Icon */}
+          {/* Icon Picker */}
           <div className="space-y-1.5">
             <Label className="text-[11px]" style={{ color: T.muted }}>{t('category.icon')}</Label>
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl grid place-items-center text-lg shrink-0 leading-none [&>*]:block"
-                style={{ background: `${formData.color}20` }}
-              >
-                <DynamicIcon name={formData.icon || DEFAULT_ICONS[type]} className="h-5 w-5" />
-              </div>
-              <Input
-                value={formData.icon}
-                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                placeholder={DEFAULT_ICONS[type]}
-                maxLength={2}
-                required
-                className="h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg"
-              />
-            </div>
+            <IconPicker
+              value={formData.icon}
+              onChange={(iconName) => setFormData({ ...formData, icon: iconName })}
+              accentColor={accentColor}
+            />
           </div>
 
           {/* Color Presets */}

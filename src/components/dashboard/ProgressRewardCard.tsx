@@ -2,7 +2,6 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
-import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { Trophy, Flame, Target, TrendingUp } from 'lucide-react';
 
 interface ProgressRewardCardProps {
