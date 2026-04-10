@@ -246,10 +246,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
       {/* Icon Picker — Nested Radix Dialog (bottom sheet on mobile, centered modal on desktop) */}
       <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setIsOpen(false); setSearch(''); setActiveGroup(null); } }}>
         <DialogContent
-          className="bg-[#141414] border-white/[0.08] rounded-2xl gap-0 p-0 overflow-hidden
-            fixed bottom-0 left-0 right-0 top-auto translate-x-0 translate-y-0
-            sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2
-            sm:max-w-lg w-full sm:w-auto max-h-[85vh] sm:max-h-[80vh]"
+          className="bg-[#141414] border-white/[0.08] rounded-2xl gap-0 p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-lg max-h-[85vh]"
           style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
           showCloseButton={true}
         >
