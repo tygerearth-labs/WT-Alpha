@@ -267,7 +267,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
       {/* Expandable panel — inline below trigger, NO portal */}
       {isOpen && (
         <div
-          className="rounded-xl border border-white/[0.08] bg-[#141414] overflow-hidden shadow-2xl"
+          className="rounded-xl border border-white/[0.08] bg-[#141414] overflow-hidden shadow-2xl w-full"
           style={{ maxHeight: '340px' }}
         >
           {/* Search bar */}
@@ -342,7 +342,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
               </div>
             ) : search ? (
               /* Flat grid when searching */
-              <div className="grid grid-cols-8 gap-1">
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
                 {filteredIcons.map((icon) => renderIconButton(icon))}
               </div>
             ) : (
@@ -353,7 +353,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
                     <p className="text-[9px] font-bold uppercase tracking-wider mb-1.5 px-1" style={{ color: '#666' }}>
                       {label}
                     </p>
-                    <div className="grid grid-cols-8 gap-1">
+                    <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
                       {icons.map((icon) => renderIconButton(icon))}
                     </div>
                   </div>
