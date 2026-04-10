@@ -251,7 +251,16 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
 
   // ── Bottom Sheet panel (rendered via portal) ──
   const sheetPanel = isOpen && mounted ? createPortal(
-    <div className="fixed inset-0 z-[9999] flex flex-col justify-end">
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col justify-end"
+      data-icon-picker-sheet=""
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
