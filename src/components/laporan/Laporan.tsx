@@ -27,7 +27,7 @@ interface Transaction {
   category: { id: string; name: string; color: string; icon: string; };
 }
 
-interface SavingsTarget { id: string; name: string; targetAmount: number; currentAmount: number; targetDate: string; }
+interface SavingsTarget { id: string; name: string; targetAmount: number; currentAmount: number; targetDate: Date | string; }
 
 export function Laporan() {
   const { t } = useTranslation();
@@ -61,12 +61,12 @@ export function Laporan() {
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transactions.map(t => ({
-      [t('laporan.excelType')]: t.type === 'income' ? t('laporan.income') : t('laporan.expense'),
-      [t('laporan.excelCategory')]: t.category.name,
-      [t('laporan.excelDescription')]: t.description || '-',
-      [t('laporan.excelAmount')]: t.amount,
-      [t('laporan.excelDate')]: format(new Date(t.date), 'dd/MM/yyyy', { locale: id }),
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transactions.map(tx => ({
+      [t('laporan.excelType')]: tx.type === 'income' ? t('laporan.income') : t('laporan.expense'),
+      [t('laporan.excelCategory')]: tx.category.name,
+      [t('laporan.excelDescription')]: tx.description || '-',
+      [t('laporan.excelAmount')]: tx.amount,
+      [t('laporan.excelDate')]: format(new Date(tx.date), 'dd/MM/yyyy', { locale: id }),
     }))), t('laporan.transactionSheetName'));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(savingsTargets.map(s => ({
       [t('laporan.targetName')]: s.name, [t('laporan.targetAmount')]: s.targetAmount, [t('laporan.collected')]: s.currentAmount,
@@ -77,13 +77,13 @@ export function Laporan() {
     toast.success(t('laporan.downloadSuccess'));
   };
 
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const totalIncome = transactions.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0);
+  const totalExpense = transactions.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0);
   const balance = totalIncome - totalExpense;
-  const totalSavings = savingsTargets.reduce((s, t) => s + t.currentAmount, 0);
+  const totalSavings = savingsTargets.reduce((s, st) => s + st.currentAmount, 0);
   const txCount = transactions.length;
   const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
-  const uniqueDays = new Set(transactions.map(t => t.date)).size;
+  const uniqueDays = new Set(transactions.map(tx => tx.date)).size;
   const avgDaily = txCount > 0 ? totalExpense / Math.max(uniqueDays, 1) : 0;
 
   const filterBtnCls = (active: boolean) =>

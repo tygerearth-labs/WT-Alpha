@@ -74,7 +74,7 @@ export function KasMasuk() {
         const catData = await catRes.json();
         const savingsData = await savingsRes.json();
 
-        let filteredTransactions = transData.transactions;
+        let filteredTransactions: any[] = transData.transactions || [];
 
         if (filter === 'today') {
           const now = new Date();

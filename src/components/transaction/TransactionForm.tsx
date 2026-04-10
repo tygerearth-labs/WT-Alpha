@@ -96,7 +96,7 @@ export function TransactionForm({
         categoryId: formData.categoryId,
         date: formData.date,
         targetId: type === 'income' && formData.targetId && formData.targetId !== 'none' ? formData.targetId : undefined,
-        allocationPercentage: type === 'income' && formData.allocationPercentage ? parseFloat(formData.allocationPercentage) : undefined,
+        allocationPercentage: type === 'income' && formData.allocationPercentage ? formData.allocationPercentage : undefined,
       });
     } finally {
       setIsSubmitting(false);

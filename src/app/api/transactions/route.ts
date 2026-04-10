@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       allocationAmount = (amount * allocationPercentage) / 100;
 
       // Validate target exists BEFORE creating transaction (atomic approach)
-      if (allocationAmount > 0) {
+      if (allocationAmount > 0 && targetSavingsId) {
         const savingsTarget = await db.savingsTarget.findFirst({
           where: { id: targetSavingsId, userId },
         });

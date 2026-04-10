@@ -1514,7 +1514,7 @@ export function Dashboard() {
                 <ArrowDownRight className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
                 <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
               </div>
-              {mc && getTrendIcon(mc.expenseChange, true)}
+              {mc && getTrendIcon(mc.expenseChange)}
             </div>
             <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
               {formatAmount(mc?.currentMonthExpense ?? data.totalExpense)}

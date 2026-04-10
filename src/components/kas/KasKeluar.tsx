@@ -71,7 +71,7 @@ export function KasKeluar() {
         const transData = await transRes.json();
         const catData = await catRes.json();
 
-        let filteredTransactions = transData.transactions;
+        let filteredTransactions: any[] = transData.transactions || [];
 
         if (filter === 'today') {
           const now = new Date();

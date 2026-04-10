@@ -47,13 +47,13 @@ export interface SavingsTarget {
   name: string;
   targetAmount: number;
   currentAmount: number;
-  targetDate: string;
+  targetDate: Date | string;
   initialInvestment: number;
   monthlyContribution: number;
   allocationPercentage: number;
   isAllocated: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
   allocations?: any[];
   currentMonthlyAllocation?: number;
   monthlyAchievement?: number;
