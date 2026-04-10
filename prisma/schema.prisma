@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./db/custom.db"
 }
 
 model User {
@@ -41,6 +41,7 @@ model Category {
   updatedAt     DateTime     @updatedAt
 
   @@unique([name, userId, type])
+  @@index([userId, type])
 }
 
 model Transaction {
@@ -56,6 +57,9 @@ model Transaction {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   allocation  Allocation?
+
+  @@index([userId, date])
+  @@index([userId, type])
 }
 
 model SavingsTarget {
@@ -73,6 +77,8 @@ model SavingsTarget {
   allocations  Allocation[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+
+  @@index([userId])
 }
 
 model Allocation {
@@ -87,4 +93,7 @@ model Allocation {
   percentage      Float
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  @@index([targetId, createdAt])
+  @@index([userId])
 }
