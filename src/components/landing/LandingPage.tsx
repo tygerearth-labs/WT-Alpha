@@ -332,7 +332,7 @@ export function LandingPage() {
           <FadeUp delay={50}>
             <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] sm:text-xs font-medium mb-4 sm:mb-8 border" style={{ borderColor: 'rgba(187,134,252,0.25)', background: 'rgba(187,134,252,0.08)', color: '#BB86FC' }}>
               <Sparkles className="h-3.5 w-3.5" />
-              {t('landing.by')} Tyger Earth Labs
+              {t('landing.by')} Ahtjong Labs
             </div>
           </FadeUp>
 
