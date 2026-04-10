@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
+import { Search, X, ChevronDown } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 
 // ── Curated icon list for category picker ──
@@ -155,6 +156,11 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
   const [search, setSearch] = useState('');
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   // Auto-scroll grid to top when opening
   useEffect(() => {
@@ -198,20 +204,28 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
 
   const handleSelect = (iconName: string) => {
     onChange(iconName);
+    closePicker();
+  };
+
+  const closePicker = () => {
     setIsOpen(false);
     setSearch('');
     setActiveGroup(null);
   };
 
   const toggleOpen = () => {
-    setIsOpen((prev) => !prev);
-    setSearch('');
-    setActiveGroup(null);
+    if (isOpen) {
+      closePicker();
+    } else {
+      setIsOpen(true);
+      setSearch('');
+      setActiveGroup(null);
+    }
   };
 
   const renderIconButton = (icon: typeof PICKER_ICONS[0], size: 'sm' | 'md' = 'sm') => {
     const isSelected = value === icon.name;
-    const sizeClass = size === 'sm' ? 'h-8 w-8' : 'h-10 w-10';
+    const sizeClass = size === 'sm' ? 'h-9 w-9 sm:h-8 sm:w-8' : 'h-10 w-10';
     const iconSize = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
 
     return (
@@ -220,7 +234,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
         type="button"
         title={`${icon.label} (${icon.name})`}
         onClick={() => handleSelect(icon.name)}
-        className={`${sizeClass} rounded-lg grid place-items-center transition-all duration-150 hover:scale-110 leading-none [&>*]:block`}
+        className={`${sizeClass} rounded-lg grid place-items-center transition-all duration-150 hover:scale-110 active:scale-95 leading-none [&>*]:block`}
         style={{
           background: isSelected ? `${accentColor}25` : 'rgba(255,255,255,0.04)',
           border: isSelected ? `1.5px solid ${accentColor}` : '1px solid rgba(255,255,255,0.06)',
@@ -235,8 +249,140 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
     );
   };
 
+  // ── Bottom Sheet panel (rendered via portal) ──
+  const sheetPanel = isOpen && mounted ? createPortal(
+    <div className="fixed inset-0 z-[9999] flex flex-col justify-end">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={closePicker}
+        style={{ animation: 'fadeIn 150ms ease-out' }}
+      />
+
+      {/* Sheet body */}
+      <div
+        className="relative bg-[#141414] border-t border-white/[0.08] rounded-t-2xl overflow-hidden flex flex-col"
+        style={{
+          maxHeight: '75vh',
+          minHeight: '50vh',
+          animation: 'slideUp 200ms ease-out',
+        }}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-9 h-1 rounded-full bg-white/20" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pb-2">
+          <p className="text-xs font-semibold" style={{ color: '#E6E1E5' }}>Pilih Icon</p>
+          <button
+            type="button"
+            onClick={closePicker}
+            className="w-7 h-7 rounded-full bg-white/[0.06] grid place-items-center hover:bg-white/[0.12] transition-colors"
+          >
+            <X className="h-3.5 w-3.5 text-white/60" />
+          </button>
+        </div>
+
+        {/* Search bar */}
+        <div className="px-3 pb-2">
+          <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-[#1E1E1E] border border-white/[0.06]">
+            <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                if (e.target.value) setActiveGroup(null);
+              }}
+              placeholder="Cari icon..."
+              className="flex-1 bg-transparent text-xs text-white/90 placeholder:text-white/25 outline-none"
+              autoFocus
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="text-white/30 hover:text-white/60"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Group tabs (only when not searching) */}
+        {!search && (
+          <div className="flex gap-1 px-3 py-1.5 overflow-x-auto border-y border-white/[0.04]" style={{ scrollbarWidth: 'none' }}>
+            <button
+              type="button"
+              onClick={() => setActiveGroup(null)}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-md shrink-0 transition-all whitespace-nowrap"
+              style={{
+                background: activeGroup === null ? `${accentColor}20` : 'transparent',
+                color: activeGroup === null ? accentColor : '#9E9E9E',
+              }}
+            >
+              Semua
+            </button>
+            {GROUP_ORDER.map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setActiveGroup(activeGroup === g ? null : g)}
+                className="text-[10px] font-semibold px-2.5 py-1 rounded-md shrink-0 transition-all whitespace-nowrap"
+                style={{
+                  background: activeGroup === g ? `${accentColor}20` : 'transparent',
+                  color: activeGroup === g ? accentColor : '#9E9E9E',
+                }}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Icon grid — fills remaining space, scrollable */}
+        <div
+          ref={gridRef}
+          className="flex-1 overflow-y-auto p-3"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
+        >
+          {groupedIcons.length === 0 ? (
+            <div className="py-10 text-center">
+              <p className="text-xs" style={{ color: '#9E9E9E' }}>
+                Icon tidak ditemukan
+              </p>
+            </div>
+          ) : search ? (
+            /* Flat grid when searching */
+            <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
+              {filteredIcons.map((icon) => renderIconButton(icon))}
+            </div>
+          ) : (
+            /* Grouped grid */
+            <div className="space-y-4">
+              {groupedIcons.map(({ group, label, icons }) => (
+                <div key={group}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-2 px-0.5" style={{ color: '#666' }}>
+                    {label}
+                  </p>
+                  <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
+                    {icons.map((icon) => renderIconButton(icon))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
-    <div className="space-y-2">
+    <>
       {/* Trigger button — shows selected icon */}
       <button
         type="button"
@@ -257,112 +403,19 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
         </span>
 
         {/* Chevron */}
-        {isOpen ? (
-          <ChevronUp className="h-3.5 w-3.5 text-white/30 shrink-0" />
-        ) : (
-          <ChevronDown className="h-3.5 w-3.5 text-white/30 shrink-0" />
-        )}
+        <ChevronDown className="h-3.5 w-3.5 text-white/30 shrink-0" />
       </button>
 
-      {/* Expandable panel — inline below trigger, NO portal */}
-      {isOpen && (
-        <div
-          className="rounded-xl border border-white/[0.08] bg-[#141414] overflow-hidden shadow-2xl w-full"
-          style={{ maxHeight: '340px' }}
-        >
-          {/* Search bar */}
-          <div className="p-2 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2 px-2.5 h-8 rounded-lg bg-[#1E1E1E] border border-white/[0.06]">
-              <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  if (e.target.value) setActiveGroup(null);
-                }}
-                placeholder="Cari icon..."
-                className="flex-1 bg-transparent text-xs text-white/90 placeholder:text-white/25 outline-none"
-                autoFocus
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="text-white/30 hover:text-white/60"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
+      {/* Bottom Sheet via Portal */}
+      {sheetPanel}
 
-          {/* Group tabs (only when not searching) */}
-          {!search && (
-            <div className="flex gap-1 px-2 py-1.5 overflow-x-auto border-b border-white/[0.04]" style={{ scrollbarWidth: 'none' }}>
-              <button
-                type="button"
-                onClick={() => setActiveGroup(null)}
-                className="text-[9px] font-semibold px-2 py-1 rounded-md shrink-0 transition-all whitespace-nowrap"
-                style={{
-                  background: activeGroup === null ? `${accentColor}20` : 'transparent',
-                  color: activeGroup === null ? accentColor : '#9E9E9E',
-                }}
-              >
-                Semua
-              </button>
-              {GROUP_ORDER.map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setActiveGroup(activeGroup === g ? null : g)}
-                  className="text-[9px] font-semibold px-2 py-1 rounded-md shrink-0 transition-all whitespace-nowrap"
-                  style={{
-                    background: activeGroup === g ? `${accentColor}20` : 'transparent',
-                    color: activeGroup === g ? accentColor : '#9E9E9E',
-                  }}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Icon grid */}
-          <div
-            ref={gridRef}
-            className="overflow-y-auto p-2"
-            style={{ maxHeight: '260px', scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
-          >
-            {groupedIcons.length === 0 ? (
-              <div className="py-6 text-center">
-                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
-                  Icon tidak ditemukan
-                </p>
-              </div>
-            ) : search ? (
-              /* Flat grid when searching */
-              <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
-                {filteredIcons.map((icon) => renderIconButton(icon))}
-              </div>
-            ) : (
-              /* Grouped grid */
-              <div className="space-y-3">
-                {groupedIcons.map(({ group, label, icons }) => (
-                  <div key={group}>
-                    <p className="text-[9px] font-bold uppercase tracking-wider mb-1.5 px-1" style={{ color: '#666' }}>
-                      {label}
-                    </p>
-                    <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
-                      {icons.map((icon) => renderIconButton(icon))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Inline keyframes for animations */}
+      {mounted && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        ` }} />
       )}
-    </div>
+    </>
   );
 }
