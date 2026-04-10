@@ -70,6 +70,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    let hashedPassword: string | undefined;
+
     // If updating password, verify current password first
     if (newPassword) {
       if (!currentPassword) {
@@ -87,8 +89,7 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      user.password = hashedPassword;
+      hashedPassword = await bcrypt.hash(newPassword, 10);
     }
 
     // Validate image URL if provided
@@ -130,7 +131,7 @@ export async function PUT(request: NextRequest) {
       where: { id: userId },
       data: {
         ...(username && { username }),
-        ...(newPassword ? { password: user.password } : {}),
+        ...(newPassword ? { password: hashedPassword } : {}),
         ...(finalImage !== undefined && { image: finalImage }),
         ...(finalLocale !== undefined && { locale: finalLocale }),
         ...(finalCurrency !== undefined && { currency: finalCurrency }),
