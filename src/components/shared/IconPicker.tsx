@@ -206,7 +206,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
         type="button"
         title={`${icon.label} (${icon.name})`}
         onClick={() => handleSelect(icon.name)}
-        className="h-11 w-11 sm:h-9 sm:w-9 rounded-xl grid place-items-center transition-all duration-150 hover:scale-110 active:scale-95 leading-none [&>*]:block"
+        className="h-12 w-12 sm:h-9 sm:w-9 rounded-xl grid place-items-center transition-all duration-150 hover:scale-110 active:scale-95 leading-none [&>*]:block"
         style={{
           background: isSelected ? `${accentColor}25` : 'rgba(255,255,255,0.04)',
           border: isSelected ? `2px solid ${accentColor}` : '1px solid rgba(255,255,255,0.06)',
@@ -320,7 +320,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
           {/* Icon grid */}
           <div
             ref={gridRef}
-            className="overflow-y-auto p-3"
+            className="overflow-y-auto px-3 pb-4 pt-2 sm:p-3 sm:pt-3"
             style={{ maxHeight: 'calc(85vh - 140px)', scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
           >
             {groupedIcons.length === 0 ? (
@@ -328,17 +328,17 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
                 <p className="text-xs" style={{ color: '#9E9E9E' }}>Icon tidak ditemukan</p>
               </div>
             ) : search ? (
-              <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+              <div className="flex flex-wrap justify-center gap-2.5">
                 {filteredIcons.map((icon) => renderIconButton(icon))}
               </div>
             ) : (
               <div className="space-y-4">
                 {groupedIcons.map(({ group, label, icons }) => (
                   <div key={group}>
-                    <p className="text-[10px] font-bold uppercase tracking-wider mb-2 px-0.5" style={{ color: '#666' }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wider mb-2 px-0.5 text-center" style={{ color: '#666' }}>
                       {label}
                     </p>
-                    <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+                    <div className="flex flex-wrap justify-center gap-2.5">
                       {icons.map((icon) => renderIconButton(icon))}
                     </div>
                   </div>
