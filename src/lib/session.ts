@@ -1,23 +1,47 @@
-import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';
 
+/**
+ * Session data stored in the userId cookie.
+ */
 export interface SessionData {
-  userId?: string;
+  userId: string;
 }
 
-export const sessionOptions = {
-  password: process.env.SESSION_SECRET || 'dev-secret-change-in-production-min-32-chars!!',
-  cookieName: 'wt-session',
-  cookieOptions: {
+/**
+ * Create a session by setting the userId cookie.
+ */
+export async function createSession(userId: string): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set('userId', userId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',
-  },
-};
+  });
+}
 
-export async function getSession() {
+/**
+ * Get the current session from cookies.
+ * Returns null if not authenticated.
+ */
+export async function getSession(): Promise<SessionData | null> {
   const cookieStore = await cookies();
-  return getIronSession<SessionData>(cookieStore, sessionOptions);
+  const userId = cookieStore.get('userId')?.value;
+  if (!userId) return null;
+  return { userId };
+}
+
+/**
+ * Destroy the current session by clearing the cookie.
+ */
+export async function destroySession(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set('userId', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/',
+  });
 }
