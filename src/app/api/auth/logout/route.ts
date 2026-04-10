@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getSession } from '@/lib/session';
 
 export async function POST() {
   try {
-    const cookieStore = await cookies();
-    cookieStore.delete('userId');
+    const session = await getSession();
+    session.destroy();
 
     return NextResponse.json({ success: true });
   } catch (error) {

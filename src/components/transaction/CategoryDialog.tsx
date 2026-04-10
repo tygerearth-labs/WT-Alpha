@@ -96,7 +96,7 @@ export function CategoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0D0D0D] border-white/[0.06] sm:max-w-md gap-0 p-0 overflow-y-auto max-h-[90vh]" style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}>
+      <DialogContent className="bg-[#0D0D0D] border-white/[0.06] sm:max-w-md gap-0 p-0 max-h-[92vh] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}>
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
             <span className="inline-flex items-center gap-2">
@@ -106,7 +106,7 @@ export function CategoryDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3 overflow-visible">
+        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3" style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {/* Name */}
           <div className="space-y-1.5">
             <Label className="text-[11px]" style={{ color: T.muted }}>{t('category.name')}</Label>

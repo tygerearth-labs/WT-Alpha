@@ -26,10 +26,11 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
 
   // Calculate progress to next stage
   const progressToNextStage = (stage: Stage, currentTotal: number): number => {
-    const nextStage = STAGES.find(s => s.id === stage.id);
-    if (!nextStage || nextStage.range[1] === Infinity) return 100;
+    const currentIndex = STAGES.findIndex(s => s.id === stage.id);
+    const nextStage = currentIndex < STAGES.length - 1 ? STAGES[currentIndex + 1] : null;
+    if (!nextStage) return 100;
     const rangeStart = stage.range[0];
-    const rangeEnd = nextStage.range[1];
+    const rangeEnd = nextStage.range[0];
     const currentProgress = currentTotal - rangeStart;
     const totalRange = rangeEnd - rangeStart;
     return Math.min(Math.max((currentProgress / totalRange) * 100, 0), 100);
@@ -105,7 +106,7 @@ export function AllStagesGrid({ totalSavings, currentStageId }: AllStagesGridPro
                       </div>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className={`max-w-xs" side="top" ${!unlocked ? 'blur-sm opacity-50' : ''}`}>
+                  <TooltipContent className={`max-w-xs ${!unlocked ? 'blur-sm opacity-50' : ''}`} side="top">
                     <div className="space-y-2">
                       <p className="font-semibold">{stage.name}</p>
                       <div className="text-sm space-y-1">

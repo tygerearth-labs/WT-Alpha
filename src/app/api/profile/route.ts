@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { getSession } from '@/lib/session';
 import bcrypt from 'bcryptjs';
 
 const VALID_LOCALES = ['id', 'en'];
@@ -15,8 +15,8 @@ const VALID_CURRENCIES = [
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
+    const session = await getSession();
+    const userId = session.userId;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -52,8 +52,8 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
+    const session = await getSession();
+    const userId = session.userId;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -71,6 +71,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // If updating password, verify current password first
+    let newHashedPassword: string | undefined;
     if (newPassword) {
       if (!currentPassword) {
         return NextResponse.json(
@@ -87,14 +88,27 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      user.password = hashedPassword;
+      if (newPassword.length < 8) {
+        return NextResponse.json(
+          { error: 'Password must be at least 8 characters' },
+          { status: 400 }
+        );
+      }
+
+      newHashedPassword = await bcrypt.hash(newPassword, 12);
     }
 
     // Validate image URL if provided
     let finalImage = user.image;
     if (image !== undefined) {
       if (image && image.trim() !== '') {
+        const urlRegex = /^https?:\/\/.+\..+/i;
+        if (!urlRegex.test(image.trim())) {
+          return NextResponse.json(
+            { error: 'Invalid image URL format' },
+            { status: 400 }
+          );
+        }
         finalImage = image.trim();
       } else {
         finalImage = null;
@@ -130,6 +144,7 @@ export async function PUT(request: NextRequest) {
       where: { id: userId },
       data: {
         ...(username && { username }),
+        ...(newHashedPassword && { password: newHashedPassword }),
         ...(finalImage !== undefined && { image: finalImage }),
         ...(finalLocale !== undefined && { locale: finalLocale }),
         ...(finalCurrency !== undefined && { currency: finalCurrency }),
@@ -157,8 +172,8 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
+    const session = await getSession();
+    const userId = session.userId;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

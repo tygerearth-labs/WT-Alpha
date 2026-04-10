@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
+import { getSession } from '@/lib/session';
+import { loginSchema } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
 
-    // Validation
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
+    const result = loginSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 });
     }
+
+    const { email, password } = result.data;
 
     // Find user
     const user = await db.user.findUnique({
@@ -38,15 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set session cookie
-    const cookieStore = await cookies();
-    cookieStore.set('userId', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/'
-    });
+    // Set session
+    const session = await getSession();
+    session.userId = user.id;
+    await session.save();
 
     return NextResponse.json({
       user: {

@@ -23,7 +23,7 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) { toast.error(t('auth.passwordMismatch')); return; }
-    if (password.length < 6) { toast.error(t('auth.passwordMinLength')); return; }
+    if (password.length < 8) { toast.error(t('auth.passwordMinLength')); return; }
     setIsLoading(true);
     try {
       const res = await fetch('/api/auth/register', {

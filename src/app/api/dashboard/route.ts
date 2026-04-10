@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { getSession } from '@/lib/session';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -19,8 +19,8 @@ function formatMonth(year: number, month: number): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
+    const session = await getSession();
+    const userId = session.userId;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,6 +36,11 @@ export async function GET(request: NextRequest) {
 
     const filterYear = yearParam ? parseInt(yearParam) : currentYear;
     const filterMonth = monthParam ? parseInt(monthParam) : currentMonth;
+
+    // Validate month/year query params
+    if (isNaN(filterYear) || isNaN(filterMonth) || filterMonth < 1 || filterMonth > 12) {
+      return NextResponse.json({ error: 'Invalid month/year parameters' }, { status: 400 });
+    }
 
     const { start: filterStart, end: filterEnd } = getMonthBounds(filterYear, filterMonth);
 

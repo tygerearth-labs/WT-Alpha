@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useI18nStore } from '@/store/useI18nStore';
 import { localeMap, getNestedValue, interpolate } from '@/i18n';
 
@@ -14,11 +15,11 @@ import { localeMap, getNestedValue, interpolate } from '@/i18n';
 export function useTranslation() {
   const { locale, setLocale, currency, setCurrency } = useI18nStore();
 
-  function t(key: string, params?: Record<string, string | number>): string {
+  const t = useCallback((key: string, params?: Record<string, string | number>): string => {
     const messages = localeMap[locale];
     const raw = getNestedValue(messages, key);
     return interpolate(raw, params);
-  }
+  }, [locale]);
 
   return {
     t,

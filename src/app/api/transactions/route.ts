@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { getSession } from '@/lib/session';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
+    const session = await getSession();
+    const userId = session.userId;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,6 +16,16 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
+
+    // Validate month/year query params if provided
+    if (month || year) {
+      const parsedMonth = month ? parseInt(month) : NaN;
+      const parsedYear = year ? parseInt(year) : NaN;
+      if ((month && isNaN(parsedMonth)) || (year && isNaN(parsedYear)) ||
+          (month && (parsedMonth < 1 || parsedMonth > 12))) {
+        return NextResponse.json({ error: 'Invalid month/year parameters' }, { status: 400 });
+      }
+    }
 
     const whereClause: any = { userId };
     if (type) whereClause.type = type;
@@ -50,8 +60,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
+    const session = await getSession();
+    const userId = session.userId;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -63,6 +73,22 @@ export async function POST(request: NextRequest) {
     if (!type || !amount) {
       return NextResponse.json(
         { error: 'Type and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate transaction type
+    if (!['income', 'expense'].includes(type)) {
+      return NextResponse.json(
+        { error: 'Type must be "income" or "expense"' },
+        { status: 400 }
+      );
+    }
+
+    // Validate amount is a positive number
+    if (typeof amount !== 'number' || amount <= 0) {
+      return NextResponse.json(
+        { error: 'Amount must be a positive number' },
         { status: 400 }
       );
     }

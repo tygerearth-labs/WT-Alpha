@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { RegisterForm } from '@/components/auth/RegisterForm';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Dialog,
@@ -120,6 +121,7 @@ function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: str
 export function LandingPage() {
   const { t } = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -785,22 +787,46 @@ export function LandingPage() {
       </footer>
 
       {/* ========== AUTH DIALOG ========== */}
-      <Dialog open={authOpen} onOpenChange={setAuthOpen}>
-        <DialogContent className="rounded-2xl border-0 p-0 max-w-[420px] mx-auto" style={{ background: '#121212' }} showCloseButton={true}>
+      <Dialog open={authOpen} onOpenChange={(open) => { setAuthOpen(open); if (!open) setAuthMode('login'); }}>
+        <DialogContent className="rounded-2xl border-0 p-0 max-w-[420px] mx-auto max-h-[90vh] overflow-y-auto" style={{ background: '#121212' }} showCloseButton={true}>
           <DialogHeader className="p-6 pb-0">
             <div className="flex items-center gap-2.5 mb-1">
               <Image src="/logo.png" alt="Wealth Tracker" width={32} height={32} className="rounded-lg" />
               <DialogTitle className="text-lg font-bold" style={{ color: '#E6E1E5' }}>{t('landing.creator')}</DialogTitle>
             </div>
             <DialogDescription className="text-xs" style={{ color: '#9E9E9E' }}>
-              {t('landing.authDesc')}
+              {authMode === 'login' ? t('landing.authLoginDesc') : t('landing.authRegisterDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="p-6 pt-4">
-            <LoginForm />
+            {authMode === 'login' ? <LoginForm /> : <RegisterForm />}
             <div className="mt-5 text-center">
               <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
-                {t('landing.noAccountHint')}
+                {authMode === 'login' ? (
+                  <>
+                    {t('landing.noAccount')}{' '}
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('register')}
+                      className="font-semibold underline underline-offset-2"
+                      style={{ color: '#BB86FC' }}
+                    >
+                      {t('landing.switchToRegister')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {t('landing.alreadyHaveAccount')}{' '}
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('login')}
+                      className="font-semibold underline underline-offset-2"
+                      style={{ color: '#BB86FC' }}
+                    >
+                      {t('landing.switchToLogin')}
+                    </button>
+                  </>
+                )}
               </p>
             </div>
           </div>

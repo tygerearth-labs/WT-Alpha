@@ -268,7 +268,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
       {isOpen && (
         <div
           className="rounded-xl border border-white/[0.08] bg-[#141414] overflow-hidden shadow-2xl"
-          style={{ maxHeight: '340px' }}
+          style={{ maxHeight: 'min(340px, 50vh)' }}
         >
           {/* Search bar */}
           <div className="p-2 border-b border-white/[0.06]">
@@ -332,7 +332,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
           <div
             ref={gridRef}
             className="overflow-y-auto p-2"
-            style={{ maxHeight: '260px', scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
+            style={{ maxHeight: 'min(260px, 40vh)', scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
           >
             {groupedIcons.length === 0 ? (
               <div className="py-6 text-center">
@@ -342,7 +342,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
               </div>
             ) : search ? (
               /* Flat grid when searching */
-              <div className="grid grid-cols-8 gap-1">
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
                 {filteredIcons.map((icon) => renderIconButton(icon))}
               </div>
             ) : (
@@ -353,7 +353,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
                     <p className="text-[9px] font-bold uppercase tracking-wider mb-1.5 px-1" style={{ color: '#666' }}>
                       {label}
                     </p>
-                    <div className="grid grid-cols-8 gap-1">
+                    <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
                       {icons.map((icon) => renderIconButton(icon))}
                     </div>
                   </div>
