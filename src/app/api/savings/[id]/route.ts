@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSession } from '@/lib/session';
+import { cookies } from 'next/headers';
 
 // PUT - Update existing savings target
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getSession();
-    const userId = session.userId;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -70,8 +70,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 // DELETE - Delete savings target
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getSession();
-    const userId = session.userId;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -91,15 +91,15 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       );
     }
 
-    // Delete all allocations for this target first
-    await db.allocation.deleteMany({
-      where: { targetId: id },
-    });
-
-    // Delete the target
-    await db.savingsTarget.delete({
-      where: { id },
-    });
+    // Delete allocations and target atomically
+    await db.$transaction([
+      db.allocation.deleteMany({
+        where: { targetId: id },
+      }),
+      db.savingsTarget.delete({
+        where: { id },
+      }),
+    ]);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

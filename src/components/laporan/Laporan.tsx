@@ -7,6 +7,7 @@ import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { LaporanSkeleton } from '@/components/shared/PageSkeleton';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
 
@@ -58,8 +59,7 @@ export function Laporan() {
     finally { setIsLoading(false); }
   };
 
-  const exportToExcel = async () => {
-    const XLSX = await import('xlsx');
+  const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transactions.map(t => ({
       [t('laporan.excelType')]: t.type === 'income' ? t('laporan.income') : t('laporan.expense'),

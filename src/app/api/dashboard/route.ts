@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSession } from '@/lib/session';
+import { cookies } from 'next/headers';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -19,8 +19,8 @@ function formatMonth(year: number, month: number): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const userId = session.userId;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,11 +37,6 @@ export async function GET(request: NextRequest) {
     const filterYear = yearParam ? parseInt(yearParam) : currentYear;
     const filterMonth = monthParam ? parseInt(monthParam) : currentMonth;
 
-    // Validate month/year query params
-    if (isNaN(filterYear) || isNaN(filterMonth) || filterMonth < 1 || filterMonth > 12) {
-      return NextResponse.json({ error: 'Invalid month/year parameters' }, { status: 400 });
-    }
-
     const { start: filterStart, end: filterEnd } = getMonthBounds(filterYear, filterMonth);
 
     // Previous month bounds
@@ -56,6 +51,8 @@ export async function GET(request: NextRequest) {
     // BATCH QUERIES — all independent, run in parallel
     // ───────────────────────────────────────────
 
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
     const [
       transactions,
       allTransactionsLast6Months,
@@ -63,6 +60,7 @@ export async function GET(request: NextRequest) {
       transactionsByCategory,
       previousMonthTransactionsByCategory,
       categories,
+      recentTransactions,
     ] = await Promise.all([
       // Current filter month transactions (original query)
       db.transaction.findMany({
@@ -125,6 +123,12 @@ export async function GET(request: NextRequest) {
           type: 'expense',
         },
       }),
+
+      // Last 30 days transactions for savings history (parallel with other queries)
+      db.transaction.findMany({
+        where: { userId, date: { gte: thirtyDaysAgo } },
+        orderBy: { date: 'asc' },
+      }),
     ]);
 
     // ───────────────────────────────────────────
@@ -157,13 +161,8 @@ export async function GET(request: NextRequest) {
     const totalDebt = 0;
     const debtRatio = totalIncome > 0 ? (totalDebt / totalIncome) * 100 : 0;
 
-    // Savings history (last 30 days) — only fetch recent transactions
+    // Savings history (last 30 days)
     const savingsHistory: Array<{ date: string; savings: number }> = [];
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const recentTransactions = await db.transaction.findMany({
-      where: { userId, date: { gte: thirtyDaysAgo } },
-      orderBy: { date: 'asc' },
-    });
 
     for (let i = 29; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);

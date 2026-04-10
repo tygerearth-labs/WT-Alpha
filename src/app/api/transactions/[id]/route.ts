@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSession } from '@/lib/session';
+import { cookies } from 'next/headers';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    const userId = session.userId;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,8 +78,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    const userId = session.userId;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -87,12 +87,9 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Verify transaction belongs to user and include allocation
+    // Verify transaction belongs to user and get allocation info
     const existingTransaction = await db.transaction.findFirst({
-      where: {
-        id,
-        userId,
-      },
+      where: { id, userId },
       include: { allocation: true },
     });
 
@@ -103,15 +100,22 @@ export async function DELETE(
       );
     }
 
-    // Reverse allocation if exists
+    // If this transaction is allocated to a savings target, reverse the allocation
     if (existingTransaction.allocation) {
-      await db.savingsTarget.update({
-        where: { id: existingTransaction.allocation.targetId },
-        data: { currentAmount: { decrement: existingTransaction.allocation.amount } },
-      });
-      await db.allocation.delete({ where: { id: existingTransaction.allocation.id } });
+      await db.$transaction([
+        // Reverse the savings target increment
+        db.savingsTarget.update({
+          where: { id: existingTransaction.allocation.targetId },
+          data: { currentAmount: { decrement: existingTransaction.allocation.amount } },
+        }),
+        // Delete the allocation (also cascaded by DB, but explicit is safer)
+        db.allocation.delete({
+          where: { id: existingTransaction.allocation.id },
+        }),
+      ]);
     }
 
+    // Now delete the transaction
     await db.transaction.delete({
       where: { id },
     });

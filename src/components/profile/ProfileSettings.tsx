@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +63,8 @@ export function ProfileSettings() {
     return { popular, others };
   }, []);
 
+  useState(() => { /* fetch */ });
+
   const fetchUserData = async () => {
     try {
       const res = await fetch('/api/profile');
@@ -75,9 +77,12 @@ export function ProfileSettings() {
     finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
+  // Fetch on mount
+  const initialized = useState(false);
+  if (!initialized[0] && typeof window !== 'undefined') {
+    initialized[0] = true;
     fetchUserData();
-  }, []);
+  }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();

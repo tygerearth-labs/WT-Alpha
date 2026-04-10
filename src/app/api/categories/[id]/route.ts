@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSession } from '@/lib/session';
+import { cookies } from 'next/headers';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    const userId = session.userId;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,9 +36,9 @@ export async function PUT(
     const category = await db.category.update({
       where: { id },
       data: {
-        ...(name && { name }),
-        ...(color && { color }),
-        ...(icon && { icon }),
+        ...(name !== undefined && { name }),
+        ...(color !== undefined && { color: color || null }),
+        ...(icon !== undefined && { icon: icon || null }),
       },
     });
 
@@ -58,8 +58,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    const userId = session.userId;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

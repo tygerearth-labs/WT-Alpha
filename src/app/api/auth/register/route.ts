@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { getSession } from '@/lib/session';
-import { registerSchema } from '@/lib/validations';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { email, username, password } = body;
 
-    const result = registerSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 });
+    // Validation
+    if (!email || !username || !password) {
+      return NextResponse.json(
+        { error: 'Email, username, and password are required' },
+        { status: 400 }
+      );
     }
-
-    const { email, username, password } = result.data;
-    const { locale } = body;
 
     // Check if user already exists
     const existingUser = await db.user.findFirst({
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
     const user = await db.user.create({
@@ -42,48 +42,38 @@ export async function POST(request: NextRequest) {
         email,
         username,
         password: hashedPassword,
-        locale: locale === 'en' ? 'en' : 'id',
       }
     });
 
-    // Create default categories with Lucide icons (localized)
-    const userLocale = locale === 'en' ? 'en' : 'id';
-    const defaultCategories = userLocale === 'en' ? [
-      { name: 'Salary', type: 'income', color: '#10b981', icon: 'Wallet' },
-      { name: 'Bonus', type: 'income', color: '#f59e0b', icon: 'Gift' },
-      { name: 'Investment', type: 'income', color: '#8b5cf6', icon: 'TrendingUp' },
-      { name: 'Other', type: 'income', color: '#6b7280', icon: 'Package' },
-      { name: 'Food', type: 'expense', color: '#ef4444', icon: 'UtensilsCrossed' },
-      { name: 'Transport', type: 'expense', color: '#f97316', icon: 'Car' },
-      { name: 'Shopping', type: 'expense', color: '#ec4899', icon: 'ShoppingBag' },
-      { name: 'Bills', type: 'expense', color: '#3b82f6', icon: 'FileText' },
-      { name: 'Entertainment', type: 'expense', color: '#14b8a6', icon: 'Film' },
-      { name: 'Health', type: 'expense', color: '#22c55e', icon: 'Pill' },
-      { name: 'Education', type: 'expense', color: '#a855f7', icon: 'GraduationCap' },
-      { name: 'Other', type: 'expense', color: '#6b7280', icon: 'Package' },
-    ] : [
-      { name: 'Gaji', type: 'income', color: '#10b981', icon: 'Wallet' },
-      { name: 'Bonus', type: 'income', color: '#f59e0b', icon: 'Gift' },
-      { name: 'Investasi', type: 'income', color: '#8b5cf6', icon: 'TrendingUp' },
-      { name: 'Lainnya', type: 'income', color: '#6b7280', icon: 'Package' },
-      { name: 'Makanan', type: 'expense', color: '#ef4444', icon: 'UtensilsCrossed' },
-      { name: 'Transportasi', type: 'expense', color: '#f97316', icon: 'Car' },
-      { name: 'Belanja', type: 'expense', color: '#ec4899', icon: 'ShoppingBag' },
-      { name: 'Tagihan', type: 'expense', color: '#3b82f6', icon: 'FileText' },
-      { name: 'Hiburan', type: 'expense', color: '#14b8a6', icon: 'Film' },
-      { name: 'Kesehatan', type: 'expense', color: '#22c55e', icon: 'Pill' },
-      { name: 'Pendidikan', type: 'expense', color: '#a855f7', icon: 'GraduationCap' },
-      { name: 'Lainnya', type: 'expense', color: '#6b7280', icon: 'Package' },
-    ];
-
+    // Create default categories (Lucide icon names for consistency)
     await db.category.createMany({
-      data: defaultCategories.map(cat => ({ ...cat, userId: user.id })),
+      data: [
+        // Income categories
+        { name: 'Gaji', type: 'income', color: '#10b981', icon: 'Wallet', userId: user.id },
+        { name: 'Bonus', type: 'income', color: '#f59e0b', icon: 'Gift', userId: user.id },
+        { name: 'Investasi', type: 'income', color: '#8b5cf6', icon: 'TrendingUp', userId: user.id },
+        { name: 'Lainnya', type: 'income', color: '#6b7280', icon: 'Package', userId: user.id },
+        // Expense categories
+        { name: 'Makanan', type: 'expense', color: '#ef4444', icon: 'UtensilsCrossed', userId: user.id },
+        { name: 'Transportasi', type: 'expense', color: '#f97316', icon: 'Car', userId: user.id },
+        { name: 'Belanja', type: 'expense', color: '#ec4899', icon: 'ShoppingCart', userId: user.id },
+        { name: 'Tagihan', type: 'expense', color: '#3b82f6', icon: 'FileText', userId: user.id },
+        { name: 'Hiburan', type: 'expense', color: '#14b8a6', icon: 'Clapperboard', userId: user.id },
+        { name: 'Kesehatan', type: 'expense', color: '#22c55e', icon: 'Pill', userId: user.id },
+        { name: 'Pendidikan', type: 'expense', color: '#a855f7', icon: 'BookOpen', userId: user.id },
+        { name: 'Lainnya', type: 'expense', color: '#6b7280', icon: 'Package', userId: user.id },
+      ]
     });
 
-    // Set session
-    const session = await getSession();
-    session.userId = user.id;
-    await session.save();
+    // Set session cookie
+    const cookieStore = await cookies();
+    cookieStore.set('userId', user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
 
     return NextResponse.json({
       user: {

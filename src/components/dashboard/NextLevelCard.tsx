@@ -10,9 +10,10 @@ interface NextLevelCardProps {
   totalSavings: number;
   currentStage: Stage;
   nextStage: Stage | null;
+  last30DaysGrowth?: number;
 }
 
-export function NextLevelCard({ totalSavings, currentStage, nextStage }: NextLevelCardProps) {
+export function NextLevelCard({ totalSavings, currentStage, nextStage, last30DaysGrowth = 0 }: NextLevelCardProps) {
   const { t } = useTranslation();
   const { formatAmount } = useCurrencyFormat();
 
@@ -20,7 +21,6 @@ export function NextLevelCard({ totalSavings, currentStage, nextStage }: NextLev
 
   // Calculate estimated months to next phase
   const amountNeeded = nextStage ? nextStage.range[0] - totalSavings : 0;
-  const last30DaysGrowth = 0;
   const monthlyGrowthEstimate = last30DaysGrowth;
   const estimatedMonths = monthlyGrowthEstimate > 0 && amountNeeded > 0
     ? Math.ceil(amountNeeded / monthlyGrowthEstimate)
