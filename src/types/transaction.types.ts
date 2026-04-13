@@ -33,7 +33,7 @@ export interface TransactionFormData {
   categoryId: string;
   date: string;
   targetId?: string;
-  allocationPercentage?: string;
+  allocationPercentage?: number;
 }
 
 export interface CategoryFormData {
