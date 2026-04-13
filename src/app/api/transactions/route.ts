@@ -67,6 +67,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure numeric types are properly parsed
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    const numAllocationPct = allocationPercentage != null ? parseFloat(allocationPercentage) : 0;
+
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid amount' },
+        { status: 400 }
+      );
+    }
+    if (isNaN(numAllocationPct)) {
+      return NextResponse.json(
+        { error: 'Invalid allocation percentage' },
+        { status: 400 }
+      );
+    }
+
     // Handle category - find or create default category if not provided
     let category;
     if (categoryId && categoryId !== 'none') {
@@ -116,10 +133,10 @@ export async function POST(request: NextRequest) {
     let allocationAmount = 0;
     let allocationPct = 0;
 
-    if (type === 'income' && targetId && allocationPercentage) {
+    if (type === 'income' && targetId && numAllocationPct > 0) {
       targetSavingsId = targetId;
-      allocationPct = allocationPercentage;
-      allocationAmount = (amount * allocationPercentage) / 100;
+      allocationPct = numAllocationPct;
+      allocationAmount = (numAmount * numAllocationPct) / 100;
 
       // Validate target exists BEFORE creating transaction (atomic approach)
       if (allocationAmount > 0 && targetSavingsId) {
@@ -145,7 +162,7 @@ export async function POST(request: NextRequest) {
     const transaction = await db.transaction.create({
       data: {
         type,
-        amount,
+        amount: numAmount,
         description,
         categoryId: category.id,
         userId,
