@@ -96,7 +96,7 @@ export function TransactionForm({
         categoryId: formData.categoryId,
         date: formData.date,
         targetId: type === 'income' && formData.targetId && formData.targetId !== 'none' ? formData.targetId : undefined,
-        allocationPercentage: type === 'income' && formData.allocationPercentage ? formData.allocationPercentage : undefined,
+        allocationPercentage: type === 'income' && formData.allocationPercentage ? parseFloat(formData.allocationPercentage) : undefined,
       });
     } finally {
       setIsSubmitting(false);
@@ -205,7 +205,7 @@ export function TransactionForm({
               style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
               <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: T.primary }}>
-                <span>🎯</span> {t('transaction.allocateTarget')}
+                <span>ðŸŽ¯</span> {t('transaction.allocateTarget')}
               </p>
               <p className="text-[9px]" style={{ color: `${T.primary}80` }}>{t('form.tipAllocation')}</p>
               <div className="space-y-2">
