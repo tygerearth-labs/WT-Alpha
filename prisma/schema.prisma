@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,9 +14,9 @@ model User {
   password      String
   image         String?
   pin           String?
-  locale        String   @default("id")    // "id" | "en"
-  currency      String   @default("IDR")   // ISO 4217 currency code
-  plan          String   @default("basic") // "basic" | "pro"
+  locale        String   @default("id")
+  currency      String   @default("IDR")
+  plan          String   @default("basic")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   transactions  Transaction[]
@@ -31,7 +28,7 @@ model User {
 model Category {
   id            String       @id @default(cuid())
   name          String
-  type          String       // 'income' or 'expense'
+  type          String
   color         String?
   icon          String?
   userId        String
@@ -46,7 +43,7 @@ model Category {
 
 model Transaction {
   id          String       @id @default(cuid())
-  type        String       // 'income' or 'expense'
+  type        String
   amount      Float
   description String?
   categoryId  String

@@ -18,17 +18,32 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#000000",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Wealth Tracker",
+  },
 };
 
 export const metadata: Metadata = {
   title: "Wealth Tracker - Kelola Keuangan Anda",
   description: "Aplikasi pencatatan keuangan modern dengan fitur lengkap untuk tracking kas masuk, keluar, dan target tabungan",
-  keywords: ["keuangan", "tracker", "kas", "tabungan", "investasi"],
+  keywords: ["keuangan", "tracker", "kas", "tabungan", "investasi", "PWA"],
   authors: [{ name: "Tyger Earth | Ahtjong Labs" }],
+  manifest: "/manifest.json",
   icons: {
     icon: "/logo.png",
     shortcut: "/logo.png",
     apple: "/logo.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Wealth Tracker",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -39,6 +54,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className="dark" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/logo.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-x-hidden`}
       >
