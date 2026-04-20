@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+iimport { useState, useCallback, useEffect } from 'react';
 import {
   Bell,
   BellRing,
