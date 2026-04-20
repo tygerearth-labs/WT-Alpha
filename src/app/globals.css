@@ -677,6 +677,11 @@ html {
 /* Announcement padding transition */
 .announcement-pt { transition: padding-top 0.3s ease; }
 
+/* Default announcement height (updated dynamically by AnnouncementBanner component) */
+:root {
+  --announcement-height: 0px;
+}
+
 /* Quick Entry FAB — responsive bottom positioning */
 .quick-entry-fab {
   bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 20px);

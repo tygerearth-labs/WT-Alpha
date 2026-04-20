@@ -487,20 +487,18 @@ export function AdminLayout() {
 
       </header>
 
+      {/* ── Announcement Banner (fixed below header) ── */}
+      <AnnouncementBanner />
+
       {/* ── Body ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* ── Announcement Banner (sticky below fixed header) ── */}
-        <div className="shrink-0 sticky z-20" style={{ top: 'var(--header-offset)' }}>
-          <AnnouncementBanner />
-        </div>
-
-        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'var(--header-offset)' }}>
+        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
         {/* Desktop Sidebar */}
         <aside className={cn(
           'hidden lg:flex flex-col fixed left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',
           sidebarCollapsed ? 'w-[64px]' : 'w-56 xl:w-64',
         )}
-          style={{ top: 'var(--header-offset)' }}>
+          style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
           <div className="absolute inset-0 bg-[#0D0D0D]/60 backdrop-blur-2xl" />
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: 'linear-gradient(180deg, rgba(3,218,198,0.03) 0%, transparent 30%, transparent 70%, rgba(187,134,252,0.02) 100%)' }} />
@@ -539,7 +537,7 @@ export function AdminLayout() {
             <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
               onClick={() => setMobileMenuOpen(false)} />
             <aside className="fixed left-0 bottom-0 z-40 w-64 flex-col md:hidden"
-              style={{ top: 'var(--header-offset)', animation: 'slideInLeft 0.25s ease-out' }}>
+              style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))', animation: 'slideInLeft 0.25s ease-out' }}>
               <div className="absolute inset-0 bg-[#0D0D0D]/95 backdrop-blur-2xl rounded-r-2xl" />
               <div className="absolute inset-0 pointer-events-none rounded-r-2xl"
                 style={{ background: 'linear-gradient(180deg, rgba(3,218,198,0.04) 0%, transparent 30%, transparent 70%, rgba(187,134,252,0.02) 100%)' }} />

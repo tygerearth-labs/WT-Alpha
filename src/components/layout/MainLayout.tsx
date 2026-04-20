@@ -493,21 +493,19 @@ export function MainLayout() {
 
       </header>
 
+      {/* ── Announcement Banner (fixed below header) ── */}
+      <AnnouncementBanner />
+
       {/* ── Body: Sidebar + Content ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* ── Announcement Banner (sticky below fixed header) ── */}
-        <div className="shrink-0 sticky z-20" style={{ top: 'var(--header-offset)' }}>
-          <AnnouncementBanner />
-        </div>
-
-        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'var(--header-offset)' }}>
+        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
         {/* ── Desktop Sidebar (lg: and up) ── */}
         <aside
           className={cn(
             'hidden lg:flex flex-col fixed left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',
             sidebarCollapsed ? 'w-[64px]' : 'w-56 xl:w-64',
           )}
-          style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px', top: 'var(--header-offset)' } as React.CSSProperties}
+          style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px', top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' } as React.CSSProperties}
         >
           {/* Sidebar gradient background */}
           <div
@@ -608,7 +606,7 @@ export function MainLayout() {
             <aside
               className="md:block hidden fixed left-0 bottom-0 z-40 w-64 flex-col lg:hidden"
               style={{
-                top: 'var(--header-offset)',
+                top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))',
                 animation: 'slideInLeft 0.25s ease-out',
               }}
             >
@@ -691,7 +689,7 @@ export function MainLayout() {
         >
           {/* Page Transition Progress Bar */}
           {isTransitioning && (
-            <div className="fixed left-0 right-0 z-50 h-[2px]" style={{ top: 'var(--header-offset)' }}>
+            <div className="fixed left-0 right-0 z-50 h-[2px]" style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
               <div
                 className="h-full"
                 style={{

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Category } from '@/types/transaction.types';
 import { format } from 'date-fns';
 import { useTranslation } from '@/hooks/useTranslation';
+import { dispatchNotificationEvent } from '@/lib/notificationEvents';
 
 const THEME = {
   primary: '#BB86FC',
@@ -87,6 +88,8 @@ export function QuickTransaction() {
       });
 
       if (response.ok) {
+        // Notify NotificationCenter to refresh badge immediately
+        dispatchNotificationEvent('notification-created');
         setShowSuccess(true);
         setTimeout(() => {
           setShowSuccess(false);

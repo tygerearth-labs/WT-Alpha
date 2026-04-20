@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
+import { onNotificationEvent } from '@/lib/notificationEvents';
 
 /* ── Types ── */
 
@@ -127,6 +128,19 @@ export function NotificationCenter() {
   const [isLoading, setIsLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Fetch only unread count (lightweight, used for badge polling)
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications?limit=1');
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch {
+      // silent fail
+    }
+  }, []);
+
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -143,6 +157,32 @@ export function NotificationCenter() {
       setIsLoading(false);
     }
   }, []);
+
+  // Initial fetch of unread count + periodic polling
+  useEffect(() => {
+    fetchUnreadCount();
+    // Poll every 30 seconds for new notifications
+    const interval = setInterval(fetchUnreadCount, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
+
+  // Listen for notification events from transaction creation etc.
+  useEffect(() => {
+    const cleanupCreated = onNotificationEvent('notification-created', () => {
+      fetchUnreadCount();
+    });
+    const cleanupRead = onNotificationEvent('notification-read', () => {
+      fetchUnreadCount();
+    });
+    const cleanupCleared = onNotificationEvent('notifications-cleared', () => {
+      fetchUnreadCount();
+    });
+    return () => {
+      cleanupCreated();
+      cleanupRead();
+      cleanupCleared();
+    };
+  }, [fetchUnreadCount]);
 
   const handleOpenChange = useCallback((newOpen: boolean) => {
     setOpen(newOpen);

@@ -15,6 +15,7 @@ import { TransactionPageSkeleton } from '@/components/shared/PageSkeleton';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { motion } from 'framer-motion';
+import { dispatchNotificationEvent } from '@/lib/notificationEvents';
 
 type DateFilter = 'today' | 'week' | 'month' | 'all';
 
@@ -238,6 +239,7 @@ export function KasMasuk() {
         body: JSON.stringify(data),
       });
       if (response.ok) {
+        dispatchNotificationEvent('notification-created');
         toast.success(t('kas.addIncomeSuccess'));
         setIsAddDialogOpen(false);
         fetchData(dateFilter);

@@ -37,6 +37,7 @@ export function AnnouncementBanner() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [visible, setVisible] = useState<Set<string>>(new Set());
   const visibleRef = useRef(new Set<string>());
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +72,23 @@ export function AnnouncementBanner() {
       controller.abort();
     };
   }, []);
+
+  // Update CSS custom property with banner height so other elements can react
+  useEffect(() => {
+    function updateHeight() {
+      if (bannerRef.current) {
+        const h = bannerRef.current.offsetHeight;
+        document.documentElement.style.setProperty('--announcement-height', `${h}px`);
+      } else {
+        document.documentElement.style.setProperty('--announcement-height', '0px');
+      }
+    }
+    updateHeight();
+    // Observe resize
+    const observer = new ResizeObserver(updateHeight);
+    if (bannerRef.current) observer.observe(bannerRef.current);
+    return () => observer.disconnect();
+  }, [announcements, visible]);
 
   const handleDismiss = useCallback((id: string) => {
     setAnnouncements((prev) => {
@@ -115,10 +133,20 @@ export function AnnouncementBanner() {
 
   const activeAnnouncements = announcements.filter((a) => visible.has(a.id));
 
-  if (activeAnnouncements.length === 0) return null;
+  if (activeAnnouncements.length === 0) {
+    // Clear the CSS var when no banner
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--announcement-height', '0px');
+    }
+    return null;
+  }
 
   return (
-    <div className="flex flex-col sticky z-20" style={{ top: 'var(--header-offset, 3.5rem)' }}>
+    <div
+      ref={bannerRef}
+      className="fixed left-0 right-0 z-25 flex flex-col"
+      style={{ top: 'var(--header-offset, 3.5rem)' }}
+    >
       {activeAnnouncements.map((announcement) => {
         const style = TYPE_STYLES[announcement.type] || TYPE_STYLES.info;
         const Icon = style.icon;
@@ -127,7 +155,7 @@ export function AnnouncementBanner() {
           <div
             key={announcement.id}
             className={cn(
-              'relative flex items-center gap-3 px-4 py-2.5 border-b',
+              'relative flex items-center gap-3 px-4 py-2.5 border-b backdrop-blur-md',
               style.bg,
               style.border,
             )}
