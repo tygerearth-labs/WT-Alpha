@@ -7,11 +7,11 @@
   "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
   "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
   "lint": "eslint .",
-  "db:push": "prisma db push --schema=./prisma/scheme",
-  "db:generate": "prisma generate --schema=./prisma/scheme",
-  "db:migrate": "prisma migrate dev --schema=./prisma/scheme,
-  "db:reset": "prisma migrate reset --schema=./prisma/scheme",
-  "postinstall": "prisma generate --schema=./prisma/scheme"
+  "db:push": "prisma db push --schema=./prisma/scheme.prisma",
+  "db:generate": "prisma generate --schema=./prisma/scheme.prisma",
+  "db:migrate": "prisma migrate dev --schema=./prisma/scheme.prisma,
+  "db:reset": "prisma migrate reset --schema=./prisma/scheme.prisma",
+  "postinstall": "prisma generate --schema=./prisma/scheme.prisma"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
