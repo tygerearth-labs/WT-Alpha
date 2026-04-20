@@ -44,9 +44,9 @@ interface AdminStats {
 interface ActivityLogEntry {
   id: string;
   action: string;
-  details: string;
+  details?: string | null;
   createdAt: string;
-  userId?: string;
+  adminId?: string;
 }
 
 function useCountUp(target: number, duration = 1200) {
@@ -118,6 +118,8 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [reportGenerating, setReportGenerating] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(30);
 
+  const [error, setError] = useState<string | null>(null);
+
   const fetchStats = useCallback(async (showSpinner = false) => {
     if (showSpinner) setIsRefreshing(true);
     try {
@@ -125,10 +127,21 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       if (res.ok) {
         const data = await res.json();
         setStats(data);
+        setError(null);
         setLastRefresh(new Date());
+      } else {
+        const errorData = await res.json().catch(() => null);
+        const errorMsg = errorData?.error || `Server error (${res.status})`;
+        console.error('Admin stats API error:', res.status, errorMsg);
+        setError(errorMsg);
+        // If unauthorized, the session may have expired
+        if (res.status === 401 || res.status === 403) {
+          setError('Session expired or unauthorized. Please log in again.');
+        }
       }
     } catch (e) {
       console.error('Failed to fetch stats:', e);
+      setError('Network error — could not reach the server.');
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -270,8 +283,25 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
   if (!stats) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-white/40">Failed to load dashboard</p>
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <div className="w-14 h-14 rounded-full bg-[#CF6679]/10 flex items-center justify-center">
+          <AlertTriangle className="h-7 w-7 text-[#CF6679]/60" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-white/50 font-medium">Failed to load dashboard</p>
+          {error && (
+            <p className="text-[12px] text-white/25">{error}</p>
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
+          onClick={() => { setLoading(true); setError(null); fetchStats(); fetchRecentActivity(); }}
+        >
+          <RefreshCw className="h-3 w-3" />
+          Retry
+        </Button>
       </div>
     );
   }
@@ -666,7 +696,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                             <span className="w-1.5 h-1.5 rounded-full bg-[#03DAC6] animate-pulse" />
                           )}
                         </div>
-                        <p className="text-[11px] text-white/30 truncate mt-0.5">{log.details}</p>
+                        <p className="text-[11px] text-white/30 truncate mt-0.5">{log.details || '—'}</p>
                       </div>
                       <span className="text-[10px] text-white/20 shrink-0">{formatTimeAgo(log.createdAt)}</span>
                     </div>

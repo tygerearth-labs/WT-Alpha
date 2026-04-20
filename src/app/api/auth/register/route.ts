@@ -78,6 +78,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate username characters (alphanumeric, underscore, hyphen only)
+    if (!/^[a-zA-Z0-9_-]+$/.test(username.trim())) {
+      return NextResponse.json(
+        { error: 'Username can only contain letters, numbers, underscores, and hyphens' },
+        { status: 400 }
+      );
+    }
+
     // Validate password length (bcrypt DoS prevention)
     if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
       return NextResponse.json(

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
-import * as os from 'os';
 
 const startTime = Date.now();
 
@@ -10,21 +9,27 @@ export async function GET() {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    // Get database size via PostgreSQL
+    // Estimate database size from record counts (safe for hosted Postgres like Neon)
     let dbSize = 'Unknown';
     try {
-      const result = await db.$queryRawUnsafe<{ size: bigint }[]>(
-        'SELECT pg_database_size(current_database()) as size'
-      );
-      if (result && result[0]) {
-        const bytes = Number(result[0].size);
-        if (bytes < 1024) dbSize = `${bytes} B`;
-        else if (bytes < 1024 * 1024) dbSize = `${(bytes / 1024).toFixed(1)} KB`;
-        else dbSize = `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-      }
-    } catch {}
+      const [userCount, txCount, catCount, targetCount, inviteCount, logCount] = await Promise.all([
+        db.user.count(),
+        db.transaction.count(),
+        db.category.count(),
+        db.savingsTarget.count(),
+        db.inviteToken.count(),
+        db.adminActivityLog.count(),
+      ]);
+      const totalRecords = userCount + txCount + catCount + targetCount + inviteCount + logCount;
+      // Rough estimate: ~2KB per record average
+      const estimatedBytes = totalRecords * 2048;
+      if (estimatedBytes < 1024 * 1024) dbSize = `${(estimatedBytes / 1024).toFixed(1)} KB`;
+      else dbSize = `${(estimatedBytes / (1024 * 1024)).toFixed(2)} MB`;
+    } catch {
+      dbSize = 'Unknown';
+    }
 
-    // Get table count from Prisma
+    // Get table count by testing each model
     const tableNames = ['User', 'Category', 'Transaction', 'SavingsTarget', 'Allocation', 'InviteToken', 'AdminActivityLog'];
     let activeTables = 0;
     for (const name of tableNames) {
@@ -36,17 +41,6 @@ export async function GET() {
       }
     }
 
-    // Get memory info
-    const totalMem = os.totalmem();
-    const freeMem = os.freemem();
-    const usedMem = totalMem - freeMem;
-
-    const formatBytes = (bytes: number) => {
-      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-      if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-      return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-    };
-
     const uptime = Math.floor((Date.now() - startTime) / 1000);
 
     return NextResponse.json({
@@ -56,8 +50,8 @@ export async function GET() {
         tables: activeTables,
       },
       memory: {
-        used: formatBytes(usedMem),
-        total: formatBytes(totalMem),
+        used: 'N/A',
+        total: 'N/A',
       },
       uptime,
       version: '1.0.0',

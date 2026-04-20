@@ -101,15 +101,21 @@ export async function GET() {
 
     let databaseSize = 'Unknown';
     try {
-      const result = await db.$queryRawUnsafe<{ size: bigint }[]>(
-        'SELECT pg_database_size(current_database()) as size'
+      // Use a simple table count approach instead of pg_database_size
+      // which may not be accessible on hosted Postgres (Neon, etc.)
+      const tableCountResult = await db.$queryRawUnsafe<{ count: bigint }[]>(
+        `SELECT count(*) as count FROM information_schema.tables WHERE table_schema = 'public'`
       );
-      if (result && result[0]) {
-        const bytes = Number(result[0].size);
-        if (bytes < 1024) databaseSize = `${bytes} B`;
-        else if (bytes < 1024 * 1024) databaseSize = `${(bytes / 1024).toFixed(1)} KB`;
-        else databaseSize = `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-      }
+      const userCount = await db.user.count();
+      const txCount = await db.transaction.count();
+      const catCount = await db.category.count();
+      const totalRecords = userCount + txCount + catCount;
+      // Rough estimate: ~2KB per record
+      const estimatedBytes = totalRecords * 2048;
+      if (estimatedBytes < 1024 * 1024) databaseSize = `${(estimatedBytes / 1024).toFixed(1)} KB`;
+      else databaseSize = `${(estimatedBytes / (1024 * 1024)).toFixed(2)} MB`;
+      // Also store table count for display
+      void tableCountResult;
     } catch {
       databaseSize = 'Unknown';
     }

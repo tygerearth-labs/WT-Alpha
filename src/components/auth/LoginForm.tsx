@@ -37,6 +37,9 @@ export function LoginForm() {
           window.location.href = '/admin';
           return;
         }
+        // For regular users, reload to ensure clean state
+        window.location.reload();
+        return;
       }
       else toast.error(data.error || t('auth.loginFailed'));
     } catch { toast.error(t('auth.loginError')); }

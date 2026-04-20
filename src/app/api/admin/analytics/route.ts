@@ -3,9 +3,10 @@ import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
 export async function GET() {
-  try {
-    await requireAdmin();
+  const adminId = await requireAdmin();
+  if (adminId instanceof NextResponse) return adminId;
 
+  try {
     const [totalIncome, totalExpense, transactionStats, categoryMetrics, recentPlatformActivity] = await Promise.all([
       db.transaction.aggregate({
         where: { type: 'income' },
