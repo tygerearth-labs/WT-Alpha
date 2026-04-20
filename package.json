@@ -3,15 +3,16 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
-  "dev": "next dev -p 3000 2>&1 | tee dev.log",
-  "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
-  "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
-  "lint": "eslint .",
-  "db:push": "prisma db push --schema=./prisma/scheme.prisma",
-  "db:generate": "prisma generate --schema=./prisma/scheme.prisma",
-  "db:migrate": "prisma migrate dev --schema=./prisma/scheme.prisma,
-  "db:reset": "prisma migrate reset --schema=./prisma/scheme.prisma",
-  "postinstall": "prisma generate --schema=./prisma/scheme.prisma"
+    "dev": "next dev -p 3000",
+    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "start": "NODE_ENV=production bun .next/standalone/server.js",
+    "lint": "eslint .",
+    "postinstall": "prisma generate --schema=./prisma/scheme.prisma", 
+    "db:push": "prisma db push --schema=./prisma/scheme.prisma",
+    "seed": "bun prisma db seed"
+  },
+  "prisma": {
+    "seed": "bunx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -71,16 +72,16 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^3.0.3",
     "react-syntax-highlighter": "^15.6.1",
-    "recharts": "^3.8.1",
+    "recharts": "^2.15.4",
     "sharp": "^0.34.3",
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^13.0.0",
+    "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "xlsx": "^0.18.5",
     "z-ai-web-dev-sdk": "^0.0.17",
-    "zod": "^4.3.6",
+    "zod": "^4.0.2",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
@@ -88,7 +89,6 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/uuid": "^11.0.0",
     "bun-types": "^1.3.4",
     "eslint": "^9",
     "eslint-config-next": "^16.1.1",
