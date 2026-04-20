@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, password } = body;
 
-    // Validation
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -16,7 +15,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user
     const user = await db.user.findUnique({
       where: { email }
     });
@@ -28,7 +26,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
@@ -38,13 +35,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set session cookie
+    if (user.status === 'suspended') {
+      return NextResponse.json(
+        { error: 'Account suspended. Please contact administrator.' },
+        { status: 403 }
+      );
+    }
+
+    if (user.subscriptionEnd && new Date(user.subscriptionEnd) < new Date()) {
+      // Auto downgrade expired subscriptions to basic
+      await db.user.update({
+        where: { id: user.id },
+        data: { plan: 'basic', subscriptionEnd: null }
+      });
+      user.plan = 'basic';
+    }
+
     const cookieStore = await cookies();
     cookieStore.set('userId', user.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: '/'
     });
 
@@ -54,7 +66,9 @@ export async function POST(request: NextRequest) {
         email: user.email,
         username: user.username,
         image: user.image,
-        plan: user.plan
+        plan: user.plan,
+        role: user.role,
+        status: user.status
       }
     });
 

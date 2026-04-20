@@ -31,6 +31,7 @@ export async function GET() {
         image: true,
         locale: true,
         currency: true,
+        plan: true,
         createdAt: true,
       },
     });
@@ -68,6 +69,35 @@ export async function PUT(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Validate username if provided
+    if (username !== undefined) {
+      if (typeof username !== 'string' || username.trim().length < 3) {
+        return NextResponse.json(
+          { error: 'Username must be at least 3 characters' },
+          { status: 400 }
+        );
+      }
+      if (username.trim().length > 30) {
+        return NextResponse.json(
+          { error: 'Username must be 30 characters or less' },
+          { status: 400 }
+        );
+      }
+      // Check uniqueness (exclude current user)
+      const existingUser = await db.user.findFirst({
+        where: {
+          username: username.trim(),
+          id: { not: userId },
+        },
+      });
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'Username is already taken' },
+          { status: 409 }
+        );
+      }
     }
 
     let hashedPassword: string | undefined;
@@ -127,15 +157,20 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user (include password if it was changed)
-    const updatedUser = await db.user.update({
+    await db.user.update({
       where: { id: userId },
       data: {
-        ...(username && { username }),
+        ...(username !== undefined && { username: username.trim() }),
         ...(newPassword ? { password: hashedPassword } : {}),
         ...(finalImage !== undefined && { image: finalImage }),
         ...(finalLocale !== undefined && { locale: finalLocale }),
         ...(finalCurrency !== undefined && { currency: finalCurrency }),
       },
+    });
+
+    // Fetch the updated user to return
+    const updatedUser = await db.user.findUnique({
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -143,6 +178,8 @@ export async function PUT(request: NextRequest) {
         image: true,
         locale: true,
         currency: true,
+        plan: true,
+        createdAt: true,
       },
     });
 

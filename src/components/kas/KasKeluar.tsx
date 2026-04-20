@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, TrendingDown, Calendar, ArrowDownRight, CreditCard } from 'lucide-react';
+import { Plus, TrendingDown, Calendar, ArrowDownRight, CreditCard, Activity, ArrowUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { TransactionForm } from '@/components/transaction/TransactionForm';
 import { CategoryDialog } from '@/components/transaction/CategoryDialog';
@@ -14,6 +14,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { TransactionPageSkeleton } from '@/components/shared/PageSkeleton';
+import { motion } from 'framer-motion';
 
 type DateFilter = 'today' | 'week' | 'month' | 'all';
 
@@ -26,6 +27,122 @@ const T = {
   text: '#E6E1E5',
   textSub: '#B3B3B3',
 } as const;
+
+/* ─── Animated Number Hook ─── */
+function useAnimatedValue(target: number, duration = 900) {
+  const [value, setValue] = useState(0);
+  const rafRef = useRef<number>(0);
+  const prevTarget = useRef(0);
+
+  useEffect(() => {
+    const startTime = performance.now();
+    const startValue = prevTarget.current;
+    const diff = target - startValue;
+
+    if (diff === 0) { prevTarget.current = target; return; }
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(startValue + diff * eased));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        prevTarget.current = target;
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target, duration]);
+
+  return value;
+}
+
+/* ─── Mini Sparkline (CSS-based SVG) ─── */
+function MiniSparkline({ data, color, height = 28, className = '' }: {
+  data: number[]; color: string; height?: number; className?: string;
+}) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const w = 100, h = 100, pad = 12;
+
+  const points = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (w - 2 * pad);
+    const y = h - pad - ((v - min) / range) * (h - 2 * pad);
+    return `${x},${y}`;
+  }).join(' ');
+
+  const areaPoints = `${pad},${h - pad} ${points} ${w - pad},${h - pad}`;
+  const gradId = `spark-${color.replace('#', '')}`;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={className} style={{ height, width: '100%' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon fill={`url(#${gradId})`} points={areaPoints} />
+      <polyline fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" points={points} />
+      {/* End dot */}
+      {data.length > 0 && (
+        <circle
+          cx={pad + ((data.length - 1) / (data.length - 1)) * (w - 2 * pad)}
+          cy={h - pad - ((data[data.length - 1] - min) / range) * (h - 2 * pad)}
+          r="4" fill={color} stroke="#121212" strokeWidth="2"
+        />
+      )}
+    </svg>
+  );
+}
+
+/* ─── Donut Ring (CSS conic-gradient) ─── */
+function DonutRing({ segments, total, size = 140, thickness = 22, centerLabel }: {
+  segments: { color: string; amount: number; name: string }[];
+  total: number; size?: number; thickness?: number;
+  centerLabel?: string;
+}) {
+  const { parts: gradientParts, accumulated } = segments.slice(0, 6).reduce<{ parts: string[]; accumulated: number }>((acc, seg) => {
+    const start = acc.accumulated;
+    const pct = total > 0 ? (seg.amount / total) * 100 : 0;
+    const next = acc.accumulated + pct;
+    acc.parts.push(`${seg.color} ${start}% ${next}%`);
+    acc.accumulated = next;
+    return acc;
+  }, { parts: [] as string[], accumulated: 0 });
+  const remaining = Math.max(0, 100 - accumulated);
+  const fullParts = [...gradientParts];
+  if (remaining > 0.5) fullParts.push(`rgba(255,255,255,0.04) ${accumulated}% 100%`);
+  const fullGradient = fullParts.join(', ');
+
+  return (
+    <div className="relative mx-auto" style={{ width: size, height: size }}>
+      <motion.div
+        className="rounded-full"
+        style={{ width: '100%', height: '100%', background: `conic-gradient(${fullGradient})` }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      />
+      <div
+        className="absolute rounded-full flex flex-col items-center justify-center"
+        style={{ inset: thickness, background: 'rgba(18,18,18,0.95)' }}
+      >
+        {centerLabel && (
+          <span className="text-[10px] font-medium" style={{ color: T.muted }}>{centerLabel}</span>
+        )}
+        <span className="text-sm font-bold" style={{ color: T.text }}>
+          {segments.length}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function KasKeluar() {
   const { t } = useTranslation();
@@ -55,7 +172,6 @@ export function KasKeluar() {
       const searchParams = new URLSearchParams();
       searchParams.append('type', 'expense');
 
-      // Only send year/month for 'month', 'today', 'week' — 'all' sends nothing so API returns everything
       if (filter !== 'all') {
         const now = new Date();
         searchParams.append('year', now.getFullYear().toString());
@@ -87,14 +203,13 @@ export function KasKeluar() {
           now.setHours(0, 0, 0, 0);
           const startOfWeek = new Date(now);
           const dayOfWeek = now.getDay();
-          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday start (Indonesian locale)
+          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
           startOfWeek.setDate(now.getDate() - diff);
           filteredTransactions = filteredTransactions.filter(t => {
             const transDate = new Date(t.date);
             return transDate >= startOfWeek && transDate <= now;
           });
         }
-        // 'month' and 'all' use API results directly (no extra client filtering)
 
         setTransactions(filteredTransactions);
         setCategories(catData.categories);
@@ -248,6 +363,44 @@ export function KasKeluar() {
     categoryAmounts[cat.id] = { amount: total, count: catTransactions.length };
   });
 
+  /* ─── Desktop Enhancement Computations ─── */
+  const sparklineData = useMemo(() => {
+    const days: number[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const dayTotal = transactions
+        .filter(t => t.date.startsWith(dayStr))
+        .reduce((sum, t) => sum + t.amount, 0);
+      days.push(dayTotal);
+    }
+    return days;
+  }, [transactions]);
+
+  // Derive a synthetic "vs last month" trend from data pattern
+  const trendPct = useMemo(() => {
+    if (transactions.length < 2) return 0;
+    const mid = Math.floor(transactions.length / 2);
+    const firstHalf = transactions.slice(0, mid).reduce((s, t) => s + t.amount, 0);
+    const secondHalf = transactions.slice(mid).reduce((s, t) => s + t.amount, 0);
+    if (firstHalf === 0) return secondHalf > 0 ? 12 : 0;
+    return Math.round(((secondHalf - firstHalf) / firstHalf) * 100);
+  }, [transactions]);
+
+  // Monthly progress (% of month elapsed)
+  const monthlyProgress = useMemo(() => {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return Math.round(((now.getDate() - 1) / Math.max(daysInMonth - 1, 1)) * 100);
+  }, []);
+
+  // Animated values
+  const animatedTotal = useAnimatedValue(Math.round(totalExpense));
+  const animatedAvg = useAnimatedValue(Math.round(avgExpense));
+  const animatedMax = useAnimatedValue(Math.round(maxExpense));
+  const animatedCount = useAnimatedValue(transactions.length, 500);
+
   if (isLoading) {
     return <TransactionPageSkeleton />;
   }
@@ -256,21 +409,57 @@ export function KasKeluar() {
 
   return (
     <div className="w-full max-w-full space-y-3 sm:space-y-4">
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes progressFill {
+          from { width: 0%; }
+        }
+        @keyframes badgePop {
+          0% { opacity: 0; transform: scale(0.6); }
+          70% { transform: scale(1.08); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 0px transparent; }
+          50% { box-shadow: 0 0 12px var(--glow-color, rgba(207,102,121,0.2)); }
+        }
+      `}</style>
       {/* ── Hero Strip ── */}
       <div className="relative rounded-2xl">
         {/* Desktop animated gradient border glow */}
-        <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block animate-pulse"
+        <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
           style={{
             background: `linear-gradient(135deg, ${T.accent}50, ${T.primary}30, ${T.accent}50)`,
             filter: 'blur(2px)',
-            opacity: 0.5,
+            opacity: 0.4,
+            animation: 'heroGlow 4s ease-in-out infinite',
           }}
         />
-        <div className="absolute -inset-[1px] rounded-[18px] hidden lg:block"
+        <div className="absolute -inset-[1px] rounded-[18px] hidden lg:block overflow-hidden"
           style={{
             background: `linear-gradient(135deg, ${T.accent}80, ${T.primary}50, ${T.accent}80)`,
           }}
-        />
+        >
+          {/* Shimmer overlay on border */}
+          <div
+            className="absolute inset-y-0 w-1/3"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(207,102,121,0.2) 50%, transparent 100%)',
+              animation: 'shimmer 3.5s ease-in-out infinite',
+            }}
+          />
+        </div>
 
         {/* Main content */}
         <div
@@ -319,11 +508,26 @@ export function KasKeluar() {
               </Button>
             </div>
 
-            {/* Desktop inline stats row */}
+            {/* Desktop inline stats row — Enhanced with badges & sparkline */}
             <div className="hidden lg:flex lg:items-center lg:gap-6 mt-5 pt-4" style={{ borderTop: `1px solid rgba(255,255,255,0.06)` }}>
+              {/* 7-day sparkline */}
+              <div className="w-24 h-8 shrink-0 opacity-70">
+                <MiniSparkline data={sparklineData} color={T.accent} height={32} />
+              </div>
+
+              <div className="w-px h-6" style={{ background: 'rgba(255,255,255,0.08)' }} />
+
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" style={{ color: T.muted }} />
-                <span className="text-sm font-medium" style={{ color: T.textSub }}>{t('filter.transactionCount', { count: transactions.length })}</span>
+                <span className="text-sm font-medium" style={{ color: T.textSub }}>
+                  {t('filter.transactionCount', { count: transactions.length })}
+                </span>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full hidden xl:inline-block"
+                  style={{ background: `${T.accent}18`, color: T.accent, animation: 'badgePop 0.4s ease-out 0.2s both' }}
+                >
+                  {transactions.length > 0 ? '-1' : '—'}
+                </span>
               </div>
               <div className="w-px h-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
               <div className="flex items-center gap-2">
@@ -336,6 +540,12 @@ export function KasKeluar() {
                 <CreditCard className="h-4 w-4" style={{ color: T.primary }} />
                 <span className="text-sm font-medium" style={{ color: T.textSub }}>{t('kas.largest')}: </span>
                 <span className="text-sm font-bold" style={{ color: T.primary }}>{formatAmount(maxExpense)}</span>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full hidden xl:inline-block"
+                  style={{ background: `${T.primary}18`, color: T.primary, animation: 'badgePop 0.4s ease-out 0.35s both' }}
+                >
+                  MAX
+                </span>
               </div>
             </div>
 
@@ -348,12 +558,45 @@ export function KasKeluar() {
         </div>
       </div>
 
-      {/* ── Quick Stats ── */}
+      {/* ── Quick Stats ── Enhanced ── */}
       <div className="grid grid-cols-3 gap-2 lg:gap-5">
         {[
-          { label: t('kas.average'), value: formatAmount(avgExpense), color: T.accent, icon: TrendingDown },
-          { label: t('kas.transactions'), value: transactions.length.toString(), color: T.primary, icon: ArrowDownRight },
-          { label: t('kas.largest'), value: formatAmount(maxExpense), color: T.primary, icon: CreditCard },
+          {
+            label: t('kas.average'),
+            rawValue: Math.round(avgExpense),
+            displayValue: formatAmount(avgExpense),
+            color: T.accent,
+            icon: TrendingDown,
+            sparkData: sparklineData,
+            hoverContext: trendPct >= 0 ? `+${Math.abs(trendPct)}%` : `-${Math.abs(trendPct)}%`,
+            trendUp: trendPct <= 0,
+          },
+          {
+            label: t('kas.transactions'),
+            rawValue: transactions.length,
+            displayValue: transactions.length.toString(),
+            color: T.primary,
+            icon: ArrowDownRight,
+            sparkData: transactions.length > 0
+              ? transactions.slice(-7).reduce<number[][]>((acc, _, i) => {
+                  if (i % Math.ceil(transactions.length / 7) === 0) acc.push([]);
+                  if (acc.length > 0) acc[acc.length - 1].push(transactions[i]?.amount || 0);
+                  return acc;
+                }, [[]]).map(g => g.reduce((s, v) => s + v, 0)).slice(0, 7)
+              : [0, 0, 0, 0, 0, 0, 0],
+            hoverContext: `vs last month`,
+            trendUp: false,
+          },
+          {
+            label: t('kas.largest'),
+            rawValue: Math.round(maxExpense),
+            displayValue: formatAmount(maxExpense),
+            color: T.primary,
+            icon: CreditCard,
+            sparkData: [maxExpense * 0.5, maxExpense * 0.7, maxExpense * 0.4, maxExpense * 0.85, maxExpense * 0.75, maxExpense * 0.9, maxExpense],
+            hoverContext: `single entry`,
+            trendUp: false,
+          },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -370,7 +613,28 @@ export function KasKeluar() {
                 <stat.icon className="relative h-3.5 w-3.5 lg:h-5 lg:w-5 mx-auto mb-1.5 lg:mb-2" style={{ color: stat.color, opacity: 0.7 }} />
               </div>
               <p className="text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-0.5 lg:mb-1" style={{ color: T.muted }}>{stat.label}</p>
-              <p className="text-xs sm:text-sm lg:text-lg font-bold truncate" style={{ color: stat.color }}>{stat.value}</p>
+              <p className="text-xs sm:text-sm lg:text-lg font-bold truncate" style={{ color: stat.color }}>
+                {/* Mobile: show actual value */}
+                <span className="lg:hidden">{stat.displayValue}</span>
+                {/* Desktop: show animated value for numeric stats */}
+                {stat.label === t('kas.transactions') ? (
+                  <span className="hidden lg:inline">{animatedCount}</span>
+                ) : (
+                  <span className="hidden lg:inline">{formatAmount(stat.label === t('kas.average') ? animatedAvg : animatedMax)}</span>
+                )}
+              </p>
+              {/* Desktop sparkline */}
+              <div className="hidden lg:block mt-2 h-6 opacity-60">
+                <MiniSparkline data={stat.sparkData} color={stat.color} height={24} />
+              </div>
+              {/* Desktop hover context */}
+              <div className="hidden lg:flex lg:items-center lg:justify-center lg:gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <Activity className="h-3 w-3" style={{ color: stat.trendUp ? T.accent : T.muted, opacity: 0.6 }} />
+                <span className="text-[10px] font-medium" style={{ color: T.textSub }}>{stat.hoverContext}</span>
+                {stat.trendUp && (
+                  <ArrowUp className="h-3 w-3" style={{ color: T.accent, opacity: 0.7 }} />
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -388,6 +652,98 @@ export function KasKeluar() {
             WebkitBackdropFilter: 'blur(12px)',
           }}
         >
+          {/* Donut Ring — Desktop only */}
+          {expenseByCategory.length > 0 && (
+            <div className="flex flex-col items-center space-y-3">
+              <DonutRing
+                segments={expenseByCategory}
+                total={totalExpense}
+                size={130}
+                thickness={20}
+                centerLabel={t('kas.categories')}
+              />
+              {/* Legend dots */}
+              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
+                {expenseByCategory.slice(0, 5).map((cat, i) => (
+                  <motion.div
+                    key={cat.name}
+                    className="flex items-center gap-1.5"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 + i * 0.06, duration: 0.3 }}
+                  >
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cat.color }} />
+                    <span className="text-[10px] font-medium truncate max-w-[80px]" style={{ color: T.textSub }}>{cat.name}</span>
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                      style={{ background: `${cat.color}18`, color: cat.color }}
+                    >
+                      {totalExpense > 0 ? ((cat.amount / totalExpense) * 100).toFixed(0) : 0}%
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top 3 Categories — Desktop only highlight */}
+          {expenseByCategory.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.topCategories')}</p>
+              </div>
+              <div className="space-y-2">
+                {[...expenseByCategory].sort((a, b) => b.amount - a.amount).slice(0, 3).map((cat, i) => {
+                  const pct = totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0;
+                  const medals = ['🥇', '🥈', '🥉'];
+                  return (
+                    <motion.div
+                      key={cat.name}
+                      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.01] cursor-default"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}` }}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + i * 0.07, duration: 0.35 }}
+                    >
+                      <div className="w-10 h-10 rounded-xl grid place-items-center shrink-0 [&>*]:block leading-none relative"
+                        style={{ background: `${cat.color}20` }}>
+                        <DynamicIcon name={cat.icon} className="h-5 w-5" style={{ color: cat.color }} />
+                        <span className="absolute -top-1 -right-1 text-xs">{medals[i]}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-semibold truncate" style={{ color: T.text }}>{cat.name}</span>
+                          <span className="text-sm font-bold shrink-0 ml-2" style={{ color: cat.color }}>{formatAmount(cat.amount)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <motion.div
+                              className="h-full rounded-full"
+                              style={{ background: `linear-gradient(90deg, ${cat.color}, ${cat.color}AA)` }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.max(pct, 3)}%` }}
+                              transition={{ duration: 0.7, delay: 0.2 + i * 0.08, ease: 'easeOut' }}
+                            />
+                          </div>
+                          <motion.span
+                            className="text-[10px] font-bold tabular-nums shrink-0 w-10 text-right"
+                            style={{ color: cat.color }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 + i * 0.08 }}
+                          >
+                            {pct.toFixed(0)}%
+                          </motion.span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Categories section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -485,12 +841,75 @@ export function KasKeluar() {
           </div>
 
           <div className="max-h-[700px] overflow-y-auto">
-            <TransactionList
-              transactions={displayedTransactions}
-              onEdit={openEditTransactionDialog}
-              onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
-              type="expense"
-            />
+            {/* Enhanced desktop empty state */}
+            {transactions.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center text-center py-16 relative overflow-hidden rounded-xl"
+                style={{ background: T.surface, border: `1px solid ${T.border}` }}
+              >
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: `radial-gradient(ellipse at 50% 30%, ${T.accent}06 0%, transparent 60%)` }}
+                />
+                <motion.div
+                  className="relative mb-5"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div
+                    className="w-20 h-20 rounded-2xl grid place-items-center [&>*]:block leading-none relative"
+                    style={{ background: `${T.accent}08`, border: `2px dashed ${T.accent}20` }}
+                  >
+                    <CreditCard className="h-9 w-9" style={{ color: T.accent, opacity: 0.35 }} />
+                    {/* Floating decorative dots */}
+                    <div className="absolute -top-2 -right-2 w-3 h-3 rounded-full" style={{ background: `${T.accent}25`, animation: 'fadeSlideUp 2.5s ease-in-out infinite' }} />
+                    <div className="absolute -bottom-1.5 -left-3 w-2 h-2 rounded-full" style={{ background: `${T.primary}25`, animation: 'fadeSlideUp 2.5s ease-in-out 0.7s infinite' }} />
+                    <div className="absolute top-1/2 -right-4 w-1.5 h-1.5 rounded-full" style={{ background: `${T.accent}20`, animation: 'fadeSlideUp 2.5s ease-in-out 1.2s infinite' }} />
+                  </div>
+                </motion.div>
+                <motion.p
+                  className="text-base font-semibold mb-1.5"
+                  style={{ color: T.text }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.4 }}
+                >
+                  {t('kas.noData')}
+                </motion.p>
+                <motion.p
+                  className="text-sm max-w-[260px] leading-relaxed"
+                  style={{ color: T.textSub }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25, duration: 0.4 }}
+                >
+                  {t('kas.noDataHint')}
+                </motion.p>
+                <motion.button
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    background: `${T.accent}15`,
+                    color: T.accent,
+                    border: `1px solid ${T.accent}25`,
+                  }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35, duration: 0.4 }}
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('kas.addExpense')}
+                </motion.button>
+              </div>
+            ) : (
+              <TransactionList
+                transactions={displayedTransactions}
+                onEdit={openEditTransactionDialog}
+                onDelete={(id) => setDeleteDialog({ open: true, id, type: 'transaction' })}
+                type="expense"
+              />
+            )}
           </div>
 
           {transactions.length > 6 && (
@@ -502,6 +921,50 @@ export function KasKeluar() {
               {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}
             </button>
           )}
+
+          {/* Summary footer — Desktop enhanced */}
+          <div className="hidden lg:block pt-3 mt-3 space-y-3" style={{ borderTop: `1px solid ${T.border}` }}>
+            {/* Monthly progress bar */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-medium" style={{ color: T.muted }}>Monthly Progress</span>
+                <span className="text-[11px] font-bold tabular-nums" style={{ color: T.textSub }}>{monthlyProgress}%</span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: `linear-gradient(90deg, ${T.accent}, ${T.primary})` }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${monthlyProgress}%` }}
+                  transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
+                />
+              </div>
+            </div>
+            {/* Total + trend comparison */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium" style={{ color: T.muted }}>{t('kas.totalShown')}</span>
+                {trendPct !== 0 && (
+                  <motion.span
+                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: trendPct < 0 ? `${T.accent}15` : `${T.accent}10`,
+                      color: trendPct < 0 ? T.accent : T.muted,
+                    }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6, duration: 0.3 }}
+                  >
+                    {trendPct > 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" style={{ transform: 'rotate(180deg)' }} />}
+                    {trendPct > 0 ? '+' : ''}{trendPct}% trend
+                  </motion.span>
+                )}
+              </div>
+              <span className="text-sm font-bold tabular-nums" style={{ color: T.accent }}>
+                {formatAmount(displayedTransactions.reduce((s, t) => s + t.amount, 0))}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

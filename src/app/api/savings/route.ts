@@ -88,6 +88,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Enforce plan limit on savings targets
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { maxSavings: true },
+    });
+
+    if (user) {
+      const count = await db.savingsTarget.count({ where: { userId } });
+      if (count >= user.maxSavings) {
+        return NextResponse.json(
+          { error: `Savings target limit (${user.maxSavings}) reached. Upgrade to Pro for more targets.`, code: 'LIMIT_REACHED' },
+          { status: 403 },
+        );
+      }
+    }
+
     const savingsTarget = await db.savingsTarget.create({
       data: {
         name,

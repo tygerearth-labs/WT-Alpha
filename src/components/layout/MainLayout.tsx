@@ -26,13 +26,17 @@ import {
   X,
   Crown,
   Sparkles,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
+import { NotificationCenter } from '@/components/notification/NotificationCenter';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { KasMasuk } from '@/components/kas/KasMasuk';
 import { KasKeluar } from '@/components/kas/KasKeluar';
 import { TargetTabungan } from '@/components/target/TargetTabungan';
 import { Laporan } from '@/components/laporan/Laporan';
 import { ProfileSettings } from '@/components/profile/ProfileSettings';
+import { QuickTransaction } from '@/components/transaction/QuickTransaction';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -42,10 +46,11 @@ type PageType = 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' 
 export function MainLayout() {
   const { user, logout } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [pageKey, setPageKey] = useState(0);
+  const [monthlyStats, setMonthlyStats] = useState<{ income: number; expense: number } | null>(null);
   const { t } = useTranslation();
 
   const navigateTo = useCallback((page: PageType) => {
@@ -62,6 +67,27 @@ export function MainLayout() {
 
   // Auth state is managed by Home (page.tsx) — no duplicate checkAuth here
   // This prevents race conditions that could log the user out
+
+  // Fetch current month stats for sidebar mini bar
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/dashboard');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.monthlyComparison) {
+            setMonthlyStats({
+              income: data.monthlyComparison.currentMonthIncome || 0,
+              expense: data.monthlyComparison.currentMonthExpense || 0,
+            });
+          }
+        }
+      } catch {
+        // Silently fail — sidebar stats are optional
+      }
+    };
+    fetchStats();
+  }, []);
 
   // Close tablet sidebar on outside click
   useEffect(() => {
@@ -148,8 +174,8 @@ export function MainLayout() {
                 isActive
                   ? 'bg-[#BB86FC]/[0.08] text-[#BB86FC]'
                   : 'text-white/35 hover:text-white/70 hover:bg-white/[0.04]',
-                !isActive && 'group-hover/nav:scale-[1.02]',
-                'active:scale-[0.98]',
+                !isActive && 'group-hover/nav:translate-x-1 group-hover/nav:shadow-[0_0_12px_rgba(187,134,252,0.08)]',
+                'active:scale-[0.97]',
               )}
               title={collapsed ? item.label : undefined}
             >
@@ -187,15 +213,15 @@ export function MainLayout() {
               </div>
             </button>
 
-            {/* Tooltip when collapsed (desktop only) */}
+            {/* Tooltip with section description when collapsed (desktop only) */}
             {collapsed && (
               <div
                 className={cn(
                   'absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none',
-                  'px-2.5 py-1.5 rounded-lg text-[12px] font-medium whitespace-nowrap',
+                  'px-2.5 py-2 rounded-lg whitespace-nowrap max-w-[180px]',
                   'opacity-0 group-hover/nav:opacity-100 transition-all duration-200',
                   'translate-x-1 group-hover/nav:translate-x-0',
-                  'bg-[#1A1A2E]/95 backdrop-blur-lg border border-white/[0.08]',
+                  'bg-[#1A1A2E]/95 backdrop-blur-lg border border-white/[0.08] rounded-xl',
                   isActive ? 'text-[#BB86FC]' : 'text-white/70',
                   'shadow-[0_4px_16px_rgba(0,0,0,0.4)]',
                 )}
@@ -206,7 +232,20 @@ export function MainLayout() {
                     'bg-[#1A1A2E]/95 border-l border-b border-white/[0.08]',
                   )}
                 />
-                {item.label}
+                <div className="text-center">
+                  <p className="text-[12px] font-semibold">{item.label}</p>
+                  <p className={cn(
+                    'text-[10px] leading-tight',
+                    isActive ? 'text-[#BB86FC]/50' : 'text-white/30',
+                  )}>
+                    {item.id === 'dashboard' && t('layout.navDescDashboard')}
+                    {item.id === 'kas-masuk' && t('layout.navDescKasMasuk')}
+                    {item.id === 'kas-keluar' && t('layout.navDescKasKeluar')}
+                    {item.id === 'target' && t('layout.navDescTarget')}
+                    {item.id === 'laporan' && t('layout.navDescLaporan')}
+                    {item.id === 'profile' && t('layout.navDescProfile')}
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -288,10 +327,26 @@ export function MainLayout() {
             >
               Wealth Tracker
             </h1>
+            {isPro && (
+              <span
+                className="hidden sm:inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-[0.15em] px-1.5 py-[2px] rounded-md"
+                style={{
+                  background: 'linear-gradient(135deg, #1a1207, #1a0a14)',
+                  color: '#FFD700',
+                  border: '1px solid rgba(255,215,0,0.2)',
+                  boxShadow: '0 0 8px rgba(255,215,0,0.05)',
+                }}
+              >
+                <Crown className="h-2.5 w-2.5" style={{ filter: 'drop-shadow(0 0 2px rgba(255,215,0,0.5))' }} />
+                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFD700, #FFA500)' }}>PRO</span>
+              </span>
+            )}
           </div>
 
-          {/* Right: User Avatar + Dropdown */}
-          <DropdownMenu modal={false}>
+          {/* Right: Notification Bell + User Avatar + Dropdown */}
+          <div className="flex items-center gap-2">
+            <NotificationCenter />
+            <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-9 w-9 p-0 rounded-full relative group/avatar">
                 <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#BB86FC]/20 to-[#03DAC6]/20 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 blur-sm" />
@@ -367,10 +422,11 @@ export function MainLayout() {
                 className="text-[#CF6679]/80 focus:text-[#CF6679] focus:bg-[#CF6679]/8 rounded-lg mx-1 my-0.5 cursor-pointer transition-colors"
               >
                 <LogOut className="mr-2.5 h-4 w-4 text-[#CF6679]/50" />
-                <span className="text-[13px]">Logout</span>
+                <span className="text-[13px]">{t('layout.logout')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
         {/* Keyframes */}
@@ -397,20 +453,63 @@ export function MainLayout() {
           )}
           style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px' } as React.CSSProperties}
         >
-          {/* Sidebar glass background */}
-          <div className="absolute inset-0 bg-[#0D0D0D]/60 backdrop-blur-2xl" />
+          {/* Sidebar gradient background */}
+          <div
+            className="absolute inset-0 backdrop-blur-2xl"
+            style={{ background: 'linear-gradient(180deg, #0F0A1A 0%, #0D0D0D 25%, #0A0F0D 75%, #0D0D0D 100%)' }}
+          />
           {/* Subtle gradient overlay for depth */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: 'linear-gradient(180deg, rgba(187,134,252,0.03) 0%, transparent 30%, transparent 70%, rgba(3,218,198,0.02) 100%)',
+              background: 'linear-gradient(180deg, rgba(187,134,252,0.04) 0%, transparent 25%, transparent 75%, rgba(3,218,198,0.03) 100%)',
             }}
           />
-          {/* Right edge glow border */}
-          <div className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-[#BB86FC]/10 via-white/[0.04] to-[#03DAC6]/8" />
+          {/* Animated gradient border on right edge */}
+          <div className="absolute top-0 right-0 bottom-0 w-px overflow-hidden">
+            <div className="absolute inset-0 h-full animate-divider-shimmer"
+              style={{
+                background: 'linear-gradient(180deg, #BB86FC 0%, transparent 30%, transparent 70%, #03DAC6 100%)',
+                backgroundSize: '100% 200%',
+              }}
+            />
+          </div>
 
           {/* Nav items */}
           {renderNavItems(sidebarCollapsed)}
+
+          {/* Mini Stats Bar */}
+          {monthlyStats && !sidebarCollapsed && (
+            <div className="relative px-2 pb-1">
+              <div
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                }}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <ArrowUpRight className="h-3 w-3 text-[#03DAC6]" />
+                    <span className="text-[9px] text-white/40 uppercase tracking-wider font-medium">{t('dashboard.income')}</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#03DAC6] tabular-nums truncate block">
+                    {monthlyStats.income >= 1000000 ? `${(monthlyStats.income / 1000000).toFixed(1)}M` : monthlyStats.income >= 1000 ? `${(monthlyStats.income / 1000).toFixed(0)}K` : monthlyStats.income}
+                  </span>
+                </div>
+                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <ArrowDownRight className="h-3 w-3 text-[#CF6679]" />
+                    <span className="text-[9px] text-white/40 uppercase tracking-wider font-medium">{t('dashboard.expense')}</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#CF6679] tabular-nums truncate block">
+                    {monthlyStats.expense >= 1000000 ? `${(monthlyStats.expense / 1000000).toFixed(1)}M` : monthlyStats.expense >= 1000 ? `${(monthlyStats.expense / 1000).toFixed(0)}K` : monthlyStats.expense}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Collapse toggle */}
           <div className="relative p-2 border-t border-white/[0.04]">
@@ -464,8 +563,15 @@ export function MainLayout() {
                   background: 'linear-gradient(180deg, rgba(187,134,252,0.04) 0%, transparent 30%, transparent 70%, rgba(3,218,198,0.02) 100%)',
                 }}
               />
-              {/* Right edge glow border */}
-              <div className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-[#BB86FC]/20 via-white/[0.06] to-[#03DAC6]/15" />
+                  {/* Animated gradient border on right edge */}
+              <div className="absolute top-0 right-0 bottom-0 w-px overflow-hidden">
+                <div className="absolute inset-0 h-full animate-divider-shimmer"
+                  style={{
+                    background: 'linear-gradient(180deg, #BB86FC 0%, transparent 30%, transparent 70%, #03DAC6 100%)',
+                    backgroundSize: '100% 200%',
+                  }}
+                />
+              </div>
 
               {/* Close button */}
               <div className="relative flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
@@ -509,7 +615,7 @@ export function MainLayout() {
                       {isPro ? 'PRO' : 'BASIC'}
                     </p>
                     <p className="text-[9px]" style={{ color: isPro ? 'rgba(255,215,0,0.5)' : '#555' }}>
-                      {isPro ? 'Full Access' : 'Limited'}
+                      {isPro ? t('layout.planFullAccess') : t('layout.planLimited')}
                     </p>
                   </div>
                 </div>
@@ -555,7 +661,13 @@ export function MainLayout() {
       </div>
 
       {/* ── Bottom Navigation Bar (mobile only — NOT tablet) ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-t border-white/[0.06] safe-area-inset-bottom md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.06] safe-area-inset-bottom md:hidden"
+        style={{
+          background: 'rgba(13, 13, 13, 0.82)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        }}
+      >
         <div className="flex items-center justify-around px-2 h-[60px]">
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -564,12 +676,18 @@ export function MainLayout() {
               <button
                 key={item.id}
                 onClick={() => navigateTo(item.id)}
-                className="grid place-items-center py-2 px-3 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95 [&>*]:block leading-none"
+                className="relative grid place-items-center py-2 px-3 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95 [&>*]:block leading-none"
               >
+                {/* Active indicator dot with animation */}
+                {isActive && (
+                  <div className="absolute -top-0 left-1/2 -translate-x-1/2">
+                    <div className="w-4 h-[3px] rounded-full bg-[#BB86FC]" style={{ boxShadow: '0 0 8px rgba(187,134,252,0.5), 0 2px 4px rgba(187,134,252,0.3)' }} />
+                  </div>
+                )}
                 <Icon
                   className={cn(
                     'h-5 w-5 transition-all duration-200',
-                    isActive ? 'text-[#BB86FC]' : 'text-[#555]',
+                    isActive ? 'text-[#BB86FC] drop-shadow-[0_0_6px_rgba(187,134,252,0.4)]' : 'text-[#555]',
                   )}
                   strokeWidth={isActive ? 2.2 : 1.5}
                 />
@@ -596,7 +714,39 @@ export function MainLayout() {
           from { opacity: 0; }
           to { opacity: 1; }
         }
+        @keyframes gradientBorderRotate {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 8px rgba(187,134,252,0.2), 0 0 16px rgba(187,134,252,0.05); }
+          50% { box-shadow: 0 0 16px rgba(187,134,252,0.4), 0 0 32px rgba(187,134,252,0.1); }
+        }
+        @keyframes ringProgress {
+          from { stroke-dashoffset: var(--ring-circumference); }
+          to { stroke-dashoffset: var(--ring-offset); }
+        }
+        @keyframes levelUpGlow {
+          0%, 100% { filter: brightness(1) drop-shadow(0 0 0px transparent); }
+          50% { filter: brightness(1.15) drop-shadow(0 0 12px rgba(187,134,252,0.4)); }
+        }
+        @keyframes floatUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInFromRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fabPulse {
+          0%, 100% { box-shadow: 0 4px 20px rgba(187,134,252,0.3); }
+          50% { box-shadow: 0 4px 28px rgba(187,134,252,0.5), 0 0 40px rgba(187,134,252,0.15); }
+        }
       `}} />
+
+      {/* ── Quick Transaction FAB (visible on all user pages) ── */}
+      <QuickTransaction />
     </div>
   );
 }

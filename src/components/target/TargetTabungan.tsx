@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, PiggyBank, Loader2, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, PiggyBank, Loader2, ChevronRight, ArrowDownLeft, History, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { SavingsTarget } from '@/types/transaction.types';
 import { TargetMetrics, getBrutalInsight, getSpeedCopy, getETAText, generateMiniChallenge } from '@/lib/targetLogic';
@@ -124,6 +124,118 @@ function MiniBar({ value, color, height = 3 }: { value: number; color: string; h
         className="h-full rounded-full transition-all duration-700"
         style={{ width: `${Math.min(value, 100)}%`, background: color }}
       />
+    </div>
+  );
+}
+
+// ── Transaction History (inside expanded target card) ──
+function TransactionHistory({ targetId }: { targetId: string }) {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrencyFormat();
+  const [allocations, setAllocations] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchHistory = async () => {
+      setIsLoadingHistory(true);
+      try {
+        const res = await fetch(`/api/savings/${targetId}/allocations`);
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setAllocations(data.allocations || []);
+        }
+      } catch { /* silent */ }
+      finally { if (!cancelled) setIsLoadingHistory(false); }
+    };
+    fetchHistory();
+    return () => { cancelled = true; };
+  }, [targetId]);
+
+  const displayList = showAll ? allocations : allocations.slice(0, 3);
+
+  if (isLoadingHistory) {
+    return (
+      <div className="space-y-2 pt-2">
+        <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('target.transactionHistory')}</p>
+        <div className="flex items-center justify-center py-3">
+          <Loader2 className="h-4 w-4 animate-spin" style={{ color: T.muted }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (allocations.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2 pt-2">
+      <div className="flex items-center justify-between">
+        <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('target.transactionHistory')}</p>
+        <span className="text-[9px] font-medium" style={{ color: T.secondary }}>
+          {t('target.totalDeposits', { count: allocations.length })}
+        </span>
+      </div>
+
+      {/* Transaction list */}
+      <div className="space-y-1.5">
+        {displayList.map((alloc: any, idx: number) => {
+          const txDate = alloc.createdAt ? new Date(alloc.createdAt) : new Date(alloc.transaction?.date);
+          const source = alloc.transaction?.category?.name || alloc.transaction?.description || t('target.quickDeposit');
+          const catColor = alloc.transaction?.category?.color || T.primary;
+
+          return (
+            <div
+              key={alloc.id}
+              className="flex items-center gap-2.5 rounded-lg p-2 transition-colors"
+              style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${T.border}` }}
+            >
+              {/* Icon */}
+              <div
+                className="w-7 h-7 rounded-lg grid place-items-center shrink-0 [&>*]:block leading-none"
+                style={{ background: `${catColor}15` }}
+              >
+                <ArrowDownLeft className="h-3.5 w-3.5" style={{ color: catColor }} />
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium truncate" style={{ color: T.text }}>{source}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Calendar className="h-2.5 w-2.5" style={{ color: T.muted }} />
+                  <p className="text-[9px]" style={{ color: T.muted }}>
+                    {format(txDate, 'dd MMM yyyy, HH:mm')}
+                  </p>
+                  {alloc.percentage && alloc.percentage > 0 && (
+                    <span className="text-[9px] font-medium" style={{ color: T.primary }}>
+                      {alloc.percentage}%
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Amount */}
+              <span className="text-[11px] font-bold shrink-0" style={{ color: T.secondary }}>
+                +{formatAmount(alloc.amount)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Show more / less */}
+      {allocations.length > 3 && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="w-full text-[10px] font-medium py-1.5 rounded-lg transition-all flex items-center justify-center gap-1"
+          style={{ background: `${T.primary}08`, color: T.primary, border: `1px solid ${T.primary}12` }}
+        >
+          <History className="h-3 w-3" />
+          {showAll ? t('common.showLess', { defaultValue: 'Tutup' }) : t('common.showMore', { defaultValue: 'Lihat Semua' })} ({allocations.length})
+        </button>
+      )}
     </div>
   );
 }
@@ -248,6 +360,9 @@ function TargetCard({
               </p>
             </div>
           )}
+
+          {/* Transaction History */}
+          <TransactionHistory targetId={target.id} />
 
           {/* Quick Deposit */}
           {!isCompleted && <QuickDeposit targetId={target.id} />}

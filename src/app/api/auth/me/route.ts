@@ -24,6 +24,11 @@ export async function GET(request: NextRequest) {
         locale: true,
         currency: true,
         plan: true,
+        role: true,
+        status: true,
+        subscriptionEnd: true,
+        maxCategories: true,
+        maxSavings: true,
         createdAt: true
       }
     });
@@ -33,6 +38,16 @@ export async function GET(request: NextRequest) {
         { error: 'User not found' },
         { status: 404 }
       );
+    }
+
+    // Check subscription expiry
+    if (user.subscriptionEnd && new Date(user.subscriptionEnd) < new Date()) {
+      await db.user.update({
+        where: { id: userId },
+        data: { plan: 'basic', subscriptionEnd: null }
+      });
+      user.plan = 'basic';
+      user.subscriptionEnd = null;
     }
 
     return NextResponse.json({ user });

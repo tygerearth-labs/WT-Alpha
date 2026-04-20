@@ -113,7 +113,7 @@ export function CategoryDialog({
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder={type === 'income' ? 'Contoh: Gaji' : 'Contoh: Makanan'}
+              placeholder={type === 'income' ? t('category.placeholderIncome') : t('category.placeholderExpense')}
               required
               maxLength={50}
               className="h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg"

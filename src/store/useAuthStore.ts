@@ -7,6 +7,8 @@ interface User {
   username: string;
   image?: string | null;
   plan?: string;
+  role?: string;
+  status?: string;
 }
 
 interface AuthState {
@@ -20,23 +22,34 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: true, // Start with loading to prevent flash of landing page
+      isLoading: true,
 
       setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
-
-      logout: () => set({ user: null, isAuthenticated: false, isLoading: false }),
+      logout: () => {
+        // Clear everything on logout
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth-storage');
+        }
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      },
 
       checkAuth: async () => {
-        set({ isLoading: true }); // Set loading before API call
+        set({ isLoading: true });
         try {
           const response = await fetch('/api/auth/me');
           if (response.ok) {
             const data = await response.json();
-            set({ user: data.user, isAuthenticated: true, isLoading: false });
+            // Always use fresh API data, overwrite any cached state
+            set({
+              user: data.user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
           } else {
+            // Cookie invalid or expired — clear stale cached state
             set({ user: null, isAuthenticated: false, isLoading: false });
           }
         } catch (error) {
@@ -47,11 +60,25 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // Only persist user and auth state, NOT isLoading (transient)
+      // Only persist user identity — NOT isLoading, NOT role (always re-verify from API)
       partialize: (state) => ({
-        user: state.user,
+        user: {
+          id: state.user?.id ?? '',
+          email: state.user?.email ?? '',
+          username: state.user?.username ?? '',
+          image: state.user?.image,
+          plan: state.user?.plan,
+          role: state.user?.role,
+          status: state.user?.status,
+        },
         isAuthenticated: state.isAuthenticated,
       }),
+      // On rehydrate, force loading so checkAuth() can fetch fresh role data
+      onRehydrateStorage: () => (state) => {
+        if (state?.isAuthenticated) {
+          state.isLoading = true;
+        }
+      },
     }
   )
 );

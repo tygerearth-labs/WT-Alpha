@@ -27,7 +27,9 @@ import {
   MessageCircle,
   Star,
   ChevronDown,
+  ArrowUp,
 } from 'lucide-react';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 
 /* ------------------------------------------------------------------ */
 /*  Intersection Observer hook                                         */
@@ -84,33 +86,201 @@ function FadeUp({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Animated number counter                                            */
+/*  Animated number counter (triggered by parent visibility)           */
 /* ------------------------------------------------------------------ */
-function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
+function AnimatedCounter({ target, suffix = '', startOnMount = false }: { target: number; suffix?: string; startOnMount?: boolean }) {
   const [count, setCount] = useState(0);
-  const { ref, visible } = useInView();
+  const started = useRef(false);
+  // Use intersection observer as fallback for direct visibility
+  const { ref, visible } = useInView(0);
+  const shouldStart = startOnMount || visible;
 
   useEffect(() => {
-    if (!visible) return;
-    let start = 0;
-    const step = Math.ceil(target / 40);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(start);
+    if (!shouldStart || started.current || target === 0) return;
+    started.current = true;
+    const duration = 1400;
+    const startTime = performance.now();
+    const step = (timestamp: number) => {
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * target);
+      setCount(current);
+      if (progress < 1) {
+        requestAnimationFrame(step);
       }
-    }, 30);
-    return () => clearInterval(timer);
-  }, [visible, target]);
+    };
+    const rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
+  }, [shouldStart, target]);
 
   return (
-    <span ref={ref}>
+    <span ref={ref} style={{ display: 'inline-block' }}>
       {count}
       {suffix}
     </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Stats section with animated counters                               */
+/* ------------------------------------------------------------------ */
+function StatsSection({ noTrack, statMoreSavings, statAvgSaving }: { noTrack: string; statMoreSavings: string; statAvgSaving: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    
+    // Use scroll event as fallback for IntersectionObserver
+    const checkVisible = () => {
+      const rect = el.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight * 0.9 && rect.bottom > 0;
+      if (inView) {
+        setStarted(true);
+        window.removeEventListener('scroll', checkVisible);
+      }
+    };
+    
+    // Also try IntersectionObserver
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStarted(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    obs.observe(el);
+    
+    // Scroll fallback
+    window.addEventListener('scroll', checkVisible, { passive: true });
+    // Initial check in case already visible
+    checkVisible();
+    
+    return () => {
+      obs.disconnect();
+      window.removeEventListener('scroll', checkVisible);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="mt-8 sm:mt-16">
+      <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0 sm:grid sm:grid-cols-3 sm:gap-6 scrollbar-hide">
+        {[
+          { value: <AnimatedCounter target={73} suffix="%" startOnMount={started} />, label: noTrack, color: '#CF6679' },
+          { value: <><AnimatedCounter target={2} startOnMount={started} />x</>, label: statMoreSavings, color: '#03DAC6' },
+          { value: <AnimatedCounter target={30} suffix="%" startOnMount={started} />, label: statAvgSaving, color: '#BB86FC' },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="min-w-[140px] sm:min-w-0 rounded-2xl p-4 sm:p-6 text-center border shrink-0 sm:shrink transition-all duration-300 sm:hover:scale-[1.02] stats-pattern"
+            style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
+          >
+            <div className="text-2xl sm:text-4xl font-extrabold mb-1 tracking-tight" style={{ color: stat.color }}>
+              {stat.value}
+            </div>
+            <p className="text-[10px] sm:text-sm text-muted-foreground leading-snug">
+              {stat.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Section Separator with decorative glow dots                        */
+/* ------------------------------------------------------------------ */
+function SectionSeparator({ color }: { color: string }) {
+  return (
+    <div className="relative flex items-center justify-center py-1">
+      <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: `linear-gradient(90deg, transparent, ${color}30, transparent)` }} />
+      <div className="relative flex items-center gap-2">
+        <div className="h-1.5 w-1.5 rounded-full" style={{ background: color, opacity: 0.5, animation: 'separatorGlow 3s ease-in-out infinite' }} />
+        <div className="h-1 w-1 rounded-full" style={{ background: color, opacity: 0.3, animation: 'separatorGlow 3s ease-in-out infinite 0.5s' }} />
+        <div className="h-0.5 w-0.5 rounded-full" style={{ background: color, opacity: 0.2, animation: 'separatorGlow 3s ease-in-out infinite 1s' }} />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Floating decorative elements for Hero                              */
+/* ------------------------------------------------------------------ */
+function FloatingDecorations() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {/* Aurora / glow background */}
+      <div
+        className="absolute top-1/3 left-1/2 h-[500px] w-[500px] rounded-full animate-aurora"
+        style={{
+          background: 'conic-gradient(from 0deg, rgba(187,134,252,0.12), rgba(3,218,198,0.08), rgba(207,102,121,0.06), rgba(187,134,252,0.12))',
+          filter: 'blur(60px)',
+        }}
+      />
+      <div
+        className="absolute top-[45%] left-[45%] h-[300px] w-[300px] rounded-full animate-aurora-pulse"
+        style={{
+          background: 'radial-gradient(circle, rgba(187,134,252,0.1) 0%, transparent 70%)',
+        }}
+      />
+      {/* Gradient orbs */}
+      <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-[120px] animate-pulse" style={{ background: '#BB86FC' }} />
+      <div className="absolute top-1/3 -right-32 h-80 w-80 rounded-full opacity-15 blur-[100px] animate-pulse" style={{ background: '#03DAC6', animationDelay: '1s' }} />
+      <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full opacity-10 blur-[80px] animate-pulse" style={{ background: '#CF6679', animationDelay: '2s' }} />
+
+      {/* Floating dots / circles */}
+      <div className="absolute top-[15%] left-[10%] h-2 w-2 rounded-full animate-float-1" style={{ background: 'rgba(187,134,252,0.4)' }} />
+      <div className="absolute top-[25%] right-[15%] h-3 w-3 rounded-full animate-float-2" style={{ background: 'rgba(3,218,198,0.3)' }} />
+      <div className="absolute top-[60%] left-[8%] h-1.5 w-1.5 rounded-full animate-float-3" style={{ background: 'rgba(207,102,121,0.35)' }} />
+      <div className="absolute top-[70%] right-[12%] h-2.5 w-2.5 rounded-full animate-float-4" style={{ background: 'rgba(249,168,37,0.3)' }} />
+      <div className="absolute top-[40%] left-[20%] h-1 w-1 rounded-full animate-float-5" style={{ background: 'rgba(187,134,252,0.5)' }} />
+      <div className="absolute top-[50%] right-[25%] h-1.5 w-1.5 rounded-full animate-float-1" style={{ background: 'rgba(3,218,198,0.4)', animationDelay: '2s' }} />
+      <div className="absolute top-[80%] left-[35%] h-2 w-2 rounded-full animate-float-3" style={{ background: 'rgba(207,102,121,0.25)', animationDelay: '1s' }} />
+      <div className="absolute top-[20%] left-[70%] h-1 w-1 rounded-full animate-float-2" style={{ background: 'rgba(187,134,252,0.6)', animationDelay: '3s' }} />
+
+      {/* Larger subtle floating rings */}
+      <div className="absolute top-[30%] left-[5%] h-16 w-16 rounded-full border animate-float-4" style={{ borderColor: 'rgba(187,134,252,0.08)' }} />
+      <div className="absolute top-[55%] right-[8%] h-12 w-12 rounded-full border animate-float-1" style={{ borderColor: 'rgba(3,218,198,0.06)', animationDelay: '4s' }} />
+      <div className="absolute bottom-[20%] left-[50%] h-20 w-20 rounded-full border animate-float-2" style={{ borderColor: 'rgba(207,102,121,0.05)', animationDelay: '2s' }} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Scroll to top button                                               */
+/* ------------------------------------------------------------------ */
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setVisible(window.scrollY > 500);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="animate-scroll-top fixed bottom-6 right-6 z-50 h-11 w-11 rounded-full flex items-center justify-center shadow-lg border transition-transform hover:scale-110 active:scale-95"
+      style={{
+        background: 'linear-gradient(135deg, #BB86FC, #03DAC6)',
+        color: '#000',
+        borderColor: 'rgba(187,134,252,0.3)',
+        boxShadow: '0 4px 20px rgba(187,134,252,0.3), 0 0 40px rgba(3,218,198,0.1)',
+      }}
+      aria-label="Scroll to top"
+    >
+      <ArrowUp className="h-5 w-5" />
+    </button>
   );
 }
 
@@ -122,6 +292,17 @@ export function LandingPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Glassmorphism scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   /* ---- Data arrays built inside component for t() access ---- */
   const features = [
@@ -130,36 +311,42 @@ export function LandingPage() {
       title: t('landing.feat1Title'),
       description: t('landing.feat1Desc'),
       color: '#BB86FC',
+      gradient: 'linear-gradient(135deg, rgba(187,134,252,0.2), rgba(187,134,252,0.05))',
     },
     {
       icon: ArrowDownLeft,
       title: t('landing.feat2Title'),
       description: t('landing.feat2Desc'),
       color: '#03DAC6',
+      gradient: 'linear-gradient(135deg, rgba(3,218,198,0.2), rgba(3,218,198,0.05))',
     },
     {
       icon: ArrowUpRight,
       title: t('landing.feat3Title'),
       description: t('landing.feat3Desc'),
       color: '#CF6679',
+      gradient: 'linear-gradient(135deg, rgba(207,102,121,0.2), rgba(207,102,121,0.05))',
     },
     {
       icon: Target,
       title: t('landing.feat4Title'),
       description: t('landing.feat4Desc'),
       color: '#F9A825',
+      gradient: 'linear-gradient(135deg, rgba(249,168,37,0.2), rgba(249,168,37,0.05))',
     },
     {
       icon: FileDown,
       title: t('landing.feat5Title'),
       description: t('landing.feat5Desc'),
       color: '#BB86FC',
+      gradient: 'linear-gradient(135deg, rgba(187,134,252,0.2), rgba(187,134,252,0.05))',
     },
     {
       icon: Sparkles,
       title: t('landing.feat6Title'),
       description: t('landing.feat6Desc'),
       color: '#03DAC6',
+      gradient: 'linear-gradient(135deg, rgba(3,218,198,0.2), rgba(3,218,198,0.05))',
     },
   ];
 
@@ -260,7 +447,20 @@ export function LandingPage() {
     <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden">
 
       {/* ========== NAVBAR ========== */}
-      <nav className="fixed top-0 inset-x-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <nav
+        className="fixed top-0 inset-x-0 z-40 transition-all duration-300"
+        style={{
+          background: scrolled ? 'rgba(0, 0, 0, 0.72)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(24px) saturate(180%)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(180%)' : 'none',
+          borderBottom: scrolled
+            ? '1px solid rgba(187, 134, 252, 0.12)'
+            : '1px solid rgba(255, 255, 255, 0.03)',
+          boxShadow: scrolled
+            ? '0 1px 24px -4px rgba(187, 134, 252, 0.08), 0 0 0 0 transparent'
+            : 'none',
+        }}
+      >
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16">
           <div className="flex items-center gap-2.5">
             <Image src="/logo.png" alt="Wealth Tracker" width={36} height={36} className="rounded-lg" priority />
@@ -276,6 +476,7 @@ export function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <button
               onClick={() => openAuth()}
               className="rounded-full px-4 sm:px-5 py-2 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
@@ -313,12 +514,7 @@ export function LandingPage() {
 
       {/* ========== HERO ========== */}
       <section className="relative min-h-[100dvh] flex flex-col justify-center pt-20 sm:pt-36 pb-10 sm:pb-32 px-4 sm:px-6">
-        {/* Gradient orbs */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-[120px] animate-pulse" style={{ background: '#BB86FC' }} />
-          <div className="absolute top-1/3 -right-32 h-80 w-80 rounded-full opacity-15 blur-[100px] animate-pulse" style={{ background: '#03DAC6', animationDelay: '1s' }} />
-          <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full opacity-10 blur-[80px] animate-pulse" style={{ background: '#CF6679', animationDelay: '2s' }} />
-        </div>
+        <FloatingDecorations />
 
         <div className="relative mx-auto max-w-4xl text-center">
           <FadeUp>
@@ -339,7 +535,13 @@ export function LandingPage() {
           <FadeUp delay={100}>
             <h1 className="text-[28px] sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-3 sm:mb-6">
               <span className="block">{t('landing.heroLine1')}</span>
-              <span className="block bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC 0%, #03DAC6 50%, #CF6679 100%)' }}>
+              <span
+                className="block bg-clip-text text-transparent animate-gradient-text"
+                style={{
+                  backgroundImage: 'linear-gradient(135deg, #BB86FC 0%, #03DAC6 40%, #CF6679 70%, #BB86FC 100%)',
+                  backgroundSize: '200% 200%',
+                }}
+              >
                 {t('landing.heroLine2')}
               </span>
             </h1>
@@ -355,12 +557,16 @@ export function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <button
                 onClick={() => openAuth()}
-                className="group relative w-full sm:w-auto rounded-full px-8 py-3.5 text-sm font-bold transition-all hover:scale-105 active:scale-95 overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000' }}
+                className="cta-shimmer group relative w-full sm:w-auto rounded-full px-8 py-3.5 text-sm font-bold transition-all hover:scale-105 active:scale-95 overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, #BB86FC, #03DAC6)',
+                  color: '#000',
+                  boxShadow: '0 4px 24px rgba(187,134,252,0.25), 0 0 60px rgba(3,218,198,0.08)',
+                }}
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {t('landing.loginNow')}
-                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </button>
             </div>
@@ -394,7 +600,7 @@ export function LandingPage() {
 
       {/* ========== STORY SECTION ========== */}
       <section id="story" className="relative py-8 sm:py-28 px-4 sm:px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md" style={{ background: 'linear-gradient(90deg, transparent, rgba(207,102,121,0.3), transparent)' }} />
+        <SectionSeparator color="#CF6679" />
 
         <div className="mx-auto max-w-4xl">
           <FadeUp>
@@ -404,7 +610,7 @@ export function LandingPage() {
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
                 {t('landing.storyTitle1')}
-                <span className="block mt-1 bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #BB86FC, #CF6679)' }}>
+                <span className="block mt-1 bg-clip-text text-transparent animate-gradient-text" style={{ backgroundImage: 'linear-gradient(90deg, #BB86FC, #CF6679, #BB86FC)', backgroundSize: '200% 200%' }}>
                   {t('landing.storyTitle2')}
                 </span>
               </h2>
@@ -416,12 +622,51 @@ export function LandingPage() {
             {stories.map((story, i) => (
               <FadeUp key={story.title} delay={i * 100}>
                 <div
-                  className="rounded-2xl p-4 sm:p-6 border transition-all duration-300 sm:hover:scale-[1.01]"
-                  style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${story.color}33`; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                  className="relative rounded-2xl p-4 sm:p-6 border transition-all duration-300 sm:hover:scale-[1.01] sm:hover:shadow-lg"
+                  style={{
+                    background: 'rgba(18,18,18,0.6)',
+                    borderColor: 'rgba(255,255,255,0.06)',
+                    borderLeftWidth: '3px',
+                    borderLeftColor: story.color,
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.borderColor = `${story.color}33`;
+                    el.style.borderLeftColor = story.color;
+                    el.style.boxShadow = `0 8px 32px ${story.color}10`;
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.borderColor = 'rgba(255,255,255,0.06)';
+                    el.style.borderLeftColor = story.color;
+                    el.style.boxShadow = 'none';
+                  }}
                 >
                   <div className="flex items-start gap-3 sm:gap-4">
+                    {/* Number indicator */}
+                    <div className="shrink-0 hidden sm:flex flex-col items-center">
+                      <span
+                        className="text-3xl font-black tracking-tighter leading-none"
+                        style={{
+                          color: story.color,
+                          opacity: 0.15,
+                        }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                    </div>
+                    {/* Mobile number badge */}
+                    <div className="sm:hidden shrink-0">
+                      <span
+                        className="inline-flex items-center justify-center text-[10px] font-bold rounded-lg px-1.5 py-0.5"
+                        style={{
+                          background: `${story.color}15`,
+                          color: story.color,
+                        }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                    </div>
                     <div className="flex flex-col items-center gap-1 shrink-0">
                       <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl grid place-items-center [&>*]:block leading-none" style={{ background: `${story.color}18` }}>
                         <story.icon className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: story.color }} />
@@ -441,36 +686,17 @@ export function LandingPage() {
           </div>
 
           {/* Statistics */}
-          <FadeUp delay={200}>
-            <div className="mt-8 sm:mt-16">
-              <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0 sm:grid sm:grid-cols-3 sm:gap-6 scrollbar-hide">
-                {[
-                  { value: <AnimatedCounter target={73} suffix="%" />, label: t('landing.noTrack') + ' ' + t('landing.statNoTrack'), color: '#CF6679' },
-                  { value: <><AnimatedCounter target={2} />x</>, label: t('landing.statMoreSavings'), color: '#03DAC6' },
-                  { value: <AnimatedCounter target={30} suffix="%" />, label: t('landing.statAvgSaving'), color: '#BB86FC' },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="min-w-[140px] sm:min-w-0 rounded-2xl p-4 sm:p-6 text-center border shrink-0 sm:shrink transition-all duration-300 sm:hover:scale-[1.02]"
-                    style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
-                  >
-                    <div className="text-2xl sm:text-4xl font-extrabold mb-1" style={{ color: stat.color }}>
-                      {stat.value}
-                    </div>
-                    <p className="text-[10px] sm:text-sm text-muted-foreground">
-                      {stat.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </FadeUp>
+          <StatsSection
+            noTrack={t('landing.noTrack') + ' ' + t('landing.statNoTrack')}
+            statMoreSavings={t('landing.statMoreSavings')}
+            statAvgSaving={t('landing.statAvgSaving')}
+          />
         </div>
       </section>
 
       {/* ========== FEATURES SECTION ========== */}
       <section id="features" className="relative py-8 sm:py-28 px-4 sm:px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md" style={{ background: 'linear-gradient(90deg, transparent, rgba(187,134,252,0.3), transparent)' }} />
+        <SectionSeparator color="#BB86FC" />
 
         <div className="mx-auto max-w-6xl">
           <FadeUp>
@@ -480,7 +706,7 @@ export function LandingPage() {
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-2 sm:mb-3">
                 {t('landing.featureTitle1')}{' '}
-                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #BB86FC, #03DAC6)' }}>
+                <span className="bg-clip-text text-transparent animate-gradient-text" style={{ backgroundImage: 'linear-gradient(90deg, #BB86FC, #03DAC6, #BB86FC)', backgroundSize: '200% 200%' }}>
                   {t('landing.featureTitle2')}
                 </span>
               </h2>
@@ -494,15 +720,26 @@ export function LandingPage() {
             {features.map((feature, i) => (
               <FadeUp key={feature.title} delay={i * 80}>
                 <div
-                  className="group rounded-2xl p-4 sm:p-6 border transition-all duration-300 sm:hover:scale-[1.02]"
-                  style={{ background: 'rgba(18,18,18,0.5)', borderColor: 'rgba(255,255,255,0.06)' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${feature.color}33`; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                  className="feature-card-glow group rounded-2xl p-4 sm:p-6 border"
+                  style={{
+                    background: 'rgba(18,18,18,0.5)',
+                    borderColor: 'rgba(255,255,255,0.06)',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.borderColor = `${feature.color}33`;
+                    el.style.boxShadow = `0 12px 40px rgba(0,0,0,0.4), 0 4px 16px ${feature.color}08`;
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.borderColor = 'rgba(255,255,255,0.06)';
+                    el.style.boxShadow = 'none';
+                  }}
                 >
                   <div className="flex items-start gap-3 sm:gap-0 sm:flex-col">
                     <div
-                      className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl grid place-items-center shrink-0 sm:mb-4 sm:shrink [&>*]:block leading-none transition-transform duration-300 group-hover:scale-110"
-                      style={{ background: `${feature.color}18` }}
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl grid place-items-center shrink-0 sm:mb-4 sm:shrink [&>*]:block leading-none transition-transform duration-300 group-hover:scale-110"
+                      style={{ background: feature.gradient }}
                     >
                       <feature.icon className="h-5 w-5" style={{ color: feature.color }} />
                     </div>
@@ -522,7 +759,7 @@ export function LandingPage() {
 
       {/* ========== TESTIMONIALS ========== */}
       <section id="testimonials" className="relative py-8 sm:py-28 px-4 sm:px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md" style={{ background: 'linear-gradient(90deg, transparent, rgba(249,168,37,0.3), transparent)' }} />
+        <SectionSeparator color="#F9A825" />
 
         <div className="mx-auto max-w-4xl">
           <FadeUp>
@@ -532,7 +769,7 @@ export function LandingPage() {
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
                 {t('landing.reviewTitle1')}{' '}
-                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #F9A825, #CF6679)' }}>
+                <span className="bg-clip-text text-transparent animate-gradient-text" style={{ backgroundImage: 'linear-gradient(90deg, #F9A825, #CF6679, #F9A825)', backgroundSize: '200% 200%' }}>
                   {t('landing.reviewTitle2')}
                 </span>
               </h2>
@@ -543,7 +780,7 @@ export function LandingPage() {
             {testimonials.map((tm, i) => (
               <FadeUp key={tm.name} delay={i * 100}>
                 <div
-                  className="rounded-2xl p-4 sm:p-6 border"
+                  className="rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:border-[rgba(249,168,37,0.2)]"
                   style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                 >
                   {/* Stars */}
@@ -573,7 +810,7 @@ export function LandingPage() {
 
       {/* ========== PRICING SECTION ========== */}
       <section id="pricing" className="relative py-8 sm:py-28 px-4 sm:px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md" style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.3), transparent)' }} />
+        <SectionSeparator color="#03DAC6" />
 
         <div className="mx-auto max-w-4xl">
           <FadeUp>
@@ -583,7 +820,7 @@ export function LandingPage() {
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-2 sm:mb-3">
                 {t('landing.pricingTitle1')}{' '}
-                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #03DAC6, #BB86FC)' }}>
+                <span className="bg-clip-text text-transparent animate-gradient-text" style={{ backgroundImage: 'linear-gradient(90deg, #03DAC6, #BB86FC, #03DAC6)', backgroundSize: '200% 200%' }}>
                   {t('landing.pricingTitle2')}
                 </span>
               </h2>
@@ -609,7 +846,7 @@ export function LandingPage() {
             {plans.map((plan, i) => (
               <FadeUp key={plan.name} delay={i * 120}>
                 <div
-                  className={`relative rounded-2xl p-5 sm:p-8 border transition-all duration-300 h-full flex flex-col ${
+                  className={`relative rounded-2xl p-5 sm:p-8 pricing-card-hover h-full flex flex-col ${
                     plan.highlighted ? '' : ''
                   }`}
                   style={{
@@ -619,6 +856,7 @@ export function LandingPage() {
                     borderColor: plan.highlighted
                       ? 'rgba(187,134,252,0.25)'
                       : 'rgba(255,255,255,0.06)',
+                    borderWidth: plan.highlighted ? '2px' : '1px',
                     boxShadow: plan.highlighted
                       ? '0 0 60px -15px rgba(187,134,252,0.15)'
                       : 'none',
@@ -626,10 +864,25 @@ export function LandingPage() {
                 >
                   {plan.highlighted && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="inline-block rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-widest" style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000' }}>
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-widest" style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000' }}>
+                        <Star className="h-3 w-3 fill-current" />
                         {plan.badge}
                       </span>
                     </div>
+                  )}
+
+                  {/* Gradient border glow effect for featured card */}
+                  {plan.highlighted && (
+                    <div
+                      className="pointer-events-none absolute -inset-px rounded-2xl"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(187,134,252,0.3), rgba(3,218,198,0.15), rgba(187,134,252,0.05))',
+                        backgroundSize: '200% 200%',
+                        animation: 'gradientShift 6s ease-in-out infinite',
+                        zIndex: -1,
+                        filter: 'blur(1px)',
+                      }}
+                    />
                   )}
 
                   <div className="mb-4 sm:mb-6">
@@ -663,14 +916,14 @@ export function LandingPage() {
 
                   <button
                     onClick={() => openAuth()}
-                    className="w-full rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="cta-shimmer w-full rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden relative"
                     style={
                       plan.highlighted
-                        ? { background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000' }
+                        ? { background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000', boxShadow: '0 4px 20px rgba(187,134,252,0.2)' }
                         : { background: 'rgba(255,255,255,0.06)', color: '#E6E1E5' }
                     }
                   >
-                    {t('auth.login')}
+                    <span className="relative z-10">{t('auth.login')}</span>
                   </button>
                 </div>
               </FadeUp>
@@ -681,7 +934,7 @@ export function LandingPage() {
 
       {/* ========== FAQ SECTION ========== */}
       <section id="faq" className="relative py-8 sm:py-28 px-4 sm:px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md" style={{ background: 'linear-gradient(90deg, transparent, rgba(187,134,252,0.3), transparent)' }} />
+        <SectionSeparator color="#BB86FC" />
 
         <div className="mx-auto max-w-2xl">
           <FadeUp>
@@ -691,7 +944,7 @@ export function LandingPage() {
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
                 {t('landing.faqTitle1')}{' '}
-                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #BB86FC, #03DAC6)' }}>
+                <span className="bg-clip-text text-transparent animate-gradient-text" style={{ backgroundImage: 'linear-gradient(90deg, #BB86FC, #03DAC6, #BB86FC)', backgroundSize: '200% 200%' }}>
                   {t('landing.faqTitle2')}
                 </span>
               </h2>
@@ -699,47 +952,71 @@ export function LandingPage() {
           </FadeUp>
 
           <div className="space-y-2 sm:space-y-3">
-            {faqs.map((faq, i) => (
-              <FadeUp key={i} delay={i * 60}>
-                <div
-                  className="rounded-xl border overflow-hidden"
-                  style={{ background: 'rgba(18,18,18,0.5)', borderColor: 'rgba(255,255,255,0.06)' }}
-                >
-                  <button
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 sm:px-5 sm:py-4 text-left"
-                  >
-                    <span className="text-sm sm:text-base font-semibold pr-4">{faq.q}</span>
-                    <ChevronDown
-                      className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300"
-                      style={{ transform: openFaq === i ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                    />
-                  </button>
+            {faqs.map((faq, i) => {
+              const isOpen = openFaq === i;
+              return (
+                <FadeUp key={i} delay={i * 60}>
                   <div
-                    className="overflow-hidden transition-all duration-300"
-                    style={{ maxHeight: openFaq === i ? '200px' : '0px', opacity: openFaq === i ? 1 : 0 }}
+                    className="rounded-xl border overflow-hidden transition-all duration-300"
+                    style={{
+                      background: isOpen ? 'rgba(187,134,252,0.04)' : 'rgba(18,18,18,0.5)',
+                      borderColor: isOpen ? 'rgba(187,134,252,0.2)' : 'rgba(255,255,255,0.06)',
+                      boxShadow: isOpen ? '0 4px 24px rgba(187,134,252,0.06)' : 'none',
+                    }}
                   >
-                    <p className="px-4 pb-3.5 sm:px-5 sm:pb-4 text-[12px] sm:text-sm text-muted-foreground leading-relaxed">
-                      {faq.a}
-                    </p>
+                    <button
+                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                      className="w-full flex items-center justify-between px-4 py-3.5 sm:px-5 sm:py-4 text-left transition-colors duration-200 hover:bg-white/[0.02]"
+                    >
+                      <span className="text-sm sm:text-base font-semibold pr-4">{faq.q}</span>
+                      <ChevronDown
+                        className="h-4 w-4 shrink-0 transition-all duration-300"
+                        style={{
+                          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: isOpen ? '#BB86FC' : '#9E9E9E',
+                        }}
+                      />
+                    </button>
+                    <div
+                      className="overflow-hidden transition-all duration-400 ease-out"
+                      style={{
+                        maxHeight: isOpen ? '300px' : '0px',
+                        opacity: isOpen ? 1 : 0,
+                        transition: isOpen
+                          ? 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out'
+                          : 'max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease-out',
+                      }}
+                    >
+                      <div className="px-4 pb-3.5 sm:px-5 sm:pb-4 border-t" style={{ borderColor: 'rgba(187,134,252,0.08)' }}>
+                        <p className="text-[12px] sm:text-sm text-muted-foreground leading-relaxed pt-3">
+                          {faq.a}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </FadeUp>
-            ))}
+                </FadeUp>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ========== FINAL CTA ========== */}
       <section className="relative py-8 sm:py-28 px-4 sm:px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 max-w-md" style={{ background: 'linear-gradient(90deg, transparent, rgba(207,102,121,0.3), transparent)' }} />
-        <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 h-64 w-96 rounded-full opacity-10 blur-[100px]" style={{ background: '#BB86FC' }} />
+        <SectionSeparator color="#CF6679" />
+        <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 h-64 w-96 rounded-full opacity-10 blur-[100px] animate-aurora" style={{ background: 'conic-gradient(from 0deg, #BB86FC, #03DAC6, #CF6679, #BB86FC)' }} />
 
         <div className="mx-auto max-w-2xl text-center relative">
           <FadeUp>
             <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-3 sm:mb-6">
               {t('landing.ctaTitle1')}{' '}
-              <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6, #CF6679)' }}>
+              <span
+                className="bg-clip-text text-transparent animate-gradient-text"
+                style={{
+                  backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6, #CF6679, #BB86FC)',
+                  backgroundSize: '300% 300%',
+                }}
+              >
                 {t('landing.ctaTitle2')}
               </span>
             </h2>
@@ -754,12 +1031,16 @@ export function LandingPage() {
           <FadeUp delay={200}>
             <button
               onClick={() => openAuth()}
-              className="group relative w-full sm:w-auto rounded-full px-10 py-3.5 text-sm sm:text-base font-bold transition-all hover:scale-105 active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000' }}
+              className="cta-shimmer group relative w-full sm:w-auto rounded-full px-10 py-3.5 text-sm sm:text-base font-bold transition-all hover:scale-105 active:scale-95 overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #BB86FC, #03DAC6)',
+                color: '#000',
+                boxShadow: '0 4px 30px rgba(187,134,252,0.25), 0 0 60px rgba(3,218,198,0.08)',
+              }}
             >
-              <span className="flex items-center justify-center gap-2">
+              <span className="relative z-10 flex items-center justify-center gap-2">
                 {t('landing.ctaButton')}
-                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </span>
             </button>
           </FadeUp>
@@ -783,6 +1064,9 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ========== SCROLL TO TOP ========== */}
+      <ScrollToTopButton />
 
       {/* ========== AUTH DIALOG ========== */}
       <Dialog open={authOpen} onOpenChange={setAuthOpen}>

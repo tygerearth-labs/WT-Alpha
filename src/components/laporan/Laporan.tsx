@@ -150,10 +150,10 @@ export function Laporan() {
       {/* KPI Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-4">
         {[
-          { label: t('laporan.income'), value: totalIncome, color: T.secondary, icon: ArrowUpRight, sub: '+income' },
-          { label: t('laporan.expense'), value: totalExpense, color: T.destructive, icon: ArrowDownRight, sub: '-expense' },
-          { label: t('laporan.balance'), value: balance, color: balance >= 0 ? T.secondary : T.destructive, icon: Wallet, sub: 'net balance' },
-          { label: t('laporan.savings'), value: totalSavings, color: T.primary, icon: Target, sub: 'terkumpul' },
+          { label: t('laporan.income'), value: totalIncome, color: T.secondary, icon: ArrowUpRight, sub: t('laporan.subIncome') },
+          { label: t('laporan.expense'), value: totalExpense, color: T.destructive, icon: ArrowDownRight, sub: t('laporan.subExpense') },
+          { label: t('laporan.balance'), value: balance, color: balance >= 0 ? T.secondary : T.destructive, icon: Wallet, sub: t('laporan.subNetBalance') },
+          { label: t('laporan.savings'), value: totalSavings, color: T.primary, icon: Target, sub: t('laporan.subCollected') },
         ].map(item => (
           <div key={item.label} className="p-3 lg:p-4 rounded-xl" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-1.5 mb-1">

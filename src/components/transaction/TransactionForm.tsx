@@ -108,7 +108,7 @@ export function TransactionForm({
     : (type === 'income' ? t('kas.addTransaction') : t('kas.addTransaction'));
   const submitLabel = initialData ? t('common.save') : t('common.save');
   const accentColor = type === 'income' ? T.accent : T.destructive;
-  const placeholderText = type === 'income' ? 'Contoh: Bonus bulanan' : 'Contoh: Makan siang';
+  const placeholderText = type === 'income' ? t('form.placeholderIncome') : t('form.placeholderExpense');
 
   const allocAmount = (formData.targetId && formData.targetId !== 'none' && formData.allocationPercentage && formData.amount)
     ? (parseFloat(formData.amount) * parseFloat(formData.allocationPercentage)) / 100

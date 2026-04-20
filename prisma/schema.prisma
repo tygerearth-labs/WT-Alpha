@@ -17,12 +17,18 @@ model User {
   locale        String   @default("id")
   currency      String   @default("IDR")
   plan          String   @default("basic")
+  role          String   @default("user")
+  status        String   @default("active")
+  subscriptionEnd DateTime?
+  maxCategories  Int      @default(10)
+  maxSavings     Int      @default(3)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   transactions  Transaction[]
   categories    Category[]
   savingsTargets SavingsTarget[]
   allocations   Allocation[]
+  inviteTokens  InviteToken[]
 }
 
 model Category {
@@ -93,4 +99,61 @@ model Allocation {
 
   @@index([targetId, createdAt])
   @@index([userId])
+}
+
+model InviteToken {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  createdBy   String
+  creator     User     @relation(fields: [createdBy], references: [id])
+  email       String?
+  plan        String   @default("basic")
+  maxUses     Int      @default(1)
+  usedCount   Int      @default(0)
+  expiresAt   DateTime?
+  usedBy      String?
+  isUsed      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([token])
+  @@index([createdBy])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("info")
+  isActive  Boolean  @default(true)
+  priority  Int      @default(0)
+  startsAt  DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, priority])
+  @@index([type])
+}
+
+model AdminActivityLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model PlatformConfig {
+  id                   String   @id @default("platform")
+  defaultPlan          String   @default("basic")
+  defaultMaxCategories Int      @default(10)
+  defaultMaxSavings    Int      @default(3)
+  autoSuspendExpired   Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
 }

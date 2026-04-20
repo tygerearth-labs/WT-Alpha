@@ -9,8 +9,9 @@ import {
   PieChart as PieChartIcon, BarChart3, Sparkles,
   AlertTriangle, Trophy, Flame, CheckCircle2, Zap,
   Shield, ChevronLeft, ChevronRight, Banknote, Timer, Radar, Eye, Brain,
-  BarChart2, Lightbulb, PiggyBank,
+  BarChart2, Lightbulb, PiggyBank, Sun, Moon, Star,
 } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 // embla-carousel removed — replaced with lightweight CSS transform carousel
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -24,6 +25,14 @@ import { DashboardSkeleton } from '@/components/shared/PageSkeleton';
 import { id as idLocale } from 'date-fns/locale';
 import type { SavingsTarget, Transaction, PieChartData } from '@/types/transaction.types';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
+import { FinancialHealthScore } from '@/components/dashboard/FinancialHealthScore';
+import { BudgetTracker } from '@/components/dashboard/BudgetTracker';
+import { SpendingTrendChart } from '@/components/dashboard/SpendingTrendChart';
+import { TopCategories } from '@/components/dashboard/TopCategories';
+import { MonthlySummary } from '@/components/dashboard/MonthlySummary';
+import { SavingsOverview } from '@/components/target/SavingsOverview';
+import { FinancialTips } from '@/components/dashboard/FinancialTips';
+import { EnhancedEmptyState } from '@/components/shared/EnhancedEmptyState';
 
 // ── Theme Constants ──────────────────────────────────────────────
 const THEME = {
@@ -396,7 +405,12 @@ function AnalyticsCarousel({
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {categoryData.length === 0 ? (
-              <p className="text-xs text-center py-8" style={{ color: THEME.muted }}>{t('dashboard.noExpenseData')}</p>
+              <EnhancedEmptyState
+                icon={PieChartIcon}
+                title={t('dashboard.noExpenseData')}
+                description={t('dashboard.spendingBreakdownDesc')}
+                accentColor={THEME.destructive}
+              />
             ) : (
               <div className="flex flex-col items-center gap-3">
                 <div className="h-40 w-40 shrink-0">
@@ -563,9 +577,12 @@ function AnalyticsCarousel({
               </CardHeader>
               <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
                 {categoryData.length === 0 ? (
-                  <p className="text-xs text-center py-6" style={{ color: THEME.muted }}>
-                    {t('dashboard.noExpenseData')}
-                  </p>
+                  <EnhancedEmptyState
+                    icon={PieChartIcon}
+                    title={t('dashboard.noExpenseData')}
+                    description={t('dashboard.spendingBreakdownDesc')}
+                    accentColor={THEME.destructive}
+                  />
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-3 items-center">
                     {/* Donut */}
@@ -907,6 +924,7 @@ function ConsultantCardCompact({ insight }: { insight: {
 export function Dashboard() {
   const { t } = useTranslation();
   const { formatAmount } = useCurrencyFormat();
+  const { user } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState({ month: 'all', year: 'all' });
@@ -1386,8 +1404,102 @@ export function Dashboard() {
     return THEME.muted;
   };
 
+  // ── Greeting helper ──
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Selamat Pagi';
+    if (hour < 15) return 'Selamat Siang';
+    if (hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  };
+
+  const getGreetingIcon = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return Sun;
+    if (hour < 15) return Sun;
+    if (hour < 18) return Moon;
+    return Star;
+  };
+
+  // ── Daily Financial Tips ──
+  const dailyTips = Array.from({ length: 10 }, (_, i) => t(`dashboard.tips.tip${i}`));
+  const todayIndex = new Date().getDate() % dailyTips.length;
+  const tipOfTheDay = dailyTips[todayIndex];
+  const GreetingIcon = getGreetingIcon();
+
   return (
     <div className="space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full">
+      {/* ═══ Greeting Section ═══ */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
+            <GreetingIcon className="h-5 w-5" style={{ color: THEME.primary }} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold" style={{ color: THEME.text }}>
+              {getGreeting()}, {user?.username || 'User'}!
+            </h2>
+            <p className="text-[12px] mt-0.5" style={{ color: THEME.muted }}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+        </div>
+        {/* Pro badge in greeting for pro users */}
+        {user?.plan === 'pro' && (
+          <span
+            className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-lg"
+            style={{
+              background: 'linear-gradient(135deg, #1a1207, #1a0a14)',
+              color: '#FFD700',
+              border: '1px solid rgba(255,215,0,0.2)',
+              boxShadow: '0 0 10px rgba(255,215,0,0.06)',
+            }}
+          >
+            <Trophy className="h-3.5 w-3.5" />
+            <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFD700, #FFA500)' }}>PRO</span>
+          </span>
+        )}
+      </div>
+
+      {/* ═══ Daily Tip Card ═══ */}
+      <div className="animate-tip-card-enter">
+        <div
+          className="rounded-xl p-4 relative overflow-hidden"
+          style={{
+            background: THEME.surface,
+            border: `1px solid ${THEME.border}`,
+            borderLeft: `3px solid ${THEME.primary}`,
+          }}
+        >
+          {/* Subtle glow */}
+          <div
+            className="absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl opacity-15 pointer-events-none"
+            style={{ background: THEME.primary }}
+          />
+          <div className="relative flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 animate-lightbulb-pulse" style={{ background: `${THEME.primary}15` }}>
+              <Lightbulb className="h-4 w-4" style={{ color: THEME.primary }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: THEME.primary }}>{t('dashboard.tipOfTheDay')}</p>
+              </div>
+              <p className="text-[13px] leading-relaxed" style={{ color: THEME.textSecondary }}>{tipOfTheDay}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ Section Divider ═══ */}
+      <div className="relative h-px w-full overflow-hidden">
+        <div className="absolute inset-0 bg-white/[0.04]" />
+        <div className="absolute inset-0 h-full" style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(187,134,252,0.2) 30%, rgba(3,218,198,0.2) 50%, rgba(187,134,252,0.2) 70%, transparent 100%)',
+          backgroundSize: '200% 100%',
+          animation: 'sectionDividerGlow 3s ease-in-out infinite',
+ }} />
+      </div>
+
       {/* ═══ Section 1: Filter Bar ═══ */}
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold shrink-0" style={{ color: THEME.text }}>{t('nav.dashboard')}</h2>
@@ -1564,6 +1676,36 @@ export function Dashboard() {
         healthLabel={healthLabel}
         healthBreakdown={healthBreakdown}
       />
+
+      {/* ═══ Section 3.5: Health Score + Budget + Savings Overview + Financial Tips ═══ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <FinancialHealthScore />
+        <BudgetTracker />
+        <div className="sm:col-span-2 lg:col-span-1">
+          <SavingsOverview />
+        </div>
+      </div>
+
+      {/* ═══ Section 3.6: Financial Tips ═══ */}
+      <FinancialTips
+        expenseByCategory={data.expenseByCategory}
+        monthlyComparison={data.monthlyComparison}
+        savingsRate={data.savingsRate}
+      />
+
+      {/* ═══ Section 3.7: Financial Insights Widgets ═══ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+        <SpendingTrendChart
+          transactions={data.transactions}
+          savingsHistory={data.savingsHistory}
+        />
+        <TopCategories expenseByCategory={data.expenseByCategory} />
+        <MonthlySummary
+          monthlyComparison={data.monthlyComparison}
+          savingsRate={data.savingsRate}
+          monthlyTrends={data.monthlyTrends}
+        />
+      </div>
 
       {/* ═══ Section 5: Financial Consultant Insights ═══ */}
       {insights.length > 0 && (

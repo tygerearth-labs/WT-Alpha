@@ -1,15 +1,22 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Lock, Trash2, Loader2, LogOut, Camera, Shield, Globe, Coins, Crown, Sparkles } from 'lucide-react';
+import {
+  User, Lock, Trash2, Loader2, LogOut, Camera, Shield, Globe, Coins, Crown, Sparkles,
+  Calendar, AlertTriangle, CheckCircle2, BadgeCheck, Download, ArrowRight,
+  Activity, Tag, PiggyBank, Clock, FileDown,
+} from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useI18nStore } from '@/store/useI18nStore';
 import { CURRENCIES, POPULAR_CURRENCIES, type CurrencyCode } from '@/lib/currency';
@@ -30,7 +37,16 @@ const LOCALE_OPTIONS: { value: Locale; flag: string; label: string }[] = [
   { value: 'en', flag: '🇬🇧', label: 'English' },
 ];
 
-interface UserData { id: string; email: string; username: string; image: string | null; locale?: string; currency?: string; }
+interface UserData {
+  id: string; email: string; username: string; image: string | null;
+  locale?: string; currency?: string; plan?: string; createdAt?: string;
+}
+
+interface ActivityStats {
+  totalTransactions: number;
+  totalCategories: number;
+  totalSavingsTargets: number;
+}
 
 export function ProfileSettings() {
   const { user, logout, setUser } = useAuthStore();
@@ -40,13 +56,14 @@ export function ProfileSettings() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [imageError, setImageError] = useState('');
   const [profileForm, setProfileForm] = useState({ username: '', image: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [deleteDialog, setDeleteDialog] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [activeSection, setActiveSection] = useState<'profile' | 'preferences' | 'security'>('profile');
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [activityStats, setActivityStats] = useState<ActivityStats>({
+    totalTransactions: 0, totalCategories: 0, totalSavingsTargets: 0,
+  });
 
   const selectStyle = {
     background: T_THEME.input,
@@ -63,8 +80,6 @@ export function ProfileSettings() {
     return { popular, others };
   }, []);
 
-  useState(() => { /* fetch */ });
-
   const fetchUserData = async () => {
     try {
       const res = await fetch('/api/profile');
@@ -72,27 +87,59 @@ export function ProfileSettings() {
         const data = await res.json();
         setUserData(data.user);
         setProfileForm({ username: data.user.username, image: data.user.image || '' });
+        if (data.user.image) setAvatarPreview(data.user.image);
       }
     } catch { toast.error(t('profile.loadError')); }
     finally { setIsLoading(false); }
   };
 
-  // Fetch on mount
-  const initialized = useState(false);
-  if (!initialized[0] && typeof window !== 'undefined') {
-    initialized[0] = true;
+  const fetchActivityStats = async () => {
+    try {
+      const res = await fetch('/api/dashboard');
+      if (res.ok) {
+        const data = await res.json();
+        const txCount = data.monthlyTrends?.reduce((sum: number, m: { transactionCount: number }) => sum + m.transactionCount, 0) || 0;
+        const savingsCount = data.savingsTargets?.length || 0;
+        const catCount = data.expenseByCategory?.length || 0;
+        setActivityStats({
+          totalTransactions: txCount,
+          totalCategories: catCount,
+          totalSavingsTargets: savingsCount,
+        });
+      }
+    } catch {
+      // Activity stats are optional — silently fail
+    }
+  };
+
+  useEffect(() => {
     fetchUserData();
-  }
+    fetchActivityStats();
+  }, []);
+
+  // Live avatar preview
+  useEffect(() => {
+    const url = profileForm.image.trim();
+    if (url) {
+      setAvatarPreview(url);
+    } else {
+      setAvatarPreview(userData?.image || null);
+    }
+  }, [profileForm.image, userData?.image]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (profileForm.username.trim().length < 3) {
+      toast.error(t('profile.usernameMinChars') || 'Username must be at least 3 characters');
+      return;
+    }
     setIsUpdating(true);
     setImageError('');
     try {
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: profileForm.username, image: profileForm.image.trim() || null }),
+        body: JSON.stringify({ username: profileForm.username.trim(), image: profileForm.image.trim() || null }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -155,14 +202,16 @@ export function ProfileSettings() {
     finally { setIsUpdating(false); }
   };
 
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    try {
-      const res = await fetch('/api/profile', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: deletePassword }) });
-      if (res.ok) { toast.success(t('profile.deleteSuccess')); logout(); }
-      else { const err = await res.json(); toast.error(err.error || t('profile.deleteError')); }
-    } catch { toast.error(t('common.error')); }
-    finally { setIsDeleting(false); setDeleteDialog(false); setDeletePassword(''); }
+  const handleExportData = () => {
+    toast.info(t('profile.comingSoon'));
+  };
+
+  const handleDeleteAccount = () => {
+    toast.warning(t('profile.deleteWarning'), {
+      icon: <AlertTriangle className="h-4 w-4" />,
+      duration: 4000,
+    });
+    setDeleteDialog(false);
   };
 
   const handleLogout = async () => {
@@ -172,8 +221,27 @@ export function ProfileSettings() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-  const inputCls = "h-10 rounded-xl text-sm border-0 focus-visible:ring-1";
+  const inputCls = 'h-10 rounded-xl text-sm border-0 focus-visible:ring-1';
   const inputStyle = { background: T_THEME.input, color: T_THEME.text, border: `1px solid ${T_THEME.border}` };
+
+  // Format member since date
+  const memberSince = useMemo(() => {
+    if (!userData?.createdAt) return '';
+    const date = new Date(userData.createdAt);
+    return date.toLocaleDateString(currentLocale === 'id' ? 'id-ID' : 'en-US', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+  }, [userData?.createdAt, currentLocale]);
+
+  // Member duration in days
+  const memberDays = useMemo(() => {
+    if (!userData?.createdAt) return 0;
+    const created = new Date(userData.createdAt);
+    const now = new Date();
+    return Math.max(Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)), 0);
+  }, [userData?.createdAt]);
+
+  const isPro = user?.plan === 'pro';
 
   if (isLoading || !userData) {
     return <ProfileSkeleton />;
@@ -181,331 +249,441 @@ export function ProfileSettings() {
 
   return (
     <div className="space-y-5 max-w-2xl lg:max-w-3xl mx-auto">
-      {/* Profile Header */}
-      <div className="flex items-center gap-4 lg:gap-6 p-4 lg:p-5 rounded-2xl relative overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-        <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-15 blur-2xl pointer-events-none" style={{ background: T_THEME.primary }} />
-        <div className="relative shrink-0">
-          <Avatar className="h-14 w-14 sm:h-16 sm:w-16 lg:h-20 lg:w-20 border-2" style={{ borderColor: `${T_THEME.primary}40` }}>
-            {userData.image ? <AvatarImage src={userData.image} alt={userData.username} className="object-cover" /> : null}
-            <AvatarFallback className="text-lg sm:text-xl lg:text-2xl" style={{ background: `${T_THEME.primary}20`, color: T_THEME.primary }}>
-              {getInitials(userData.username)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 lg:w-6 lg:h-6 rounded-full grid place-items-center [&>*]:block leading-none" style={{ background: T_THEME.primary }}>
-            <Camera className="h-2.5 w-2.5 lg:h-3 lg:w-3" style={{ color: '#000' }} />
-          </div>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm sm:text-base lg:text-lg truncate" style={{ color: T_THEME.text }}>{userData.username}</p>
-          <p className="text-xs lg:text-sm truncate" style={{ color: T_THEME.muted }}>{userData.email}</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${T_THEME.primary}15`, color: T_THEME.primary }}>
-              {currentLocale === 'id' ? '🇮🇩 ID' : '🇬🇧 EN'}
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${T_THEME.secondary}15`, color: T_THEME.secondary }}>
-              {CURRENCIES[currentCurrency]?.symbol || currentCurrency} {currentCurrency}
-            </span>
-            {/* Plan Badge — Premium Style */}
-            <div className="relative group/badge">
-              {/* Glow effect for Pro */}
-              {user?.plan === 'pro' && (
-                <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-amber-500/30 via-rose-500/30 to-purple-500/30 blur-sm opacity-60 group-hover/badge:opacity-100 transition-opacity" />
-              )}
-              <div
-                className="relative flex items-center gap-1 px-2 py-0.5 rounded-lg font-bold text-[10px] tracking-wide transition-all duration-300"
-                style={{
-                  background: user?.plan === 'pro'
-                    ? 'linear-gradient(135deg, #1a1207 0%, #1a0a14 50%, #0f0a1a 100%)'
-                    : 'linear-gradient(135deg, #0D0D0D 0%, #1a1a1a 100%)',
-                  color: user?.plan === 'pro' ? '#FFD700' : '#888',
-                  border: user?.plan === 'pro'
-                    ? '1px solid rgba(255,215,0,0.25)'
-                    : '1px solid rgba(255,255,255,0.06)',
-                  boxShadow: user?.plan === 'pro'
-                    ? '0 0 12px rgba(255,215,0,0.08), inset 0 1px 0 rgba(255,215,0,0.1)'
-                    : 'none',
-                }}
-              >
-                {user?.plan === 'pro' ? (
-                  <>
-                    <Crown className="h-3 w-3" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 3px rgba(255,215,0,0.4))' }} />
-                    <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFD700, #FFA500, #FF6B6B)' }}>PRO</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-3 w-3" style={{ color: '#888' }} />
-                    <span>BASIC</span>
-                  </>
-                )}
+      {/* ══════════════════════════════════════════════════════════
+          1. PROFILE HEADER CARD
+          ══════════════════════════════════════════════════════════ */}
+      <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+        {/* Ambient glow */}
+        <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none" style={{ background: `linear-gradient(135deg, ${T_THEME.primary}, ${T_THEME.secondary})` }} />
+        <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full opacity-10 blur-3xl pointer-events-none" style={{ background: T_THEME.secondary }} />
+
+        <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-5">
+          {/* Avatar with gradient border */}
+          <div className="relative shrink-0">
+            <div
+              className="rounded-full p-[3px]"
+              style={{ background: 'linear-gradient(135deg, #BB86FC 0%, #03DAC6 100%)' }}
+            >
+              <div className="rounded-full p-[2px]" style={{ background: T_THEME.bg }}>
+                <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
+                  {avatarPreview ? <AvatarImage src={avatarPreview} alt={userData.username} className="object-cover" /> : null}
+                  <AvatarFallback className="text-2xl sm:text-3xl font-bold" style={{ background: `${T_THEME.primary}20`, color: T_THEME.primary }}>
+                    {getInitials(userData.username)}
+                  </AvatarFallback>
+                </Avatar>
               </div>
             </div>
-          </div>
-        </div>
-        <button onClick={handleLogout} className="p-2 lg:p-2.5 rounded-xl transition-colors shrink-0" style={{ background: `${T_THEME.destructive}10` }}>
-          <LogOut className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: T_THEME.destructive }} />
-        </button>
-      </div>
-
-      {/* Section Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl" style={{ background: `${T_THEME.bg}`, border: `1px solid ${T_THEME.border}` }}>
-        {([
-          ['profile', User, t('nav.profile')],
-          ['preferences', Globe, t('profile.language')],
-          ['security', Lock, t('profile.security')],
-        ] as const).map(([key, Icon, label]) => (
-          <button
-            key={key}
-            onClick={() => setActiveSection(key)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all"
-            style={{
-              background: activeSection === key ? `${T_THEME.primary}15` : 'transparent',
-              color: activeSection === key ? T_THEME.primary : T_THEME.muted,
-            }}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Profile Section */}
-      {activeSection === 'profile' && (
-        <form onSubmit={handleUpdateProfile} className="space-y-4 p-4 lg:p-5 rounded-2xl" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-          <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T_THEME.muted }}>{t('profile.profileInfo')}</p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('auth.username')}</Label>
-              <Input
-                id="username" value={profileForm.username}
-                onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-                required className={inputCls} style={inputStyle}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('auth.email')}</Label>
-              <Input id="email" value={userData.email} disabled className={inputCls} style={{ ...inputStyle, opacity: 0.5 }} />
+            {/* Camera badge */}
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full grid place-items-center [&>*]:block leading-none shadow-lg" style={{ background: T_THEME.primary }}>
+              <Camera className="h-3.5 w-3.5" style={{ color: '#000' }} />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.avatarUrl')}</Label>
-            <Input
-              id="image" value={profileForm.image}
-              onChange={(e) => { setProfileForm({ ...profileForm, image: e.target.value }); setImageError(''); }}
-              placeholder="https://example.com/avatar.jpg"
-              className={inputCls}
-              style={{ ...inputStyle, ...(imageError ? { borderColor: T_THEME.destructive } : {}) }}
-            />
-            {imageError && <p className="text-[10px]" style={{ color: T_THEME.destructive }}>{imageError}</p>}
-          </div>
-
-          <Button type="submit" disabled={isUpdating} className="w-full h-10 lg:h-11 rounded-xl font-semibold text-sm lg:text-base" style={{ background: T_THEME.primary, color: '#000' }}>
-            {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.save')}
-          </Button>
-        </form>
-      )}
-
-      {/* Preferences Section - Language & Currency */}
-      {activeSection === 'preferences' && (
-        <div className="space-y-4">
-          {/* Language Picker */}
-          <div className="space-y-4 p-4 lg:p-5 rounded-2xl" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-            <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4" style={{ color: T_THEME.primary }} />
-              <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T_THEME.muted }}>{t('profile.language')}</p>
-            </div>
-            <p className="text-[11px]" style={{ color: T_THEME.textSub }}>{t('profile.languageDesc')}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {LOCALE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleLanguageChange(opt.value)}
-                  disabled={isUpdating}
-                  className="flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium transition-all text-left"
+          {/* User Info */}
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2.5 mb-1">
+              <h2 className="text-xl sm:text-2xl font-bold truncate" style={{ color: T_THEME.text }}>{userData.username}</h2>
+              {/* Plan Badge */}
+              <div className="relative group/badge shrink-0">
+                {isPro && (
+                  <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-amber-500/30 via-rose-500/30 to-purple-500/30 blur-sm opacity-60 group-hover/badge:opacity-100 transition-opacity" />
+                )}
+                <div
+                  className="relative flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold text-[10px] tracking-wide"
                   style={{
-                    background: currentLocale === opt.value ? `${T_THEME.primary}15` : `${T_THEME.input}`,
-                    border: `1.5px solid ${currentLocale === opt.value ? T_THEME.primary : T_THEME.border}`,
-                    color: currentLocale === opt.value ? T_THEME.primary : T_THEME.text,
+                    background: isPro ? 'linear-gradient(135deg, #1a1207, #1a0a14, #0f0a1a)' : 'linear-gradient(135deg, #0D0D0D, #1a1a1a)',
+                    color: isPro ? '#FFD700' : '#888',
+                    border: isPro ? '1px solid rgba(255,215,0,0.25)' : '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: isPro ? '0 0 12px rgba(255,215,0,0.08), inset 0 1px 0 rgba(255,215,0,0.1)' : 'none',
                   }}
                 >
-                  <span className="text-lg">{opt.flag}</span>
-                  <span>{opt.label}</span>
-                  {currentLocale === opt.value && (
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${T_THEME.primary}25`, color: T_THEME.primary }}>
-                      ✓
-                    </span>
+                  {isPro ? (
+                    <>
+                      <Crown className="h-3 w-3" style={{ color: '#FFD700', filter: 'drop-shadow(0 0 3px rgba(255,215,0,0.4))' }} />
+                      <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFD700, #FFA500, #FF6B6B)' }}>PRO</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3" style={{ color: '#888' }} />
+                      <span>BASIC</span>
+                    </>
                   )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Currency Picker */}
-          <div className="space-y-4 p-4 lg:p-5 rounded-2xl" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-            <div className="flex items-center gap-2">
-              <Coins className="h-4 w-4" style={{ color: T_THEME.secondary }} />
-              <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T_THEME.muted }}>{t('profile.currency')}</p>
-            </div>
-            <p className="text-[11px]" style={{ color: T_THEME.textSub }}>{t('profile.currencyDesc')}</p>
-
-            {/* Current currency display */}
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: `${T_THEME.secondary}08`, border: `1px solid ${T_THEME.secondary}20` }}>
-              <div className="text-2xl">{CURRENCIES[currentCurrency]?.symbol || '💰'}</div>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: T_THEME.text }}>
-                  {CURRENCIES[currentCurrency]?.name || currentCurrency}
-                </p>
-                <p className="text-[10px]" style={{ color: T_THEME.textSub }}>
-                  {new Intl.NumberFormat(CURRENCIES[currentCurrency]?.locale || 'en-US', {
-                    style: 'currency',
-                    currency: currentCurrency,
-                  }).format(1234567.89)}
-                </p>
+                </div>
               </div>
             </div>
 
-            {/* Currency Select Dropdown */}
-            <Select value={currentCurrency} onValueChange={handleCurrencyChange} disabled={isUpdating}>
-              <SelectTrigger
-                className="w-full h-10 rounded-xl text-sm border-0 focus:ring-1"
-                style={selectStyle}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] rounded-xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                {/* Popular currencies */}
-                <SelectGroup>
-                  <SelectLabel className="px-2 py-1 text-[10px] uppercase tracking-wider" style={{ color: T_THEME.muted }}>
-                    {currentLocale === 'id' ? '📊 Populer' : '📊 Popular'}
-                  </SelectLabel>
-                  {currencyGroups.popular.map((cur) => (
-                    <SelectItem
-                      key={cur.code}
-                      value={cur.code}
-                      className="rounded-lg py-2 text-sm cursor-pointer"
-                      style={{ color: T_THEME.text }}
-                    >
-                      <span className="font-medium">{cur.symbol} {cur.code}</span>
-                      <span className="text-muted-foreground ml-2 text-xs">— {cur.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+            <p className="text-sm truncate mb-1" style={{ color: T_THEME.muted }}>{userData.email}</p>
 
-                {/* Other currencies */}
-                <SelectGroup>
-                  <SelectLabel className="px-2 py-1 text-[10px] uppercase tracking-wider" style={{ color: T_THEME.muted }}>
-                    {currentLocale === 'id' ? '🌍 Lainnya' : '🌍 Others'}
-                  </SelectLabel>
-                  {currencyGroups.others.map((cur) => (
-                    <SelectItem
-                      key={cur.code}
-                      value={cur.code}
-                      className="rounded-lg py-2 text-sm cursor-pointer"
-                      style={{ color: T_THEME.text }}
-                    >
-                      <span className="font-medium">{cur.symbol} {cur.code}</span>
-                      <span className="text-muted-foreground ml-2 text-xs">— {cur.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center justify-center sm:justify-start gap-4 text-xs" style={{ color: T_THEME.textSub }}>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" style={{ color: T_THEME.secondary }} />
+                <span>{memberSince}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" style={{ color: T_THEME.primary }} />
+                <span>{memberDays} {t('profile.days')}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <a href="#account-settings">
+              <Button
+                variant="outline"
+                className="h-9 px-4 rounded-xl text-xs font-medium gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ borderColor: `${T_THEME.primary}40`, color: T_THEME.primary, background: 'transparent' }}
+              >
+                <User className="h-3.5 w-3.5" />
+                {t('profile.editProfile')}
+              </Button>
+            </a>
+            <button onClick={handleLogout} className="p-2 rounded-xl transition-all hover:scale-[1.05] active:scale-[0.95]" style={{ background: `${T_THEME.destructive}10` }}>
+              <LogOut className="h-4 w-4" style={{ color: T_THEME.destructive }} />
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Security Section */}
-      {activeSection === 'security' && (
-        <div className="space-y-4">
-          {/* Change Password */}
-          <form onSubmit={handleChangePassword} className="space-y-3.5 p-4 lg:p-5 rounded-2xl" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="h-4 w-4" style={{ color: T_THEME.primary }} />
-              <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T_THEME.muted }}>{t('profile.changePassword')}</p>
+      {/* ══════════════════════════════════════════════════════════
+          2. ACCOUNT SETTINGS SECTION
+          ══════════════════════════════════════════════════════════ */}
+      <div id="account-settings" className="rounded-2xl overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+        <div className="p-4 sm:p-5 pb-0">
+          <div className="flex items-center gap-2">
+            <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.primary}15` }}>
+              <User className="h-4 w-4" style={{ color: T_THEME.primary }} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: T_THEME.text }}>{t('profile.accountSettings')}</p>
+              <p className="text-[11px]" style={{ color: T_THEME.muted }}>{t('profile.editProfileDesc')}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Username */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('auth.username')}</Label>
+                <Input
+                  id="username" value={profileForm.username}
+                  onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
+                  required minLength={3}
+                  className={inputCls} style={inputStyle}
+                />
+                <p className="text-[10px]" style={{ color: T_THEME.muted }}>{t('profile.usernameMinChars')}</p>
+              </div>
+
+              {/* Email (disabled) */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('auth.email')}</Label>
+                <Input id="email" value={userData.email} disabled className={inputCls} style={{ ...inputStyle, opacity: 0.5 }} />
+                <p className="text-[10px] flex items-center gap-1" style={{ color: T_THEME.muted }}>
+                  <BadgeCheck className="h-3 w-3" style={{ color: T_THEME.secondary }} />
+                  {t('profile.emailNote')}
+                </p>
+              </div>
             </div>
 
+            {/* Avatar URL */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.oldPassword')}</Label>
+              <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.avatarUrl')}</Label>
               <Input
-                id="currentPassword" type="password" placeholder="••••••••"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                required className={inputCls} style={inputStyle}
+                id="image" value={profileForm.image}
+                onChange={(e) => { setProfileForm({ ...profileForm, image: e.target.value }); setImageError(''); }}
+                placeholder="https://example.com/avatar.jpg"
+                className={inputCls}
+                style={{ ...inputStyle, ...(imageError ? { borderColor: T_THEME.destructive } : {}) }}
               />
+              {imageError && <p className="text-[10px] mt-1" style={{ color: T_THEME.destructive }}>{imageError}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.newPassword')}</Label>
-                <Input
-                  id="newPassword" type="password" placeholder="••••••••"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  required minLength={6}
-                  className={inputCls} style={inputStyle}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('common.confirm')}</Label>
-                <Input
-                  id="confirmPassword" type="password" placeholder="••••••••"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  required minLength={6}
-                  className={inputCls} style={inputStyle}
-                />
-              </div>
-            </div>
-            <Button type="submit" disabled={isUpdating} className="w-full h-10 rounded-xl font-semibold text-sm" style={{ background: T_THEME.primary, color: '#000' }}>
-              {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('profile.changePassword')}
+
+            <Button type="submit" disabled={isUpdating} className="w-full h-10 rounded-xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: T_THEME.primary, color: '#000' }}>
+              {isUpdating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('profile.saving')}</> : t('common.save')}
             </Button>
           </form>
 
-          {/* Danger Zone */}
-          <div className="p-4 rounded-2xl" style={{ background: `${T_THEME.destructive}06`, border: `1px solid ${T_THEME.destructive}15` }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Trash2 className="h-4 w-4" style={{ color: T_THEME.destructive }} />
-              <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T_THEME.destructive }}>{t('profile.dangerZone')}</p>
+          <Separator className="my-5" style={{ background: T_THEME.border }} />
+
+          {/* Change Password */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.secondary}15` }}>
+                <Shield className="h-4 w-4" style={{ color: T_THEME.secondary }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: T_THEME.text }}>{t('profile.changePassword')}</p>
+                <p className="text-[11px]" style={{ color: T_THEME.muted }}>{t('profile.passwordNote')}</p>
+              </div>
             </div>
-            <p className="text-[11px] mb-3" style={{ color: T_THEME.textSub }}>
-              {t('profile.deleteAccountDesc')}
-            </p>
+
+            <form onSubmit={handleChangePassword} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.oldPassword')}</Label>
+                <Input
+                  id="currentPassword" type="password" placeholder="••••••••"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  required className={inputCls} style={inputStyle}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.newPassword')}</Label>
+                  <Input
+                    id="newPassword" type="password" placeholder="••••••••"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    required minLength={6}
+                    className={inputCls} style={inputStyle}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.confirmPassword')}</Label>
+                  <Input
+                    id="confirmPassword" type="password" placeholder="••••••••"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    required minLength={6}
+                    className={inputCls} style={inputStyle}
+                  />
+                </div>
+              </div>
+              <Button type="submit" disabled={isUpdating} className="w-full h-10 rounded-xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: T_THEME.secondary, color: '#000' }}>
+                {isUpdating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('profile.saving')}</> : t('profile.changePassword')}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          3. PREFERENCES SECTION
+          ══════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Language Selector */}
+        <div className="rounded-2xl p-4 sm:p-5" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.primary}15` }}>
+              <Globe className="h-4 w-4" style={{ color: T_THEME.primary }} />
+            </div>
+            <p className="text-sm font-semibold" style={{ color: T_THEME.text }}>{t('profile.language')}</p>
+          </div>
+          <p className="text-[11px] mb-3" style={{ color: T_THEME.muted }}>{t('profile.languageDesc')}</p>
+          <div className="space-y-2">
+            {LOCALE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleLanguageChange(opt.value)}
+                disabled={isUpdating}
+                className="flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium transition-all text-left w-full"
+                style={{
+                  background: currentLocale === opt.value ? `${T_THEME.primary}15` : `${T_THEME.input}`,
+                  border: `1.5px solid ${currentLocale === opt.value ? T_THEME.primary : T_THEME.border}`,
+                  color: currentLocale === opt.value ? T_THEME.primary : T_THEME.text,
+                }}
+              >
+                <span className="text-lg">{opt.flag}</span>
+                <span className="flex-1">{opt.label}</span>
+                {currentLocale === opt.value && (
+                  <CheckCircle2 className="h-4 w-4" style={{ color: T_THEME.primary }} />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Currency Selector */}
+        <div className="rounded-2xl p-4 sm:p-5" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.secondary}15` }}>
+              <Coins className="h-4 w-4" style={{ color: T_THEME.secondary }} />
+            </div>
+            <p className="text-sm font-semibold" style={{ color: T_THEME.text }}>{t('profile.currency')}</p>
+          </div>
+          <p className="text-[11px] mb-3" style={{ color: T_THEME.muted }}>{t('profile.currencyDesc')}</p>
+
+          {/* Current currency display */}
+          <div className="flex items-center gap-3 p-3 rounded-xl mb-3" style={{ background: `${T_THEME.secondary}08`, border: `1px solid ${T_THEME.secondary}20` }}>
+            <div className="text-2xl">{CURRENCIES[currentCurrency]?.symbol || '💰'}</div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: T_THEME.text }}>
+                {CURRENCIES[currentCurrency]?.name || currentCurrency}
+              </p>
+              <p className="text-[10px] truncate" style={{ color: T_THEME.textSub }}>
+                {new Intl.NumberFormat(CURRENCIES[currentCurrency]?.locale || 'en-US', {
+                  style: 'currency', currency: currentCurrency,
+                }).format(1234567.89)}
+              </p>
+            </div>
+          </div>
+
+          <Select value={currentCurrency} onValueChange={handleCurrencyChange} disabled={isUpdating}>
+            <SelectTrigger className="w-full h-10 rounded-xl text-sm border-0 focus:ring-1" style={selectStyle}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px] rounded-xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <SelectGroup>
+                <SelectLabel className="px-2 py-1 text-[10px] uppercase tracking-wider" style={{ color: T_THEME.muted }}>
+                  {currentLocale === 'id' ? '📊 Populer' : '📊 Popular'}
+                </SelectLabel>
+                {currencyGroups.popular.map((cur) => (
+                  <SelectItem key={cur.code} value={cur.code} className="rounded-lg py-2 text-sm cursor-pointer" style={{ color: T_THEME.text }}>
+                    <span className="font-medium">{cur.symbol} {cur.code}</span>
+                    <span className="text-muted-foreground ml-2 text-xs">— {cur.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel className="px-2 py-1 text-[10px] uppercase tracking-wider" style={{ color: T_THEME.muted }}>
+                  {currentLocale === 'id' ? '🌍 Lainnya' : '🌍 Others'}
+                </SelectLabel>
+                {currencyGroups.others.map((cur) => (
+                  <SelectItem key={cur.code} value={cur.code} className="rounded-lg py-2 text-sm cursor-pointer" style={{ color: T_THEME.text }}>
+                    <span className="font-medium">{cur.symbol} {cur.code}</span>
+                    <span className="text-muted-foreground ml-2 text-xs">— {cur.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          4. DATA & PRIVACY SECTION
+          ══════════════════════════════════════════════════════════ */}
+      <div className="rounded-2xl p-4 sm:p-5" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.warning}15` }}>
+            <Shield className="h-4 w-4" style={{ color: T_THEME.warning }} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: T_THEME.text }}>{t('profile.dataPrivacy')}</p>
+            <p className="text-[11px]" style={{ color: T_THEME.muted }}>{t('profile.dataPrivacyDesc')}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {/* Export Data */}
+          <button
+            onClick={handleExportData}
+            className="w-full flex items-center gap-3 p-3.5 rounded-xl text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
+            style={{ background: `${T_THEME.input}`, border: `1px solid ${T_THEME.border}` }}
+          >
+            <div className="grid place-items-center w-9 h-9 rounded-lg shrink-0 [&>*]:block leading-none" style={{ background: `${T_THEME.primary}15` }}>
+              <FileDown className="h-4 w-4" style={{ color: T_THEME.primary }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: T_THEME.text }}>{t('profile.exportData')}</p>
+              <p className="text-[11px]" style={{ color: T_THEME.muted }}>{t('profile.exportDataDesc')}</p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0" style={{ color: T_THEME.muted }} />
+          </button>
+
+          <Separator style={{ background: T_THEME.border }} />
+
+          {/* Delete Account */}
+          <div className="p-3.5 rounded-xl" style={{ background: `${T_THEME.destructive}06`, border: `1px solid ${T_THEME.destructive}15` }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="grid place-items-center w-9 h-9 rounded-lg shrink-0 [&>*]:block leading-none" style={{ background: `${T_THEME.destructive}15` }}>
+                <Trash2 className="h-4 w-4" style={{ color: T_THEME.destructive }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: T_THEME.destructive }}>{t('profile.deleteAccount')}</p>
+                <p className="text-[11px]" style={{ color: T_THEME.textSub }}>{t('profile.deleteAccountWarning')}</p>
+              </div>
+            </div>
             <button
               onClick={() => setDeleteDialog(true)}
-              className="w-full text-[11px] font-semibold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+              className="w-full text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all hover:scale-[1.01] active:scale-[0.99]"
               style={{ background: `${T_THEME.destructive}15`, color: T_THEME.destructive, border: `1px solid ${T_THEME.destructive}25` }}
             >
               <Trash2 className="h-3.5 w-3.5" /> {t('profile.deleteAccount')}
             </button>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Delete Dialog */}
+      {/* ══════════════════════════════════════════════════════════
+          5. ACTIVITY SUMMARY SECTION
+          ══════════════════════════════════════════════════════════ */}
+      <div className="rounded-2xl p-4 sm:p-5" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.secondary}15` }}>
+            <Activity className="h-4 w-4" style={{ color: T_THEME.secondary }} />
+          </div>
+          <p className="text-sm font-semibold" style={{ color: T_THEME.text }}>{t('profile.activitySummary')}</p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Total Transactions */}
+          <div className="p-3.5 rounded-xl text-center" style={{ background: `${T_THEME.input}`, border: `1px solid ${T_THEME.border}` }}>
+            <div className="grid place-items-center w-9 h-9 mx-auto rounded-lg mb-2 [&>*]:block leading-none" style={{ background: `${T_THEME.primary}15` }}>
+              <Tag className="h-4 w-4" style={{ color: T_THEME.primary }} />
+            </div>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums" style={{ color: T_THEME.text }}>{activityStats.totalTransactions}</p>
+            <p className="text-[10px] mt-0.5 font-medium" style={{ color: T_THEME.muted }}>{t('profile.totalTransactions')}</p>
+          </div>
+
+          {/* Total Categories */}
+          <div className="p-3.5 rounded-xl text-center" style={{ background: `${T_THEME.input}`, border: `1px solid ${T_THEME.border}` }}>
+            <div className="grid place-items-center w-9 h-9 mx-auto rounded-lg mb-2 [&>*]:block leading-none" style={{ background: `${T_THEME.secondary}15` }}>
+              <Tag className="h-4 w-4" style={{ color: T_THEME.secondary }} />
+            </div>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums" style={{ color: T_THEME.text }}>{activityStats.totalCategories}</p>
+            <p className="text-[10px] mt-0.5 font-medium" style={{ color: T_THEME.muted }}>{t('profile.totalCategories')}</p>
+          </div>
+
+          {/* Total Savings Targets */}
+          <div className="p-3.5 rounded-xl text-center" style={{ background: `${T_THEME.input}`, border: `1px solid ${T_THEME.border}` }}>
+            <div className="grid place-items-center w-9 h-9 mx-auto rounded-lg mb-2 [&>*]:block leading-none" style={{ background: `${T_THEME.warning}15` }}>
+              <PiggyBank className="h-4 w-4" style={{ color: T_THEME.warning }} />
+            </div>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums" style={{ color: T_THEME.text }}>{activityStats.totalSavingsTargets}</p>
+            <p className="text-[10px] mt-0.5 font-medium" style={{ color: T_THEME.muted }}>{t('profile.totalSavingsTargets')}</p>
+          </div>
+
+          {/* Member Duration */}
+          <div className="p-3.5 rounded-xl text-center" style={{ background: `${T_THEME.input}`, border: `1px solid ${T_THEME.border}` }}>
+            <div className="grid place-items-center w-9 h-9 mx-auto rounded-lg mb-2 [&>*]:block leading-none" style={{ background: `linear-gradient(135deg, ${T_THEME.primary}15, ${T_THEME.secondary}15)` }}>
+              <Clock className="h-4 w-4" style={{ color: T_THEME.primary }} />
+            </div>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums" style={{ color: T_THEME.text }}>{memberDays}</p>
+            <p className="text-[10px] mt-0.5 font-medium" style={{ color: T_THEME.muted }}>{t('profile.days')}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          DELETE ACCOUNT DIALOG
+          ══════════════════════════════════════════════════════════ */}
       <AlertDialog open={deleteDialog} onOpenChange={setDeleteDialog}>
-        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.06] rounded-2xl">
+        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.06] rounded-2xl max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">{t('profile.deleteAccountTitle')}</AlertDialogTitle>
-            <AlertDialogDescription className="text-[#9E9E9E]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="grid place-items-center w-10 h-10 rounded-xl shrink-0 [&>*]:block leading-none" style={{ background: `${T_THEME.destructive}15` }}>
+                <AlertTriangle className="h-5 w-5" style={{ color: T_THEME.destructive }} />
+              </div>
+              <AlertDialogTitle className="text-white text-base">{t('profile.deleteAccountTitle')}</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-[#9E9E9E] text-sm leading-relaxed">
               {t('profile.deleteAccountDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-3">
-            <Input
-              id="deletePassword" type="password" placeholder={t('auth.password')}
-              value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)}
-              className={inputCls} style={inputStyle}
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1] rounded-xl">{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+            <AlertDialogCancel className="flex-1 bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1] rounded-xl h-10">
+              {t('profile.cancelDelete')}
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteAccount} disabled={isDeleting || !deletePassword}
-              className="rounded-xl"
+              onClick={handleDeleteAccount}
+              className="flex-1 rounded-xl h-10 font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{ background: T_THEME.destructive, color: '#fff' }}
             >
-              {isDeleting ? t('profile.deleting') : t('profile.deleteAccount')}
+              <Trash2 className="h-4 w-4 inline mr-1.5" />
+              {t('profile.deleteAccount')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
