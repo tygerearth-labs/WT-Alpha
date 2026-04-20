@@ -498,7 +498,7 @@ export function MainLayout() {
 
       {/* ── Body: Sidebar + Content ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
+        <div className="flex-1 flex overflow-hidden announcement-pt" style={{ paddingTop: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
         {/* ── Desktop Sidebar (lg: and up) ── */}
         <aside
           className={cn(

@@ -492,7 +492,7 @@ export function AdminLayout() {
 
       {/* ── Body ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
+        <div className="flex-1 flex overflow-hidden announcement-pt" style={{ paddingTop: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
         {/* Desktop Sidebar */}
         <aside className={cn(
           'hidden lg:flex flex-col fixed left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',

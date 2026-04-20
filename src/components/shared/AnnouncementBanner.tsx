@@ -133,11 +133,15 @@ export function AnnouncementBanner() {
 
   const activeAnnouncements = announcements.filter((a) => visible.has(a.id));
 
-  if (activeAnnouncements.length === 0) {
-    // Clear the CSS var when no banner
-    if (typeof document !== 'undefined') {
+  // Sync CSS variable whenever activeAnnouncements changes
+  useEffect(() => {
+    if (activeAnnouncements.length === 0) {
       document.documentElement.style.setProperty('--announcement-height', '0px');
     }
+    // When banner exists, the ResizeObserver handles the height update
+  }, [activeAnnouncements.length]);
+
+  if (activeAnnouncements.length === 0) {
     return null;
   }
 
