@@ -676,3 +676,13 @@ html {
 
 /* Announcement padding transition */
 .announcement-pt { transition: padding-top 0.3s ease; }
+
+/* Quick Entry FAB — responsive bottom positioning */
+.quick-entry-fab {
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
+}
+@media (min-width: 768px) {
+  .quick-entry-fab {
+    bottom: 2rem; /* 32px — no bottom nav on desktop/tablet */
+  }
+}

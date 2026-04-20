@@ -113,10 +113,10 @@ export function QuickTransaction() {
 
   return (
     <>
-      {/* Floating Action Button */}
+      {/* Floating Action Button — positioned above bottom nav on mobile */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-8 z-50 w-14 h-14 rounded-2xl grid place-items-center shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95 group"
+        className="quick-entry-fab fixed right-4 z-50 w-14 h-14 rounded-2xl grid place-items-center shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95 group md:right-8"
         style={{
           background: `linear-gradient(135deg, ${THEME.primary}, ${THEME.secondary})`,
           boxShadow: `0 4px 24px ${THEME.primary}40, 0 2px 8px rgba(0,0,0,0.4)`,
@@ -138,7 +138,7 @@ export function QuickTransaction() {
       <Sheet open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setShowSuccess(false); } else { setOpen(true); } }}>
         <SheetContent
           side="bottom"
-          className="max-h-[85vh] md:max-w-2xl md:mx-auto md:inset-x-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:mb-8 md:rounded-2xl overflow-y-auto rounded-t-2xl"
+          className="max-h-[85vh] sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto inset-x-auto left-1/2 right-auto -translate-x-1/2 mb-0 md:mb-8 md:rounded-2xl overflow-y-auto rounded-t-2xl"
           style={{
             background: '#0D0D0D',
             border: `1px solid ${THEME.border}`,
