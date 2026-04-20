@@ -7,10 +7,11 @@ export interface SessionData {
   userId: string;
 }
 
-const SESSION_SECRET = process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-only-secret-change-in-production');
+// Use NEXTAUTH_SECRET (already in Vercel ENV) — no need for a separate SESSION_SECRET
+const SESSION_SECRET = process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-only-secret-change-in-production');
 
-if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
-  throw new Error('SESSION_SECRET environment variable is required in production');
+if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET) {
+  throw new Error('NEXTAUTH_SECRET environment variable is required in production');
 }
 
 const SESSION_COOKIE_NAME = 'session';
