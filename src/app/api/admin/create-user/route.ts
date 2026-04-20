@@ -114,6 +114,24 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Create default categories for the new user
+    await db.category.createMany({
+      data: [
+        { name: 'Gaji', type: 'income', color: '#10b981', icon: 'Wallet', userId: newUser.id },
+        { name: 'Bonus', type: 'income', color: '#f59e0b', icon: 'Gift', userId: newUser.id },
+        { name: 'Investasi', type: 'income', color: '#8b5cf6', icon: 'TrendingUp', userId: newUser.id },
+        { name: 'Lainnya', type: 'income', color: '#6b7280', icon: 'Package', userId: newUser.id },
+        { name: 'Makanan', type: 'expense', color: '#ef4444', icon: 'UtensilsCrossed', userId: newUser.id },
+        { name: 'Transportasi', type: 'expense', color: '#f97316', icon: 'Car', userId: newUser.id },
+        { name: 'Belanja', type: 'expense', color: '#ec4899', icon: 'ShoppingCart', userId: newUser.id },
+        { name: 'Tagihan', type: 'expense', color: '#3b82f6', icon: 'FileText', userId: newUser.id },
+        { name: 'Hiburan', type: 'expense', color: '#14b8a6', icon: 'Clapperboard', userId: newUser.id },
+        { name: 'Kesehatan', type: 'expense', color: '#22c55e', icon: 'Pill', userId: newUser.id },
+        { name: 'Pendidikan', type: 'expense', color: '#a855f7', icon: 'BookOpen', userId: newUser.id },
+        { name: 'Lainnya', type: 'expense', color: '#6b7280', icon: 'Package', userId: newUser.id },
+      ]
+    });
+
     // Log admin activity
     logAdminActivity(adminId as string, 'create_user', email, 'Created user via admin panel');
 

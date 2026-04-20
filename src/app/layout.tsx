@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false,
+  userScalable: true,
   themeColor: "#000000",
 };
 
@@ -59,7 +59,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-x-hidden`}
       >
         {children}
-        <SonnerToaster position="top-center" />
+        <SonnerToaster position="top-center" offset="60px" />
       </body>
     </html>
   );

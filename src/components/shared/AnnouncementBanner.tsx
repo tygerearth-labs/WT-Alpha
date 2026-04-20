@@ -74,15 +74,14 @@ export function AnnouncementBanner() {
 
   const handleDismiss = useCallback((id: string) => {
     setAnnouncements((prev) => {
-      const currentIndex = prev.findIndex((a) => a.id === id);
-      const nextAnnouncement = prev.find((a, i) => i > currentIndex);
+      const next = prev.filter((a) => a.id !== id);
       const newVisible = new Set<string>();
-      if (nextAnnouncement) {
-        newVisible.add(nextAnnouncement.id);
+      if (next.length > 0) {
+        newVisible.add(next[0].id);
       }
       setVisible(newVisible);
       visibleRef.current = newVisible;
-      return prev;
+      return next;
     });
 
     const dismissed = getDismissed();

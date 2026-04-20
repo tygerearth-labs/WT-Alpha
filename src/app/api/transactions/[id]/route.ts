@@ -30,30 +30,34 @@ export async function PUT(
       );
     }
 
-    // Verify category belongs to user
-    const category = await db.category.findFirst({
-      where: {
-        id: categoryId,
-        userId,
-      },
-    });
+    // Verify category belongs to user (only if categoryId is being changed)
+    if (categoryId !== undefined) {
+      const category = await db.category.findFirst({
+        where: {
+          id: categoryId,
+          userId,
+        },
+      });
 
-    if (!category) {
-      return NextResponse.json(
-        { error: 'Category not found' },
-        { status: 404 }
-      );
+      if (!category) {
+        return NextResponse.json(
+          { error: 'Category not found' },
+          { status: 404 }
+        );
+      }
     }
+
+    // Build update data - only include fields that are provided
+    const updateData: Record<string, unknown> = {};
+    if (type !== undefined) updateData.type = type;
+    if (amount !== undefined) updateData.amount = amount;
+    if (description !== undefined) updateData.description = description;
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+    if (date !== undefined) updateData.date = date ? new Date(date) : undefined;
 
     const transaction = await db.transaction.update({
       where: { id },
-      data: {
-        type,
-        amount,
-        description,
-        categoryId,
-        date: date ? new Date(date) : undefined,
-      },
+      data: updateData,
       include: {
         category: true,
       },

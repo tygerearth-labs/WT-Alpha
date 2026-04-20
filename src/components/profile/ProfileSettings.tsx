@@ -60,6 +60,8 @@ export function ProfileSettings() {
   const [profileForm, setProfileForm] = useState({ username: '', image: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [activityStats, setActivityStats] = useState<ActivityStats>({
     totalTransactions: 0, totalCategories: 0, totalSavingsTargets: 0,
@@ -206,12 +208,32 @@ export function ProfileSettings() {
     toast.info(t('profile.comingSoon'));
   };
 
-  const handleDeleteAccount = () => {
-    toast.warning(t('profile.deleteWarning'), {
-      icon: <AlertTriangle className="h-4 w-4" />,
-      duration: 4000,
-    });
-    setDeleteDialog(false);
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error(t('profile.passwordRequired') || 'Password is required to delete account');
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      if (res.ok) {
+        logout();
+        toast.success(t('profile.accountDeleted') || 'Account deleted successfully');
+      } else {
+        const err = await res.json();
+        toast.error(err.error || t('profile.deleteError') || 'Failed to delete account');
+      }
+    } catch {
+      toast.error(t('common.error') || 'An error occurred');
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialog(false);
+      setDeletePassword('');
+    }
   };
 
   const handleLogout = async () => {
@@ -660,7 +682,7 @@ export function ProfileSettings() {
       {/* ══════════════════════════════════════════════════════════
           DELETE ACCOUNT DIALOG
           ══════════════════════════════════════════════════════════ */}
-      <AlertDialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+      <AlertDialog open={deleteDialog} onOpenChange={(open) => { setDeleteDialog(open); if (!open) setDeletePassword(''); }}>
         <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.06] rounded-2xl max-w-md">
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
@@ -673,17 +695,28 @@ export function ProfileSettings() {
               {t('profile.deleteAccountDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-1.5 my-2">
+            <Label className="text-[11px] font-medium" style={{ color: T_THEME.textSub }}>{t('profile.oldPassword') || 'Current Password'}</Label>
+            <Input
+              type="password"
+              placeholder="••••••••"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className={inputCls}
+              style={inputStyle}
+            />
+          </div>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
             <AlertDialogCancel className="flex-1 bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1] rounded-xl h-10">
               {t('profile.cancelDelete')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAccount}
-              className="flex-1 rounded-xl h-10 font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+              disabled={isDeleting || !deletePassword}
+              className="flex-1 rounded-xl h-10 font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               style={{ background: T_THEME.destructive, color: '#fff' }}
             >
-              <Trash2 className="h-4 w-4 inline mr-1.5" />
-              {t('profile.deleteAccount')}
+              {isDeleting ? <><Loader2 className="h-4 w-4 animate-spin inline mr-1.5" />Deleting...</> : <><Trash2 className="h-4 w-4 inline mr-1.5" />{t('profile.deleteAccount')}</>}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

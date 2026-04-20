@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month');
     const year = searchParams.get('year');
 
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50'), 100);
+
     const whereClause: any = { userId };
     if (type) whereClause.type = type;
     if (categoryId) whereClause.categoryId = categoryId;
@@ -33,9 +36,11 @@ export async function GET(request: NextRequest) {
       orderBy: {
         date: 'desc',
       },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
-    return NextResponse.json({ transactions });
+    return NextResponse.json({ transactions, pagination: { page, pageSize, hasMore: transactions.length === pageSize } });
 
   } catch (error) {
     console.error('Transactions GET error:', error);
@@ -58,6 +63,13 @@ export async function POST(request: NextRequest) {
     if (!type || !amount) {
       return NextResponse.json(
         { error: 'Type and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!['income', 'expense'].includes(type)) {
+      return NextResponse.json(
+        { error: 'Type must be income or expense' },
         { status: 400 }
       );
     }

@@ -3,8 +3,45 @@ import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { createSession } from '@/lib/session';
 
+// In-memory rate limiter: max 3 registrations per IP per hour
+const registrationAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const MAX_REGISTRATIONS = 3;
+const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+// Clean up old entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of registrationAttempts.entries()) {
+    if (now - record.firstAttempt > WINDOW_MS) {
+      registrationAttempts.delete(ip);
+    }
+  }
+}, 10 * 60 * 1000);
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting by IP
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown';
+    const now = Date.now();
+    const attemptRecord = registrationAttempts.get(clientIp);
+
+    if (attemptRecord) {
+      if (now - attemptRecord.firstAttempt > WINDOW_MS) {
+        registrationAttempts.set(clientIp, { count: 1, firstAttempt: now });
+      } else if (attemptRecord.count >= MAX_REGISTRATIONS) {
+        return NextResponse.json(
+          { error: 'Too many registration attempts. Please try again later.' },
+          { status: 429 }
+        );
+      } else {
+        attemptRecord.count++;
+      }
+    } else {
+      registrationAttempts.set(clientIp, { count: 1, firstAttempt: now });
+    }
+
     // Check if registration is open
     let config = await db.platformConfig.findUnique({ where: { id: 'platform' } });
     if (config && !config.registrationOpen) {
@@ -24,45 +61,111 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate username length
+    if (typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 30) {
+      return NextResponse.json(
+        { error: 'Username must be between 3 and 30 characters' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password length (bcrypt DoS prevention)
+    if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
+      return NextResponse.json(
+        { error: 'Password must be between 8 and 128 characters' },
+        { status: 400 }
+      );
+    }
+
     // Check invite token if provided
     let assignedPlan = 'basic';
     if (inviteToken) {
-      const token = await db.inviteToken.findUnique({ where: { token: inviteToken } });
+      // Use a transaction to atomically check and update the invite token (prevent race condition)
+      const tokenResult = await db.$transaction(async (tx) => {
+        const token = await tx.inviteToken.findUnique({ where: { token: inviteToken } });
 
-      if (!token) {
+        if (!token) {
+          throw new Error('INVALID_TOKEN');
+        }
+
+        if (token.isUsed) {
+          throw new Error('TOKEN_USED');
+        }
+
+        if (token.expiresAt && new Date(token.expiresAt) < new Date()) {
+          throw new Error('TOKEN_EXPIRED');
+        }
+
+        if (token.email && token.email !== email) {
+          throw new Error('EMAIL_MISMATCH');
+        }
+
+        if (token.usedCount >= token.maxUses) {
+          throw new Error('TOKEN_LIMIT');
+        }
+
+        const newUsedCount = token.usedCount + 1;
+        // Only mark as used when the last allowed use is consumed
+        const shouldMarkUsed = newUsedCount >= token.maxUses;
+
+        await tx.inviteToken.update({
+          where: { id: token.id },
+          data: {
+            isUsed: shouldMarkUsed,
+            usedCount: newUsedCount,
+            usedBy: email
+          }
+        });
+
+        return token;
+      }).catch((error: Error) => {
+        if (error.message === 'INVALID_TOKEN') {
+          return 'INVALID_TOKEN';
+        }
+        if (error.message === 'TOKEN_USED') {
+          return 'TOKEN_USED';
+        }
+        if (error.message === 'TOKEN_EXPIRED') {
+          return 'TOKEN_EXPIRED';
+        }
+        if (error.message === 'EMAIL_MISMATCH') {
+          return 'EMAIL_MISMATCH';
+        }
+        if (error.message === 'TOKEN_LIMIT') {
+          return 'TOKEN_LIMIT';
+        }
+        throw error;
+      });
+
+      if (tokenResult === 'INVALID_TOKEN') {
         return NextResponse.json({ error: 'Invalid invite token' }, { status: 400 });
       }
-
-      if (token.isUsed) {
+      if (tokenResult === 'TOKEN_USED') {
         return NextResponse.json({ error: 'Invite token already used' }, { status: 400 });
       }
-
-      if (token.expiresAt && new Date(token.expiresAt) < new Date()) {
+      if (tokenResult === 'TOKEN_EXPIRED') {
         return NextResponse.json({ error: 'Invite token has expired' }, { status: 400 });
       }
-
-      if (token.email && token.email !== email) {
+      if (tokenResult === 'EMAIL_MISMATCH') {
         return NextResponse.json(
-          { error: `This invite is for ${token.email} only` },
+          { error: 'This invite is associated with a different email address' },
           { status: 400 }
         );
       }
-
-      if (token.usedCount >= token.maxUses) {
+      if (tokenResult === 'TOKEN_LIMIT') {
         return NextResponse.json({ error: 'Invite token usage limit reached' }, { status: 400 });
       }
 
-      assignedPlan = token.plan;
-
-      // Mark token as used
-      await db.inviteToken.update({
-        where: { id: token.id },
-        data: {
-          isUsed: true,
-          usedCount: token.usedCount + 1,
-          usedBy: email
-        }
-      });
+      assignedPlan = (tokenResult as any).plan;
     }
 
     // Check if user already exists

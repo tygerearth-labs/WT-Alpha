@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,7 +15,6 @@ const T = { bg: '#121212', input: '#1E1E1E', primary: '#BB86FC', muted: '#9E9E9E
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { setUser } = useAuthStore();
   const { t } = useTranslation();
@@ -77,19 +75,8 @@ export function LoginForm() {
           />
         </div>
 
-        {/* Remember me & Forgot password row */}
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 cursor-pointer group/rm select-none">
-            <Checkbox
-              checked={rememberMe}
-              onCheckedChange={(checked) => setRememberMe(checked === true)}
-              disabled={isLoading}
-              className="data-[state=checked]:bg-[#BB86FC] data-[state=checked]:border-[#BB86FC] border-white/20 h-4 w-4 rounded-[4px]"
-            />
-            <span className="text-[11px] text-white/40 group-hover/rm:text-white/60 transition-colors">
-              Remember me
-            </span>
-          </label>
+        {/* Forgot password */}
+        <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={() => toast.info('Password reset is not available in this demo.')}

@@ -309,27 +309,7 @@ export function NotificationBell() {
         </div>
       )}
 
-      {/* Animation keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes notifSlideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-8px) scale(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        @keyframes notifPulse {
-          0%, 100% {
-            box-shadow: 0 0 8px rgba(207,102,121,0.4);
-          }
-          50% {
-            box-shadow: 0 0 14px rgba(207,102,121,0.6);
-          }
-        }
-      `}} />
+
     </div>
   );
 }

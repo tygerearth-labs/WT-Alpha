@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const search = searchParams.get('search') || '';
     const plan = searchParams.get('plan') || '';
     const status = searchParams.get('status') || '';
@@ -93,20 +93,34 @@ export async function PUT(request: NextRequest) {
     const changes: string[] = [];
 
     if (plan !== undefined) {
+      if (!['basic', 'pro'].includes(plan)) {
+        return NextResponse.json({ error: 'Plan must be "basic" or "pro"' }, { status: 400 });
+      }
       updateData.plan = plan;
       changes.push(`Plan: ${plan}`);
     }
     if (status !== undefined) {
+      if (!['active', 'suspended'].includes(status)) {
+        return NextResponse.json({ error: 'Status must be "active" or "suspended"' }, { status: 400 });
+      }
       updateData.status = status;
       changes.push(`Status: ${status}`);
     }
     if (maxCategories !== undefined) {
-      updateData.maxCategories = maxCategories;
-      changes.push(`MaxCategories: ${maxCategories}`);
+      const numMaxCategories = typeof maxCategories === 'string' ? parseInt(maxCategories) : maxCategories;
+      if (isNaN(numMaxCategories) || numMaxCategories <= 0) {
+        return NextResponse.json({ error: 'Max categories must be a positive number' }, { status: 400 });
+      }
+      updateData.maxCategories = numMaxCategories;
+      changes.push(`MaxCategories: ${numMaxCategories}`);
     }
     if (maxSavings !== undefined) {
-      updateData.maxSavings = maxSavings;
-      changes.push(`MaxSavings: ${maxSavings}`);
+      const numMaxSavings = typeof maxSavings === 'string' ? parseInt(maxSavings) : maxSavings;
+      if (isNaN(numMaxSavings) || numMaxSavings <= 0) {
+        return NextResponse.json({ error: 'Max savings must be a positive number' }, { status: 400 });
+      }
+      updateData.maxSavings = numMaxSavings;
+      changes.push(`MaxSavings: ${numMaxSavings}`);
     }
     if (subscriptionEnd !== undefined) {
       updateData.subscriptionEnd = subscriptionEnd ? new Date(subscriptionEnd) : null;

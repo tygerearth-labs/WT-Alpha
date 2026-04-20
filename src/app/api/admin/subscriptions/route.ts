@@ -68,6 +68,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID, plan, and duration are required' }, { status: 400 });
     }
 
+    if (!['basic', 'pro'].includes(plan)) {
+      return NextResponse.json({ error: 'Plan must be "basic" or "pro"' }, { status: 400 });
+    }
+    const numDurationDays = typeof durationDays === 'string' ? parseInt(durationDays) : durationDays;
+    if (isNaN(numDurationDays) || numDurationDays <= 0 || numDurationDays > 3650) {
+      return NextResponse.json({ error: 'Duration must be between 1 and 3650 days' }, { status: 400 });
+    }
+
     const existingUser = await db.user.findUnique({ where: { id: userId } });
     if (!existingUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -79,7 +87,7 @@ export async function POST(request: NextRequest) {
     const startDate = existingUser.subscriptionEnd && new Date(existingUser.subscriptionEnd) > new Date()
       ? new Date(existingUser.subscriptionEnd)
       : new Date();
-    const newEnd = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    const newEnd = new Date(startDate.getTime() + numDurationDays * 24 * 60 * 60 * 1000);
 
     const updatedUser = await db.user.update({
       where: { id: userId },
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, email: true, username: true, plan: true, subscriptionEnd: true }
     });
 
-    logAdminActivity(adminId as string, 'assign_subscription', updatedUser.email, `Plan: ${plan}, Duration: ${durationDays} days, NewEnd: ${newEnd.toISOString()}`);
+    logAdminActivity(adminId as string, 'assign_subscription', updatedUser.email, `Plan: ${plan}, Duration: ${numDurationDays} days, NewEnd: ${newEnd.toISOString()}`);
     return NextResponse.json({ user: updatedUser });
   } catch (error) {
     console.error('Admin subscription update error:', error);

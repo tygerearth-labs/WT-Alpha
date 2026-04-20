@@ -7,7 +7,11 @@ export interface SessionData {
   userId: string;
 }
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-secret-change-in-production';
+const SESSION_SECRET = process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-only-secret-change-in-production');
+
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable is required in production');
+}
 
 const SESSION_COOKIE_NAME = 'session';
 
@@ -34,12 +38,12 @@ function bufToHex(buffer: Uint8Array): string {
 export async function signSessionToken(userId: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
-    textEncode(SESSION_SECRET),
+    textEncode(SESSION_SECRET) as BufferSource,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
   );
-  const signature = await crypto.subtle.sign('HMAC', key, textEncode(userId));
+  const signature = await crypto.subtle.sign('HMAC', key, textEncode(userId) as BufferSource);
   return `${userId}.${bufToHex(new Uint8Array(signature))}`;
 }
 
@@ -57,12 +61,12 @@ export async function verifySessionToken(token: string): Promise<string | null> 
   // Compute expected signature
   const key = await crypto.subtle.importKey(
     'raw',
-    textEncode(SESSION_SECRET),
+    textEncode(SESSION_SECRET) as BufferSource,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
   );
-  const signature = await crypto.subtle.sign('HMAC', key, textEncode(userId));
+  const signature = await crypto.subtle.sign('HMAC', key, textEncode(userId) as BufferSource);
   const expectedSignature = bufToHex(new Uint8Array(signature));
 
   // Timing-safe comparison: always compare full length

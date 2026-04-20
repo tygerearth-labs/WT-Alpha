@@ -310,15 +310,15 @@ export function AdminSettings() {
 
   const handleClearLogs = async () => {
     setShowClearLogsDialog(false);
-    toast.success('Activity logs cleared', {
-      description: 'All admin activity logs have been removed.',
+    toast.info('Coming soon', {
+      description: 'Activity log clearing will be available in a future update.',
     });
   };
 
   const handleResetDemoData = async () => {
     setShowResetDialog(false);
-    toast.success('Demo data reset', {
-      description: 'Platform has been reset to default state.',
+    toast.info('Coming soon', {
+      description: 'Demo data reset will be available in a future update.',
     });
   };
 

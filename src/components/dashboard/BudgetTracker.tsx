@@ -210,7 +210,7 @@ export function BudgetTracker() {
 
   // Generate year options (current year ± 3)
   const currentYear = now.getFullYear();
-  const yearOptions = [];
+  const yearOptions: number[] = [];
   for (let y = currentYear - 3; y <= currentYear + 3; y++) {
     yearOptions.push(y);
   }

@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUserId } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 // PUT - Update existing savings target
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getAuthUserId();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await params;
     const body = await request.json();
@@ -69,11 +67,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 // DELETE - Delete savings target
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getAuthUserId();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await params;
 

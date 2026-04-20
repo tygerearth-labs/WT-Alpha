@@ -481,12 +481,7 @@ export function AdminLayout() {
           </div>
         </div>
 
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-          }
-        `}} />
+
       </header>
 
       {/* ── Body ── */}
@@ -677,20 +672,7 @@ export function AdminLayout() {
       {/* Onboarding Tour */}
       <AdminOnboardingTour isActive={tourActive} onTourComplete={handleTourComplete} />
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes slideInLeft {
-          from { transform: translateX(-100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .scrollbar-none::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-none {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .announcement-pt { transition: padding-top 0.3s ease; }
-      `}} />
+
     </div>
   );
 }

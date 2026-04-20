@@ -416,21 +416,6 @@ export function NotificationCenter() {
         )}
       </PopoverContent>
 
-      {/* ── Keyframes ── */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes notifPulse {
-          0%, 100% {
-            box-shadow: 0 0 8px rgba(207,102,121,0.4);
-          }
-          50% {
-            box-shadow: 0 0 14px rgba(207,102,121,0.6);
-          }
-        }
-      `,
-        }}
-      />
     </Popover>
   );
 }

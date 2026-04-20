@@ -42,6 +42,7 @@ model Category {
   userId        String
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions  Transaction[]
+  budgets       Budget[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -156,6 +157,7 @@ model Budget {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   amount      Float
   month       Int      // 1-12
   year        Int

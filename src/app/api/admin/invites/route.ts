@@ -55,16 +55,44 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, plan, maxUses, expiresInHours } = body;
 
+    // Validate email format if provided
+    if (email !== undefined && email !== null && email.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+      }
+    }
+
+    // Validate plan is 'basic' or 'pro'
+    const invitePlan = plan || 'basic';
+    if (!['basic', 'pro'].includes(invitePlan)) {
+      return NextResponse.json({ error: 'Plan must be "basic" or "pro"' }, { status: 400 });
+    }
+
+    // Validate maxUses is positive integer
+    const inviteMaxUses = maxUses || 1;
+    if (typeof inviteMaxUses !== 'number' || !Number.isInteger(inviteMaxUses) || inviteMaxUses <= 0) {
+      return NextResponse.json({ error: 'Max uses must be a positive integer' }, { status: 400 });
+    }
+
+    // Validate expiresInHours is positive if provided
+    if (expiresInHours !== undefined && expiresInHours !== null) {
+      const numExpiresInHours = typeof expiresInHours === 'string' ? parseFloat(expiresInHours) : expiresInHours;
+      if (isNaN(numExpiresInHours) || numExpiresInHours <= 0) {
+        return NextResponse.json({ error: 'Expires in hours must be a positive number' }, { status: 400 });
+      }
+    }
+
     const token = randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
 
     const inviteData: Record<string, unknown> = {
       token,
       createdBy: adminId as string,
-      plan: plan || 'basic',
-      maxUses: maxUses || 1
+      plan: invitePlan,
+      maxUses: inviteMaxUses
     };
 
-    if (email) inviteData.email = email;
+    if (email && email.trim() !== '') inviteData.email = email;
     if (expiresInHours) {
       inviteData.expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
     }
@@ -74,7 +102,7 @@ export async function POST(request: NextRequest) {
     const requestUrl = new URL(request.url);
     const inviteUrl = `${requestUrl.origin}/?invite=${token}`;
 
-    logAdminActivity(adminId as string, 'create_invite', token, `Plan: ${body.plan || 'basic'}, MaxUses: ${body.maxUses || 1}, Email: ${body.email || 'public'}`);
+    logAdminActivity(adminId as string, 'create_invite', token, `Plan: ${invitePlan}, MaxUses: ${inviteMaxUses}, Email: ${email || 'public'}`);
     return NextResponse.json({ invite, inviteUrl }, { status: 201 });
   } catch (error) {
     console.error('Admin create invite error:', error);

@@ -482,17 +482,7 @@ export function MainLayout() {
           </div>
         </div>
 
-        {/* Keyframes */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-          }
-          @keyframes progressShimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-        `}} />
+
       </header>
 
       {/* ── Body: Sidebar + Content ── */}
@@ -763,46 +753,7 @@ export function MainLayout() {
         </div>
       </footer>
 
-      {/* Tablet sidebar animation keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes slideInLeft {
-          from { transform: translateX(-100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes gradientBorderRotate {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 8px rgba(187,134,252,0.2), 0 0 16px rgba(187,134,252,0.05); }
-          50% { box-shadow: 0 0 16px rgba(187,134,252,0.4), 0 0 32px rgba(187,134,252,0.1); }
-        }
-        @keyframes ringProgress {
-          from { stroke-dashoffset: var(--ring-circumference); }
-          to { stroke-dashoffset: var(--ring-offset); }
-        }
-        @keyframes levelUpGlow {
-          0%, 100% { filter: brightness(1) drop-shadow(0 0 0px transparent); }
-          50% { filter: brightness(1.15) drop-shadow(0 0 12px rgba(187,134,252,0.4)); }
-        }
-        @keyframes floatUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInFromRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fabPulse {
-          0%, 100% { box-shadow: 0 4px 20px rgba(187,134,252,0.3); }
-          50% { box-shadow: 0 4px 28px rgba(187,134,252,0.5), 0 0 40px rgba(187,134,252,0.15); }
-        }
-      `}} />
+
 
       {/* ── Quick Transaction FAB (visible on all user pages) ── */}
       {quickTransactionVisible && <QuickTransaction />}

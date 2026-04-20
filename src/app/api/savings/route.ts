@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUserId } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 import { calculateTargetMetrics, getCurrentMonthAllocation } from '@/lib/targetLogic';
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getAuthUserId();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const savingsTargets = await db.savingsTarget.findMany({
       where: { userId },
@@ -63,11 +61,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getAuthUserId();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const body = await request.json();
     const {
@@ -84,6 +80,63 @@ export async function POST(request: NextRequest) {
         { error: 'Name, target amount, and target date are required' },
         { status: 400 }
       );
+    }
+
+    // Validate targetAmount is positive
+    const numTargetAmount = typeof targetAmount === 'string' ? parseFloat(targetAmount) : targetAmount;
+    if (isNaN(numTargetAmount) || numTargetAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Target amount must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    // Validate monthlyContribution is >= 0
+    if (monthlyContribution !== undefined && monthlyContribution !== null) {
+      const numMonthlyContribution = typeof monthlyContribution === 'string' ? parseFloat(monthlyContribution) : monthlyContribution;
+      if (isNaN(numMonthlyContribution) || numMonthlyContribution < 0) {
+        return NextResponse.json(
+          { error: 'Monthly contribution must be zero or a positive number' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate allocationPercentage is 0-100
+    if (allocationPercentage !== undefined && allocationPercentage !== null) {
+      const numAllocationPercentage = typeof allocationPercentage === 'string' ? parseFloat(allocationPercentage) : allocationPercentage;
+      if (isNaN(numAllocationPercentage) || numAllocationPercentage < 0 || numAllocationPercentage > 100) {
+        return NextResponse.json(
+          { error: 'Allocation percentage must be between 0 and 100' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate targetDate is in the future
+    const targetDateObj = new Date(targetDate);
+    if (isNaN(targetDateObj.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid target date' },
+        { status: 400 }
+      );
+    }
+    if (targetDateObj <= new Date()) {
+      return NextResponse.json(
+        { error: 'Target date must be in the future' },
+        { status: 400 }
+      );
+    }
+
+    // Validate initialInvestment is >= 0
+    if (initialInvestment !== undefined && initialInvestment !== null) {
+      const numInitialInvestment = typeof initialInvestment === 'string' ? parseFloat(initialInvestment) : initialInvestment;
+      if (isNaN(numInitialInvestment) || numInitialInvestment < 0) {
+        return NextResponse.json(
+          { error: 'Initial investment must be zero or a positive number' },
+          { status: 400 }
+        );
+      }
     }
 
     // Enforce plan limit on savings targets
@@ -105,9 +158,9 @@ export async function POST(request: NextRequest) {
     const savingsTarget = await db.savingsTarget.create({
       data: {
         name,
-        targetAmount,
+        targetAmount: numTargetAmount,
         currentAmount: initialInvestment || 0,
-        targetDate: new Date(targetDate),
+        targetDate: targetDateObj,
         initialInvestment: initialInvestment || 0,
         monthlyContribution: monthlyContribution || 0,
         allocationPercentage: allocationPercentage || 0,

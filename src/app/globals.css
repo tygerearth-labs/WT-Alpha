@@ -624,3 +624,55 @@ html {
   50% { filter: drop-shadow(0 0 8px rgba(187,134,252,0.6)); }
 }
 .animate-lightbulb-pulse { animation: lightbulbPulse 2.5s ease-in-out infinite; }
+
+/* Progress bar shimmer */
+@keyframes progressShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Ring progress animation */
+@keyframes ringProgress {
+  from { stroke-dashoffset: var(--ring-circumference); }
+  to { stroke-dashoffset: var(--ring-offset); }
+}
+
+/* Slide in from right */
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Notification dropdown slide down */
+@keyframes notifSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Notification badge pulse */
+@keyframes notifPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(207,102,121,0.4);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(207,102,121,0.6);
+  }
+}
+
+/* Scrollbar-none utility (admin) */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Announcement padding transition */
+.announcement-pt { transition: padding-top 0.3s ease; }

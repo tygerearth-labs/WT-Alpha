@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    const adminId = await requireAdmin();
+    if (adminId instanceof NextResponse) return adminId;
     const { id } = await params;
 
     const user = await db.user.findUnique({

@@ -87,9 +87,9 @@ export const useAuthStore = create<AuthState>()(
       }),
       // On rehydrate, force loading so checkAuth() can fetch fresh role data
       onRehydrateStorage: () => (state) => {
-        if (state?.isAuthenticated) {
+        if (state && state.isAuthenticated) {
           state.isLoading = true;
-        } else {
+        } else if (state) {
           // If not authenticated on rehydrate, no need to load
           state.isLoading = false;
         }

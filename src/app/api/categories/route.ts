@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getAuthUserId } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getAuthUserId();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type'); // 'income' or 'expense'
@@ -43,11 +41,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getAuthUserId();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const body = await request.json();
     const { name, type, color, icon } = body;
@@ -64,6 +60,25 @@ export async function POST(request: NextRequest) {
         { error: 'Type must be income or expense' },
         { status: 400 }
       );
+    }
+
+    // Validate name length
+    if (typeof name !== 'string' || name.trim().length === 0 || name.trim().length > 50) {
+      return NextResponse.json(
+        { error: 'Name must be between 1 and 50 characters' },
+        { status: 400 }
+      );
+    }
+
+    // Validate color format if provided
+    if (color !== undefined && color !== null) {
+      const hexColorRegex = /^#[0-9a-fA-F]{6}$/;
+      if (!hexColorRegex.test(color)) {
+        return NextResponse.json(
+          { error: 'Color must be a valid hex color (e.g., #10b981)' },
+          { status: 400 }
+        );
+      }
     }
 
     // Enforce plan limit on categories
