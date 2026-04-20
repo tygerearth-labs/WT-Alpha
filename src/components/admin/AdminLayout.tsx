@@ -290,7 +290,10 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0A0A0A] overflow-x-hidden w-full"
-      style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px' } as React.CSSProperties}>
+      style={{
+        '--sidebar-width': sidebarCollapsed ? '64px' : '224px',
+        '--header-offset': 'calc(3.5rem + env(safe-area-inset-top, 0px))',
+      } as React.CSSProperties}>
 
       {/* Ambient Glow */}
       <div className="hidden lg:block fixed top-0 left-0 pointer-events-none z-0"
@@ -299,7 +302,7 @@ export function AdminLayout() {
         style={{ width: '200px', height: '200px', background: 'radial-gradient(ellipse at 70% 80%, rgba(187,134,252,0.03) 0%, transparent 70%)' }} />
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-30">
+      <header className="fixed top-0 left-0 right-0 z-30" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="absolute inset-0 bg-[#0D0D0D]/80 backdrop-blur-xl" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#03DAC6]/25 to-transparent" />
         <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] blur-sm pointer-events-none"
@@ -487,16 +490,17 @@ export function AdminLayout() {
       {/* ── Body ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* ── Announcement Banner (sticky below fixed header) ── */}
-        <div className="shrink-0 sticky top-14 z-20">
+        <div className="shrink-0 sticky z-20" style={{ top: 'var(--header-offset)' }}>
           <AnnouncementBanner />
         </div>
 
-        <div className="flex-1 flex overflow-hidden pt-14">
+        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'var(--header-offset)' }}>
         {/* Desktop Sidebar */}
         <aside className={cn(
-          'hidden lg:flex flex-col fixed top-14 left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',
+          'hidden lg:flex flex-col fixed left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',
           sidebarCollapsed ? 'w-[64px]' : 'w-56 xl:w-64',
-        )}>
+        )}
+          style={{ top: 'var(--header-offset)' }}>
           <div className="absolute inset-0 bg-[#0D0D0D]/60 backdrop-blur-2xl" />
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: 'linear-gradient(180deg, rgba(3,218,198,0.03) 0%, transparent 30%, transparent 70%, rgba(187,134,252,0.02) 100%)' }} />
@@ -534,8 +538,8 @@ export function AdminLayout() {
           <>
             <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
               onClick={() => setMobileMenuOpen(false)} />
-            <aside className="fixed top-14 left-0 bottom-0 z-40 w-64 flex-col md:hidden"
-              style={{ animation: 'slideInLeft 0.25s ease-out' }}>
+            <aside className="fixed left-0 bottom-0 z-40 w-64 flex-col md:hidden"
+              style={{ top: 'var(--header-offset)', animation: 'slideInLeft 0.25s ease-out' }}>
               <div className="absolute inset-0 bg-[#0D0D0D]/95 backdrop-blur-2xl rounded-r-2xl" />
               <div className="absolute inset-0 pointer-events-none rounded-r-2xl"
                 style={{ background: 'linear-gradient(180deg, rgba(3,218,198,0.04) 0%, transparent 30%, transparent 70%, rgba(187,134,252,0.02) 100%)' }} />

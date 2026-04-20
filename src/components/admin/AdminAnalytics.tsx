@@ -8,7 +8,7 @@ import {
   TrendingUp, TrendingDown, DollarSign, BarChart3,
   PieChart as PieChartIcon, Users, Target, Activity,
   RefreshCw, ArrowUpRight, ArrowDownRight, Wallet,
-  Percent,
+  Percent, AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,14 +38,21 @@ export function AdminAnalytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAnalytics = async (showSpinner = false) => {
     if (showSpinner) setIsRefreshing(true);
+    setError(null);
     try {
       const res = await fetch('/api/admin/analytics');
-      if (res.ok) setData(await res.json());
-    } catch {}
-    finally { setLoading(false); setIsRefreshing(false); }
+      if (res.ok) {
+        setData(await res.json());
+      } else {
+        setError('Failed to load analytics data. Please try again.');
+      }
+    } catch {
+      setError('Network error. Please check your connection and try again.');
+    } finally { setLoading(false); setIsRefreshing(false); }
   };
 
   useEffect(() => { fetchAnalytics(); }, []);
@@ -73,6 +80,38 @@ export function AdminAnalytics() {
           <div className="lg:col-span-2 h-52 rounded-xl bg-white/[0.03] animate-pulse" />
           <div className="h-52 rounded-xl bg-white/[0.03] animate-pulse" />
         </div>
+      </div>
+    );
+  }
+
+  if (!data && error) {
+    return (
+      <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-[#BB86FC]" />
+            <h3 className="text-base font-bold text-white/80">Financial Analytics</h3>
+          </div>
+          <Button variant="ghost" size="sm"
+            className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/40 hover:text-white hover:bg-white/[0.04]"
+            onClick={() => { setLoading(true); fetchAnalytics(true); }}>
+            <RefreshCw className="h-3 w-3" />
+            Retry
+          </Button>
+        </div>
+        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+          <CardContent className="p-8 text-center">
+            <div className="w-12 h-12 rounded-xl bg-[#CF6679]/10 flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="h-6 w-6 text-[#CF6679]/70" />
+            </div>
+            <p className="text-white/50 text-sm font-medium">Failed to load analytics</p>
+            <p className="text-white/25 text-[12px] mt-1">{error}</p>
+            <Button variant="outline" size="sm" className="mt-4 h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/70"
+              onClick={() => { setLoading(true); fetchAnalytics(true); }}>
+              <RefreshCw className="h-3 w-3" /> Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

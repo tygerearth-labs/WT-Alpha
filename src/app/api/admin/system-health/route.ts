@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { Prisma } from '@prisma/client';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
 
 const startTime = Date.now();
@@ -13,15 +10,14 @@ export async function GET() {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    // Get database file size
+    // Get database size via PostgreSQL
     let dbSize = 'Unknown';
     try {
-      const dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
-      const dbPath = dbUrl.replace('file:', '').replace('./', '');
-      const fullPath = path.join(process.cwd(), 'db', dbPath);
-      if (fs.existsSync(fullPath)) {
-        const stats = fs.statSync(fullPath);
-        const bytes = stats.size;
+      const result = await db.$queryRawUnsafe<{ size: bigint }[]>(
+        'SELECT pg_database_size(current_database()) as size'
+      );
+      if (result && result[0]) {
+        const bytes = Number(result[0].size);
         if (bytes < 1024) dbSize = `${bytes} B`;
         else if (bytes < 1024 * 1024) dbSize = `${(bytes / 1024).toFixed(1)} KB`;
         else dbSize = `${(bytes / (1024 * 1024)).toFixed(2)} MB`;

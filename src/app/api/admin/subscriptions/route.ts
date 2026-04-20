@@ -89,14 +89,30 @@ export async function POST(request: NextRequest) {
       : new Date();
     const newEnd = new Date(startDate.getTime() + numDurationDays * 24 * 60 * 60 * 1000);
 
+    // Fetch PlatformConfig to auto-set limits based on plan
+    let config = await db.platformConfig.findUnique({ where: { id: 'platform' } });
+    if (!config) {
+      config = await db.platformConfig.create({ data: { id: 'platform' } });
+    }
+
+    // Determine limits based on plan
+    const maxCategories = plan === 'pro'
+      ? config.defaultMaxCategories * 5
+      : config.defaultMaxCategories;
+    const maxSavings = plan === 'pro'
+      ? config.defaultMaxSavings * 5
+      : config.defaultMaxSavings;
+
     const updatedUser = await db.user.update({
       where: { id: userId },
       data: {
         plan,
         subscriptionEnd: newEnd,
-        status: 'active'
+        status: 'active',
+        maxCategories,
+        maxSavings,
       },
-      select: { id: true, email: true, username: true, plan: true, subscriptionEnd: true }
+      select: { id: true, email: true, username: true, plan: true, subscriptionEnd: true, maxCategories: true, maxSavings: true }
     });
 
     logAdminActivity(adminId as string, 'assign_subscription', updatedUser.email, `Plan: ${plan}, Duration: ${numDurationDays} days, NewEnd: ${newEnd.toISOString()}`);

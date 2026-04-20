@@ -20,7 +20,7 @@ export async function GET() {
       db.$queryRaw<Array<{ date: string; type: string; total: bigint; count: bigint }>>`
         SELECT DATE(date) as date, type, SUM(amount) as total, COUNT(*) as count
         FROM "Transaction"
-        WHERE date >= date('now', '-30 days')
+        WHERE date >= NOW() - INTERVAL '30 days'
         GROUP BY DATE(date), type
         ORDER BY date ASC
       `,
@@ -29,7 +29,7 @@ export async function GET() {
         FROM "Transaction" t
         JOIN "Category" c ON t."categoryId" = c.id
         WHERE t.type = 'expense'
-        GROUP BY c.id
+        GROUP BY c.id, c.name, c.icon
         ORDER BY total DESC
         LIMIT 8
       `,
@@ -41,12 +41,12 @@ export async function GET() {
     ]);
 
     const monthlyData = await db.$queryRaw<Array<{ month: string; income: bigint; expense: bigint }>>`
-      SELECT strftime('%Y-%m', date) as month,
+      SELECT TO_CHAR(date, 'YYYY-MM') as month,
              SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
              SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
       FROM "Transaction"
-      WHERE date >= date('now', '-6 months')
-      GROUP BY strftime('%Y-%m', date)
+      WHERE date >= NOW() - INTERVAL '6 months'
+      GROUP BY TO_CHAR(date, 'YYYY-MM')
       ORDER BY month ASC
     `;
 

@@ -26,6 +26,7 @@ import {
   Target, Crosshair, Hexagon, Octagon, Pentagon, Triangle,
   Circle, Diamond, ArrowUp, ArrowDown, ArrowLeft,
   ChevronUp, ChevronDown, ChevronLeft, MoreVertical,
+  Rocket, Droplet, HandCoins, Tent, Sunrise, Sunset, Rainbow, Mountain, Waves, Palmtree,
 } from 'lucide-react';
 
 /**
@@ -56,12 +57,25 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
   Target, Crosshair, Hexagon, Octagon, Pentagon, Triangle,
   Circle, Diamond, ArrowUp, ArrowDown, ArrowLeft,
   ChevronUp, ChevronDown, ChevronLeft, MoreVertical,
+  Rocket, Droplet, HandCoins, Tent, Sunrise, Sunset, Rainbow, Mountain, Waves, Palmtree,
 };
 
 interface DynamicIconProps {
   name: string;
   className?: string;
   style?: React.CSSProperties;
+}
+
+/**
+ * Check if a value looks like an emoji (contains non-ASCII characters).
+ * Used to decide whether to render as text or fall back to a Tag icon.
+ */
+function isEmojiFallback(value: string): boolean {
+  for (const char of value) {
+    const code = char.codePointAt(0);
+    if (code && code > 0x2600) return true;
+  }
+  return false;
 }
 
 /**
@@ -87,10 +101,16 @@ export function DynamicIcon({ name, className, style }: DynamicIconProps) {
     return <Component className={className} style={blockStyle} />;
   }
 
-  // Final fallback: render as text (emoji or plain text)
-  return (
-    <div className={className} style={blockStyle}>
-      {resolvedName}
-    </div>
-  );
+  // Final fallback: render Tag icon for unknown icon names, or text for emojis
+  if (isEmojiFallback(resolvedName)) {
+    // It's likely an emoji string — render as text
+    return (
+      <div className={className} style={blockStyle}>
+        {resolvedName}
+      </div>
+    );
+  }
+  // Unknown Lucide name — use Tag as fallback icon
+  const FallbackIcon = ICON_MAP['Tag']!;
+  return <FallbackIcon className={className} style={blockStyle} />;
 }

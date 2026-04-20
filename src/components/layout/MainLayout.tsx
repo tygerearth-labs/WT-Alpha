@@ -32,6 +32,7 @@ import {
   ArrowDownRight,
   Shield,
   ArrowLeftRight,
+  Lock,
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
 import { Dashboard } from '@/components/dashboard/Dashboard';
@@ -170,6 +171,7 @@ export function MainLayout() {
   };
 
   const isPro = user?.plan === 'pro';
+  const isBasic = user?.plan === 'basic';
 
   /* ── Shared sidebar nav renderer ── */
   const renderNavItems = (collapsed: boolean, onNavigate?: (page: PageType) => void) => (
@@ -232,6 +234,9 @@ export function MainLayout() {
                     {item.label}
                   </span>
                 )}
+                {!collapsed && isBasic && item.id === 'laporan' && (
+                  <Lock className="h-3 w-3 ml-auto shrink-0 text-[#FFD700]/50" />
+                )}
               </div>
             </button>
 
@@ -278,7 +283,10 @@ export function MainLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-x-hidden w-full"
-      style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px' } as React.CSSProperties}>
+      style={{
+        '--sidebar-width': sidebarCollapsed ? '64px' : '224px',
+        '--header-offset': 'calc(3.5rem + env(safe-area-inset-top, 0px))',
+      } as React.CSSProperties}>
 
       {/* ── Ambient Glow Effects (desktop only) ── */}
       <div
@@ -316,8 +324,8 @@ export function MainLayout() {
       )}
 
       {/* ── Top Header: Logo + Hamburger + Avatar ── */}
-      <header className="fixed top-0 left-0 right-0 z-30">
-        {/* Header background with glass morphism */}
+      <header className="fixed top-0 left-0 right-0 z-30" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        {/* Header background with glass morphism — fills safe area too */}
         <div className="absolute inset-0 bg-[#0D0D0D]/80 backdrop-blur-xl" />
         {/* Gradient glow border at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#BB86FC]/25 to-transparent" />
@@ -488,18 +496,18 @@ export function MainLayout() {
       {/* ── Body: Sidebar + Content ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* ── Announcement Banner (sticky below fixed header) ── */}
-        <div className="shrink-0 sticky top-14 z-20">
+        <div className="shrink-0 sticky z-20" style={{ top: 'var(--header-offset)' }}>
           <AnnouncementBanner />
         </div>
 
-        <div className="flex-1 flex overflow-hidden pt-14">
+        <div className="flex-1 flex overflow-hidden" style={{ paddingTop: 'var(--header-offset)' }}>
         {/* ── Desktop Sidebar (lg: and up) ── */}
         <aside
           className={cn(
-            'hidden lg:flex flex-col fixed top-14 left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',
+            'hidden lg:flex flex-col fixed left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',
             sidebarCollapsed ? 'w-[64px]' : 'w-56 xl:w-64',
           )}
-          style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px' } as React.CSSProperties}
+          style={{ '--sidebar-width': sidebarCollapsed ? '64px' : '224px', top: 'var(--header-offset)' } as React.CSSProperties}
         >
           {/* Sidebar gradient background */}
           <div
@@ -598,8 +606,9 @@ export function MainLayout() {
             />
             {/* Sidebar panel */}
             <aside
-              className="md:block hidden fixed top-14 left-0 bottom-0 z-40 w-64 flex-col lg:hidden"
+              className="md:block hidden fixed left-0 bottom-0 z-40 w-64 flex-col lg:hidden"
               style={{
+                top: 'var(--header-offset)',
                 animation: 'slideInLeft 0.25s ease-out',
               }}
             >
@@ -682,7 +691,7 @@ export function MainLayout() {
         >
           {/* Page Transition Progress Bar */}
           {isTransitioning && (
-            <div className="fixed top-14 left-0 right-0 z-50 h-[2px]">
+            <div className="fixed left-0 right-0 z-50 h-[2px]" style={{ top: 'var(--header-offset)' }}>
               <div
                 className="h-full"
                 style={{
@@ -733,13 +742,18 @@ export function MainLayout() {
                     <div className="w-4 h-[3px] rounded-full bg-[#BB86FC]" style={{ boxShadow: '0 0 8px rgba(187,134,252,0.5), 0 2px 4px rgba(187,134,252,0.3)' }} />
                   </div>
                 )}
-                <Icon
-                  className={cn(
-                    'h-5 w-5 transition-all duration-200',
-                    isActive ? 'text-[#BB86FC] drop-shadow-[0_0_6px_rgba(187,134,252,0.4)]' : 'text-[#555]',
+                <div className="relative">
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 transition-all duration-200',
+                      isActive ? 'text-[#BB86FC] drop-shadow-[0_0_6px_rgba(187,134,252,0.4)]' : 'text-[#555]',
+                    )}
+                    strokeWidth={isActive ? 2.2 : 1.5}
+                  />
+                  {isBasic && item.id === 'laporan' && (
+                    <Lock className="absolute -top-1 -right-1 h-2.5 w-2.5 text-[#FFD700]/50" />
                   )}
-                  strokeWidth={isActive ? 2.2 : 1.5}
-                />
+                </div>
               </button>
             );
           })}

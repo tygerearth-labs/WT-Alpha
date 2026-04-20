@@ -138,7 +138,7 @@ export function QuickTransaction() {
       <Sheet open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setShowSuccess(false); } else { setOpen(true); } }}>
         <SheetContent
           side="bottom"
-          className="max-h-[60vh] md:max-h-[55vh] md:max-w-md md:mx-auto md:inset-x-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:mb-8 md:rounded-2xl overflow-y-auto rounded-t-2xl"
+          className="max-h-[85vh] md:max-w-2xl md:mx-auto md:inset-x-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:mb-8 md:rounded-2xl overflow-y-auto rounded-t-2xl"
           style={{
             background: '#0D0D0D',
             border: `1px solid ${THEME.border}`,

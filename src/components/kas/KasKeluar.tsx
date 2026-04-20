@@ -641,7 +641,7 @@ export function KasKeluar() {
       </div>
 
       {/* ═══ Desktop 2-column layout ═══ */}
-      <div className="hidden lg:grid lg:grid-cols-[340px_1fr] xl:grid-cols-[400px_1fr] lg:gap-5 xl:gap-6">
+      <div className="hidden lg:grid lg:grid-cols-[380px_1fr] xl:grid-cols-[440px_1fr] lg:gap-5 xl:gap-6">
         {/* Left column: Categories + Distribution — Glass card */}
         <div
           className="rounded-2xl p-5 space-y-5 overflow-hidden"

@@ -97,15 +97,10 @@ function AnimatedSwitch({
       }}
     >
       <span
-        className={cn(
-          'pointer-events-none inline-block h-5 w-5 rounded-full shadow-lg ring-0 transition-transform duration-300',
-          checked ? 'translate-x-5' : 'translate-x-0',
-        )}
+        className="pointer-events-none inline-block h-5 w-5 rounded-full shadow-lg ring-0"
         style={{
           backgroundColor: '#fff',
-          transform: animating
-            ? `translateX(${checked ? 20 : 0}px) scale(${checked ? 1.1 : 1})`
-            : `translateX(${checked ? 20 : 0}px) scale(1)`,
+          transform: `translateX(${checked ? 20 : 0}px) scale(${animating ? (checked ? 1.1 : 1) : 1})`,
           transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           boxShadow: checked
             ? `0 0 8px ${activeColor}40, 0 2px 4px rgba(0,0,0,0.2)`
@@ -291,9 +286,13 @@ export function AdminSettings() {
           }),
         });
         if (res.ok) {
-          // silently saved
+          toast.success('Pengaturan tersimpan', { duration: 2000 });
+        } else {
+          toast.error('Gagal menyimpan pengaturan');
         }
-      } catch {}
+      } catch {
+        toast.error('Gagal menyimpan pengaturan');
+      }
       setSavingConfig(false);
     };
 

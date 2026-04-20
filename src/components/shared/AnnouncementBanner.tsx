@@ -118,7 +118,7 @@ export function AnnouncementBanner() {
   if (activeAnnouncements.length === 0) return null;
 
   return (
-    <div className="flex flex-col sticky top-14 z-20">
+    <div className="flex flex-col sticky z-20" style={{ top: 'var(--header-offset, 3.5rem)' }}>
       {activeAnnouncements.map((announcement) => {
         const style = TYPE_STYLES[announcement.type] || TYPE_STYLES.info;
         const Icon = style.icon;

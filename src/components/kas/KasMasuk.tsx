@@ -645,7 +645,7 @@ export function KasMasuk() {
       </div>
 
       {/* ═══ Desktop 2-column layout ═══ */}
-      <div className="hidden lg:grid lg:grid-cols-[340px_1fr] xl:grid-cols-[400px_1fr] lg:gap-5 xl:gap-6">
+      <div className="hidden lg:grid lg:grid-cols-[380px_1fr] xl:grid-cols-[440px_1fr] lg:gap-5 xl:gap-6">
         {/* Left column: Categories + Distribution — Glass card */}
         <div
           className="rounded-2xl p-5 space-y-5 overflow-hidden"
@@ -667,7 +667,7 @@ export function KasMasuk() {
                 centerLabel={t('kas.categories')}
               />
               {/* Legend dots */}
-              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
                 {incomeByCategory.slice(0, 5).map((cat, i) => (
                   <motion.div
                     key={cat.name}
@@ -676,10 +676,10 @@ export function KasMasuk() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 + i * 0.06, duration: 0.3 }}
                   >
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cat.color }} />
-                    <span className="text-[10px] font-medium truncate max-w-[80px]" style={{ color: T.textSub }}>{cat.name}</span>
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
+                    <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: T.textSub }}>{cat.name}</span>
                     <span
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{ background: `${cat.color}18`, color: cat.color }}
                     >
                       {totalIncome > 0 ? ((cat.amount / totalIncome) * 100).toFixed(0) : 0}%
@@ -695,9 +695,9 @@ export function KasMasuk() {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.topCategories')}</p>
+                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.topCategories')}</p>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {[...incomeByCategory].sort((a, b) => b.amount - a.amount).slice(0, 3).map((cat, i) => {
                   const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
                   const medals = ['🥇', '🥈', '🥉'];
@@ -731,7 +731,7 @@ export function KasMasuk() {
                             />
                           </div>
                           <motion.span
-                            className="text-[10px] font-bold tabular-nums shrink-0 w-10 text-right"
+                            className="text-xs font-bold tabular-nums shrink-0 w-11 text-right"
                             style={{ color: cat.color }}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -779,23 +779,23 @@ export function KasMasuk() {
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.distribution')}</p>
+                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.distribution')}</p>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {incomeByCategory.slice(0, 5).map((cat) => {
                   const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
                   return (
                     <div key={cat.name} className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-lg grid place-items-center shrink-0 [&>*]:block leading-none"
+                      <div className="w-8 h-8 rounded-lg grid place-items-center shrink-0 [&>*]:block leading-none"
                         style={{ background: `${cat.color}25` }}>
-                        <DynamicIcon name={cat.icon} className="h-4 w-4" />
+                        <DynamicIcon name={cat.icon} className="h-4.5 w-4.5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1 min-w-0 gap-2">
-                          <span className="text-xs font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
-                          <span className="text-xs font-semibold shrink-0 max-w-[120px] truncate" style={{ color: cat.color }}>{pct.toFixed(0)}% · {formatAmount(cat.amount)}</span>
+                          <span className="text-sm font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
+                          <span className="text-sm font-semibold shrink-0 max-w-[140px] truncate" style={{ color: cat.color }}>{pct.toFixed(0)}% · {formatAmount(cat.amount)}</span>
                         </div>
-                        <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                           <div className="h-full rounded-full transition-all duration-500"
                             style={{ width: `${Math.max(pct, 2)}%`, background: `linear-gradient(90deg, ${cat.color}, ${cat.color}CC)` }}
                           />

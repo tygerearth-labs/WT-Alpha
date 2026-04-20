@@ -229,8 +229,10 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
       if (editPlan) body.plan = editPlan;
       if (editStatus) body.status = editStatus;
       if (editRole) body.role = editRole;
-      if (editMaxCats) body.maxCategories = parseInt(editMaxCats);
-      if (editMaxSavings) body.maxSavings = parseInt(editMaxSavings);
+      const parsedMaxCats = parseInt(editMaxCats);
+      const parsedMaxSavings = parseInt(editMaxSavings);
+      if (!isNaN(parsedMaxCats) && parsedMaxCats > 0) body.maxCategories = parsedMaxCats;
+      if (!isNaN(parsedMaxSavings) && parsedMaxSavings > 0) body.maxSavings = parsedMaxSavings;
       if (editSubEnd) body.subscriptionEnd = editSubEnd;
 
       const res = await fetch('/api/admin/users', {
@@ -816,7 +818,14 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-[11px] text-white/50">Plan</Label>
-              <Select value={editPlan} onValueChange={setEditPlan}>
+              <Select value={editPlan} onValueChange={(v) => {
+                setEditPlan(v);
+                // Auto-update limits based on plan defaults
+                const defaults = { basic: { cats: 10, savings: 3 }, pro: { cats: 50, savings: 20 } };
+                const d = defaults[v as keyof typeof defaults] || defaults.basic;
+                setEditMaxCats(String(d.cats));
+                setEditMaxSavings(String(d.savings));
+              }}>
                 <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
                   <SelectValue />
                 </SelectTrigger>
@@ -854,12 +863,12 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-[11px] text-white/50">Max Categories</Label>
+                <Label className="text-[11px] text-white/50">Max Kategori</Label>
                 <Input type="number" value={editMaxCats} onChange={(e) => setEditMaxCats(e.target.value)}
                   className="bg-white/[0.03] border-white/[0.06] text-white/70" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] text-white/50">Max Savings</Label>
+                <Label className="text-[11px] text-white/50">Max Target Tabungan</Label>
                 <Input type="number" value={editMaxSavings} onChange={(e) => setEditMaxSavings(e.target.value)}
                   className="bg-white/[0.03] border-white/[0.06] text-white/70" />
               </div>

@@ -88,7 +88,7 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <>
-        <div className="mt-14">
+        <div style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
           <AnnouncementBanner />
         </div>
         <LandingPage />

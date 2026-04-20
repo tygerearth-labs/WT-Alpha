@@ -8,10 +8,16 @@ export interface SessionData {
 }
 
 // Use NEXTAUTH_SECRET (already in Vercel ENV) — no need for a separate SESSION_SECRET
-const SESSION_SECRET = process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-only-secret-change-in-production');
-
-if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET) {
-  throw new Error('NEXTAUTH_SECRET environment variable is required in production');
+// Lazy getter so the check only runs at request-time, not at build-time
+let _secret: string | undefined;
+function getSecret(): string {
+  if (!_secret) {
+    _secret = process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-only-secret-change-in-production');
+    if (process.env.NODE_ENV === 'production' && !_secret) {
+      throw new Error('NEXTAUTH_SECRET environment variable is required in production');
+    }
+  }
+  return _secret;
 }
 
 const SESSION_COOKIE_NAME = 'session';
@@ -39,7 +45,7 @@ function bufToHex(buffer: Uint8Array): string {
 export async function signSessionToken(userId: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
-    textEncode(SESSION_SECRET) as BufferSource,
+    textEncode(getSecret()) as BufferSource,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
@@ -62,7 +68,7 @@ export async function verifySessionToken(token: string): Promise<string | null> 
   // Compute expected signature
   const key = await crypto.subtle.importKey(
     'raw',
-    textEncode(SESSION_SECRET) as BufferSource,
+    textEncode(getSecret()) as BufferSource,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],

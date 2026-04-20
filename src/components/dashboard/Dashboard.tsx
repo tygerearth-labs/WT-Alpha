@@ -9,7 +9,7 @@ import {
   PieChart as PieChartIcon, BarChart3, Sparkles,
   AlertTriangle, Trophy, Flame, CheckCircle2, Zap,
   Shield, ChevronLeft, ChevronRight, Banknote, Timer, Radar, Eye, Brain,
-  BarChart2, Lightbulb, PiggyBank, Sun, Moon, Star,
+  BarChart2, Lightbulb, PiggyBank, Sun, Moon, Star, Lock,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 // embla-carousel removed — replaced with lightweight CSS transform carousel
@@ -54,6 +54,31 @@ const CATEGORY_COLORS = [
   '#64B5F6', '#81C784', '#FFB74D', '#E57373',
   '#4DB6AC', '#BA68C8',
 ];
+
+// ── Plan Lock Badge ─────────────────────────────────────────────
+function PlanLockBadge({ feature }: { feature: string }) {
+  const authStore = useAuthStore();
+  const plan = authStore.user?.plan;
+  if (plan !== 'basic') return null;
+  return (
+    <div className="flex items-center gap-1 text-[10px] font-semibold text-[#FFD700]/70 bg-[#FFD700]/10 px-2 py-0.5 rounded-full border border-[#FFD700]/15">
+      <Lock className="h-3 w-3" />
+      Pro
+    </div>
+  );
+}
+
+// ── Pro Feature Wrapper ─────────────────────────────────────────
+function ProFeatureWrapper({ feature, children }: { feature: string; children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {children}
+      <div className="absolute top-2 right-2 z-10">
+        <PlanLockBadge feature={feature} />
+      </div>
+    </div>
+  );
+}
 
 // ── Types ────────────────────────────────────────────────────────
 interface MonthlyTrend {
@@ -1692,11 +1717,21 @@ export function Dashboard() {
       {/* ═══ Section 3.5: Health Score + Budget + Savings Overview ═══ */}
       {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {isSectionVisible('healthScore') && <FinancialHealthScore />}
-          {isSectionVisible('budget') && <BudgetTracker />}
+          {isSectionVisible('healthScore') && (
+            <ProFeatureWrapper feature="healthScore">
+              <FinancialHealthScore />
+            </ProFeatureWrapper>
+          )}
+          {isSectionVisible('budget') && (
+            <ProFeatureWrapper feature="budget">
+              <BudgetTracker />
+            </ProFeatureWrapper>
+          )}
           {isSectionVisible('savingsOverview') && (
             <div className="sm:col-span-2 lg:col-span-1">
-              <SavingsOverview />
+              <ProFeatureWrapper feature="savingsOverview">
+                <SavingsOverview />
+              </ProFeatureWrapper>
             </div>
           )}
         </div>
@@ -1704,29 +1739,39 @@ export function Dashboard() {
 
       {/* ═══ Section 3.6: Financial Tips ═══ */}
       {isSectionVisible('tips') && (
-        <FinancialTips
-          expenseByCategory={data.expenseByCategory}
-          monthlyComparison={data.monthlyComparison}
-          savingsRate={data.savingsRate}
-        />
+        <ProFeatureWrapper feature="tips">
+          <FinancialTips
+            expenseByCategory={data.expenseByCategory}
+            monthlyComparison={data.monthlyComparison}
+            savingsRate={data.savingsRate}
+          />
+        </ProFeatureWrapper>
       )}
 
       {/* ═══ Section 3.7: Financial Insights Widgets ═══ */}
       {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
           {isSectionVisible('spendingTrend') && (
-            <SpendingTrendChart
-              transactions={data.transactions}
-              savingsHistory={data.savingsHistory}
-            />
+            <ProFeatureWrapper feature="spendingTrend">
+              <SpendingTrendChart
+                transactions={data.transactions}
+                savingsHistory={data.savingsHistory}
+              />
+            </ProFeatureWrapper>
           )}
-          {isSectionVisible('topCategories') && <TopCategories expenseByCategory={data.expenseByCategory} />}
+          {isSectionVisible('topCategories') && (
+            <ProFeatureWrapper feature="topCategories">
+              <TopCategories expenseByCategory={data.expenseByCategory} />
+            </ProFeatureWrapper>
+          )}
           {isSectionVisible('monthlySummary') && (
-            <MonthlySummary
-              monthlyComparison={data.monthlyComparison}
-              savingsRate={data.savingsRate}
-              monthlyTrends={data.monthlyTrends}
-            />
+            <ProFeatureWrapper feature="monthlySummary">
+              <MonthlySummary
+                monthlyComparison={data.monthlyComparison}
+                savingsRate={data.savingsRate}
+                monthlyTrends={data.monthlyTrends}
+              />
+            </ProFeatureWrapper>
           )}
         </div>
       )}

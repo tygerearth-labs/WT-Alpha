@@ -101,11 +101,11 @@ export async function GET() {
 
     let databaseSize = 'Unknown';
     try {
-      const result = await db.$queryRawUnsafe<{ page_count: number; page_size: number }[]>(
-        'SELECT page_count, page_size FROM pragma_page_count(), pragma_page_size()'
+      const result = await db.$queryRawUnsafe<{ size: bigint }[]>(
+        'SELECT pg_database_size(current_database()) as size'
       );
       if (result && result[0]) {
-        const bytes = result[0].page_count * result[0].page_size;
+        const bytes = Number(result[0].size);
         if (bytes < 1024) databaseSize = `${bytes} B`;
         else if (bytes < 1024 * 1024) databaseSize = `${(bytes / 1024).toFixed(1)} KB`;
         else databaseSize = `${(bytes / (1024 * 1024)).toFixed(2)} MB`;

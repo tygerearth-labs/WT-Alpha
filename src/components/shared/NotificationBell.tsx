@@ -139,6 +139,22 @@ export function NotificationBell() {
     handleMarkAsRead(announcement.id);
   };
 
+  // Mark all notifications as read via API when the bell is opened
+  const handleBellOpen = useCallback(async () => {
+    const newOpen = !isOpen;
+    setIsOpen(newOpen);
+    if (newOpen) {
+      // Immediately clear badge count locally
+      handleMarkAllAsRead();
+      // Also mark all as read via API
+      try {
+        await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+      } catch {
+        // silent fail
+      }
+    }
+  }, [isOpen, announcements]);
+
   // Don't render if no active announcements
   if (!isLoading && !hasActiveAnnouncements) return null;
 
@@ -146,7 +162,7 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       {/* Bell Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleBellOpen}
         className={cn(
           'relative grid place-items-center w-9 h-9 rounded-full transition-all duration-200',
           'hover:bg-white/[0.06] active:scale-95',

@@ -527,6 +527,7 @@ export function LandingPage() {
       <nav
         className="fixed top-0 inset-x-0 z-40 transition-all duration-300"
         style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
           background: scrolled ? 'rgba(0, 0, 0, 0.72)' : 'transparent',
           backdropFilter: scrolled ? 'blur(24px) saturate(180%)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(180%)' : 'none',
@@ -590,7 +591,7 @@ export function LandingPage() {
       </nav>
 
       {/* ========== HERO ========== */}
-      <section className="relative min-h-[100dvh] flex flex-col justify-center pt-20 sm:pt-36 pb-10 sm:pb-32 px-4 sm:px-6">
+      <section className="relative min-h-[100dvh] flex flex-col justify-center pb-10 sm:pb-32 px-4 sm:px-6" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
         <FloatingDecorations />
 
         <div className="relative mx-auto max-w-4xl text-center">

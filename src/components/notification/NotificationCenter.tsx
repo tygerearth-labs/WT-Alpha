@@ -125,6 +125,7 @@ export function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -187,25 +188,8 @@ export function NotificationCenter() {
       if (!notification.isRead) {
         await markAsRead(notification.id);
       }
-      if (notification.actionUrl) {
-        // Validate URL is a safe internal or https/http path to prevent open redirect / XSS
-        try {
-          const url = new URL(notification.actionUrl, window.location.origin);
-          if (url.protocol === 'http:' || url.protocol === 'https:') {
-            // Only allow same-origin or safe external URLs
-            if (url.origin === window.location.origin) {
-              window.location.href = notification.actionUrl;
-            } else {
-              window.open(notification.actionUrl, '_blank', 'noopener,noreferrer');
-            }
-          }
-        } catch {
-          // If URL parsing fails, treat as a relative path (safe for internal navigation)
-          if (notification.actionUrl.startsWith('/') && !notification.actionUrl.startsWith('//')) {
-            window.location.href = notification.actionUrl;
-          }
-        }
-      }
+      // Toggle expand instead of navigating to actionUrl
+      setExpandedId((prev) => (prev === notification.id ? null : notification.id));
     },
     [markAsRead],
   );
@@ -327,6 +311,7 @@ export function NotificationCenter() {
             visibleNotifications.map((notification) => {
               const isRead = notification.isRead;
               const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
+              const isExpanded = expandedId === notification.id;
 
               return (
                 <button
@@ -354,7 +339,8 @@ export function NotificationCenter() {
                     <div className="flex items-start justify-between gap-2">
                       <p
                         className={cn(
-                          'text-xs leading-relaxed line-clamp-1',
+                          'text-xs leading-relaxed',
+                          isExpanded ? 'line-clamp-none' : 'line-clamp-1',
                           !isRead ? 'font-semibold' : 'font-medium',
                         )}
                         style={{ color: isRead ? '#888' : '#E6E1E5' }}
@@ -372,14 +358,27 @@ export function NotificationCenter() {
                       )}
                     </div>
                     <p
-                      className="text-[11px] leading-relaxed mt-0.5 line-clamp-2"
+                      className={cn(
+                        'text-[11px] leading-relaxed mt-0.5',
+                        isExpanded ? 'line-clamp-none' : 'line-clamp-2',
+                      )}
                       style={{ color: '#777' }}
                     >
                       {notification.description}
                     </p>
-                    <p className="text-[9px] mt-1" style={{ color: '#555' }}>
-                      {formatRelativeTime(notification.createdAt, t)}
-                    </p>
+                    {isExpanded && (
+                      <p
+                        className="text-[11px] leading-relaxed mt-1.5 font-medium"
+                        style={{ color: '#999' }}
+                      >
+                        {formatRelativeTime(notification.createdAt, t)}
+                      </p>
+                    )}
+                    {!isExpanded && (
+                      <p className="text-[9px] mt-1" style={{ color: '#555' }}>
+                        {formatRelativeTime(notification.createdAt, t)}
+                      </p>
+                    )}
                   </div>
                 </button>
               );

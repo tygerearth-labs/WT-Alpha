@@ -329,7 +329,7 @@ export function FinancialHealthScore() {
       <Dialog open={showTipsDialog} onOpenChange={setShowTipsDialog}>
         <DialogContent
           showCloseButton={false}
-          className="sm:max-w-md p-0 overflow-hidden rounded-2xl border-0"
+          className="max-w-[calc(100vw-2rem)] sm:max-w-md p-0 overflow-hidden rounded-2xl border-0"
           style={{
             background: '#141414',
             border: '1px solid rgba(255,255,255,0.08)',
@@ -382,13 +382,13 @@ export function FinancialHealthScore() {
                   >
                     <Lightbulb className="h-4 w-4" style={{ color: getSeverityStyle(tips[currentTipIndex].severity).color }} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold" style={{ color: THEME.text }}>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 mb-1 min-w-0">
+                      <span className="text-xs font-semibold break-words overflow-wrap-anywhere" style={{ color: THEME.text }}>
                         {tips[currentTipIndex].title}
                       </span>
                       <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
                         style={{
                           background: getSeverityStyle(tips[currentTipIndex].severity).bgColor,
                           color: getSeverityStyle(tips[currentTipIndex].severity).color,
@@ -397,7 +397,7 @@ export function FinancialHealthScore() {
                         {getSeverityStyle(tips[currentTipIndex].severity).label}
                       </span>
                     </div>
-                    <p className="text-[11px] leading-relaxed" style={{ color: THEME.textSecondary }}>
+                    <p className="text-[11px] leading-relaxed break-words overflow-wrap-anywhere" style={{ color: THEME.textSecondary }}>
                       {tips[currentTipIndex].description}
                     </p>
                   </div>
