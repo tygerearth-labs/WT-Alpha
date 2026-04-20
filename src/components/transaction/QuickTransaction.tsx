@@ -138,7 +138,7 @@ export function QuickTransaction() {
       <Sheet open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setShowSuccess(false); } else { setOpen(true); } }}>
         <SheetContent
           side="bottom"
-          className="max-h-[85vh] sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto inset-x-auto left-1/2 right-auto -translate-x-1/2 mb-0 md:mb-8 md:rounded-2xl overflow-y-auto rounded-t-2xl"
+          className="max-h-[80vh] sm:max-h-[85vh] w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto inset-x-auto left-1/2 right-auto -translate-x-1/2 mb-0 md:mb-8 md:rounded-2xl overflow-y-auto rounded-t-2xl"
           style={{
             background: '#0D0D0D',
             border: `1px solid ${THEME.border}`,
@@ -154,18 +154,18 @@ export function QuickTransaction() {
             </SheetDescription>
           </SheetHeader>
 
-          <div className="p-4 md:p-5 space-y-4">
+          <div className="p-4 md:p-6 space-y-3 md:space-y-4">
             {/* Success Animation */}
             {showSuccess && (
-              <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in duration-300">
+              <div className="flex flex-col items-center justify-center py-10 animate-in fade-in zoom-in duration-300">
                 <div
-                  className="w-20 h-20 rounded-full grid place-items-center mb-4"
+                  className="w-16 h-16 md:w-20 md:h-20 rounded-full grid place-items-center mb-3"
                   style={{
                     background: `${THEME.secondary}15`,
                     boxShadow: `0 0 40px ${THEME.secondary}20`,
                   }}
                 >
-                  <CheckCircle2 className="h-10 w-10" style={{ color: THEME.secondary }} />
+                  <CheckCircle2 className="h-8 w-8 md:h-10 md:w-10" style={{ color: THEME.secondary }} />
                 </div>
                 <p className="text-sm font-semibold" style={{ color: THEME.secondary }}>
                   {t('quickEntry.saved')}
@@ -179,7 +179,7 @@ export function QuickTransaction() {
                 <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
                   <button
                     onClick={() => setType('expense')}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all duration-200"
                     style={{
                       background: type === 'expense' ? `${THEME.destructive}15` : 'transparent',
                       color: type === 'expense' ? THEME.destructive : THEME.muted,
@@ -191,7 +191,7 @@ export function QuickTransaction() {
                   </button>
                   <button
                     onClick={() => setType('income')}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all duration-200"
                     style={{
                       background: type === 'income' ? `${THEME.secondary}15` : 'transparent',
                       color: type === 'income' ? THEME.secondary : THEME.muted,
@@ -204,7 +204,7 @@ export function QuickTransaction() {
                 </div>
 
                 {/* Amount Input */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>
                     {t('transaction.amount')}
                   </label>
@@ -217,7 +217,7 @@ export function QuickTransaction() {
                       placeholder="0"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="h-12 text-xl font-bold pl-10 pr-4 tabular-nums text-right"
+                      className="h-11 md:h-12 text-xl font-bold pl-10 pr-4 tabular-nums text-right"
                       style={{
                         background: 'rgba(255,255,255,0.04)',
                         border: `2px solid ${THEME.border}`,
@@ -230,7 +230,7 @@ export function QuickTransaction() {
                 </div>
 
                 {/* Category Select */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>
                     {t('kas.categories')}
                   </label>
@@ -258,48 +258,51 @@ export function QuickTransaction() {
                   </Select>
                 </div>
 
-                {/* Description */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>
-                    {t('laporan.excelDescription')} <span style={{ color: THEME.muted }}>{t('quickEntry.optional')}</span>
-                  </label>
-                  <Input
-                    placeholder={t('quickEntry.descriptionPlaceholder')}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="h-10 text-xs"
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${THEME.border}`,
-                      color: THEME.text,
-                    }}
-                  />
-                </div>
+                {/* Description + Date — side by side on md+ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Description */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>
+                      {t('laporan.excelDescription')} <span style={{ color: THEME.muted }}>{t('quickEntry.optional')}</span>
+                    </label>
+                    <Input
+                      placeholder={t('quickEntry.descriptionPlaceholder')}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="h-10 text-xs"
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${THEME.border}`,
+                        color: THEME.text,
+                      }}
+                    />
+                  </div>
 
-                {/* Date */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>
-                    {t('laporan.date')}
-                  </label>
-                  <Input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="h-10 text-xs"
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${THEME.border}`,
-                      color: THEME.text,
-                      colorScheme: 'dark',
-                    }}
-                  />
+                  {/* Date */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>
+                      {t('laporan.date')}
+                    </label>
+                    <Input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="h-10 text-xs"
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${THEME.border}`,
+                        color: THEME.text,
+                        colorScheme: 'dark',
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Submit Button */}
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="w-full h-12 rounded-xl text-sm font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+                  className="w-full h-11 md:h-12 rounded-xl text-sm font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
                   style={{
                     background: `linear-gradient(135deg, ${THEME.primary}, ${activeColor})`,
                     color: '#fff',

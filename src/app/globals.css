@@ -679,7 +679,13 @@ html {
 
 /* Quick Entry FAB — responsive bottom positioning */
 .quick-entry-fab {
-  bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 20px);
+}
+/* When installed as PWA on iOS, the bottom nav sits above safe area so FAB needs extra gap */
+@media (display-mode: standalone) {
+  .quick-entry-fab {
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 24px);
+  }
 }
 @media (min-width: 768px) {
   .quick-entry-fab {
