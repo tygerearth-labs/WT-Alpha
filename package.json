@@ -7,8 +7,8 @@
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js",
     "lint": "eslint .",
-    "postinstall": "prisma generate --schema=./prisma/scheme.prisma", 
-    "db:push": "prisma db push --schema=./prisma/scheme.prisma",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma",
+    "db:push": "prisma db push --schema=./prisma/schema.prisma",
     "seed": "bun prisma db seed"
   },
   "prisma": {
