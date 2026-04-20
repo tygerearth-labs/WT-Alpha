@@ -414,7 +414,7 @@ export function AdminOnboardingTour({ isActive, onTourComplete }: AdminOnboardin
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const animFrameRef = useRef<number>();
+  const animFrameRef = useRef<number | undefined>(undefined);
 
   const step = TOUR_STEPS[currentStep];
 

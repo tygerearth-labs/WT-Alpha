@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { requireAuth } from '@/lib/auth';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -19,12 +19,9 @@ function formatMonth(year: number, month: number): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const searchParams = request.nextUrl.searchParams;
     const monthParam = searchParams.get('month');
@@ -525,6 +522,27 @@ export async function GET(request: NextRequest) {
     };
 
     // ───────────────────────────────────────────
+    // FETCH PLATFORM CONFIG (section visibility + export settings)
+    // ───────────────────────────────────────────
+
+    let sectionVisibility: Record<string, Record<string, boolean>> | null = null;
+    let exportEnabled: Record<string, Record<string, boolean>> | null = null;
+
+    try {
+      const platformConfig = await db.platformConfig.findUnique({ where: { id: 'platform' } });
+      if (platformConfig) {
+        sectionVisibility = platformConfig.sectionVisibility
+          ? JSON.parse(platformConfig.sectionVisibility)
+          : null;
+        exportEnabled = platformConfig.exportEnabled
+          ? JSON.parse(platformConfig.exportEnabled)
+          : null;
+      }
+    } catch {
+      // Non-critical — dashboard still works without config
+    }
+
+    // ───────────────────────────────────────────
     // FULL RESPONSE
     // ───────────────────────────────────────────
 
@@ -562,6 +580,10 @@ export async function GET(request: NextRequest) {
       averages,
       forecast,
       targetAnalytics,
+
+      // ── Platform config fields ──
+      sectionVisibility,
+      exportEnabled,
     });
 
   } catch (error) {

@@ -62,7 +62,8 @@ export function QuickTransaction() {
   }, [type]);
 
   const handleSubmit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount || parsedAmount <= 0 || !isFinite(parsedAmount)) {
       toast.error(t('quickEntry.invalidAmount'));
       return;
     }
@@ -78,7 +79,7 @@ export function QuickTransaction() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type,
-          amount: parseFloat(amount),
+          amount: parsedAmount,
           description: description || undefined,
           categoryId,
           date: date || undefined,
@@ -137,7 +138,7 @@ export function QuickTransaction() {
       <Sheet open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setShowSuccess(false); } else { setOpen(true); } }}>
         <SheetContent
           side="bottom"
-          className="max-h-[85vh] overflow-y-auto rounded-t-2xl"
+          className="max-h-[60vh] md:max-h-[55vh] md:max-w-md md:mx-auto md:inset-x-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:mb-8 md:rounded-2xl overflow-y-auto rounded-t-2xl"
           style={{
             background: '#0D0D0D',
             border: `1px solid ${THEME.border}`,
@@ -153,7 +154,7 @@ export function QuickTransaction() {
             </SheetDescription>
           </SheetHeader>
 
-          <div className="p-5 space-y-5">
+          <div className="p-4 md:p-5 space-y-4">
             {/* Success Animation */}
             {showSuccess && (
               <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in duration-300">
@@ -216,7 +217,7 @@ export function QuickTransaction() {
                       placeholder="0"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="h-14 text-2xl font-bold pl-10 pr-4 tabular-nums text-right"
+                      className="h-12 text-xl font-bold pl-10 pr-4 tabular-nums text-right"
                       style={{
                         background: 'rgba(255,255,255,0.04)',
                         border: `2px solid ${THEME.border}`,

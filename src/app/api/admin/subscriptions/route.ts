@@ -16,20 +16,19 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {
       role: 'user',
-      status: 'active',
-      subscriptionEnd: { not: null }
     };
 
     if (plan) where.plan = plan;
+    // Don't filter by status - show all users including suspended
 
     const [subscriptions, total] = await Promise.all([
       db.user.findMany({
         where,
         select: {
           id: true, email: true, username: true, plan: true,
-          subscriptionEnd: true, createdAt: true
+          subscriptionEnd: true, createdAt: true, status: true
         },
-        orderBy: { subscriptionEnd: 'asc' },
+        orderBy: [{ subscriptionEnd: { sort: 'asc', nulls: 'last' } }],
         skip: (page - 1) * limit,
         take: limit
       }),

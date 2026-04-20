@@ -1,12 +1,42 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  output: "standalone",
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
+const securityHeaders = [
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
   },
-  reactStrictMode: false,
+  {
+    key: "X-Frame-Options",
+    value: "DENY",
+  },
+  {
+    key: "X-XSS-Protection",
+    value: "1; mode=block",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
+];
+
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  output: "standalone",
+  allowedDevOrigins: [
+    "preview-chat-cbfcbd9b-5c49-4c8f-a37a-c6809d64ae6a.space.z.ai",
+  ],
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

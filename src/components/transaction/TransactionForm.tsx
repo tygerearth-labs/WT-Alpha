@@ -87,16 +87,20 @@ export function TransactionForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedAmount = parseFloat(formData.amount);
+    if (!parsedAmount || parsedAmount <= 0 || !isFinite(parsedAmount)) return;
+    const parsedAllocation = formData.allocationPercentage ? parseFloat(formData.allocationPercentage) : undefined;
+    if (parsedAllocation !== undefined && (!isFinite(parsedAllocation) || parsedAllocation < 0 || parsedAllocation > 100)) return;
     setIsSubmitting(true);
     try {
       await onSubmit({
         type,
-        amount: parseFloat(formData.amount),
+        amount: parsedAmount,
         description: formData.description,
         categoryId: formData.categoryId,
         date: formData.date,
         targetId: type === 'income' && formData.targetId && formData.targetId !== 'none' ? formData.targetId : undefined,
-        allocationPercentage: type === 'income' && formData.allocationPercentage ? parseFloat(formData.allocationPercentage) : undefined,
+        allocationPercentage: parsedAllocation,
       });
     } finally {
       setIsSubmitting(false);
@@ -139,7 +143,7 @@ export function TransactionForm({
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               placeholder="0"
               required
-              min="0"
+              min="0.01"
               step="0.01"
               className="h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg"
               autoFocus

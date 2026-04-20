@@ -49,6 +49,7 @@ export const translations = {
     password: 'Kata Sandi',
     username: 'Nama Pengguna',
     noAccount: 'Belum punya akun?',
+    hasAccount: 'Sudah punya akun?',
     loginToStart: 'Masuk untuk memulai',
     logoutSuccess: 'Berhasil keluar',
     logoutFailed: 'Gagal keluar',

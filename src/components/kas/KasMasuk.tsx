@@ -648,7 +648,7 @@ export function KasMasuk() {
       <div className="hidden lg:grid lg:grid-cols-[340px_1fr] xl:grid-cols-[400px_1fr] lg:gap-5 xl:gap-6">
         {/* Left column: Categories + Distribution — Glass card */}
         <div
-          className="rounded-2xl p-5 space-y-5"
+          className="rounded-2xl p-5 space-y-5 overflow-hidden"
           style={{
             background: 'rgba(18, 18, 18, 0.6)',
             border: '1px solid rgba(255,255,255,0.06)',
@@ -704,7 +704,7 @@ export function KasMasuk() {
                   return (
                     <motion.div
                       key={cat.name}
-                      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.01] cursor-default"
+                      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.01] cursor-default overflow-hidden"
                       style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}` }}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -716,9 +716,9 @@ export function KasMasuk() {
                         <span className="absolute -top-1 -right-1 text-xs">{medals[i]}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-semibold truncate" style={{ color: T.text }}>{cat.name}</span>
-                          <span className="text-sm font-bold shrink-0 ml-2" style={{ color: cat.color }}>{formatAmount(cat.amount)}</span>
+                        <div className="flex items-center justify-between mb-1 min-w-0 gap-2">
+                          <span className="text-sm font-semibold truncate min-w-0" style={{ color: T.text }}>{cat.name}</span>
+                          <span className="text-sm font-bold shrink-0" style={{ color: cat.color }}>{formatAmount(cat.amount)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -791,9 +791,9 @@ export function KasMasuk() {
                         <DynamicIcon name={cat.icon} className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
-                          <span className="text-xs font-semibold shrink-0 ml-2" style={{ color: cat.color }}>{pct.toFixed(0)}% · {formatAmount(cat.amount)}</span>
+                        <div className="flex items-center justify-between mb-1 min-w-0 gap-2">
+                          <span className="text-xs font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
+                          <span className="text-xs font-semibold shrink-0 max-w-[120px] truncate" style={{ color: cat.color }}>{pct.toFixed(0)}% · {formatAmount(cat.amount)}</span>
                         </div>
                         <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                           <div className="h-full rounded-full transition-all duration-500"
@@ -1026,9 +1026,9 @@ export function KasMasuk() {
                         <DynamicIcon name={cat.icon} className="h-3 w-3" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
-                          <span className="text-[10px] font-semibold shrink-0 ml-1" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                        <div className="flex items-center justify-between mb-0.5 min-w-0 gap-1">
+                          <span className="text-[10px] font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
+                          <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
                           <div className="h-full rounded-full transition-all duration-500"
@@ -1117,9 +1117,9 @@ export function KasMasuk() {
                       <DynamicIcon name={cat.icon} className="h-3.5 w-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[11px] font-medium truncate" style={{ color: T.textSub }}>{cat.name}</span>
-                        <span className="text-[10px] font-semibold shrink-0 ml-2" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                      <div className="flex items-center justify-between mb-0.5 min-w-0 gap-2">
+                        <span className="text-[11px] font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
+                        <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
                       </div>
                       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
                         <div className="h-full rounded-full transition-all duration-500"

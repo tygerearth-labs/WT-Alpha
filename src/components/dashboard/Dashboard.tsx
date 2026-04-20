@@ -146,6 +146,8 @@ interface DashboardData {
   averages?: Averages;
   forecast?: Forecast;
   targetAnalytics?: TargetAnalytics;
+  sectionVisibility?: Record<string, Record<string, boolean>> | null;
+  exportEnabled?: Record<string, Record<string, boolean>> | null;
 }
 
 // ── Custom Tooltip ───────────────────────────────────────────────
@@ -929,6 +931,16 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState({ month: 'all', year: 'all' });
 
+  // Section visibility helper: default to showing all sections if no config
+  const isSectionVisible = (key: string): boolean => {
+    if (!data?.sectionVisibility) return true;
+    const plan = user?.plan || 'basic';
+    const planConfig = data.sectionVisibility[plan];
+    if (!planConfig) return true;
+    if (!(key in planConfig)) return true; // key not configured → default visible
+    return planConfig[key] === true;
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, [filter]);
@@ -1677,35 +1689,47 @@ export function Dashboard() {
         healthBreakdown={healthBreakdown}
       />
 
-      {/* ═══ Section 3.5: Health Score + Budget + Savings Overview + Financial Tips ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <FinancialHealthScore />
-        <BudgetTracker />
-        <div className="sm:col-span-2 lg:col-span-1">
-          <SavingsOverview />
+      {/* ═══ Section 3.5: Health Score + Budget + Savings Overview ═══ */}
+      {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {isSectionVisible('healthScore') && <FinancialHealthScore />}
+          {isSectionVisible('budget') && <BudgetTracker />}
+          {isSectionVisible('savingsOverview') && (
+            <div className="sm:col-span-2 lg:col-span-1">
+              <SavingsOverview />
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* ═══ Section 3.6: Financial Tips ═══ */}
-      <FinancialTips
-        expenseByCategory={data.expenseByCategory}
-        monthlyComparison={data.monthlyComparison}
-        savingsRate={data.savingsRate}
-      />
-
-      {/* ═══ Section 3.7: Financial Insights Widgets ═══ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-        <SpendingTrendChart
-          transactions={data.transactions}
-          savingsHistory={data.savingsHistory}
-        />
-        <TopCategories expenseByCategory={data.expenseByCategory} />
-        <MonthlySummary
+      {isSectionVisible('tips') && (
+        <FinancialTips
+          expenseByCategory={data.expenseByCategory}
           monthlyComparison={data.monthlyComparison}
           savingsRate={data.savingsRate}
-          monthlyTrends={data.monthlyTrends}
         />
-      </div>
+      )}
+
+      {/* ═══ Section 3.7: Financial Insights Widgets ═══ */}
+      {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+          {isSectionVisible('spendingTrend') && (
+            <SpendingTrendChart
+              transactions={data.transactions}
+              savingsHistory={data.savingsHistory}
+            />
+          )}
+          {isSectionVisible('topCategories') && <TopCategories expenseByCategory={data.expenseByCategory} />}
+          {isSectionVisible('monthlySummary') && (
+            <MonthlySummary
+              monthlyComparison={data.monthlyComparison}
+              savingsRate={data.savingsRate}
+              monthlyTrends={data.monthlyTrends}
+            />
+          )}
+        </div>
+      )}
 
       {/* ═══ Section 5: Financial Consultant Insights ═══ */}
       {insights.length > 0 && (

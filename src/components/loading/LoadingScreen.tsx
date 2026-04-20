@@ -1,15 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useTranslation } from '@/hooks/useTranslation';
 
+const MAX_DURATION_MS = 5000; // Force complete after 5 seconds
+
 export function LoadingScreen() {
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(15);
   const { t } = useTranslation();
-  const [statusText, setStatusText] = useState('');
+  const [statusText, setStatusText] = useState(() => t('loadingScreen.verifying'));
+
+  // Force progress to 100% after max duration
+  const forceComplete = useCallback(() => {
+    setProgress(100);
+  }, []);
 
   useEffect(() => {
+    // Max duration timeout — ensures loading never gets stuck
+    const maxTimeout = setTimeout(forceComplete, MAX_DURATION_MS);
+
     const stages = [
       { at: 0, text: t('loadingScreen.verifying') },
       { at: 25, text: t('loadingScreen.preparing') },
@@ -18,12 +28,12 @@ export function LoadingScreen() {
       { at: 95, text: t('loadingScreen.welcome') },
     ];
 
-    let current = 0;
+    let current = 15;
     const interval = setInterval(() => {
-      // Variable speed — slow in middle, fast at start and end
+      // Variable speed — fast at start, slow near end
       const remaining = 100 - current;
-      const speed = remaining > 60 ? 4 : remaining > 20 ? 2 : remaining > 5 ? 1 : 0.5;
-      current = Math.min(current + Math.random() * speed + 0.3, 100);
+      const speed = remaining > 50 ? 6 : remaining > 20 ? 3.5 : remaining > 5 ? 1.5 : 0.5;
+      current = Math.min(current + Math.random() * speed + 1, 100);
       setProgress(Math.round(current));
 
       // Update status text based on progress
@@ -33,10 +43,13 @@ export function LoadingScreen() {
       if (current >= 100) {
         clearInterval(interval);
       }
-    }, 60);
+    }, 50);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearTimeout(maxTimeout);
+      clearInterval(interval);
+    };
+  }, [forceComplete]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background px-8">

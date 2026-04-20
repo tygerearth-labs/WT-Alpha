@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSyncExternalStore } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LoadingScreen } from '@/components/loading/LoadingScreen';
@@ -25,6 +25,8 @@ function useIsLoading() {
   );
 }
 
+const LOADING_TIMEOUT_MS = 10000; // Force stop loading after 10 seconds
+
 /**
  * Home Page (/) — User panel ONLY.
  * 
@@ -34,20 +36,48 @@ function useIsLoading() {
  */
 export default function Home() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  const forceStopLoading = useAuthStore((s) => s.forceStopLoading);
   const user = useAuthStore((s) => s.user);
   const isLoading = useIsLoading();
   const isAuthenticated = useIsAuthenticated();
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Check auth on mount
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+
+    // Fallback timeout — if loading takes more than 10 seconds, force stop
+    fallbackTimerRef.current = setTimeout(() => {
+      const state = useAuthStore.getState();
+      if (state.isLoading) {
+        console.warn('Auth check timed out after 10s — forcing loading to stop');
+        forceStopLoading();
+      }
+    }, LOADING_TIMEOUT_MS);
+
+    return () => {
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+      }
+    };
+  }, [checkAuth, forceStopLoading]);
 
   // If admin user lands on /, hard redirect to /admin
   // Use window.location for hard redirect — cannot be intercepted by React
+  // Exception: if ?view=user is present, admin can preview the user view
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
-      window.location.href = '/admin';
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') !== 'user') {
+        // Small delay to ensure URL params are fully resolved
+        const timer = setTimeout(() => {
+          const currentParams = new URLSearchParams(window.location.search);
+          if (currentParams.get('view') !== 'user') {
+            window.location.href = '/admin';
+          }
+        }, 100);
+        return () => clearTimeout(timer);
+      }
     }
   }, [isAuthenticated, user?.role]);
 
@@ -58,7 +88,9 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <>
-        <AnnouncementBanner />
+        <div className="mt-14">
+          <AnnouncementBanner />
+        </div>
         <LandingPage />
         <PWAInstallPrompt />
       </>
@@ -66,13 +98,16 @@ export default function Home() {
   }
 
   // Admin users should be redirected, show loading while redirect happens
+  // Exception: admin previewing user view (?view=user)
   if (user?.role === 'admin') {
-    return <LoadingScreen />;
+    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    if (params?.get('view') !== 'user') {
+      return <LoadingScreen />;
+    }
   }
 
   return (
     <>
-      <AnnouncementBanner />
       <MainLayout />
       <PWAInstallPrompt />
     </>

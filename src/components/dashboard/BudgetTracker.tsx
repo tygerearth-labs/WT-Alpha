@@ -3,12 +3,19 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Wallet, Plus, TrendingUp, TrendingDown, Check, X } from 'lucide-react';
+import { Wallet, Plus, TrendingDown, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { Category } from '@/types/transaction.types';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const THEME = {
   surface: '#121212',
@@ -23,26 +30,15 @@ const THEME = {
 };
 
 interface BudgetEntry {
+  id: string;
   categoryId: string;
   budget: number;
 }
 
-const BUDGET_STORAGE_KEY = 'wealth-tracker-budgets';
-
-function getBudgets(): BudgetEntry[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = localStorage.getItem(BUDGET_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveBudgets(budgets: BudgetEntry[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(BUDGET_STORAGE_KEY, JSON.stringify(budgets));
-}
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
 
 export function BudgetTracker() {
   const { t } = useTranslation();
@@ -50,19 +46,20 @@ export function BudgetTracker() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categorySpending, setCategorySpending] = useState<Record<string, number>>({});
   const [budgets, setBudgets] = useState<BudgetEntry[]>([]);
-  const [newBudgetCategoryId, setNewBudgetCategoryId] = useState<string | null>(null);
+  const [newBudgetCategoryId, setNewBudgetCategoryId] = useState<string>('');
   const [newBudgetAmount, setNewBudgetAmount] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Month/Year state
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
   const fetchData = useCallback(async () => {
     try {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-
       const [catRes, transRes] = await Promise.all([
         fetch('/api/categories?type=expense'),
-        fetch(`/api/transactions?type=expense&year=${year}&month=${month}`),
+        fetch(`/api/transactions?type=expense&year=${selectedYear}&month=${selectedMonth}`),
       ]);
 
       if (catRes.ok) {
@@ -79,15 +76,41 @@ export function BudgetTracker() {
       }
     } catch {
       // silent fail
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [selectedYear, selectedMonth]);
+
+  const fetchBudgets = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/budgets?month=${selectedMonth}&year=${selectedYear}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBudgets(
+          (data.budgets || []).map((b: any) => ({
+            id: b.id,
+            categoryId: b.categoryId,
+            budget: b.amount,
+          }))
+        );
+      }
+    } catch {
+      // silent fail
+    }
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
-    setBudgets(getBudgets());
-    fetchData();
-  }, [fetchData]);
+    const load = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchData(), fetchBudgets()]);
+      setIsLoading(false);
+    };
+    load();
+  }, [fetchData, fetchBudgets]);
+
+  // Reset form helper
+  const resetForm = () => {
+    setNewBudgetCategoryId('');
+    setNewBudgetAmount('');
+  };
 
   const totalBudget = budgets.reduce((s, b) => s + b.budget, 0);
   const budgetedSpending = budgets.reduce(
@@ -104,38 +127,93 @@ export function BudgetTracker() {
     return THEME.secondary;
   };
 
-  const handleAddBudget = () => {
+  const handleAddBudget = async () => {
     if (!newBudgetCategoryId || !newBudgetAmount || parseFloat(newBudgetAmount) <= 0) {
       toast.error(t('dashboard.budgetInvalidAmount'));
       return;
     }
     const amount = parseFloat(newBudgetAmount);
-    const existing = budgets.findIndex(b => b.categoryId === newBudgetCategoryId);
-    let updated: BudgetEntry[];
-    if (existing >= 0) {
-      updated = [...budgets];
-      updated[existing] = { categoryId: newBudgetCategoryId, budget: amount };
-    } else {
-      updated = [...budgets, { categoryId: newBudgetCategoryId, budget: amount }];
+
+    try {
+      const res = await fetch('/api/budgets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoryId: newBudgetCategoryId,
+          amount,
+          month: selectedMonth,
+          year: selectedYear,
+        }),
+      });
+
+      if (res.ok) {
+        // Refresh budgets from API
+        await fetchBudgets();
+        setNewBudgetCategoryId('');
+        setNewBudgetAmount('');
+        toast.success(t('dashboard.budgetSaved'));
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t('dashboard.budgetInvalidAmount'));
+      }
+    } catch {
+      toast.error(t('dashboard.budgetInvalidAmount'));
     }
-    setBudgets(updated);
-    saveBudgets(updated);
-    setNewBudgetCategoryId(null);
-    setNewBudgetAmount('');
-    toast.success(t('dashboard.budgetSaved'));
   };
 
-  const handleRemoveBudget = (categoryId: string) => {
-    const updated = budgets.filter(b => b.categoryId !== categoryId);
-    setBudgets(updated);
-    saveBudgets(updated);
-    toast.success(t('dashboard.budgetRemoved'));
+  const handleRemoveBudget = async (categoryId: string) => {
+    try {
+      const res = await fetch('/api/budgets', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoryId,
+          month: selectedMonth,
+          year: selectedYear,
+        }),
+      });
+
+      if (res.ok) {
+        setBudgets((prev) => prev.filter((b) => b.categoryId !== categoryId));
+        toast.success(t('dashboard.budgetRemoved'));
+      }
+    } catch {
+      // silent fail
+    }
   };
 
-  // Categories without budgets
+  // Categories without budgets for the selected month
   const unbudgetedCategories = categories.filter(
-    c => !budgets.find(b => b.categoryId === c.id)
+    (c) => !budgets.find((b) => b.categoryId === c.id)
   );
+
+  // Navigate month
+  const goToPrevMonth = () => {
+    resetForm();
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear((y) => y - 1);
+    } else {
+      setSelectedMonth((m) => m - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    resetForm();
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear((y) => y + 1);
+    } else {
+      setSelectedMonth((m) => m + 1);
+    }
+  };
+
+  // Generate year options (current year ± 3)
+  const currentYear = now.getFullYear();
+  const yearOptions = [];
+  for (let y = currentYear - 3; y <= currentYear + 3; y++) {
+    yearOptions.push(y);
+  }
 
   if (isLoading) {
     return (
@@ -166,6 +244,77 @@ export function BudgetTracker() {
               {budgets.length} {budgets.length === 1 ? t('dashboard.budgetCategorySingular') : t('dashboard.budgetCategoryPlural')}
             </span>
           )}
+        </div>
+
+        {/* Month/Year Selector */}
+        <div className="flex items-center justify-center gap-2 mb-4 p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}>
+          <button
+            onClick={goToPrevMonth}
+            className="grid place-items-center h-7 w-7 rounded-md transition-all hover:scale-105 active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.04)', color: THEME.textSecondary }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <Select
+            value={String(selectedMonth)}
+            onValueChange={(v) => { resetForm(); setSelectedMonth(parseInt(v)); }}
+          >
+            <SelectTrigger
+              className="h-7 border-0 text-xs font-medium px-2 gap-1 shadow-none"
+              style={{ background: 'transparent', color: THEME.text, minWidth: '60px' }}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent
+              style={{ background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              {MONTH_NAMES.map((name, i) => (
+                <SelectItem
+                  key={i}
+                  value={String(i + 1)}
+                  style={{ color: THEME.text, fontSize: '12px' }}
+                  className="focus:bg-white/10"
+                >
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={String(selectedYear)}
+            onValueChange={(v) => { resetForm(); setSelectedYear(parseInt(v)); }}
+          >
+            <SelectTrigger
+              className="h-7 border-0 text-xs font-medium px-2 gap-1 shadow-none"
+              style={{ background: 'transparent', color: THEME.text, minWidth: '60px' }}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent
+              style={{ background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              {yearOptions.map((y) => (
+                <SelectItem
+                  key={y}
+                  value={String(y)}
+                  style={{ color: THEME.text, fontSize: '12px' }}
+                  className="focus:bg-white/10"
+                >
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <button
+            onClick={goToNextMonth}
+            className="grid place-items-center h-7 w-7 rounded-md transition-all hover:scale-105 active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.04)', color: THEME.textSecondary }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Total Budget vs Spent */}
@@ -297,7 +446,7 @@ export function BudgetTracker() {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAddBudget();
-                      if (e.key === 'Escape') { setNewBudgetCategoryId(null); setNewBudgetAmount(''); }
+                      if (e.key === 'Escape') { setNewBudgetCategoryId(''); setNewBudgetAmount(''); }
                     }}
                     autoFocus
                   />
@@ -310,7 +459,7 @@ export function BudgetTracker() {
                   <Check className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => { setNewBudgetCategoryId(null); setNewBudgetAmount(''); }}
+                  onClick={() => { setNewBudgetCategoryId(''); setNewBudgetAmount(''); }}
                   className="grid place-items-center h-8 w-8 rounded-lg shrink-0 transition-all active:scale-90"
                   style={{ background: `${THEME.destructive}15`, color: THEME.destructive }}
                 >
@@ -318,23 +467,43 @@ export function BudgetTracker() {
                 </button>
               </div>
             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-[11px] font-medium rounded-lg transition-all hover:scale-[1.01]"
-                style={{
-                  background: `${THEME.primary}08`,
-                  color: THEME.primary,
-                  border: `1px solid ${THEME.primary}15`,
-                }}
-                onClick={() => {
-                  setNewBudgetCategoryId(unbudgetedCategories[0]?.id || null);
-                  setNewBudgetAmount('');
-                }}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                {t('dashboard.addBudget')}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={newBudgetCategoryId}
+                  onValueChange={(v) => {
+                    setNewBudgetCategoryId(v);
+                    setNewBudgetAmount('');
+                  }}
+                >
+                  <SelectTrigger
+                    className="flex-1 h-8 text-[11px] border-0 shadow-none"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${THEME.border}`,
+                      color: THEME.textSecondary,
+                    }}
+                  >
+                    <SelectValue placeholder={t('dashboard.addBudget')} />
+                  </SelectTrigger>
+                  <SelectContent
+                    style={{ background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    {unbudgetedCategories.map((c) => (
+                      <SelectItem
+                        key={c.id}
+                        value={c.id}
+                        style={{ color: THEME.text, fontSize: '11px' }}
+                        className="focus:bg-white/10"
+                      >
+                        <div className="flex items-center gap-2">
+                          <DynamicIcon name={c.icon} className="h-3 w-3" style={{ color: c.color || THEME.muted }} />
+                          <span>{c.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
         )}

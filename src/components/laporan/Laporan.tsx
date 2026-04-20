@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, Loader2, Target, Wallet, ArrowUpRight, ArrowDownRight, FileText } from 'lucide-react';
+import { Download, Loader2, Target, Wallet, ArrowUpRight, ArrowDownRight, FileText, FileSpreadsheet } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { LaporanSkeleton } from '@/components/shared/PageSkeleton';
@@ -10,6 +10,7 @@ import { id } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // ── Theme ──
 const T = {
@@ -32,10 +33,37 @@ interface SavingsTarget { id: string; name: string; targetAmount: number; curren
 export function Laporan() {
   const { t } = useTranslation();
   const { formatAmount } = useCurrencyFormat();
+  const { user } = useAuthStore();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState({ type: 'all', month: 'all', year: 'all' });
+  const [exportEnabled, setExportEnabled] = useState<{ pdf: boolean; excel: boolean }>({ pdf: true, excel: true });
+
+  // Fetch export permissions from platform config
+  useEffect(() => {
+    const fetchExportConfig = async () => {
+      try {
+        const res = await fetch('/api/platform-config');
+        if (res.ok) {
+          const config = await res.json();
+          if (config.exportEnabled) {
+            const plan = user?.plan || 'basic';
+            const planExport = config.exportEnabled[plan];
+            if (planExport) {
+              setExportEnabled({
+                pdf: planExport.pdf !== false,
+                excel: planExport.excel !== false,
+              });
+            }
+          }
+        }
+      } catch {
+        // Default to showing export buttons if config fetch fails
+      }
+    };
+    fetchExportConfig();
+  }, [user?.plan]);
 
   useEffect(() => { fetchData(); }, [filter]);
 
@@ -107,15 +135,19 @@ export function Laporan() {
           <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('laporan.title')}</p>
           <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{t('laporan.transactionCount', { count: txCount })}</p>
         </div>
-        <button
-          onClick={exportToExcel}
-          disabled={txCount === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40"
-          style={{ background: `${T.secondary}12`, color: T.secondary, border: `1px solid ${T.secondary}20` }}
-        >
-          <Download className="h-3.5 w-3.5" />
-          {t('laporan.export')}
-        </button>
+        <div className="flex items-center gap-2">
+          {exportEnabled.excel && (
+            <button
+              onClick={exportToExcel}
+              disabled={txCount === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40"
+              style={{ background: `${T.secondary}12`, color: T.secondary, border: `1px solid ${T.secondary}20` }}
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              {t('laporan.export')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

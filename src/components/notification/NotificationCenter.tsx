@@ -9,6 +9,9 @@ import {
   PiggyBank,
   Info,
   Check,
+  Megaphone,
+  CreditCard,
+  Crown,
 } from 'lucide-react';
 import {
   Popover,
@@ -17,26 +20,24 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { Button } from '@/components/ui/button';
 
 /* ── Types ── */
 
-type NotificationType = 'income' | 'expense' | 'savings' | 'system';
+type NotificationType = 'income' | 'expense' | 'savings' | 'system' | 'broadcast' | 'subscription' | 'upgrade';
 
 interface Notification {
   id: string;
   type: NotificationType;
   title: string;
   description: string;
-  amount?: number;
-  read: boolean;
-  createdAt: Date;
+  amount?: number | null;
+  isRead: boolean;
+  actionUrl?: string | null;
+  createdAt: string;
 }
 
 /* ── Constants ── */
-
-const STORAGE_KEY = 'wt-notification-center-read';
 
 const TYPE_CONFIG: Record<
   NotificationType,
@@ -62,6 +63,21 @@ const TYPE_CONFIG: Record<
     bgColor: 'rgba(249,168,37,0.12)',
     glowColor: 'rgba(249,168,37,0.4)',
   },
+  broadcast: {
+    color: '#64B5F6',
+    bgColor: 'rgba(100,181,246,0.12)',
+    glowColor: 'rgba(100,181,246,0.4)',
+  },
+  subscription: {
+    color: '#FFD700',
+    bgColor: 'rgba(255,215,0,0.12)',
+    glowColor: 'rgba(255,215,0,0.4)',
+  },
+  upgrade: {
+    color: '#BB86FC',
+    bgColor: 'rgba(187,134,252,0.12)',
+    glowColor: 'rgba(187,134,252,0.4)',
+  },
 };
 
 function getTypeIcon(type: NotificationType) {
@@ -74,97 +90,20 @@ function getTypeIcon(type: NotificationType) {
       return <PiggyBank className="h-4 w-4" style={{ color: TYPE_CONFIG.savings.color }} />;
     case 'system':
       return <Info className="h-4 w-4" style={{ color: TYPE_CONFIG.system.color }} />;
+    case 'broadcast':
+      return <Megaphone className="h-4 w-4" style={{ color: TYPE_CONFIG.broadcast.color }} />;
+    case 'subscription':
+      return <CreditCard className="h-4 w-4" style={{ color: TYPE_CONFIG.subscription.color }} />;
+    case 'upgrade':
+      return <Crown className="h-4 w-4" style={{ color: TYPE_CONFIG.upgrade.color }} />;
   }
 }
 
 /* ── Helpers ── */
 
-function getReadIds(): Set<string> {
-  if (typeof window === 'undefined') return new Set();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function saveReadIds(ids: Set<string>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
-}
-
-function minutesAgo(date: Date): number {
-  return Math.floor((Date.now() - date.getTime()) / 60000);
-}
-
-function generateMockNotifications(t: (key: string, params?: Record<string, string | number>) => string, formatAmount: (amount: number) => string): Notification[] {
-  const now = Date.now();
-  return [
-    {
-      id: 'notif-1',
-      type: 'income',
-      title: t('notifications.typeIncome'),
-      description: t('notifications.incomeReceived', { amount: formatAmount(8500000) }),
-      amount: 8500000,
-      read: false,
-      createdAt: new Date(now - 2 * 60000), // 2 min ago
-    },
-    {
-      id: 'notif-2',
-      type: 'expense',
-      title: t('notifications.typeExpense'),
-      description: t('notifications.expenseRecorded', { amount: formatAmount(350000), category: 'Makanan' }),
-      amount: 350000,
-      read: false,
-      createdAt: new Date(now - 15 * 60000), // 15 min ago
-    },
-    {
-      id: 'notif-3',
-      type: 'savings',
-      title: t('notifications.typeSavings'),
-      description: t('notifications.savingsTargetReached', { name: 'Dana Darurat', percent: '75' }),
-      read: false,
-      createdAt: new Date(now - 1 * 3600000), // 1 hour ago
-    },
-    {
-      id: 'notif-4',
-      type: 'savings',
-      title: t('notifications.typeSavings'),
-      description: t('notifications.savingsDeposit', { amount: formatAmount(500000), name: 'Liburan Jepang' }),
-      amount: 500000,
-      read: false,
-      createdAt: new Date(now - 3 * 3600000), // 3 hours ago
-    },
-    {
-      id: 'notif-5',
-      type: 'system',
-      title: t('notifications.typeSystem'),
-      description: t('notifications.systemUpdate'),
-      read: true,
-      createdAt: new Date(now - 1 * 86400000), // 1 day ago
-    },
-    {
-      id: 'notif-6',
-      type: 'system',
-      title: t('notifications.typeSystem'),
-      description: t('notifications.systemTip'),
-      read: true,
-      createdAt: new Date(now - 2 * 86400000), // 2 days ago
-    },
-    {
-      id: 'notif-7',
-      type: 'expense',
-      title: t('notifications.typeExpense'),
-      description: t('notifications.expenseRecorded', { amount: formatAmount(120000), category: 'Transportasi' }),
-      amount: 120000,
-      read: true,
-      createdAt: new Date(now - 3 * 86400000), // 3 days ago
-    },
-  ];
-}
-
-function formatRelativeTime(date: Date, t: (key: string, params?: Record<string, string | number>) => string): string {
-  const mins = minutesAgo(date);
+function formatRelativeTime(dateStr: string, t: (key: string, params?: Record<string, string | number>) => string): string {
+  const date = new Date(dateStr);
+  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
   if (mins < 1) return t('notifications.justNow');
   if (mins < 60) return t('notifications.minutesAgo', { count: mins });
   const hours = Math.floor(mins / 60);
@@ -177,58 +116,108 @@ function formatRelativeTime(date: Date, t: (key: string, params?: Record<string,
 
 /* ── Component ── */
 
+const VISIBLE_LIMIT = 20;
+
 export function NotificationCenter() {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrencyFormat();
   const [open, setOpen] = useState(false);
-  const [readIds, setReadIds] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    return getReadIds();
-  });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Generate mock notifications (regenerated on each render to reflect locale changes)
-  const notifications = generateMockNotifications(t, formatAmount);
-
-  // Re-sync read state from localStorage when popover opens
-  const handleOpenChange = useCallback((newOpen: boolean) => {
-    setOpen(newOpen);
-    if (newOpen) {
-      setReadIds(getReadIds());
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/notifications?limit=50');
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+        setTotal(data.total || 0);
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      fetchNotifications();
+    }
+  }, [fetchNotifications]);
 
-  const markAsRead = useCallback((id: string) => {
-    setReadIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      saveReadIds(next);
-      return next;
-    });
+  const markAsRead = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/notifications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true }),
+      });
+      if (res.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch {
+      // silent fail
+    }
   }, []);
 
-  const markAllRead = useCallback(() => {
-    const allIds = notifications.map((n) => n.id);
-    const next = new Set(allIds);
-    saveReadIds(next);
-    setReadIds(next);
-  }, [notifications]);
+  const markAllRead = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+      });
+      if (res.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      }
+    } catch {
+      // silent fail
+    }
+  }, []);
 
   const handleNotificationClick = useCallback(
-    (notification: Notification) => {
-      markAsRead(notification.id);
+    async (notification: Notification) => {
+      if (!notification.isRead) {
+        await markAsRead(notification.id);
+      }
+      if (notification.actionUrl) {
+        // Validate URL is a safe internal or https/http path to prevent open redirect / XSS
+        try {
+          const url = new URL(notification.actionUrl, window.location.origin);
+          if (url.protocol === 'http:' || url.protocol === 'https:') {
+            // Only allow same-origin or safe external URLs
+            if (url.origin === window.location.origin) {
+              window.location.href = notification.actionUrl;
+            } else {
+              window.open(notification.actionUrl, '_blank', 'noopener,noreferrer');
+            }
+          }
+        } catch {
+          // If URL parsing fails, treat as a relative path (safe for internal navigation)
+          if (notification.actionUrl.startsWith('/') && !notification.actionUrl.startsWith('//')) {
+            window.location.href = notification.actionUrl;
+          }
+        }
+      }
     },
     [markAsRead],
   );
 
   // Sort: unread first, then by date (newest first)
   const sortedNotifications = [...notifications].sort((a, b) => {
-    const aRead = readIds.has(a.id) ? 1 : 0;
-    const bRead = readIds.has(b.id) ? 1 : 0;
-    if (aRead !== bRead) return aRead - bRead;
-    return b.createdAt.getTime() - a.createdAt.getTime();
+    if (a.isRead !== b.isRead) return a.isRead ? 1 : -1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  const visibleNotifications = sortedNotifications.slice(0, VISIBLE_LIMIT);
+  const hasMore = sortedNotifications.length > VISIBLE_LIMIT;
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -314,7 +303,11 @@ export function NotificationCenter() {
 
         {/* ── Notification List ── */}
         <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
-          {sortedNotifications.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'rgba(255,255,255,0.1)', borderTopColor: 'transparent' }} />
+            </div>
+          ) : sortedNotifications.length === 0 ? (
             /* Empty State */
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div
@@ -331,9 +324,9 @@ export function NotificationCenter() {
               </p>
             </div>
           ) : (
-            sortedNotifications.map((notification) => {
-              const isRead = readIds.has(notification.id);
-              const config = TYPE_CONFIG[notification.type];
+            visibleNotifications.map((notification) => {
+              const isRead = notification.isRead;
+              const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
 
               return (
                 <button
@@ -391,6 +384,18 @@ export function NotificationCenter() {
                 </button>
               );
             })
+          )}
+
+          {/* View All hint */}
+          {hasMore && (
+            <div
+              className="px-4 py-2 text-center"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+            >
+              <span className="text-[10px] font-medium" style={{ color: '#555' }}>
+                +{sortedNotifications.length - VISIBLE_LIMIT} more notifications
+              </span>
+            </div>
           )}
         </div>
 

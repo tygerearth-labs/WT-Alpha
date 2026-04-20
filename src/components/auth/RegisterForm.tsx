@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Loader2, Ticket, Crown, Sparkles } from 'lucide-react';
+import { Loader2, Ticket, Crown, Sparkles, Lock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -18,18 +18,36 @@ export function RegisterForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inviteToken, setInviteToken] = useState('');
-  const [inviteInfo, setInviteInfo] = useState<{ plan: string; email?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationOpen, setRegistrationOpen] = useState(true);
+  const [registrationMessage, setRegistrationMessage] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const { setUser } = useAuthStore();
   const { t } = useTranslation();
 
-  // Check for invite token in URL on mount
+  // Check for invite token in URL on mount and fetch registration config
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('invite');
     if (token) {
       setInviteToken(token);
     }
+
+    // Fetch platform config for registration status
+    fetch('/api/platform-config')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setRegistrationOpen(data.registrationOpen ?? true);
+          setRegistrationMessage(data.registrationMessage || '');
+          setWhatsappNumber(data.whatsappNumber || null);
+        }
+        setConfigLoaded(true);
+      })
+      .catch(() => {
+        setConfigLoaded(true);
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,10 +68,14 @@ export function RegisterForm() {
       if (res.ok) {
         setUser(data.user);
         toast.success(t('auth.registerSuccess'));
-        // Clean URL
+        // Clean URL — remove invite param but stay on current page
         if (window.location.search.includes('invite=')) {
-          window.history.replaceState({}, '', '/register');
+          const url = new URL(window.location.href);
+          url.searchParams.delete('invite');
+          window.history.replaceState({}, '', url.pathname);
         }
+      } else if (data.registrationClosed) {
+        toast.error(data.error || 'Registration is currently closed');
       }
       else toast.error(data.error || t('auth.registerFailed'));
     } catch { toast.error(t('auth.registerError')); }
@@ -61,6 +83,37 @@ export function RegisterForm() {
   };
 
   const inputCls = "h-11 rounded-xl text-sm border-0 focus-visible:ring-1";
+
+  // Show registration closed message
+  if (configLoaded && !registrationOpen) {
+    return (
+      <div className="w-full max-w-sm mx-auto space-y-6">
+        <div className="text-center space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>{t('auth.createAccount')}</p>
+        </div>
+
+        <div className="rounded-xl p-5 text-center" style={{ background: 'rgba(207,102,121,0.08)', border: '1px solid rgba(207,102,121,0.2)' }}>
+          <Lock className="h-8 w-8 mx-auto mb-3" style={{ color: '#CF6679' }} />
+          <p className="text-sm font-semibold mb-2" style={{ color: '#CF6679' }}>Registration Closed</p>
+          <p className="text-[12px] leading-relaxed" style={{ color: '#9E9E9E' }}>
+            {registrationMessage || 'Registration is currently closed. Please contact the administrator.'}
+          </p>
+          {whatsappNumber && (
+            <a
+              href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo, saya ingin mendaftar akun Wealth Tracker')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-4 px-4 py-2.5 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+              style={{ background: '#25D366', color: '#fff' }}
+            >
+              <MessageCircle className="h-4 w-4" />
+              Hubungi via WhatsApp
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-6">

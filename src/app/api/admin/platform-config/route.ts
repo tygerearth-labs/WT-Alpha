@@ -4,6 +4,26 @@ import { requireAdmin } from '@/lib/auth';
 
 const CONFIG_ID = 'platform';
 
+// JSON string fields that need validation before saving
+const JSON_FIELDS = [
+  'sectionVisibility',
+  'exportEnabled',
+  'availablePlans',
+  'basicPlanFeatures',
+  'proPlanFeatures',
+] as const;
+
+function validateJsonField(value: unknown, fieldName: string): string | null {
+  if (value === undefined || value === null) return null; // null/undefined is fine
+  if (typeof value !== 'string') return `${fieldName} must be a JSON string`;
+  try {
+    JSON.parse(value);
+    return null;
+  } catch {
+    return `${fieldName} contains invalid JSON`;
+  }
+}
+
 export async function GET() {
   try {
     const authResult = await requireAdmin();
@@ -36,7 +56,33 @@ export async function PUT(request: NextRequest) {
     if (authResult instanceof NextResponse) return authResult;
 
     const body = await request.json();
-    const { defaultPlan, defaultMaxCategories, defaultMaxSavings, autoSuspendExpired } = body;
+    const {
+      defaultPlan, defaultMaxCategories, defaultMaxSavings, autoSuspendExpired,
+      basicPlanFeatures, proPlanFeatures, basicPlanPrice, proPlanPrice,
+      basicPlanDiscount, proPlanDiscount,
+      basicPlanDiscountLabel, proPlanDiscountLabel,
+      basicPurchaseUrl, proPurchaseUrl,
+      trialEnabled, trialDurationDays, trialPlan,
+      whatsappNumber, registrationOpen, registrationMessage, availablePlans,
+      sectionVisibility, exportEnabled,
+    } = body;
+
+    // Validate JSON string fields before saving
+    const jsonFieldValues: Record<string, unknown> = {
+      sectionVisibility,
+      exportEnabled,
+      availablePlans,
+      basicPlanFeatures,
+      proPlanFeatures,
+    };
+
+    for (const fieldName of JSON_FIELDS) {
+      const value = jsonFieldValues[fieldName];
+      const error = validateJsonField(value, fieldName);
+      if (error) {
+        return NextResponse.json({ error }, { status: 400 });
+      }
+    }
 
     const config = await db.platformConfig.upsert({
       where: { id: CONFIG_ID },
@@ -46,12 +92,50 @@ export async function PUT(request: NextRequest) {
         defaultMaxCategories: defaultMaxCategories ?? 10,
         defaultMaxSavings: defaultMaxSavings ?? 3,
         autoSuspendExpired: autoSuspendExpired ?? true,
+        basicPlanFeatures: basicPlanFeatures ?? null,
+        proPlanFeatures: proPlanFeatures ?? null,
+        basicPlanPrice: basicPlanPrice ?? 'Gratis',
+        proPlanPrice: proPlanPrice ?? 'Rp 99.000',
+        basicPlanDiscount: basicPlanDiscount ?? null,
+        proPlanDiscount: proPlanDiscount ?? null,
+        basicPlanDiscountLabel: basicPlanDiscountLabel ?? null,
+        proPlanDiscountLabel: proPlanDiscountLabel ?? null,
+        basicPurchaseUrl: basicPurchaseUrl ?? null,
+        proPurchaseUrl: proPurchaseUrl ?? null,
+        trialEnabled: trialEnabled ?? true,
+        trialDurationDays: trialDurationDays ?? 30,
+        trialPlan: trialPlan ?? 'basic',
+        whatsappNumber: whatsappNumber ?? null,
+        registrationOpen: registrationOpen ?? true,
+        registrationMessage: registrationMessage ?? null,
+        availablePlans: availablePlans ?? '["basic","pro"]',
+        sectionVisibility: sectionVisibility ?? null,
+        exportEnabled: exportEnabled ?? null,
       },
       update: {
         ...(defaultPlan !== undefined && { defaultPlan }),
         ...(defaultMaxCategories !== undefined && { defaultMaxCategories }),
         ...(defaultMaxSavings !== undefined && { defaultMaxSavings }),
         ...(autoSuspendExpired !== undefined && { autoSuspendExpired }),
+        ...(basicPlanFeatures !== undefined && { basicPlanFeatures }),
+        ...(proPlanFeatures !== undefined && { proPlanFeatures }),
+        ...(basicPlanPrice !== undefined && { basicPlanPrice }),
+        ...(proPlanPrice !== undefined && { proPlanPrice }),
+        ...(basicPlanDiscount !== undefined && { basicPlanDiscount }),
+        ...(proPlanDiscount !== undefined && { proPlanDiscount }),
+        ...(basicPlanDiscountLabel !== undefined && { basicPlanDiscountLabel }),
+        ...(proPlanDiscountLabel !== undefined && { proPlanDiscountLabel }),
+        ...(basicPurchaseUrl !== undefined && { basicPurchaseUrl }),
+        ...(proPurchaseUrl !== undefined && { proPurchaseUrl }),
+        ...(trialEnabled !== undefined && { trialEnabled }),
+        ...(trialDurationDays !== undefined && { trialDurationDays }),
+        ...(trialPlan !== undefined && { trialPlan }),
+        ...(whatsappNumber !== undefined && { whatsappNumber }),
+        ...(registrationOpen !== undefined && { registrationOpen }),
+        ...(registrationMessage !== undefined && { registrationMessage }),
+        ...(availablePlans !== undefined && { availablePlans }),
+        ...(sectionVisibility !== undefined && { sectionVisibility }),
+        ...(exportEnabled !== undefined && { exportEnabled }),
       },
     });
 

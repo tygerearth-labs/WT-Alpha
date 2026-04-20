@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
+import { createSession } from '@/lib/session';
+import { notifySubscriptionExpiry, notifyUpgradeOffer } from '@/lib/notificationHelpers';
+
+// In-memory rate limiter: max 5 attempts per email per 15 minutes
+const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+// Clean up old entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [email, record] of loginAttempts.entries()) {
+    if (now - record.firstAttempt > WINDOW_MS) {
+      loginAttempts.delete(email);
+    }
+  }
+}, 10 * 60 * 1000);
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +29,27 @@ export async function POST(request: NextRequest) {
         { error: 'Email and password are required' },
         { status: 400 }
       );
+    }
+
+    // Rate limiting check
+    const now = Date.now();
+    const attemptRecord = loginAttempts.get(email);
+
+    if (attemptRecord) {
+      // Check if window has expired
+      if (now - attemptRecord.firstAttempt > WINDOW_MS) {
+        // Reset the window
+        loginAttempts.set(email, { count: 1, firstAttempt: now });
+      } else if (attemptRecord.count >= MAX_ATTEMPTS) {
+        return NextResponse.json(
+          { error: 'Too many login attempts. Please try again later.' },
+          { status: 429 }
+        );
+      } else {
+        attemptRecord.count++;
+      }
+    } else {
+      loginAttempts.set(email, { count: 1, firstAttempt: now });
     }
 
     const user = await db.user.findUnique({
@@ -35,6 +72,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Successful login — clear rate limit for this email
+    loginAttempts.delete(email);
+
     if (user.status === 'suspended') {
       return NextResponse.json(
         { error: 'Account suspended. Please contact administrator.' },
@@ -49,16 +89,49 @@ export async function POST(request: NextRequest) {
         data: { plan: 'basic', subscriptionEnd: null }
       });
       user.plan = 'basic';
+
+      // Create notification about the downgrade
+      notifySubscriptionExpiry(user.id, 0).catch(() => {});
+    } else if (user.subscriptionEnd && user.plan !== 'basic') {
+      // Check for expiring subscriptions (within 7 days)
+      const nowDate = new Date();
+      const daysLeft = Math.ceil(
+        (new Date(user.subscriptionEnd).getTime() - nowDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (daysLeft > 0 && daysLeft <= 7) {
+        // Check if we already sent an expiry reminder recently (within last 24h)
+        const recentReminder = await db.notification.findFirst({
+          where: {
+            userId: user.id,
+            type: 'subscription',
+            createdAt: { gte: new Date(nowDate.getTime() - 24 * 60 * 60 * 1000) },
+          },
+          select: { id: true },
+        });
+
+        if (!recentReminder) {
+          notifySubscriptionExpiry(user.id, daysLeft).catch(() => {});
+        }
+      }
+    } else if (user.plan === 'basic') {
+      // Occasional upgrade offer for basic users (once per login session, max once per 7 days)
+      const recentOffer = await db.notification.findFirst({
+        where: {
+          userId: user.id,
+          type: 'upgrade',
+          createdAt: { gte: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000) },
+        },
+        select: { id: true },
+      });
+
+      if (!recentOffer) {
+        notifyUpgradeOffer(user.id).catch(() => {});
+      }
     }
 
-    const cookieStore = await cookies();
-    cookieStore.set('userId', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/'
-    });
+    // Use signed session cookie
+    await createSession(user.id);
 
     return NextResponse.json({
       user: {

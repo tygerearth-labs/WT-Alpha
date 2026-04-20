@@ -38,8 +38,8 @@ interface Tip {
   description: string;
   severity: 'good' | 'warning' | 'concern';
   color: string;
-  bgColor: string;
-  borderColor: string;
+  bg: string;
+  border: string;
 }
 
 const SEVERITY_COLORS = {
@@ -215,7 +215,7 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
             className="rounded-lg p-3 animate-in fade-in-0 slide-in-from-bottom-2"
             style={{
               background: tip.bg,
-              border: `1px solid ${tip.borderColor}`,
+              border: `1px solid ${tip.border}`,
               animationDelay: `${index * 80}ms`,
               animationFillMode: 'backwards',
             }}

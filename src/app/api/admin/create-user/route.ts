@@ -4,6 +4,25 @@ import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { logAdminActivity } from '@/lib/adminLogger';
 
+/**
+ * Validate that an image URL is safe (no javascript: URIs or other dangerous schemes).
+ * Allows http://, https://, and relative paths starting with /.
+ */
+function isValidImageUrl(url: string): boolean {
+  const trimmed = url.trim().toLowerCase();
+  // Reject dangerous schemes
+  if (trimmed.startsWith('javascript:')) return false;
+  if (trimmed.startsWith('data:')) return false;
+  if (trimmed.startsWith('vbscript:')) return false;
+  if (trimmed.startsWith('file:')) return false;
+  // Allow valid schemes
+  if (trimmed.startsWith('https://')) return true;
+  if (trimmed.startsWith('http://')) return true;
+  if (trimmed.startsWith('/')) return true;
+  // Reject anything else
+  return false;
+}
+
 // POST /api/admin/create-user — Create a user directly from admin panel
 export async function POST(request: NextRequest) {
   const adminId = await requireAdmin();
@@ -11,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, username, password, plan } = body;
+    const { email, username, password, plan, image } = body;
 
     // Validate required fields
     if (!email || !username || !password) {
@@ -35,16 +54,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password (min 6 chars)
-    if (typeof password !== 'string' || password.length < 6) {
+    // Validate password (min 8 chars)
+    if (typeof password !== 'string' || password.length < 8) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
+        { error: 'Password must be at least 8 characters' },
         { status: 400 }
       );
     }
 
     // Validate plan if provided
     const userPlan = plan === 'pro' ? 'pro' : 'basic';
+
+    // Validate image URL if provided
+    if (image !== undefined && image !== null && image.trim() !== '') {
+      if (!isValidImageUrl(image)) {
+        return NextResponse.json(
+          { error: 'Invalid image URL. Only http://, https://, and relative paths are allowed.' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Check email uniqueness
     const existingEmail = await db.user.findUnique({ where: { email: email.toLowerCase() } });
@@ -69,7 +98,8 @@ export async function POST(request: NextRequest) {
         role: 'user',
         status: 'active',
         maxCategories,
-        maxSavings
+        maxSavings,
+        ...(image && image.trim() !== '' ? { image: image.trim() } : {}),
       },
       select: {
         id: true,

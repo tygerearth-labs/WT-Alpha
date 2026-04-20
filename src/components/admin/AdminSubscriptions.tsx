@@ -25,6 +25,7 @@ interface SubscriptionRecord {
   id: string; email: string; username: string; plan: string;
   subscriptionEnd: string | null; createdAt: string;
   isExpired: boolean; daysRemaining: number | null;
+  status?: string;
 }
 
 interface Pagination {
@@ -121,10 +122,10 @@ export function AdminSubscriptions() {
   ];
 
   const statsData = [
-    { label: 'Total Active', value: pagination.total, color: '#03DAC6', icon: CreditCard },
+    { label: 'Total Users', value: pagination.total, color: '#03DAC6', icon: CreditCard },
     { label: 'Pro Plans', value: subscriptions.filter(s => s.plan === 'pro').length, color: '#FFD700', icon: Crown },
+    { label: 'Basic Plans', value: subscriptions.filter(s => s.plan === 'basic').length, color: '#BB86FC', icon: Sparkles },
     { label: 'Expiring Soon', value: subscriptions.filter(s => s.daysRemaining !== null && s.daysRemaining >= 0 && s.daysRemaining <= 7).length, color: '#FFD700', icon: AlertTriangle },
-    { label: 'Expired', value: subscriptions.filter(s => s.isExpired).length, color: '#CF6679', icon: Clock },
   ];
 
   const getSubscriptionProgress = (sub: SubscriptionRecord) => {
@@ -199,6 +200,78 @@ export function AdminSubscriptions() {
             {plan === '' ? 'All Plans' : plan.toUpperCase()}
           </Button>
         ))}
+      </div>
+
+      {/* Pro & Basic User Lists */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Pro Users */}
+        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Crown className="h-4 w-4 text-[#FFD700]" />
+              <h3 className="text-sm font-bold text-white/80">Pro Users</h3>
+              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5">
+                {subscriptions.filter(s => s.plan === 'pro').length}
+              </Badge>
+            </div>
+            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin">
+              {subscriptions.filter(s => s.plan === 'pro').length === 0 ? (
+                <p className="text-[11px] text-white/20 text-center py-4">No pro users</p>
+              ) : (
+                subscriptions.filter(s => s.plan === 'pro').map(sub => (
+                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                    <div className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-[8px] font-bold text-[#FFD700] shrink-0">
+                      {sub.username.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium text-white/70 truncate">{sub.username}</p>
+                      <p className="text-[9px] text-white/25 truncate">{sub.email}</p>
+                    </div>
+                    {sub.isExpired ? (
+                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5">Expired</Badge>
+                    ) : sub.daysRemaining !== null ? (
+                      <span className="text-[9px] text-[#03DAC6]/60 tabular-nums">{sub.daysRemaining}d</span>
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        {/* Basic Users */}
+        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4 text-[#BB86FC]" />
+              <h3 className="text-sm font-bold text-white/80">Basic Users</h3>
+              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#BB86FC]/20 text-[#BB86FC] bg-[#BB86FC]/5">
+                {subscriptions.filter(s => s.plan === 'basic').length}
+              </Badge>
+            </div>
+            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin">
+              {subscriptions.filter(s => s.plan === 'basic').length === 0 ? (
+                <p className="text-[11px] text-white/20 text-center py-4">No basic users</p>
+              ) : (
+                subscriptions.filter(s => s.plan === 'basic').map(sub => (
+                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                    <div className="w-6 h-6 rounded-full bg-[#BB86FC]/10 flex items-center justify-center text-[8px] font-bold text-[#BB86FC] shrink-0">
+                      {sub.username.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium text-white/70 truncate">{sub.username}</p>
+                      <p className="text-[9px] text-white/25 truncate">{sub.email}</p>
+                    </div>
+                    {sub.isExpired ? (
+                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5">Expired</Badge>
+                    ) : sub.daysRemaining !== null ? (
+                      <span className="text-[9px] text-[#03DAC6]/60 tabular-nums">{sub.daysRemaining}d</span>
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Subscriptions Table */}
@@ -298,6 +371,7 @@ export function AdminSubscriptions() {
                           )}
                         </td>
                         <td className="py-3 px-4 text-center">
+                          <div className="flex flex-col items-center gap-1">
                           {sub.isExpired ? (
                             <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#CF6679]/20 text-[#CF6679] bg-[#CF6679]/5">
                               <AlertTriangle className="h-2.5 w-2.5 mr-0.5 inline" />Expired
@@ -312,6 +386,12 @@ export function AdminSubscriptions() {
                               <span className="text-[11px] text-[#03DAC6]/70">{sub.daysRemaining}d</span>
                             </div>
                           )}
+                          {sub.status === 'suspended' && (
+                            <Badge variant="outline" className="text-[8px] font-bold px-1.5 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5">
+                              Suspended
+                            </Badge>
+                          )}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-right">
                           <Button size="sm" variant="ghost" className="h-7 text-[11px] text-[#03DAC6] hover:text-[#03DAC6] hover:bg-[#03DAC6]/10"

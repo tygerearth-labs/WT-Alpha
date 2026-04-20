@@ -19,11 +19,6 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#000000",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Wealth Tracker",
-  },
 };
 
 export const metadata: Metadata = {

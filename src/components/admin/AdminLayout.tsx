@@ -44,6 +44,7 @@ import { AdminAnalytics } from './AdminAnalytics';
 import { AdminOnboardingTour, isTourCompleted, resetTour } from './AdminOnboardingTour';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 import {
   CommandDialog,
   CommandInput,
@@ -298,7 +299,7 @@ export function AdminLayout() {
         style={{ width: '200px', height: '200px', background: 'radial-gradient(ellipse at 70% 80%, rgba(187,134,252,0.03) 0%, transparent 70%)' }} />
 
       {/* Header */}
-      <header className="sticky top-0 z-30 relative">
+      <header className="fixed top-0 left-0 right-0 z-30">
         <div className="absolute inset-0 bg-[#0D0D0D]/80 backdrop-blur-xl" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#03DAC6]/25 to-transparent" />
         <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] blur-sm pointer-events-none"
@@ -343,6 +344,15 @@ export function AdminLayout() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Switch to User View Button — prominent */}
+            <Button
+              variant="outline"
+              className="h-8 gap-1.5 text-[11px] font-semibold rounded-lg border-[#BB86FC]/20 text-[#BB86FC] hover:bg-[#BB86FC]/10 hover:text-[#BB86FC] bg-[#BB86FC]/5 transition-all"
+              onClick={() => { window.location.href = '/?view=user'; }}
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">User View</span>
+            </Button>
             {/* Help / Tour Button */}
             <Button
               variant="ghost"
@@ -452,7 +462,7 @@ export function AdminLayout() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-white/[0.06] my-1" />
                 <DropdownMenuItem
-                  onClick={() => router.push('/')}
+                  onClick={() => { window.location.href = '/?view=user'; }}
                   className="text-white/60 focus:text-white focus:bg-white/[0.05] rounded-lg mx-1 cursor-pointer"
                 >
                   <ArrowLeftRight className="mr-2.5 h-4 w-4 text-white/30" />
@@ -479,8 +489,14 @@ export function AdminLayout() {
         `}} />
       </header>
 
-      {/* Body */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* ── Body ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Announcement Banner (sticky below fixed header) ── */}
+        <div className="shrink-0 sticky top-14 z-20">
+          <AnnouncementBanner />
+        </div>
+
+        <div className="flex-1 flex overflow-hidden pt-14">
         {/* Desktop Sidebar */}
         <aside className={cn(
           'hidden lg:flex flex-col fixed top-14 left-0 bottom-0 z-20 transition-all duration-300 ease-in-out',
@@ -561,6 +577,7 @@ export function AdminLayout() {
             </div>
           </div>
         </main>
+      </div>
       </div>
 
       {/* Bottom Navigation Bar (mobile) */}
@@ -672,6 +689,7 @@ export function AdminLayout() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+        .announcement-pt { transition: padding-top 0.3s ease; }
       `}} />
     </div>
   );

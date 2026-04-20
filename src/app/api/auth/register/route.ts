@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
+import { createSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if registration is open
+    let config = await db.platformConfig.findUnique({ where: { id: 'platform' } });
+    if (config && !config.registrationOpen) {
+      return NextResponse.json(
+        { error: config.registrationMessage || 'Registration is currently closed. Please contact the administrator.', registrationClosed: true },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { email, username, password, inviteToken } = body;
 
@@ -77,8 +86,7 @@ export async function POST(request: NextRequest) {
       plan: assignedPlan
     };
 
-    // Set limits based on platform config
-    let config = await db.platformConfig.findUnique({ where: { id: 'platform' } });
+    // Set limits based on platform config (already fetched at top of function)
     if (!config) {
       config = await db.platformConfig.create({ data: { id: 'platform' } });
     }
@@ -92,6 +100,22 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await db.user.create({ data: userData as any });
+
+    // After user creation, check for trial if no invite token was used
+    if (!inviteToken) {
+      if (config?.trialEnabled) {
+        const trialEnd = new Date(Date.now() + (config.trialDurationDays || 30) * 24 * 60 * 60 * 1000);
+        await db.user.update({
+          where: { id: user.id },
+          data: {
+            plan: config.trialPlan || 'basic',
+            subscriptionEnd: trialEnd,
+            maxCategories: (config.trialPlan || 'basic') === 'pro' ? config.defaultMaxCategories * 5 : config.defaultMaxCategories,
+            maxSavings: (config.trialPlan || 'basic') === 'pro' ? config.defaultMaxSavings * 5 : config.defaultMaxSavings,
+          }
+        });
+      }
+    }
 
     // Create default categories
     await db.category.createMany({
@@ -111,14 +135,8 @@ export async function POST(request: NextRequest) {
       ]
     });
 
-    const cookieStore = await cookies();
-    cookieStore.set('userId', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    // Use signed session cookie
+    await createSession(user.id);
 
     return NextResponse.json({
       user: {

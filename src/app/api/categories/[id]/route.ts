@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { requireAuth } from '@/lib/auth';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await params;
     const body = await request.json();
@@ -58,23 +55,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await params;
 
-    // Verify category belongs to user
+    // Verify category belongs to user and check transaction count efficiently
     const existingCategory = await db.category.findFirst({
       where: {
         id,
         userId,
       },
       include: {
-        transactions: true,
+        _count: {
+          select: {
+            transactions: true,
+          },
+        },
       },
     });
 
@@ -85,7 +83,7 @@ export async function DELETE(
       );
     }
 
-    if (existingCategory.transactions.length > 0) {
+    if (existingCategory._count.transactions > 0) {
       return NextResponse.json(
         { error: 'Cannot delete category with transactions' },
         { status: 400 }

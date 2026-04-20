@@ -10,7 +10,7 @@ datasource db {
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
-  username      String
+  username      String   @unique
   password      String
   image         String?
   pin           String?
@@ -29,6 +29,8 @@ model User {
   savingsTargets SavingsTarget[]
   allocations   Allocation[]
   inviteTokens  InviteToken[]
+  budgets       Budget[]
+  notifications Notification[]
 }
 
 model Category {
@@ -149,11 +151,62 @@ model AdminActivityLog {
   @@index([createdAt])
 }
 
+model Budget {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String
+  amount      Float
+  month       Int      // 1-12
+  year        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, month, year])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // income, expense, savings, system, broadcast, subscription, upgrade
+  title       String
+  message     String
+  amount      Float?
+  isRead      Boolean  @default(false)
+  actionUrl   String?  // Optional URL to navigate to when clicked
+  createdAt   DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, type])
+  @@index([createdAt])
+}
+
 model PlatformConfig {
   id                   String   @id @default("platform")
   defaultPlan          String   @default("basic")
   defaultMaxCategories Int      @default(10)
   defaultMaxSavings    Int      @default(3)
   autoSuspendExpired   Boolean  @default(true)
+  basicPlanFeatures    String?  // JSON array of feature strings
+  proPlanFeatures      String?  // JSON array of feature strings
+  basicPlanPrice       String?  @default("Gratis")
+  proPlanPrice         String?  @default("Rp 99.000")
+  basicPlanDiscount    String?  // e.g. "20%" or "Rp 20.000"
+  proPlanDiscount      String?  // e.g. "30%" or "Rp 30.000"
+  basicPlanDiscountLabel String? // e.g. "Diskon Early Bird"
+  proPlanDiscountLabel String?  // e.g. "Diskon Launching"
+  basicPurchaseUrl     String?  // External purchase link for basic plan
+  proPurchaseUrl       String?  // External purchase link for pro plan
+  trialEnabled         Boolean  @default(true)
+  trialDurationDays    Int      @default(30)
+  trialPlan            String?  @default("basic")
+  whatsappNumber       String?  // WhatsApp number for registration contact
+  registrationOpen     Boolean  @default(true)
+  registrationMessage  String?  // Custom message when registration is closed
+  availablePlans       String?  @default("[\"basic\",\"pro\"]") // JSON array of available plan names
+  sectionVisibility    String?  // JSON object: { "basic": { "budget": true, "healthScore": true, ... }, "pro": { ... } }
+  exportEnabled        String?  // JSON object: { "basic": { "pdf": true, "excel": false }, "pro": { "pdf": true, "excel": true } }
   updatedAt            DateTime @updatedAt
 }

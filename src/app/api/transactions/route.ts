@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { requireAuth } from '@/lib/auth';
+import { notifyTransaction } from '@/lib/notificationHelpers';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type'); // 'income' or 'expense'
@@ -50,12 +48,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const body = await request.json();
     const { type, amount, description, categoryId, date, targetId, allocationPercentage } = body;
@@ -158,41 +153,59 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create transaction (and allocation atomically if applicable)
-    const transaction = await db.transaction.create({
-      data: {
-        type,
-        amount: numAmount,
-        description,
-        categoryId: category.id,
-        userId,
-        date: date ? new Date(date) : new Date(),
-        ...(targetSavingsId && allocationAmount > 0
-          ? {
-              allocation: {
-                create: {
-                  targetId: targetSavingsId,
-                  userId,
-                  amount: allocationAmount,
-                  percentage: allocationPct,
-                },
-              },
-            }
-          : {}),
-      },
-      include: {
-        category: true,
-        allocation: true,
-      },
-    });
+    // Create transaction AND update savings target atomically
+    let transaction;
 
-    // Update savings target current amount (separate from create for Prisma compatibility)
     if (targetSavingsId && allocationAmount > 0) {
-      await db.savingsTarget.update({
-        where: { id: targetSavingsId },
-        data: { currentAmount: { increment: allocationAmount } },
+      // Wrap both operations in a transaction for atomicity
+      const result = await db.$transaction([
+        db.transaction.create({
+          data: {
+            type,
+            amount: numAmount,
+            description,
+            categoryId: category.id,
+            userId,
+            date: date ? new Date(date) : new Date(),
+            allocation: {
+              create: {
+                targetId: targetSavingsId,
+                userId,
+                amount: allocationAmount,
+                percentage: allocationPct,
+              },
+            },
+          },
+          include: {
+            category: true,
+            allocation: true,
+          },
+        }),
+        db.savingsTarget.update({
+          where: { id: targetSavingsId },
+          data: { currentAmount: { increment: allocationAmount } },
+        }),
+      ]);
+      transaction = result[0];
+    } else {
+      transaction = await db.transaction.create({
+        data: {
+          type,
+          amount: numAmount,
+          description,
+          categoryId: category.id,
+          userId,
+          date: date ? new Date(date) : new Date(),
+        },
+        include: {
+          category: true,
+          allocation: true,
+        },
       });
     }
+
+    // Create notification for the transaction (non-blocking)
+    notifyTransaction(userId, type, numAmount, description, category.id).catch(() => {});
 
     return NextResponse.json({ transaction }, { status: 201 });
 

@@ -110,11 +110,12 @@ export function AdminInvites() {
         setCreateExpiry('48');
         fetchInvites(1);
 
-        if (data.inviteUrl) {
-          navigator.clipboard.writeText(data.inviteUrl).then(() => {
+        if (data.invite?.token) {
+          const fullUrl = `${window.location.origin}/?invite=${data.invite.token}`;
+          navigator.clipboard.writeText(fullUrl).then(() => {
             toast.success('Link copied to clipboard!');
           }).catch(() => {
-            toast(`Link: ${data.inviteUrl}`);
+            toast(`Link: ${fullUrl}`);
           });
         }
       } else {
@@ -141,7 +142,7 @@ export function AdminInvites() {
   };
 
   const copyLink = (token: string) => {
-    const url = `${window.location.origin}/register?invite=${token}`;
+    const url = `${window.location.origin}/?invite=${token}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopiedToken(token);
       setCopiedField('link');
@@ -329,6 +330,16 @@ export function AdminInvites() {
                             {invite.plan === 'pro' ? <><Crown className="h-2.5 w-2.5 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2.5 w-2.5 mr-0.5 inline" />BASIC</>}
                           </Badge>
                         </div>
+
+                        {/* Registration Link — show full URL for easy sharing */}
+                        {status === 'active' && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <Link className="h-3 w-3 text-white/20 shrink-0" />
+                            <code className="text-[10px] font-mono text-white/30 truncate max-w-[280px] sm:max-w-[400px]">
+                              {typeof window !== 'undefined' ? `${window.location.origin}/?invite=${invite.token}` : `/?invite=${invite.token}`}
+                            </code>
+                          </div>
+                        )}
 
                         {/* Lifecycle Timeline */}
                         <div className="flex items-center gap-1 mb-2.5">

@@ -18,6 +18,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  forceStopLoading: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -28,6 +29,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true,
 
       setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
+
       logout: () => {
         // Clear everything on logout
         if (typeof window !== 'undefined') {
@@ -36,10 +38,20 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false, isLoading: false });
       },
 
+      forceStopLoading: () => {
+        const state = get();
+        if (state.isLoading) {
+          set({ isLoading: false });
+        }
+      },
+
       checkAuth: async () => {
         set({ isLoading: true });
         try {
-          const response = await fetch('/api/auth/me');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const response = await fetch('/api/auth/me', { signal: controller.signal });
+          clearTimeout(timeoutId);
           if (response.ok) {
             const data = await response.json();
             // Always use fresh API data, overwrite any cached state
@@ -77,6 +89,9 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         if (state?.isAuthenticated) {
           state.isLoading = true;
+        } else {
+          // If not authenticated on rehydrate, no need to load
+          state.isLoading = false;
         }
       },
     }

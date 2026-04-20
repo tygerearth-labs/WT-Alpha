@@ -44,7 +44,7 @@ export function TopCategories({ expenseByCategory }: TopCategoriesProps) {
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5)
       .map(c => ({
-        name: c.category,
+        name: c.name,
         amount: c.amount,
         percentage: total > 0 ? Math.round((c.amount / total) * 100) : 0,
         color: c.color || '#9E9E9E',

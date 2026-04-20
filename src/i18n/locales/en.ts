@@ -49,6 +49,7 @@ export const translations = {
     password: 'Password',
     username: 'Username',
     noAccount: "Don't have an account?",
+    hasAccount: 'Already have an account?',
     loginToStart: 'Log in to get started',
     logoutSuccess: 'Logged out successfully',
     logoutFailed: 'Failed to log out',

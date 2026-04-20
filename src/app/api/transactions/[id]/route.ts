@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { requireAuth } from '@/lib/auth';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await params;
     const body = await request.json();
@@ -78,12 +75,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await params;
 
@@ -101,6 +95,7 @@ export async function DELETE(
     }
 
     // If this transaction is allocated to a savings target, reverse the allocation
+    // and delete everything atomically (including the transaction itself)
     if (existingTransaction.allocation) {
       await db.$transaction([
         // Reverse the savings target increment
@@ -112,13 +107,17 @@ export async function DELETE(
         db.allocation.delete({
           where: { id: existingTransaction.allocation.id },
         }),
+        // Delete the transaction inside the same transaction
+        db.transaction.delete({
+          where: { id },
+        }),
       ]);
+    } else {
+      // No allocation — just delete the transaction
+      await db.transaction.delete({
+        where: { id },
+      });
     }
-
-    // Now delete the transaction
-    await db.transaction.delete({
-      where: { id },
-    });
 
     return NextResponse.json({ success: true });
 

@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Users, UserPlus, Shield, CreditCard, AlertTriangle,
-  Activity, TrendingUp, UserCheck, UserX, Crown, Sparkles,
-  RefreshCw, ArrowUpRight, ArrowDownRight, Zap, Database,
+  Activity, TrendingUp, TrendingDown, UserCheck, UserX, Crown, Sparkles,
+  RefreshCw, ArrowUpRight, ArrowDownRight, Zap, Database, Wallet,
   Clock, BarChart3, Star, Target, Bell, FileText, Link,
   ChevronRight, FileDown, Loader2, History,
 } from 'lucide-react';
@@ -51,8 +51,8 @@ interface ActivityLogEntry {
 
 function useCountUp(target: number, duration = 1200) {
   const [count, setCount] = useState(0);
-  const rafRef = useRef<number>();
-  const startTimeRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
+  const startTimeRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (target === 0) return;

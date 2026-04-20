@@ -19,7 +19,7 @@ interface CategoryListProps {
 function ColorPill({ color, label }: { color: string; label: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+      className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full max-w-[120px] min-w-0"
       style={{
         background: `${color}15`,
         color,
@@ -27,10 +27,10 @@ function ColorPill({ color, label }: { color: string; label: string }) {
       }}
     >
       <span
-        className="w-1.5 h-1.5 rounded-full"
+        className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{ background: color, boxShadow: `0 0 4px ${color}40` }}
       />
-      {label}
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -60,7 +60,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
               <div
                 key={category.id}
                 onClick={() => onEdit(category)}
-                className="group flex flex-col gap-1.5 shrink-0 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] transition-all duration-150 cursor-pointer min-w-0"
+                className="group flex flex-col gap-1.5 shrink-0 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] transition-all duration-150 cursor-pointer min-w-0 overflow-hidden"
                 style={{ minWidth: '120px' }}
               >
                 <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                       style={{ color: category.color }}
                     />
                   </div>
-                  <span className="text-xs font-medium text-white/90 truncate max-w-[80px]">
+                  <span className="text-xs font-medium text-white/90 truncate max-w-[80px] min-w-0">
                     {category.name}
                   </span>
                 </div>
@@ -124,7 +124,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
             return (
               <div
                 key={category.id}
-                className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] hover:border-white/[0.1] transition-all duration-150 cursor-pointer"
+                className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] hover:border-white/[0.1] transition-all duration-150 cursor-pointer overflow-hidden"
                 onClick={() => onEdit(category)}
               >
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -205,7 +205,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
             return (
               <div
                 key={category.id}
-                className="group flex items-center justify-between gap-3 px-3 py-3 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] hover:border-primary/20 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
+                className="group flex items-center justify-between gap-3 px-3 py-3 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] hover:border-primary/20 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)] overflow-hidden"
                 onClick={() => onEdit(category)}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -299,7 +299,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
           return (
             <div
               key={category.id}
-              className="group flex items-center justify-between gap-3 px-3 py-3 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] lg:hover:border-primary/20 transition-all duration-200 cursor-pointer lg:hover:-translate-y-0.5 lg:hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
+              className="group flex items-center justify-between gap-3 px-3 py-3 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] lg:hover:border-primary/20 transition-all duration-200 cursor-pointer lg:hover:-translate-y-0.5 lg:hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)] overflow-hidden"
               onClick={() => onEdit(category)}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">

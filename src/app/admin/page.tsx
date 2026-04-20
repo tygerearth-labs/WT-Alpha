@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { LoadingScreen } from '@/components/loading/LoadingScreen';
-import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 
 /**
  * Admin Page — Completely isolated from the user panel.
@@ -78,7 +77,6 @@ export default function AdminPage() {
   // Fully verified — render admin panel
   return (
     <>
-      <AnnouncementBanner />
       <AdminLayout />
     </>
   );

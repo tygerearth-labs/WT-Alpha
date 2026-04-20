@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { requireAuth, destroySession } from '@/lib/auth';
+import { createSession } from '@/lib/session';
 import bcrypt from 'bcryptjs';
 
 const VALID_LOCALES = ['id', 'en'];
@@ -13,14 +14,30 @@ const VALID_CURRENCIES = [
   'BGN', 'TRY', 'RUB', 'UAH', 'VND', 'NGN', 'EGP', 'PKR', 'BDT', 'LKR',
 ];
 
+/**
+ * Validate that an image URL is safe (no javascript: URIs or other dangerous schemes).
+ * Allows http://, https://, and relative paths starting with /.
+ */
+function isValidImageUrl(url: string): boolean {
+  const trimmed = url.trim().toLowerCase();
+  // Reject dangerous schemes
+  if (trimmed.startsWith('javascript:')) return false;
+  if (trimmed.startsWith('data:')) return false;
+  if (trimmed.startsWith('vbscript:')) return false;
+  if (trimmed.startsWith('file:')) return false;
+  // Allow valid schemes
+  if (trimmed.startsWith('https://')) return true;
+  if (trimmed.startsWith('http://')) return true;
+  if (trimmed.startsWith('/')) return true;
+  // Reject anything else (e.g., unknown schemes)
+  return false;
+}
+
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -53,12 +70,9 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const body = await request.json();
     const { username, currentPassword, newPassword, image, locale, currency } = body;
@@ -101,6 +115,7 @@ export async function PUT(request: NextRequest) {
     }
 
     let hashedPassword: string | undefined;
+    let passwordChanged = false;
 
     // If updating password, verify current password first
     if (newPassword) {
@@ -120,12 +135,19 @@ export async function PUT(request: NextRequest) {
       }
 
       hashedPassword = await bcrypt.hash(newPassword, 10);
+      passwordChanged = true;
     }
 
     // Validate image URL if provided
     let finalImage = user.image;
     if (image !== undefined) {
       if (image && image.trim() !== '') {
+        if (!isValidImageUrl(image)) {
+          return NextResponse.json(
+            { error: 'Invalid image URL. Only http://, https://, and relative paths are allowed.' },
+            { status: 400 }
+          );
+        }
         finalImage = image.trim();
       } else {
         finalImage = null;
@@ -168,6 +190,12 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    // If password was changed, regenerate the session cookie with a new signed token
+    // This invalidates any stolen cookies
+    if (passwordChanged) {
+      await createSession(userId);
+    }
+
     // Fetch the updated user to return
     const updatedUser = await db.user.findUnique({
       where: { id: userId },
@@ -196,12 +224,9 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const body = await request.json();
     const { password } = body;
@@ -235,17 +260,10 @@ export async function DELETE(request: NextRequest) {
       where: { id: userId },
     });
 
-    // Clear session cookie so client doesn't stay authenticated with dead session
-    const response = NextResponse.json({ success: true });
-    response.cookies.set('userId', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0,
-      path: '/',
-    });
+    // Clear the signed session cookie
+    await destroySession();
 
-    return response;
+    return NextResponse.json({ success: true });
 
   } catch (error) {
     console.error('Profile DELETE error:', error);

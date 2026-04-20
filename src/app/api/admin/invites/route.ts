@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
 
     const invite = await db.inviteToken.create({ data: inviteData as any });
 
-    const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/register?invite=${token}`;
+    const requestUrl = new URL(request.url);
+    const inviteUrl = `${requestUrl.origin}/?invite=${token}`;
 
     logAdminActivity(adminId as string, 'create_invite', token, `Plan: ${body.plan || 'basic'}, MaxUses: ${body.maxUses || 1}, Email: ${body.email || 'public'}`);
     return NextResponse.json({ invite, inviteUrl }, { status: 201 });

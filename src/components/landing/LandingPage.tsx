@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { RegisterForm } from '@/components/auth/RegisterForm';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   Dialog,
@@ -28,6 +29,7 @@ import {
   Star,
   ChevronDown,
   ArrowUp,
+  Lock,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 
@@ -289,10 +291,35 @@ function ScrollToTopButton() {
 /* ------------------------------------------------------------------ */
 export function LandingPage() {
   const { t } = useTranslation();
-  const [authOpen, setAuthOpen] = useState(false);
+  // Detect invite token or trial param in URL on initial render (before first paint)
+  const [inviteDetected] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return !!params.get('invite') || params.get('trial') === 'true';
+  });
+  const [authOpen, setAuthOpen] = useState(() => inviteDetected);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>(() => inviteDetected ? 'register' : 'login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [platformConfig, setPlatformConfig] = useState<{
+    basicPlanPrice: string;
+    proPlanPrice: string;
+    basicPlanFeatures: string[] | null;
+    proPlanFeatures: string[] | null;
+    basicPlanDiscount: string | null;
+    proPlanDiscount: string | null;
+    basicPlanDiscountLabel: string | null;
+    proPlanDiscountLabel: string | null;
+    basicPurchaseUrl: string | null;
+    proPurchaseUrl: string | null;
+    trialEnabled: boolean;
+    trialDurationDays: number;
+    whatsappNumber: string | null;
+    registrationOpen: boolean;
+    registrationMessage: string | null;
+    availablePlans: string[];
+  } | null>(null);
 
   // Glassmorphism scroll effect
   useEffect(() => {
@@ -302,6 +329,44 @@ export function LandingPage() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fetch platform config for dynamic plan pricing/features
+  useEffect(() => {
+    fetch('/api/platform-config')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          // Safely parse JSON fields with try-catch to prevent crashes from malformed data
+          let basicPlanFeatures: string[] | null = null;
+          let proPlanFeatures: string[] | null = null;
+          try { basicPlanFeatures = data.basicPlanFeatures ? JSON.parse(data.basicPlanFeatures) : null; } catch { basicPlanFeatures = null; }
+          try { proPlanFeatures = data.proPlanFeatures ? JSON.parse(data.proPlanFeatures) : null; } catch { proPlanFeatures = null; }
+
+          // Validate purchase URLs — only allow http(s) schemes to prevent javascript: XSS
+          const safeUrl = (url: string | null | undefined): string | null => {
+            if (!url) return null;
+            try { const parsed = new URL(url); return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? url : null; } catch { return null; }
+          };
+
+          setPlatformConfig({
+            ...data,
+            basicPlanFeatures,
+            proPlanFeatures,
+            basicPlanDiscount: data.basicPlanDiscount || null,
+            proPlanDiscount: data.proPlanDiscount || null,
+            basicPlanDiscountLabel: data.basicPlanDiscountLabel || null,
+            proPlanDiscountLabel: data.proPlanDiscountLabel || null,
+            basicPurchaseUrl: safeUrl(data.basicPurchaseUrl),
+            proPurchaseUrl: safeUrl(data.proPurchaseUrl),
+            whatsappNumber: data.whatsappNumber || null,
+            registrationOpen: data.registrationOpen ?? true,
+            registrationMessage: data.registrationMessage || null,
+            availablePlans: Array.isArray(data.availablePlans) ? data.availablePlans : ['basic', 'pro'],
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   /* ---- Data arrays built inside component for t() access ---- */
@@ -350,16 +415,20 @@ export function LandingPage() {
     },
   ];
 
-  const plans = [
+  const allPlans = [
     {
+      id: 'basic',
       name: t('landing.basicName'),
-      price: t('landing.basicPrice'),
+      price: platformConfig?.basicPlanPrice || t('landing.basicPrice'),
       originalPrice: t('landing.basicOriginalPrice'),
       period: '',
       description: t('landing.basicDesc'),
       highlighted: false,
       badge: null,
-      features: [
+      discount: platformConfig?.basicPlanDiscount || null,
+      discountLabel: platformConfig?.basicPlanDiscountLabel || null,
+      purchaseUrl: platformConfig?.basicPurchaseUrl || null,
+      features: platformConfig?.basicPlanFeatures || [
         t('landing.basicF1'),
         t('landing.basicF2'),
         t('landing.basicF3'),
@@ -369,14 +438,18 @@ export function LandingPage() {
       ],
     },
     {
+      id: 'pro',
       name: t('landing.proName'),
-      price: t('landing.proPrice'),
+      price: platformConfig?.proPlanPrice || t('landing.proPrice'),
       originalPrice: t('landing.proOriginalPrice'),
       period: '',
       description: t('landing.proDesc'),
       highlighted: true,
       badge: t('landing.proBadge'),
-      features: [
+      discount: platformConfig?.proPlanDiscount || null,
+      discountLabel: platformConfig?.proPlanDiscountLabel || null,
+      purchaseUrl: platformConfig?.proPurchaseUrl || null,
+      features: platformConfig?.proPlanFeatures || [
         t('landing.proF1'),
         t('landing.proF2'),
         t('landing.proF3'),
@@ -386,6 +459,9 @@ export function LandingPage() {
       ],
     },
   ];
+
+  // Filter plans based on admin config
+  const plans = allPlans.filter(p => !platformConfig?.availablePlans || platformConfig.availablePlans.includes(p.id));
 
   const testimonials = [
     {
@@ -434,7 +510,8 @@ export function LandingPage() {
     { icon: TrendingUp, color: '#F9A825', title: t('landing.story4Title'), text: t('landing.story4Text') },
   ];
 
-  const openAuth = useCallback(() => {
+  const openAuth = useCallback((mode: 'login' | 'register' = 'login') => {
+    setAuthMode(mode);
     setAuthOpen(true);
   }, []);
 
@@ -831,16 +908,78 @@ export function LandingPage() {
           </FadeUp>
 
           <FadeUp delay={50}>
-            <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border" style={{ background: 'rgba(187,134,252,0.06)', borderColor: 'rgba(187,134,252,0.15)' }}>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <MessageCircle className="h-4 w-4" style={{ color: '#BB86FC' }} />
-                <p className="text-xs font-semibold" style={{ color: '#BB86FC' }}>{t('landing.adminRegister')}</p>
+            {/* Registration Closed Notice */}
+            {!platformConfig?.registrationOpen ? (
+              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border" style={{ background: 'rgba(207,102,121,0.08)', borderColor: 'rgba(207,102,121,0.2)' }}>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Lock className="h-4 w-4" style={{ color: '#CF6679' }} />
+                  <p className="text-xs font-semibold" style={{ color: '#CF6679' }}>Registration Closed</p>
+                </div>
+                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                  {platformConfig?.registrationMessage || 'Registration is currently closed. Please contact the administrator.'}
+                </p>
+                {/* WhatsApp contact when registration is closed */}
+                {platformConfig?.whatsappNumber && (
+                  <a
+                    href={`https://wa.me/${platformConfig.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo, saya ingin mendaftar akun Wealth Tracker')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+                    style={{ background: '#25D366', color: '#fff' }}
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Hubungi via WhatsApp
+                  </a>
+                )}
               </div>
-              <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
-                {t('landing.adminRegisterDesc')}
-              </p>
-            </div>
+            ) : platformConfig?.whatsappNumber ? (
+              /* WhatsApp Contact for Registration */
+              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border" style={{ background: 'rgba(37,211,102,0.06)', borderColor: 'rgba(37,211,102,0.15)' }}>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <MessageCircle className="h-4 w-4" style={{ color: '#25D366' }} />
+                  <p className="text-xs font-semibold" style={{ color: '#25D366' }}>Daftar via WhatsApp</p>
+                </div>
+                <p className="text-[11px] mb-2" style={{ color: '#9E9E9E' }}>
+                  Ingin berlangganan plan Basic atau Pro? Hubungi kami via WhatsApp
+                </p>
+                <a
+                  href={`https://wa.me/${platformConfig.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo, saya ingin mendaftar akun Wealth Tracker')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+                  style={{ background: '#25D366', color: '#fff' }}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Chat WhatsApp
+                </a>
+              </div>
+            ) : (
+              /* Default registration info when no WhatsApp */
+              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border" style={{ background: 'rgba(187,134,252,0.06)', borderColor: 'rgba(187,134,252,0.15)' }}>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <MessageCircle className="h-4 w-4" style={{ color: '#BB86FC' }} />
+                  <p className="text-xs font-semibold" style={{ color: '#BB86FC' }}>{t('landing.adminRegister')}</p>
+                </div>
+                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                  {t('landing.adminRegisterDesc')}
+                </p>
+              </div>
+            )}
           </FadeUp>
+
+          {/* Trial notice */}
+          {platformConfig?.trialEnabled && (
+            <FadeUp delay={75}>
+              <div className="mx-auto max-w-md mb-6 sm:mb-10 text-center">
+                <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 border" style={{ background: 'rgba(3,218,198,0.08)', borderColor: 'rgba(3,218,198,0.2)' }}>
+                  <Zap className="h-4 w-4" style={{ color: '#03DAC6' }} />
+                  <p className="text-xs font-semibold" style={{ color: '#03DAC6' }}>
+                    Free {platformConfig.trialDurationDays}-day trial included with registration!
+                  </p>
+                </div>
+              </div>
+            </FadeUp>
+          )}
 
           <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 items-stretch">
             {plans.map((plan, i) => (
@@ -862,6 +1001,16 @@ export function LandingPage() {
                       : 'none',
                   }}
                 >
+                  {/* Discount badge */}
+                  {plan.discount && (
+                    <div className="absolute -top-3 right-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest" style={{ background: 'linear-gradient(135deg, #CF6679, #F9A825)', color: '#fff' }}>
+                        <Zap className="h-3 w-3 fill-current" />
+                        {plan.discountLabel || plan.discount}
+                      </span>
+                    </div>
+                  )}
+
                   {plan.highlighted && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-widest" style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000' }}>
@@ -895,9 +1044,6 @@ export function LandingPage() {
                     {plan.originalPrice && (
                       <span className="text-sm sm:text-base line-through text-white/30">{plan.originalPrice}</span>
                     )}
-                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(207,102,121,0.15)', color: '#CF6679' }}>
-                      {Math.round((1 - parseFloat(plan.price.replace(/[^0-9]/g, '')) / parseFloat(plan.originalPrice.replace(/[^0-9]/g, ''))) * 100)}% OFF
-                    </span>
                     {!plan.period && (
                       <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(3,218,198,0.12)', color: '#03DAC6' }}>
                         {t('landing.oneTime')}
@@ -914,17 +1060,48 @@ export function LandingPage() {
                     ))}
                   </ul>
 
-                  <button
-                    onClick={() => openAuth()}
-                    className="cta-shimmer w-full rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden relative"
-                    style={
-                      plan.highlighted
-                        ? { background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000', boxShadow: '0 4px 20px rgba(187,134,252,0.2)' }
-                        : { background: 'rgba(255,255,255,0.06)', color: '#E6E1E5' }
-                    }
-                  >
-                    <span className="relative z-10">{t('auth.login')}</span>
-                  </button>
+                  {/* Plan action button: Purchase URL or WhatsApp contact */}
+                  {plan.purchaseUrl ? (
+                    <a
+                      href={plan.purchaseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="cta-shimmer w-full block text-center rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden relative"
+                      style={
+                        plan.highlighted
+                          ? { background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000', boxShadow: '0 4px 20px rgba(187,134,252,0.2)' }
+                          : { background: 'rgba(255,255,255,0.06)', color: '#E6E1E5' }
+                      }
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        {t('landing.getStarted')}
+                        <ChevronRight className="h-4 w-4" />
+                      </span>
+                    </a>
+                  ) : platformConfig?.whatsappNumber ? (
+                    <a
+                      href={`https://wa.me/${platformConfig.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Halo, saya tertarik berlangganan ${plan.name}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      style={{ background: '#25D366', color: '#fff' }}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Chat WhatsApp
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => openAuth()}
+                      className="cta-shimmer w-full rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden relative"
+                      style={
+                        plan.highlighted
+                          ? { background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', color: '#000', boxShadow: '0 4px 20px rgba(187,134,252,0.2)' }
+                          : { background: 'rgba(255,255,255,0.06)', color: '#E6E1E5' }
+                      }
+                    >
+                      <span className="relative z-10">{t('auth.login')}</span>
+                    </button>
+                  )}
                 </div>
               </FadeUp>
             ))}
@@ -1069,7 +1246,10 @@ export function LandingPage() {
       <ScrollToTopButton />
 
       {/* ========== AUTH DIALOG ========== */}
-      <Dialog open={authOpen} onOpenChange={setAuthOpen}>
+      <Dialog open={authOpen} onOpenChange={(open) => {
+        setAuthOpen(open);
+        if (!open) setAuthMode('login');
+      }}>
         <DialogContent className="rounded-2xl border-0 p-0 max-w-[420px] mx-auto" style={{ background: '#121212' }} showCloseButton={true}>
           <DialogHeader className="p-6 pb-0">
             <div className="flex items-center gap-2.5 mb-1">
@@ -1077,15 +1257,41 @@ export function LandingPage() {
               <DialogTitle className="text-lg font-bold" style={{ color: '#E6E1E5' }}>{t('landing.creator')}</DialogTitle>
             </div>
             <DialogDescription className="text-xs" style={{ color: '#9E9E9E' }}>
-              {t('landing.authDesc')}
+              {authMode === 'login' ? t('landing.authDesc') : t('auth.createAccount')}
             </DialogDescription>
           </DialogHeader>
           <div className="p-6 pt-4">
-            <LoginForm />
+            {authMode === 'login' ? (
+              <LoginForm />
+            ) : (
+              <RegisterForm />
+            )}
             <div className="mt-5 text-center">
-              <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
-                {t('landing.noAccountHint')}
-              </p>
+              {authMode === 'login' ? (
+                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                  {t('landing.noAccountHint')}{' '}
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('register')}
+                    className="font-semibold hover:underline"
+                    style={{ color: '#BB86FC' }}
+                  >
+                    {t('auth.register')}
+                  </button>
+                </p>
+              ) : (
+                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                  {t('auth.hasAccount')}{' '}
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('login')}
+                    className="font-semibold hover:underline"
+                    style={{ color: '#BB86FC' }}
+                  >
+                    {t('auth.login')}
+                  </button>
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>

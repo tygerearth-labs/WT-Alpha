@@ -119,7 +119,7 @@ export function AnnouncementBanner() {
   if (activeAnnouncements.length === 0) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] flex flex-col">
+    <div className="flex flex-col sticky top-14 z-20">
       {activeAnnouncements.map((announcement) => {
         const style = TYPE_STYLES[announcement.type] || TYPE_STYLES.info;
         const Icon = style.icon;

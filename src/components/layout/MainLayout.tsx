@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +30,8 @@ import {
   Sparkles,
   ArrowUpRight,
   ArrowDownRight,
+  Shield,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
 import { Dashboard } from '@/components/dashboard/Dashboard';
@@ -40,18 +44,28 @@ import { QuickTransaction } from '@/components/transaction/QuickTransaction';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
+import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 
 type PageType = 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile';
 
 export function MainLayout() {
   const { user, logout } = useAuthStore();
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [pageKey, setPageKey] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState<{ income: number; expense: number } | null>(null);
+  const [quickTransactionVisible, setQuickTransactionVisible] = useState(true);
   const { t } = useTranslation();
+
+  // Check if admin is viewing as user
+  const isAdminPreview = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return user?.role === 'admin' && params.get('view') === 'user';
+  }, [user?.role]);
 
   const navigateTo = useCallback((page: PageType) => {
     if (page === currentPage) return;
@@ -81,13 +95,21 @@ export function MainLayout() {
               expense: data.monthlyComparison.currentMonthExpense || 0,
             });
           }
+          // Check quickTransaction section visibility
+          if (data.sectionVisibility) {
+            const plan = user?.plan || 'basic';
+            const planConfig = data.sectionVisibility[plan];
+            if (planConfig && 'quickTransaction' in planConfig) {
+              setQuickTransactionVisible(planConfig.quickTransaction === true);
+            }
+          }
         }
       } catch {
         // Silently fail — sidebar stats are optional
       }
     };
     fetchStats();
-  }, []);
+  }, [user?.plan]);
 
   // Close tablet sidebar on outside click
   useEffect(() => {
@@ -276,8 +298,25 @@ export function MainLayout() {
         }}
       />
 
+      {/* ── Admin Preview Banner ── */}
+      {isAdminPreview && (
+        <div className="relative z-20 flex items-center justify-center gap-2 px-4 py-2 border-b" style={{ background: 'rgba(3,218,198,0.08)', borderColor: 'rgba(3,218,198,0.2)' }}>
+          <Shield className="h-3.5 w-3.5 text-[#03DAC6] shrink-0" />
+          <span className="text-[12px] font-medium text-[#03DAC6]">
+            Admin Preview Mode
+          </span>
+          <button
+            onClick={() => window.location.href = '/admin'}
+            className="ml-2 inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 transition-colors"
+          >
+            <ArrowLeftRight className="h-3 w-3" />
+            Back to Admin
+          </button>
+        </div>
+      )}
+
       {/* ── Top Header: Logo + Hamburger + Avatar ── */}
-      <header className="sticky top-0 z-30 relative">
+      <header className="fixed top-0 left-0 right-0 z-30">
         {/* Header background with glass morphism */}
         <div className="absolute inset-0 bg-[#0D0D0D]/80 backdrop-blur-xl" />
         {/* Gradient glow border at bottom */}
@@ -311,10 +350,12 @@ export function MainLayout() {
             {/* Logo */}
             <div className="relative">
               <div className="absolute -inset-1 rounded-lg bg-[#BB86FC]/10 blur-md opacity-0 hover:opacity-100 transition-opacity duration-500" />
-              <img
+              <Image
                 src="/logo.png"
                 alt="Wealth Tracker Logo"
-                className="relative w-8 h-8 rounded-md"
+                width={32}
+                height={32}
+                className="relative rounded-md"
               />
             </div>
             <h1
@@ -416,6 +457,18 @@ export function MainLayout() {
                 <Settings className="mr-2.5 h-4 w-4 text-white/30" />
                 <span className="text-[13px]">{t('profile.settingsProfile')}</span>
               </DropdownMenuItem>
+              {user?.role === 'admin' && (
+                <>
+                  <DropdownMenuSeparator className="bg-white/[0.06] my-1" />
+                  <DropdownMenuItem
+                    onClick={() => { window.location.href = '/admin'; }}
+                    className="text-[#03DAC6]/80 focus:text-[#03DAC6] focus:bg-[#03DAC6]/8 rounded-lg mx-1 my-0.5 cursor-pointer transition-colors"
+                  >
+                    <ArrowLeftRight className="mr-2.5 h-4 w-4 text-[#03DAC6]/50" />
+                    <span className="text-[13px]">Switch to Admin</span>
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator className="bg-white/[0.06] my-1" />
               <DropdownMenuItem
                 onClick={handleLogout}
@@ -443,8 +496,13 @@ export function MainLayout() {
       </header>
 
       {/* ── Body: Sidebar + Content ── */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Announcement Banner (sticky below fixed header) ── */}
+        <div className="shrink-0 sticky top-14 z-20">
+          <AnnouncementBanner />
+        </div>
 
+        <div className="flex-1 flex overflow-hidden pt-14">
         {/* ── Desktop Sidebar (lg: and up) ── */}
         <aside
           className={cn(
@@ -576,7 +634,7 @@ export function MainLayout() {
               {/* Close button */}
               <div className="relative flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
-                  <img src="/logo.png" alt="Logo" className="w-6 h-6 rounded-md" />
+                  <Image src="/logo.png" alt="Logo" width={24} height={24} className="rounded-md" />
                   <span className="text-sm font-bold bg-clip-text text-transparent"
                     style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
                     Wealth Tracker
@@ -658,6 +716,7 @@ export function MainLayout() {
             </div>
           </div>
         </main>
+      </div>
       </div>
 
       {/* ── Bottom Navigation Bar (mobile only — NOT tablet) ── */}
@@ -746,7 +805,7 @@ export function MainLayout() {
       `}} />
 
       {/* ── Quick Transaction FAB (visible on all user pages) ── */}
-      <QuickTransaction />
+      {quickTransactionVisible && <QuickTransaction />}
     </div>
   );
 }

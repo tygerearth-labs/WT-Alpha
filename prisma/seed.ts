@@ -1,5 +1,14 @@
 import { hashSync } from "bcryptjs";
+import { randomBytes } from "crypto";
 import { db } from "../src/lib/db";
+
+function generateStrongPassword(length: number = 16): string {
+  // Generate a password with at least `length` characters using base64url encoding
+  // Each byte gives ~1.33 chars in base64, so we need ceil(length * 0.75) bytes
+  const bytes = randomBytes(Math.ceil(length * 0.75));
+  const base64 = bytes.toString("base64url");
+  return base64.slice(0, length);
+}
 
 function daysAgo(days: number): Date {
   const d = new Date();
@@ -12,7 +21,8 @@ async function main() {
   console.log("🌱 Seeding database...\n");
 
   // ─── Admin User ─────────────────────────────────────────────────────────
-  const adminPassword = hashSync("admin123", 10);
+  const adminPlainPassword = process.env.ADMIN_PASSWORD || generateStrongPassword(16);
+  const adminPassword = hashSync(adminPlainPassword, 10);
   const admin = await db.user.upsert({
     where: { email: "admin@wealthtracker.com" },
     update: {},
@@ -29,10 +39,14 @@ async function main() {
       currency: "IDR",
     },
   });
+  if (!process.env.ADMIN_PASSWORD) {
+    console.log(`⚠️  ADMIN_PASSWORD not set. Generated admin password: ${adminPlainPassword}`);
+  }
   console.log(`✅ Admin user created: ${admin.email} (${admin.id})`);
 
   // ─── Demo User ─────────────────────────────────────────────────────────
-  const demoPassword = hashSync("demo123", 10);
+  const demoPlainPassword = process.env.DEMO_PASSWORD || generateStrongPassword(16);
+  const demoPassword = hashSync(demoPlainPassword, 10);
   const demo = await db.user.upsert({
     where: { email: "demo@wealthtracker.com" },
     update: {},
@@ -49,6 +63,9 @@ async function main() {
       currency: "IDR",
     },
   });
+  if (!process.env.DEMO_PASSWORD) {
+    console.log(`⚠️  DEMO_PASSWORD not set. Generated demo password: ${demoPlainPassword}`);
+  }
   console.log(`✅ Demo user created: ${demo.email} (${demo.id})\n`);
 
   // ─── Categories for Demo User ──────────────────────────────────────────
