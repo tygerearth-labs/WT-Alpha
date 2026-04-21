@@ -3,6 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
+import {
+  type AssetType,
+  type AssetDef,
+  ALL_ASSETS,
+  CRYPTO_ASSETS,
+  FOREX_ASSETS,
+  SAHAM_ASSETS,
+  formatAssetPrice,
+  currencyPrefix,
+} from '@/lib/asset-catalogue';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,14 +40,6 @@ import { cn } from '@/lib/utils';
 // Types
 // ---------------------------------------------------------------------------
 
-type AssetType = 'crypto' | 'forex' | 'saham';
-
-interface AssetDef {
-  symbol: string;
-  type: AssetType;
-  label: string;
-}
-
 interface MarketPrice {
   symbol: string;
   type: string;
@@ -50,53 +52,6 @@ interface MarketPrice {
   name?: string;
   sector?: string;
 }
-
-// ---------------------------------------------------------------------------
-// Asset catalogue
-// ---------------------------------------------------------------------------
-
-const CRYPTO_ASSETS: AssetDef[] = [
-  { symbol: 'BTCUSDT', type: 'crypto', label: 'BTC' },
-  { symbol: 'ETHUSDT', type: 'crypto', label: 'ETH' },
-  { symbol: 'BNBUSDT', type: 'crypto', label: 'BNB' },
-  { symbol: 'SOLUSDT', type: 'crypto', label: 'SOL' },
-  { symbol: 'XRPUSDT', type: 'crypto', label: 'XRP' },
-  { symbol: 'ADAUSDT', type: 'crypto', label: 'ADA' },
-  { symbol: 'DOTUSDT', type: 'crypto', label: 'DOT' },
-  { symbol: 'DOGEUSDT', type: 'crypto', label: 'DOGE' },
-  { symbol: 'AVAXUSDT', type: 'crypto', label: 'AVAX' },
-  { symbol: 'LINKUSDT', type: 'crypto', label: 'LINK' },
-];
-
-const FOREX_ASSETS: AssetDef[] = [
-  { symbol: 'EURUSD', type: 'forex', label: 'EUR/USD' },
-  { symbol: 'GBPUSD', type: 'forex', label: 'GBP/USD' },
-  { symbol: 'USDJPY', type: 'forex', label: 'USD/JPY' },
-  { symbol: 'USDIDR', type: 'forex', label: 'USD/IDR' },
-  { symbol: 'AUDUSD', type: 'forex', label: 'AUD/USD' },
-  { symbol: 'USDCAD', type: 'forex', label: 'USD/CAD' },
-  { symbol: 'USDCHF', type: 'forex', label: 'USD/CHF' },
-  { symbol: 'XAUUSD', type: 'forex', label: 'XAU/USD' },
-];
-
-const SAHAM_ASSETS: AssetDef[] = [
-  { symbol: 'BBCA', type: 'saham', label: 'BBCA' },
-  { symbol: 'BBRI', type: 'saham', label: 'BBRI' },
-  { symbol: 'BMRI', type: 'saham', label: 'BMRI' },
-  { symbol: 'TLKM', type: 'saham', label: 'TLKM' },
-  { symbol: 'ASII', type: 'saham', label: 'ASII' },
-  { symbol: 'GOTO', type: 'saham', label: 'GOTO' },
-  { symbol: 'UNVR', type: 'saham', label: 'UNVR' },
-  { symbol: 'ARTO', type: 'saham', label: 'ARTO' },
-  { symbol: 'ANTM', type: 'saham', label: 'ANTM' },
-  { symbol: 'BRIS', type: 'saham', label: 'BRIS' },
-];
-
-const ALL_ASSETS: AssetDef[] = [
-  ...CRYPTO_ASSETS,
-  ...FOREX_ASSETS,
-  ...SAHAM_ASSETS,
-];
 
 // ---------------------------------------------------------------------------
 // Design tokens
@@ -122,47 +77,9 @@ const NEGATIVE_COLOR = '#CF6679';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatPrice(price: number, type: AssetType): string {
-  if (type === 'saham') {
-    return price.toLocaleString('id-ID', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-  }
-  if (type === 'forex') {
-    return price.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    });
-  }
-  // crypto
-  if (price >= 1000) {
-    return price.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-  if (price >= 1) {
-    return price.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    });
-  }
-  return price.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
-  });
-}
-
 function formatChange(change: number): string {
   const sign = change >= 0 ? '+' : '';
   return `${sign}${change.toFixed(2)}%`;
-}
-
-function currencyPrefix(type: AssetType): string {
-  if (type === 'saham') return 'Rp';
-  if (type === 'forex') return '';
-  return '$';
 }
 
 // ---------------------------------------------------------------------------
@@ -527,7 +444,7 @@ export default function InvestmentLiveCharts() {
                     {price !== null ? (
                       <p className="text-white text-base font-bold tracking-tight">
                         {currencyPrefix(asset.type)}
-                        {formatPrice(price, asset.type)}
+                        {formatAssetPrice(price, asset.type)}
                       </p>
                     ) : (
                       <Skeleton className="h-6 w-24 rounded bg-white/[0.06]" />

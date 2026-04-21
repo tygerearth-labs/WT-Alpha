@@ -45,7 +45,6 @@ import {
   Gem,
   BookOpen,
   Palette,
-  CandlestickChart,
   type LucideIcon,
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
@@ -68,7 +67,6 @@ import BusinessLaporan from '@/components/business/BusinessLaporan';
 import BusinessInvoiceSettings from '@/components/business/BusinessInvoiceSettings';
 import InvestmentDashboard from '@/components/investment/InvestmentDashboard';
 import InvestmentPortfolio from '@/components/investment/InvestmentPortfolio';
-import InvestmentLiveCharts from '@/components/investment/InvestmentLiveCharts';
 import TradingJournal from '@/components/investment/TradingJournal';
 import InvestmentRegisterDialog from '@/components/investment/InvestmentRegisterDialog';
 import { toast } from 'sonner';
@@ -80,7 +78,7 @@ type PageType =
   | 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile'
   | 'biz-dashboard' | 'biz-kas' | 'biz-penjualan' | 'biz-invoice' | 'biz-customer'
   | 'biz-hutang' | 'biz-allocation' | 'biz-laporan' | 'biz-invoice-settings'
-  | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal' | 'inv-charts';
+  | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal';
 
 interface NavItem {
   id: PageType;
@@ -241,7 +239,6 @@ export function MainLayout() {
   const investmentNav: NavItem[] = useMemo(() => [
     { id: 'inv-dashboard', label: t('inv.invDashboard'), icon: LineChart, desc: 'Dashboard Investasi' },
     { id: 'inv-portfolio', label: t('inv.portfolios'), icon: Gem, desc: 'Portofolio' },
-    { id: 'inv-charts', label: t('inv.liveCharts'), icon: CandlestickChart, desc: 'Live Charts' },
     { id: 'inv-journal', label: t('inv.tradingJournal'), icon: BookOpen, desc: 'Trading Journal' },
   ], [t]);
 
@@ -276,7 +273,6 @@ export function MainLayout() {
       switch (currentPage) {
         case 'inv-dashboard': return <InvestmentDashboard />;
         case 'inv-portfolio': return <InvestmentPortfolio />;
-        case 'inv-charts': return <InvestmentLiveCharts />;
         case 'inv-journal': return <TradingJournal />;
         default: return <InvestmentDashboard />;
       }

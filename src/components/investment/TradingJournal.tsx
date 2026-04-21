@@ -89,6 +89,24 @@ export default function TradingJournal() {
   const { activeBusiness } = useBusinessStore();
   const { formatAmount } = useCurrencyFormat();
 
+  // Currency formatting based on portfolio asset type
+  const getInvCurrencyLabel = (type: string): string => {
+    if (type === 'saham') return 'IDR';
+    return 'USD';
+  };
+
+  const formatInvPrice = (type: string, amount: number): string => {
+    if (type === 'saham') {
+      return 'Rp' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+    }
+    return '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  };
+
+  const getSelectedPortfolioType = (): string => {
+    const selected = portfolios.find((p) => p.id === form.portfolioId);
+    return selected?.type || 'crypto';
+  };
+
   const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [portfolios, setPortfolios] = useState<PortfolioOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -378,6 +396,7 @@ export default function TradingJournal() {
           <CardContent className="p-3">
             <p className="text-xs text-white/40">{t('inv.avgPnL')}</p>
             <p className={cn('text-lg font-bold', pnlColor(stats.avgPnl))}>
+              {/* Stats use mixed portfolio types, keep generic format */}
               {formatAmount(stats.avgPnl)}
             </p>
           </CardContent>
@@ -523,16 +542,16 @@ export default function TradingJournal() {
                           {getPortfolioSymbol(item.portfolioId)}
                         </TableCell>
                         <TableCell className="text-white/70 text-xs text-right py-3">
-                          {formatAmount(item.entryPrice)}
+                          {formatInvPrice(item.portfolio?.type || 'crypto', item.entryPrice)}
                         </TableCell>
                         <TableCell className="text-white/70 text-xs text-right py-3">
-                          {item.exitPrice ? formatAmount(item.exitPrice) : '-'}
+                          {item.exitPrice ? formatInvPrice(item.portfolio?.type || 'crypto', item.exitPrice) : '-'}
                         </TableCell>
                         <TableCell className="text-white/70 text-xs text-right py-3">
                           {item.quantity}
                         </TableCell>
                         <TableCell className={cn('text-xs text-right font-medium py-3', pnlColor(item.pnl))}>
-                          {isBuy ? '-' : `${isPositive ? '+' : ''}${formatAmount(item.pnl)}`}
+                          {isBuy ? '-' : `${isPositive ? '+' : ''}${formatInvPrice(item.portfolio?.type || 'crypto', item.pnl)}`}
                         </TableCell>
                         <TableCell className={cn('text-xs text-right font-medium py-3', isBuy ? 'text-white/50' : pnlColor(item.pnl))}>
                           {isBuy ? '-' : `${isPositive ? '+' : ''}${item.pnlPercentage.toFixed(2)}%`}
@@ -625,7 +644,7 @@ export default function TradingJournal() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.entryPrice')} *</Label>
+                <Label className="text-white/80">{t('inv.entryPrice')} ({getInvCurrencyLabel(getSelectedPortfolioType())}) *</Label>
                 <Input
                   type="number"
                   value={form.entryPrice}
@@ -637,7 +656,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.exitPrice')}</Label>
+                <Label className="text-white/80">{t('inv.exitPrice')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
                 <Input
                   type="number"
                   value={form.exitPrice}
@@ -664,7 +683,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.fees')}</Label>
+                <Label className="text-white/80">{t('inv.fees')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
                 <Input
                   type="number"
                   value={form.fees}
@@ -690,7 +709,7 @@ export default function TradingJournal() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.pnl')}</Label>
+                <Label className="text-white/80">{t('inv.pnl')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
                 <Input
                   type="number"
                   value={form.pnl}

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
+import { AssetType } from '@/lib/asset-catalogue';
 import {
   Card,
   CardContent,
@@ -39,8 +40,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Package, LineChart, RefreshCw } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Package, LineChart, RefreshCw, X } from 'lucide-react';
 import InvestmentChart from '@/components/investment/InvestmentChart';
+import AssetSearchInput, { type SelectedAsset } from '@/components/investment/AssetSearchInput';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -67,6 +69,30 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   crypto: { bg: 'bg-teal-500/15', text: 'text-teal-400' },
   forex: { bg: 'bg-pink-500/15', text: 'text-pink-400' },
 };
+
+// Currency formatting based on asset type
+function getInvCurrencyLabel(type: string): string {
+  if (type === 'saham') return 'IDR';
+  if (type === 'crypto') return 'USD';
+  return 'USD';
+}
+
+function getInvCurrencyPrefix(type: string): string {
+  if (type === 'saham') return 'Rp';
+  if (type === 'crypto') return '$';
+  return '';
+}
+
+function formatInvPrice(type: string, amount: number): string {
+  if (type === 'saham') {
+    return 'Rp' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+  }
+  if (type === 'crypto') {
+    return '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  }
+  // forex
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 }).format(amount);
+}
 
 const STATUS_VARIANTS: Record<string, string> = {
   open: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
@@ -99,6 +125,9 @@ export default function InvestmentPortfolio() {
     status: 'open' as string,
     currentPrice: '',
   });
+
+  // Search asset selection
+  const [selectedAsset, setSelectedAsset] = useState<SelectedAsset | null>(null);
 
   // Delete dialog state
   const [deleteTarget, setDeleteTarget] = useState<PortfolioItem | null>(null);
@@ -166,6 +195,7 @@ export default function InvestmentPortfolio() {
       status: 'open',
       currentPrice: '',
     });
+    setSelectedAsset(null);
     setEditing(null);
   };
 
@@ -187,6 +217,12 @@ export default function InvestmentPortfolio() {
       notes: item.notes || '',
       status: item.status,
       currentPrice: item.currentPrice.toString(),
+    });
+    setSelectedAsset({
+      symbol: item.symbol,
+      name: item.name || '',
+      type: item.type as AssetType,
+      currentPrice: item.currentPrice,
     });
     setDialogOpen(true);
   };
@@ -356,11 +392,11 @@ export default function InvestmentPortfolio() {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <p className="text-white/40 mb-0.5">{t('inv.entryPrice')}</p>
-                      <p className="text-white/80 font-medium">{formatAmount(item.entryPrice)}</p>
+                      <p className="text-white/80 font-medium">{formatInvPrice(item.type, item.entryPrice)}</p>
                     </div>
                     <div>
                       <p className="text-white/40 mb-0.5">{t('inv.currentPrice')}</p>
-                      <p className="text-white/80 font-medium">{formatAmount(item.currentPrice)}</p>
+                      <p className="text-white/80 font-medium">{formatInvPrice(item.type, item.currentPrice)}</p>
                     </div>
                     <div>
                       <p className="text-white/40 mb-0.5">{t('inv.quantity')}</p>
@@ -371,7 +407,7 @@ export default function InvestmentPortfolio() {
                       <p className={cn('font-bold flex items-center gap-0.5', pnlColor(item.unrealizedPnl))}>
                         {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                         {isPositive ? '+' : ''}
-                        {formatAmount(item.unrealizedPnl)}
+                        {formatInvPrice(item.type, item.unrealizedPnl)}
                       </p>
                     </div>
                   </div>
@@ -399,10 +435,10 @@ export default function InvestmentPortfolio() {
                   {(item.targetPrice || item.stopLoss) && (
                     <div className="flex gap-3 text-[10px] text-white/30">
                       {item.targetPrice && (
-                        <span>Target: {formatAmount(item.targetPrice)}</span>
+                        <span>Target: {formatInvPrice(item.type, item.targetPrice)}</span>
                       )}
                       {item.stopLoss && (
-                        <span>SL: {formatAmount(item.stopLoss)}</span>
+                        <span>SL: {formatInvPrice(item.type, item.stopLoss)}</span>
                       )}
                     </div>
                   )}
@@ -455,10 +491,58 @@ export default function InvestmentPortfolio() {
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-4">
+            {/* Asset Search Box */}
+            <div className="space-y-2">
+              <Label className="text-white/80">{t('inv.searchAsset')} *</Label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <AssetSearchInput
+                    businessId={businessId}
+                    typeFilter={form.type as AssetType | 'all'}
+                    value={selectedAsset}
+                    onSelect={(asset) => {
+                      setSelectedAsset(asset);
+                      setForm({
+                        ...form,
+                        type: asset.type,
+                        symbol: asset.symbol,
+                        name: asset.name,
+                        currentPrice: asset.currentPrice ? asset.currentPrice.toString() : '',
+                        entryPrice: asset.currentPrice ? asset.currentPrice.toString() : form.entryPrice,
+                      });
+                    }}
+                  />
+                </div>
+                {selectedAsset && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-10 w-10 p-0 shrink-0 text-white/40 hover:text-[#CF6679] hover:bg-white/10"
+                    onClick={() => {
+                      setSelectedAsset(null);
+                      setForm({ ...form, symbol: '', name: '', type: 'saham' });
+                    }}
+                    title="Reset"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-white/25">{t('inv.searchAssetHint')}</p>
+            </div>
+
+            {/* Type & Status row */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.portfolioType')} *</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                <Label className="text-white/80">{t('inv.portfolioType')}</Label>
+                <Select value={form.type} onValueChange={(v) => {
+                  setForm({ ...form, type: v });
+                  // Clear search selection if type changed manually
+                  if (selectedAsset && selectedAsset.type !== v) {
+                    setSelectedAsset(null);
+                  }
+                }}>
                   <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
                     <SelectValue />
                   </SelectTrigger>
@@ -483,47 +567,83 @@ export default function InvestmentPortfolio() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.symbol')} *</Label>
-                <Input
-                  value={form.symbol}
-                  onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
-                  placeholder="BBCA"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
+            {/* Selected asset info card */}
+            {selectedAsset && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                <div className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-lg shrink-0',
+                  TYPE_COLORS[selectedAsset.type]?.bg || 'bg-purple-500/15'
+                )}>
+                  <span className={cn('text-xs font-bold', TYPE_COLORS[selectedAsset.type]?.text || 'text-purple-400')}>
+                    {selectedAsset.type.slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-semibold">{selectedAsset.symbol}</p>
+                  <p className="text-white/40 text-xs truncate">{selectedAsset.name}</p>
+                </div>
+                {selectedAsset.currentPrice > 0 && (
+                  <div className="text-right shrink-0">
+                    <p className="text-white text-sm font-bold">
+                      {getInvCurrencyPrefix(selectedAsset.type)}
+                      {formatInvPrice(selectedAsset.type, selectedAsset.currentPrice)}
+                    </p>
+                    <p className="text-white/30 text-[10px]">{t('inv.marketPrice')}</p>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.assetName')}</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Bank BC"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
+            )}
+
+            {/* Manual symbol/name fallback (when no asset selected) */}
+            {!selectedAsset && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.symbol')} *</Label>
+                  <Input
+                    value={form.symbol}
+                    onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
+                    placeholder="BBCA"
+                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.assetName')}</Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Bank BC"
+                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  />
+                </div>
               </div>
+            )}
+
+            {/* Currency hint */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] w-fit">
+              <span className="text-[10px] text-white/30">Mata uang input:</span>
+              <span className="text-[11px] font-semibold text-white/60">{getInvCurrencyPrefix(form.type)} ({getInvCurrencyLabel(form.type)})</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.entryPrice')} *</Label>
+                <Label className="text-white/80">{t('inv.entryPrice')} ({getInvCurrencyLabel(form.type)}) *</Label>
                 <Input
                   type="number"
                   value={form.entryPrice}
                   onChange={(e) => setForm({ ...form, entryPrice: e.target.value })}
-                  placeholder="0"
+                  placeholder={form.type === 'saham' ? '9750' : '65000'}
                   min="0"
                   step="any"
                   className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.currentPrice')}</Label>
+                <Label className="text-white/80">{t('inv.currentPrice')} ({getInvCurrencyLabel(form.type)})</Label>
                 <Input
                   type="number"
                   value={form.currentPrice}
                   onChange={(e) => setForm({ ...form, currentPrice: e.target.value })}
-                  placeholder="0"
+                  placeholder={form.type === 'saham' ? '9800' : '65500'}
                   min="0"
                   step="any"
                   className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
@@ -545,7 +665,7 @@ export default function InvestmentPortfolio() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.targetPrice')}</Label>
+                <Label className="text-white/80">{t('inv.targetPrice')} ({getInvCurrencyLabel(form.type)})</Label>
                 <Input
                   type="number"
                   value={form.targetPrice}
@@ -556,7 +676,7 @@ export default function InvestmentPortfolio() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.stopLoss')}</Label>
+                <Label className="text-white/80">{t('inv.stopLoss')} ({getInvCurrencyLabel(form.type)})</Label>
                 <Input
                   type="number"
                   value={form.stopLoss}

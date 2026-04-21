@@ -152,13 +152,18 @@ export function AdminSettings() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [registrationMessage, setRegistrationMessage] = useState('');
-  const [availablePlans, setAvailablePlans] = useState<string[]>(['basic', 'pro']);
+  const [availablePlans, setAvailablePlans] = useState<string[]>(['basic', 'pro', 'ultimate']);
   const [basicPlanDiscount, setBasicPlanDiscount] = useState('');
   const [proPlanDiscount, setProPlanDiscount] = useState('');
   const [basicPlanDiscountLabel, setBasicPlanDiscountLabel] = useState('');
   const [proPlanDiscountLabel, setProPlanDiscountLabel] = useState('');
   const [basicPurchaseUrl, setBasicPurchaseUrl] = useState('');
   const [proPurchaseUrl, setProPurchaseUrl] = useState('');
+  const [ultimatePlanPrice, setUltimatePlanPrice] = useState('Rp 199.000');
+  const [ultimatePlanFeatures, setUltimatePlanFeatures] = useState('');
+  const [ultimatePlanDiscount, setUltimatePlanDiscount] = useState('');
+  const [ultimatePlanDiscountLabel, setUltimatePlanDiscountLabel] = useState('');
+  const [ultimatePurchaseUrl, setUltimatePurchaseUrl] = useState('');
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
   const [exportEnabled, setExportEnabled] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
 
@@ -190,6 +195,7 @@ export function AdminSettings() {
             setAutoSuspend(data.config.autoSuspendExpired ?? true);
             setBasicPlanPrice(data.config.basicPlanPrice || 'Gratis');
             setProPlanPrice(data.config.proPlanPrice || 'Rp 99.000');
+            setUltimatePlanPrice(data.config.ultimatePlanPrice || 'Rp 199.000');
             // Parse JSON features to newline-separated text
             try {
               const basicFeats = data.config.basicPlanFeatures ? JSON.parse(data.config.basicPlanFeatures) : [];
@@ -199,6 +205,10 @@ export function AdminSettings() {
               const proFeats = data.config.proPlanFeatures ? JSON.parse(data.config.proPlanFeatures) : [];
               setProPlanFeatures(Array.isArray(proFeats) ? proFeats.join('\n') : '');
             } catch { setProPlanFeatures(''); }
+            try {
+              const ultimateFeats = data.config.ultimatePlanFeatures ? JSON.parse(data.config.ultimatePlanFeatures) : [];
+              setUltimatePlanFeatures(Array.isArray(ultimateFeats) ? ultimateFeats.join('\n') : '');
+            } catch { setUltimatePlanFeatures(''); }
             setTrialEnabled(data.config.trialEnabled ?? true);
             setTrialDurationDays(String(data.config.trialDurationDays ?? 30));
             setTrialPlan(data.config.trialPlan || 'basic');
@@ -206,15 +216,18 @@ export function AdminSettings() {
             setRegistrationOpen(data.config.registrationOpen ?? true);
             setRegistrationMessage(data.config.registrationMessage || '');
             try {
-              const parsed = data.config.availablePlans ? JSON.parse(data.config.availablePlans) : ['basic', 'pro'];
-              setAvailablePlans(Array.isArray(parsed) ? parsed : ['basic', 'pro']);
-            } catch { setAvailablePlans(['basic', 'pro']); }
+              const parsed = data.config.availablePlans ? JSON.parse(data.config.availablePlans) : ['basic', 'pro', 'ultimate'];
+              setAvailablePlans(Array.isArray(parsed) ? parsed : ['basic', 'pro', 'ultimate']);
+            } catch { setAvailablePlans(['basic', 'pro', 'ultimate']); }
             setBasicPlanDiscount(data.config.basicPlanDiscount || '');
             setProPlanDiscount(data.config.proPlanDiscount || '');
             setBasicPlanDiscountLabel(data.config.basicPlanDiscountLabel || '');
             setProPlanDiscountLabel(data.config.proPlanDiscountLabel || '');
             setBasicPurchaseUrl(data.config.basicPurchaseUrl || '');
             setProPurchaseUrl(data.config.proPurchaseUrl || '');
+            setUltimatePlanDiscount(data.config.ultimatePlanDiscount || '');
+            setUltimatePlanDiscountLabel(data.config.ultimatePlanDiscountLabel || '');
+            setUltimatePurchaseUrl(data.config.ultimatePurchaseUrl || '');
             const defaultSectionVisibility = {
               basic: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: false, exportPdf: false, exportExcel: false },
               pro: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true, exportPdf: true, exportExcel: true },
@@ -279,6 +292,11 @@ export function AdminSettings() {
             proPlanDiscount,
             basicPlanDiscountLabel,
             proPlanDiscountLabel,
+            ultimatePlanPrice,
+            ultimatePlanFeatures: JSON.stringify(ultimatePlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+            ultimatePlanDiscount,
+            ultimatePlanDiscountLabel,
+            ultimatePurchaseUrl,
             basicPurchaseUrl,
             proPurchaseUrl,
             sectionVisibility: JSON.stringify(sectionVisibility),
@@ -299,7 +317,7 @@ export function AdminSettings() {
     // Debounce save
     const timer = setTimeout(saveConfig, 500);
     return () => clearTimeout(timer);
-  }, [defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend, configLoaded, basicPlanPrice, proPlanPrice, basicPlanFeatures, proPlanFeatures, trialEnabled, trialDurationDays, trialPlan, whatsappNumber, registrationOpen, registrationMessage, availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel, basicPurchaseUrl, proPurchaseUrl, sectionVisibility, exportEnabled]);
+  }, [defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend, configLoaded, basicPlanPrice, proPlanPrice, basicPlanFeatures, proPlanFeatures, trialEnabled, trialDurationDays, trialPlan, whatsappNumber, registrationOpen, registrationMessage, availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel, basicPurchaseUrl, proPurchaseUrl, ultimatePlanPrice, ultimatePlanFeatures, ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl, sectionVisibility, exportEnabled]);
 
   const handleSaveProfile = () => {
     toast.success('Profile updated (UI only)', {
@@ -599,7 +617,7 @@ export function AdminSettings() {
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
           {/* Plan Pricing */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="h-3 w-3 text-white/30" /> Basic Plan Price
@@ -624,10 +642,22 @@ export function AdminSettings() {
               />
               <p className="text-[10px] text-white/20">Display price for pro plan on landing page</p>
             </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3 text-[#03DAC6]/50" /> Ultimate Plan Price
+              </Label>
+              <Input
+                value={ultimatePlanPrice}
+                onChange={(e) => setUltimatePlanPrice(e.target.value)}
+                className="bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15"
+                placeholder="Rp 199.000"
+              />
+              <p className="text-[10px] text-white/20">Display price for ultimate plan on landing page</p>
+            </div>
           </div>
 
           {/* Plan Features */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Basic Plan Features</Label>
               <textarea
@@ -647,6 +677,17 @@ export function AdminSettings() {
                 rows={5}
                 className="w-full rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/80 text-sm px-3 py-2 focus:border-[#03DAC6]/30 focus:ring-1 focus:ring-[#03DAC6]/10 focus:outline-none placeholder:text-white/15 resize-none"
                 placeholder="Everything in Basic\nUnlimited categories\n15 savings targets\nPriority support"
+              />
+              <p className="text-[10px] text-white/20">One feature per line. Shown on landing page.</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Ultimate Plan Features</Label>
+              <textarea
+                value={ultimatePlanFeatures}
+                onChange={(e) => setUltimatePlanFeatures(e.target.value)}
+                rows={5}
+                className="w-full rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/80 text-sm px-3 py-2 focus:border-[#03DAC6]/30 focus:ring-1 focus:ring-[#03DAC6]/10 focus:outline-none placeholder:text-white/15 resize-none"
+                placeholder="Everything in Pro\nBusiness module\nInvestment module\nLive charts\nTrading journal"
               />
               <p className="text-[10px] text-white/20">One feature per line. Shown on landing page.</p>
             </div>
@@ -772,7 +813,7 @@ export function AdminSettings() {
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
           {/* Discount Fields */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="h-3 w-3 text-white/30" /> Basic Plan Discount
@@ -809,10 +850,28 @@ export function AdminSettings() {
               />
               <p className="text-[10px] text-white/20">Discount amount + label for pro plan</p>
             </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3 text-[#03DAC6]/50" /> Ultimate Plan Discount
+              </Label>
+              <Input
+                value={ultimatePlanDiscount}
+                onChange={(e) => setUltimatePlanDiscount(e.target.value)}
+                className="bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15"
+                placeholder="40% or Rp 40.000"
+              />
+              <Input
+                value={ultimatePlanDiscountLabel}
+                onChange={(e) => setUltimatePlanDiscountLabel(e.target.value)}
+                className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15"
+                placeholder="Diskon Premium"
+              />
+              <p className="text-[10px] text-white/20">Discount amount + label for ultimate plan</p>
+            </div>
           </div>
 
           {/* External Purchase URLs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="h-3 w-3 text-white/30" /> Basic Plan Purchase URL
@@ -836,6 +895,18 @@ export function AdminSettings() {
                 placeholder="https://example.com/pro"
               />
               <p className="text-[10px] text-white/20">External link for purchasing pro plan (shown on landing page)</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3 text-[#03DAC6]/50" /> Ultimate Plan Purchase URL
+              </Label>
+              <Input
+                value={ultimatePurchaseUrl}
+                onChange={(e) => setUltimatePurchaseUrl(e.target.value)}
+                className="bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15"
+                placeholder="https://example.com/ultimate"
+              />
+              <p className="text-[10px] text-white/20">External link for purchasing ultimate plan (shown on landing page)</p>
             </div>
           </div>
         </CardContent>

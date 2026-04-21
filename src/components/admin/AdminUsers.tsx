@@ -362,6 +362,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                 <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
                   <SelectItem value="basic">Basic</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="ultimate">Ultimate</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -522,9 +523,9 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                     <p className="text-base font-bold text-white/90">{detailUser.username}</p>
                     <Badge variant="outline" className={cn(
                       'text-[9px] font-bold uppercase px-2 py-0.5',
-                      detailUser.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
+                      detailUser.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : detailUser.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
                     )}>
-                      {detailUser.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
+                      {detailUser.plan === 'ultimate' ? <><Gem className="h-2 w-2 mr-0.5 inline" />ULTIMATE</> : detailUser.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
                     </Badge>
                     <Badge variant="outline" className={cn(
                       'text-[9px] font-bold uppercase px-2 py-0.5',
@@ -594,7 +595,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                 <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] text-white/50">Current Plan</span>
-                    <span className="text-[12px] font-bold" style={{ color: detailUser.plan === 'pro' ? '#FFD700' : 'rgba(255,255,255,0.6)' }}>
+                    <span className="text-[12px] font-bold" style={{ color: detailUser.plan === 'ultimate' ? '#03DAC6' : detailUser.plan === 'pro' ? '#FFD700' : 'rgba(255,255,255,0.6)' }}>
                       {detailUser.plan.toUpperCase()}
                     </span>
                   </div>

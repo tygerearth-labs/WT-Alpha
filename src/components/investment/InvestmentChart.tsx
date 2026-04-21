@@ -90,7 +90,11 @@ export default function InvestmentChart({
 
       try {
         const url = `/api/business/${businessId}/market-data?type=${type}&symbol=${symbol}&chart=true&days=${days}`;
-        const res = await fetch(url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
 
         if (!res.ok) throw new Error('Failed to fetch');
 
@@ -329,7 +333,7 @@ export default function InvestmentChart({
         {!loading && !error && currentPrice !== null && (
           <div className="flex items-center gap-3 mt-1">
             <span className="text-white text-xl font-bold">
-              ${formatPrice(currentPrice)}
+              {type === 'saham' ? 'Rp' : type === 'forex' ? '' : '$'}{formatPrice(currentPrice)}
             </span>
             {priceChange !== null && (
               <div

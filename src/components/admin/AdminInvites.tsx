@@ -20,7 +20,7 @@ import {
 import {
   UserPlus, Copy, Trash2, Link, Clock, Mail, RefreshCw,
   CheckCircle, XCircle, AlertTriangle, ChevronLeft, ChevronRight,
-  ExternalLink, Sparkles, Crown, QrCode, Zap,
+  ExternalLink, Sparkles, Crown, QrCode, Zap, Gem,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -325,9 +325,9 @@ export function AdminInvites() {
                           </Badge>
                           <Badge variant="outline" className={cn(
                             'text-[9px] font-bold uppercase px-2 py-0.5',
-                            invite.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
+                            invite.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : invite.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
                           )}>
-                            {invite.plan === 'pro' ? <><Crown className="h-2.5 w-2.5 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2.5 w-2.5 mr-0.5 inline" />BASIC</>}
+                            {invite.plan === 'ultimate' ? <><Gem className="h-2.5 w-2.5 mr-0.5 inline" />ULTIMATE</> : invite.plan === 'pro' ? <><Crown className="h-2.5 w-2.5 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2.5 w-2.5 mr-0.5 inline" />BASIC</>}
                           </Badge>
                         </div>
 
@@ -469,7 +469,7 @@ export function AdminInvites() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-[10px] text-white/30">Plan</span>
-                          <span className="text-[10px] font-semibold" style={{ color: invite.plan === 'pro' ? '#FFD700' : 'rgba(255,255,255,0.5)' }}>{invite.plan}</span>
+                          <span className="text-[10px] font-semibold" style={{ color: invite.plan === 'ultimate' ? '#03DAC6' : invite.plan === 'pro' ? '#FFD700' : 'rgba(255,255,255,0.5)' }}>{invite.plan}</span>
                         </div>
                       </div>
                     </div>
@@ -536,6 +536,12 @@ export function AdminInvites() {
                     <div className="flex items-center gap-2">
                       <Crown className="h-3.5 w-3.5 text-[#FFD700]" />
                       <span>Pro — Full access</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="ultimate">
+                    <div className="flex items-center gap-2">
+                      <Gem className="h-3.5 w-3.5 text-[#03DAC6]" />
+                      <span>Ultimate — All access</span>
                     </div>
                   </SelectItem>
                 </SelectContent>

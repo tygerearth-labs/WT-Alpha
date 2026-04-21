@@ -125,6 +125,18 @@ const FOREX_QUOTE_CURRENCIES: Record<string, string> = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Fetch with an enforced timeout so external APIs can never hang the route */
+async function fetchWithTimeout(url: string, init: RequestInit & { timeoutMs?: number } = {}): Promise<Response> {
+  const { timeoutMs = 8000, ...rest } = init;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...rest, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Generate pseudo-random but deterministic values from a seed string */
 function seededRandom(seed: string): number {
   let hash = 0;
@@ -135,6 +147,54 @@ function seededRandom(seed: string): number {
   }
   // Return value between 0 and 1
   return (Math.abs(hash) % 10000) / 10000;
+}
+
+/** Generate mock crypto price data (used as fallback when CoinGecko is unavailable) */
+function generateMockCryptoPrice(symbol: string): Record<string, unknown> {
+  const upper = symbol.toUpperCase();
+  const basePrices: Record<string, number> = {
+    BTCUSDT: 67500, BTC: 67500,
+    ETHUSDT: 3450, ETH: 3450,
+    BNBUSDT: 580, BNB: 580,
+    XRPUSDT: 0.52, XRP: 0.52,
+    ADAUSDT: 0.45, ADA: 0.45,
+    SOLUSDT: 145, SOL: 145,
+    DOTUSDT: 6.8, DOT: 6.8,
+    DOGEUSDT: 0.12, DOGE: 0.12,
+    AVAXUSDT: 35, AVAX: 35,
+    MATICUSDT: 0.72, MATIC: 0.72,
+    LINKUSDT: 14.5, LINK: 14.5,
+    USDTUSDT: 1.0, USDT: 1.0,
+    USDCUSDT: 1.0, USDC: 1.0,
+    SHIBUSDT: 0.000025, SHIB: 0.000025,
+    LTCUSDT: 72, LTC: 72,
+    TRXUSDT: 0.11, TRX: 0.11,
+    ATOMUSDT: 8.5, ATOM: 8.5,
+    UNIUSDT: 7.2, UNI: 7.2,
+    NEARUSDT: 5.8, NEAR: 5.8,
+    ARBUSDT: 1.05, ARB: 1.05,
+    OPUSDT: 2.4, OP: 2.4,
+    INJUSDT: 24, INJ: 24,
+  };
+
+  const price = basePrices[upper] ?? (100 + seededRandom(upper) * 9000);
+  const timeSeed = Math.floor(Date.now() / 60000).toString();
+  const priceVariance = (seededRandom(upper + timeSeed) - 0.5) * price * 0.02;
+  const finalPrice = price + priceVariance;
+  const change24h = parseFloat(((seededRandom(upper + '24h') - 0.45) * 5).toFixed(2));
+  const changeAbs = Math.abs(finalPrice * (change24h / 100));
+
+  return {
+    symbol: upper,
+    type: 'crypto',
+    price: parseFloat(finalPrice.toFixed(finalPrice < 1 ? 6 : 2)),
+    change24h,
+    volume: Math.floor(seededRandom(upper + 'vol') * 500000000),
+    marketCap: Math.floor(finalPrice * (seededRandom(upper + 'mcap') * 50000000000)),
+    high24h: parseFloat((finalPrice + changeAbs * 1.3).toFixed(finalPrice < 1 ? 6 : 2)),
+    low24h: parseFloat((finalPrice - changeAbs * 1.3).toFixed(finalPrice < 1 ? 6 : 2)),
+    mock: true,
+  };
 }
 
 /** Generate mock OHLC data for a given price */
@@ -167,80 +227,114 @@ function generateMockOHLC(basePrice: number, days: number = 30, seed: string = '
   return ohlc;
 }
 
-/** Fetch crypto price data from CoinGecko */
+/** Fetch crypto price data from CoinGecko (with mock fallback) */
 async function fetchCryptoPrice(symbol: string): Promise<Record<string, unknown>> {
   const coinId = CRYPTO_SYMBOL_TO_ID[symbol.toUpperCase()];
   if (!coinId) {
     throw new Error(`Unknown crypto symbol: ${symbol}. Supported: ${Object.keys(CRYPTO_SYMBOL_TO_ID).join(', ')}`);
   }
 
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd,idr&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
+  try {
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd,idr&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
 
-  const res = await fetch(url, {
-    next: { revalidate: 30 }, // Cache for 30 seconds
-  });
+    const res = await fetchWithTimeout(url, {
+      next: { revalidate: 30 },
+      timeoutMs: 8000,
+    });
 
-  if (!res.ok) {
-    throw new Error(`CoinGecko API error: ${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      console.warn(`CoinGecko price API returned ${res.status} for ${symbol}, using mock`);
+      return generateMockCryptoPrice(symbol);
+    }
+
+    const data = await res.json();
+    const coinData = data[coinId];
+
+    if (!coinData || !coinData.usd) {
+      console.warn(`CoinGecko returned no data for ${symbol}, using mock`);
+      return generateMockCryptoPrice(symbol);
+    }
+
+    const price = coinData.usd;
+    const change24h = coinData.usd_24h_change || 0;
+    const marketCap = coinData.usd_market_cap || 0;
+    const volume = coinData.usd_24h_vol || 0;
+    const priceIdr = coinData.idr || 0;
+
+    const changeAbs = Math.abs(price * (change24h / 100));
+    const high24h = parseFloat((price + changeAbs * (0.3 + seededRandom(symbol + 'hi') * 0.7)).toFixed(2));
+    const low24h = parseFloat((price - changeAbs * (0.3 + seededRandom(symbol + 'lo') * 0.7)).toFixed(2));
+
+    return {
+      symbol,
+      type: 'crypto',
+      coinId,
+      price,
+      priceIdr,
+      change24h: parseFloat(change24h.toFixed(2)),
+      volume,
+      marketCap,
+      high24h,
+      low24h,
+    };
+  } catch (error) {
+    console.warn(`CoinGecko price fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}, using mock`);
+    return generateMockCryptoPrice(symbol);
   }
-
-  const data = await res.json();
-  const coinData = data[coinId];
-
-  if (!coinData) {
-    throw new Error(`No data returned for ${symbol} from CoinGecko`);
-  }
-
-  const price = coinData.usd || 0;
-  const change24h = coinData.usd_24h_change || 0;
-  const marketCap = coinData.usd_market_cap || 0;
-  const volume = coinData.usd_24h_vol || 0;
-  const priceIdr = coinData.idr || 0;
-
-  // Estimate high/low from 24h change (CoinGecko simple price doesn't return these directly)
-  const changeAbs = Math.abs(price * (change24h / 100));
-  const high24h = parseFloat((price + changeAbs * (0.3 + seededRandom(symbol + 'hi') * 0.7)).toFixed(2));
-  const low24h = parseFloat((price - changeAbs * (0.3 + seededRandom(symbol + 'lo') * 0.7)).toFixed(2));
-
-  return {
-    symbol,
-    type: 'crypto',
-    coinId,
-    price,
-    priceIdr,
-    change24h: parseFloat(change24h.toFixed(2)),
-    volume,
-    marketCap,
-    high24h,
-    low24h,
-  };
 }
 
-/** Fetch crypto OHLC data from CoinGecko */
+/** Fetch crypto OHLC data from CoinGecko (with mock fallback) */
 async function fetchCryptoOHLC(symbol: string, days: number = 30): Promise<{ ohlc: number[][] }> {
   const coinId = CRYPTO_SYMBOL_TO_ID[symbol.toUpperCase()];
   if (!coinId) {
     throw new Error(`Unknown crypto symbol: ${symbol}`);
   }
 
-  const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`;
+  try {
+    const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`;
 
-  const res = await fetch(url, {
-    next: { revalidate: 300 }, // Cache for 5 minutes for chart data
-  });
+    const res = await fetchWithTimeout(url, {
+      next: { revalidate: 300 },
+      timeoutMs: 8000,
+    });
 
-  if (!res.ok) {
-    // Fall back to mock data if CoinGecko rate-limits
-    const priceData = await fetchCryptoPrice(symbol);
-    const price = priceData.price as number;
-    return { ohlc: generateMockOHLC(price, days, symbol) };
+    if (!res.ok) {
+      console.warn(`CoinGecko OHLC API returned ${res.status} for ${symbol}, using mock`);
+      return generateMockCryptoOHLC(symbol, days);
+    }
+
+    const ohlc = await res.json();
+
+    if (!Array.isArray(ohlc) || ohlc.length === 0) {
+      console.warn(`CoinGecko returned empty/invalid OHLC for ${symbol}, using mock`);
+      return generateMockCryptoOHLC(symbol, days);
+    }
+
+    // Validate OHLC entries have the expected [timestamp, o, h, l, c] format
+    const valid = ohlc.every((entry: unknown) =>
+      Array.isArray(entry) && entry.length === 5 && entry.every((v: unknown) => typeof v === 'number')
+    );
+
+    if (!valid) {
+      console.warn(`CoinGecko OHLC data format invalid for ${symbol}, using mock`);
+      return generateMockCryptoOHLC(symbol, days);
+    }
+
+    return { ohlc };
+  } catch (error) {
+    console.warn(`CoinGecko OHLC fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}, using mock`);
+    return generateMockCryptoOHLC(symbol, days);
   }
-
-  const ohlc = await res.json();
-  return { ohlc: ohlc || [] };
 }
 
-/** Fetch forex price data from exchange rate API */
+/** Generate mock crypto OHLC data using approximate base prices */
+function generateMockCryptoOHLC(symbol: string, days: number): { ohlc: number[][] } {
+  const mockPrice = generateMockCryptoPrice(symbol);
+  const price = mockPrice.price as number;
+  return { ohlc: generateMockOHLC(price, days, symbol + 'mock') };
+}
+
+/** Fetch forex price data from exchange rate API (with mock fallback) */
 async function fetchForexPrice(symbol: string): Promise<Record<string, unknown>> {
   const base = FOREX_BASE_CURRENCIES[symbol.toUpperCase()];
   const quote = FOREX_QUOTE_CURRENCIES[symbol.toUpperCase()];
@@ -249,62 +343,93 @@ async function fetchForexPrice(symbol: string): Promise<Record<string, unknown>>
     throw new Error(`Unknown forex pair: ${symbol}. Supported: ${Object.keys(FOREX_BASE_CURRENCIES).join(', ')}`);
   }
 
-  // For pairs starting with USD, we can directly use the rate
-  // For others (EURUSD, GBPUSD, AUDUSD, NZDUSD), the rate from the API is inverted
-  const isDirect = symbol.toUpperCase().startsWith('USD') || symbol.toUpperCase() === 'XAUUSD';
-
-  // Determine which base currency to query
+  const upper = symbol.toUpperCase();
+  const isDirect = upper.startsWith('USD') || upper === 'XAUUSD';
   const queryBase = isDirect ? 'USD' : base;
+  const decimals = upper.includes('IDR') || upper.includes('JPY') ? 2 : 4;
 
-  const url = `https://open.er-api.com/v6/latest/${queryBase}`;
+  try {
+    const url = `https://open.er-api.com/v6/latest/${queryBase}`;
 
-  const res = await fetch(url, {
-    next: { revalidate: 3600 }, // Cache for 1 hour
-  });
+    const res = await fetchWithTimeout(url, {
+      next: { revalidate: 3600 },
+      timeoutMs: 8000,
+    });
 
-  if (!res.ok) {
-    throw new Error(`Exchange rate API error: ${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      console.warn(`Exchange rate API returned ${res.status} for ${symbol}, using mock`);
+      return generateMockForexPrice(symbol, upper, decimals);
+    }
+
+    const data = await res.json();
+    const rates = data.rates;
+
+    if (!rates || typeof rates !== 'object') {
+      console.warn(`Exchange rate API returned invalid data for ${symbol}, using mock`);
+      return generateMockForexPrice(symbol, upper, decimals);
+    }
+
+    let price: number;
+
+    if (upper === 'XAUUSD') {
+      price = 2350 + seededRandom(upper + Date.now().toString().slice(0, -4)) * 50;
+    } else if (isDirect) {
+      price = rates[quote] || 0;
+    } else {
+      price = rates['USD'] ? 1 / rates['USD'] : 0;
+    }
+
+    if (!price || price === 0) {
+      console.warn(`Exchange rate API returned zero price for ${symbol}, using mock`);
+      return generateMockForexPrice(symbol, upper, decimals);
+    }
+
+    const change24h = parseFloat(((seededRandom(symbol + '24h') - 0.45) * 1.2).toFixed(decimals));
+    const changeAbs = Math.abs(price * (change24h / 100));
+    const high24h = parseFloat((price + changeAbs * 1.5).toFixed(decimals));
+    const low24h = parseFloat((price - changeAbs * 1.5).toFixed(decimals));
+
+    return {
+      symbol,
+      type: 'forex',
+      price: parseFloat(price.toFixed(decimals)),
+      change24h,
+      volume: 0,
+      marketCap: 0,
+      high24h,
+      low24h,
+    };
+  } catch (error) {
+    console.warn(`Forex fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}, using mock`);
+    return generateMockForexPrice(symbol, upper, decimals);
   }
+}
 
-  const data = await res.json();
-  const rates = data.rates;
-
-  let price: number;
-
-  if (isDirect) {
-    // USDJPY, USDIDR, USDCAD, etc. → rate is direct
-    price = rates[quote] || 0;
-  } else {
-    // EURUSD, GBPUSD, etc. → rate = 1 / rates['USD']
-    price = rates['USD'] ? 1 / rates['USD'] : 0;
-  }
-
-  // For XAUUSD, the exchange rate API may not have it, use a reasonable mock
-  if (symbol.toUpperCase() === 'XAUUSD') {
-    price = 2350 + seededRandom(symbol + Date.now().toString().slice(0, -4)) * 50;
-  }
-
-  // Estimate change, volume, etc. (exchange rate API doesn't provide these)
-  const change24h = parseFloat(((seededRandom(symbol + '24h') - 0.45) * 1.2).toFixed(4));
-  const volume = 0; // Not available from free API
-  const marketCap = 0; // Not applicable for forex
-  const changeAbs = Math.abs(price * (change24h / 100));
-  const high24h = parseFloat((price + changeAbs * 1.5).toFixed(
-    symbol.toUpperCase().includes('IDR') || symbol.toUpperCase().includes('JPY') ? 2 : 4
-  ));
-  const low24h = parseFloat((price - changeAbs * 1.5).toFixed(
-    symbol.toUpperCase().includes('IDR') || symbol.toUpperCase().includes('JPY') ? 2 : 4
-  ));
+/** Generate mock forex price data */
+function generateMockForexPrice(symbol: string, upper: string, decimals: number): Record<string, unknown> {
+  const mockRates: Record<string, number> = {
+    EURUSD: 1.0842, GBPUSD: 1.2650, USDJPY: 149.50, USDIDR: 15850,
+    AUDUSD: 0.6530, USDCAD: 1.3620, USDCHF: 0.8830, NZDUSD: 0.6120,
+    USDSGD: 1.3410, EURGBP: 0.8572, EURJPY: 162.10, GBPJPY: 189.20,
+    XAUUSD: 2350,
+  };
+  const price = mockRates[upper] ?? 1.0;
+  const timeSeed = Math.floor(Date.now() / 60000).toString();
+  const variance = (seededRandom(upper + timeSeed) - 0.5) * price * 0.004;
+  const finalPrice = price + variance;
+  const change24h = parseFloat(((seededRandom(upper + '24h') - 0.45) * 1.2).toFixed(decimals));
+  const changeAbs = Math.abs(finalPrice * (change24h / 100));
 
   return {
     symbol,
     type: 'forex',
-    price: parseFloat(price.toFixed(symbol.toUpperCase().includes('IDR') || symbol.toUpperCase().includes('JPY') ? 2 : 4)),
+    price: parseFloat(finalPrice.toFixed(decimals)),
     change24h,
-    volume,
-    marketCap,
-    high24h,
-    low24h,
+    volume: 0,
+    marketCap: 0,
+    high24h: parseFloat((finalPrice + changeAbs * 1.5).toFixed(decimals)),
+    low24h: parseFloat((finalPrice - changeAbs * 1.5).toFixed(decimals)),
+    mock: true,
   };
 }
 
@@ -368,7 +493,15 @@ async function fetchForexOHLC(symbol: string, days: number = 30): Promise<{ ohlc
     const price = priceData.price as number;
     return { ohlc: generateMockOHLC(price, days, symbol + 'forex') };
   } catch {
-    return { ohlc: generateMockOHLC(1.0, days, symbol + 'forex') };
+    // Last-resort fallback
+    const mockRates: Record<string, number> = {
+      EURUSD: 1.0842, GBPUSD: 1.2650, USDJPY: 149.50, USDIDR: 15850,
+      AUDUSD: 0.6530, USDCAD: 1.3620, USDCHF: 0.8830, NZDUSD: 0.6120,
+      USDSGD: 1.3410, EURGBP: 0.8572, EURJPY: 162.10, GBPJPY: 189.20,
+      XAUUSD: 2350,
+    };
+    const price = mockRates[symbol.toUpperCase()] ?? 1.0;
+    return { ohlc: generateMockOHLC(price, days, symbol + 'forex') };
   }
 }
 
