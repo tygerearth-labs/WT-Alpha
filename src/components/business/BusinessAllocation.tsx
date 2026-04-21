@@ -82,8 +82,8 @@ export default function BusinessAllocation() {
       fetch(`/api/business/${businessId}/sales`).then((r) => (r.ok ? r.json() : [])),
     ])
       .then(([allocData, salesData]) => {
-        setAllocations(allocData || []);
-        setSales(salesData || []);
+        setAllocations(allocData?.allocations || []);
+        setSales(salesData?.sales || []);
       })
       .catch(() => {
         setAllocations([]);

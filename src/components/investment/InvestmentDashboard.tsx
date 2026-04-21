@@ -26,6 +26,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import InvestmentChart from '@/components/investment/InvestmentChart';
+import NewsAnalysis from '@/components/investment/NewsAnalysis';
 import {
   Dialog,
   DialogContent,
@@ -137,9 +138,13 @@ export default function InvestmentDashboard() {
       body: JSON.stringify({ symbols }),
       signal: abortRef.current.signal,
     })
-      .then((r) => (r.ok ? r.json() : { prices: {} }))
-      .then((data: { prices?: Record<string, LivePrice> }) => {
-        setLivePrices(data.prices || {});
+      .then((r) => (r.ok ? r.json() : { prices: [] }))
+      .then((data: { prices?: Array<{ symbol: string; type: string; price: number; change24h: number }> }) => {
+        const map: Record<string, LivePrice> = {};
+        for (const p of data.prices || []) {
+          map[`${p.type}:${p.symbol}`] = { price: p.price, change24h: p.change24h };
+        }
+        setLivePrices(map);
         if (isRefresh) setCountdown(30);
       })
       .catch(() => {});
@@ -284,6 +289,9 @@ export default function InvestmentDashboard() {
         </div>
       )}
 
+      {/* ── Breaking News & AI Analysis ── */}
+      {sortedPositions.length > 0 && <NewsAnalysis />}
+
       {/* ── Summary Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
@@ -344,6 +352,7 @@ export default function InvestmentDashboard() {
                     symbol={sortedPositions[0].symbol}
                     type={sortedPositions[0].type as 'saham' | 'crypto' | 'forex'}
                     height={340}
+                    showHeader={true}
                   />
                 </CardContent>
               </Card>
@@ -382,6 +391,7 @@ export default function InvestmentDashboard() {
                           symbol={p.symbol}
                           type={p.type as 'saham' | 'crypto' | 'forex'}
                           height={220}
+                          showHeader={false}
                         />
                       </CardContent>
                     </Card>
@@ -579,7 +589,7 @@ export default function InvestmentDashboard() {
 
       {/* ── Expanded Chart Dialog ── */}
       <Dialog open={!!expandedChart} onOpenChange={() => setExpandedChart(null)}>
-        <DialogContent className="max-w-5xl w-[95vw] bg-[#0D0D0D] border-white/[0.06] p-0 gap-0 overflow-hidden">
+        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] bg-[#0D0D0D] border-white/[0.06] p-0 gap-0 overflow-hidden">
           {expandedChart && (() => {
             const [type, symbol] = expandedChart.split(':');
             const p = portfolios.find((x) => x.symbol === symbol && x.type === type);
@@ -609,6 +619,7 @@ export default function InvestmentDashboard() {
                     symbol={symbol}
                     type={type as 'saham' | 'crypto' | 'forex'}
                     height={450}
+                    showHeader={false}
                   />
                 </div>
               </>

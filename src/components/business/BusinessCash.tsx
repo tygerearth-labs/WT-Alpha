@@ -106,7 +106,7 @@ export default function BusinessCash() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((result) => setEntries(result))
+      .then((result) => setEntries(result?.cashEntries || []))
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
   }, [businessId, activeTab]);

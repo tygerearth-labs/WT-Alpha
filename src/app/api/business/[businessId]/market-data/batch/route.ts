@@ -42,22 +42,25 @@ const CRYPTO_SYMBOL_TO_ID: Record<string, string> = {
   ATOMUSDT: 'cosmos', ATOM: 'cosmos',
   UNIUSDT: 'uniswap', UNI: 'uniswap',
   NEARUSDT: 'near', NEAR: 'near',
+  ARBUSDT: 'arbitrum', ARB: 'arbitrum',
+  OPUSDT: 'optimism', OP: 'optimism',
+  INJUSDT: 'injective-protocol', INJ: 'injective-protocol',
 };
 
 // ── Mock saham data ──────────────────────────────────────────────────────────
 const SAHAM_MOCK_DATA: Record<string, { name: string; basePrice: number; sector: string }> = {
   BBCA: { name: 'Bank Central Asia', basePrice: 9750, sector: 'Banking' },
-  BBRI: { name: 'Bank Rakyat Indonesia', basePrice: 5450, sector: 'Banking' },
+  BBRI: { name: 'Bank Rakyat Indonesia', basePrice: 4650, sector: 'Banking' },
   BMRI: { name: 'Bank Mandiri', basePrice: 6200, sector: 'Banking' },
   BBNI: { name: 'Bank Negara Indonesia', basePrice: 4800, sector: 'Banking' },
-  TLKM: { name: 'Telkom Indonesia', basePrice: 3900, sector: 'Telecom' },
+  TLKM: { name: 'Telkom Indonesia', basePrice: 3350, sector: 'Telecom' },
   ASII: { name: 'Astra International', basePrice: 5200, sector: 'Conglomerate' },
-  UNVR: { name: 'Unilever Indonesia', basePrice: 3100, sector: 'Consumer' },
-  GOTO: { name: 'GoTo Gojek Tokopedia', basePrice: 82, sector: 'Technology' },
+  UNVR: { name: 'Unilever Indonesia', basePrice: 2350, sector: 'Consumer' },
+  GOTO: { name: 'GoTo Gojek Tokopedia', basePrice: 74, sector: 'Technology' },
   BUKA: { name: 'Bukalapak', basePrice: 126, sector: 'Technology' },
-  ARTO: { name: 'Bank Jago', basePrice: 2850, sector: 'Banking' },
-  ANTM: { name: 'Aneka Tambang', basePrice: 1650, sector: 'Mining' },
-  BRIS: { name: 'Bank Syariah Indonesia', basePrice: 2650, sector: 'Banking' },
+  ARTO: { name: 'Bank Jago', basePrice: 2650, sector: 'Banking' },
+  ANTM: { name: 'Aneka Tambang', basePrice: 1350, sector: 'Mining' },
+  BRIS: { name: 'Bank Syariah Indonesia', basePrice: 2400, sector: 'Banking' },
   CPIN: { name: 'Charoen Pokphand Indonesia', basePrice: 7800, sector: 'Consumer' },
   INCO: { name: 'Vale Indonesia', basePrice: 3950, sector: 'Mining' },
   JSMR: { name: 'Jasa Marga', basePrice: 5400, sector: 'Infrastructure' },
@@ -104,28 +107,38 @@ function seededRandom(seed: string): number {
   return (Math.abs(hash) % 10000) / 10000;
 }
 
+/** Convert a crypto symbol to Binance format (always XXXUSDT) */
+function toBinanceSymbol(symbol: string): string {
+  const upper = symbol.toUpperCase();
+  if (upper.endsWith('USDT')) return upper;
+  return upper + 'USDT';
+}
+
 // ── Mock fallbacks ───────────────────────────────────────────────────────────
 
 const CRYPTO_MOCK_PRICES: Record<string, number> = {
-  BTCUSDT: 67500, BTC: 67500,
-  ETHUSDT: 3450, ETH: 3450,
-  BNBUSDT: 580, BNB: 580,
-  XRPUSDT: 0.52, XRP: 0.52,
-  ADAUSDT: 0.45, ADA: 0.45,
-  SOLUSDT: 145, SOL: 145,
-  DOTUSDT: 6.8, DOT: 6.8,
-  DOGEUSDT: 0.12, DOGE: 0.12,
-  AVAXUSDT: 35, AVAX: 35,
-  MATICUSDT: 0.72, MATIC: 0.72,
-  LINKUSDT: 14.5, LINK: 14.5,
+  BTCUSDT: 75937, BTC: 75937,
+  ETHUSDT: 2312, ETH: 2312,
+  BNBUSDT: 633, BNB: 633,
+  XRPUSDT: 1.43, XRP: 1.43,
+  ADAUSDT: 0.248, ADA: 0.248,
+  SOLUSDT: 85.89, SOL: 85.89,
+  DOTUSDT: 1.27, DOT: 1.27,
+  DOGEUSDT: 0.095, DOGE: 0.095,
+  AVAXUSDT: 9.35, AVAX: 9.35,
+  MATICUSDT: 0.45, MATIC: 0.45,
+  LINKUSDT: 9.39, LINK: 9.39,
   USDTUSDT: 1.0, USDT: 1.0,
   USDCUSDT: 1.0, USDC: 1.0,
-  SHIBUSDT: 0.000025, SHIB: 0.000025,
-  LTCUSDT: 72, LTC: 72,
-  TRXUSDT: 0.11, TRX: 0.11,
+  SHIBUSDT: 0.000012, SHIB: 0.000012,
+  LTCUSDT: 108, LTC: 108,
+  TRXUSDT: 0.25, TRX: 0.25,
   ATOMUSDT: 8.5, ATOM: 8.5,
   UNIUSDT: 7.2, UNI: 7.2,
-  NEARUSDT: 5.8, NEAR: 5.8,
+  NEARUSDT: 2.7, NEAR: 2.7,
+  ARBUSDT: 0.35, ARB: 0.35,
+  OPUSDT: 1.1, OP: 1.1,
+  INJUSDT: 11, INJ: 11,
 };
 
 function mockCryptoPrice(symbol: string): PriceResult {
@@ -149,9 +162,9 @@ function mockCryptoPrice(symbol: string): PriceResult {
 }
 
 const FOREX_MOCK_RATES: Record<string, number> = {
-  EURUSD: 1.0842, GBPUSD: 1.2650, USDJPY: 149.50, USDIDR: 15850,
-  AUDUSD: 0.6530, USDCAD: 1.3620, USDCHF: 0.8830, NZDUSD: 0.6120,
-  USDSGD: 1.3410, XAUUSD: 2350,
+  EURUSD: 1.1776, GBPUSD: 1.3528, USDJPY: 158.80, USDIDR: 17136,
+  AUDUSD: 0.7170, USDCAD: 1.3653, USDCHF: 0.8830, NZDUSD: 0.5897,
+  USDSGD: 1.3410, XAUUSD: 3325,
 };
 
 function mockForexPrice(symbol: string): PriceResult {
@@ -178,8 +191,84 @@ function mockForexPrice(symbol: string): PriceResult {
 
 // ── Batch fetchers ───────────────────────────────────────────────────────────
 
-/** Batch fetch crypto prices from CoinGecko (single API call, with mock fallback) */
-async function batchFetchCryptoPrices(symbols: string[]): Promise<Map<string, PriceResult>> {
+/** Batch fetch crypto prices from Binance (primary — all symbols in ONE call) */
+async function batchFetchCryptoPricesBinance(symbols: string[]): Promise<Map<string, PriceResult> | null> {
+  try {
+    const url = 'https://api.binance.com/api/v3/ticker/24hr';
+    const res = await fetchWithTimeout(url, { next: { revalidate: 30 }, timeoutMs: 8000 });
+
+    if (!res.ok) {
+      console.warn(`Binance batch ticker returned ${res.status}`);
+      return null;
+    }
+
+    const allTickers = await res.json();
+    if (!Array.isArray(allTickers)) return null;
+
+    // Build a lookup map for the symbols we need
+    const neededBinanceSymbols = new Set<string>();
+    const requestedToBinance = new Map<string, string>(); // requested symbol -> binance symbol
+    for (const symbol of symbols) {
+      const binanceSym = toBinanceSymbol(symbol);
+      neededBinanceSymbols.add(binanceSym);
+      requestedToBinance.set(symbol.toUpperCase(), binanceSym);
+    }
+
+    // Build a fast lookup from Binance response
+    const tickerMap = new Map<string, {
+      lastPrice: string;
+      priceChangePercent: string;
+      quoteVolume: string;
+      highPrice: string;
+      lowPrice: string;
+    }>();
+
+    for (const ticker of allTickers) {
+      if (ticker && ticker.symbol && neededBinanceSymbols.has(ticker.symbol)) {
+        tickerMap.set(ticker.symbol, {
+          lastPrice: ticker.lastPrice,
+          priceChangePercent: ticker.priceChangePercent,
+          quoteVolume: ticker.quoteVolume,
+          highPrice: ticker.highPrice,
+          lowPrice: ticker.lowPrice,
+        });
+      }
+    }
+
+    // Map back to requested symbols
+    const results = new Map<string, PriceResult>();
+    for (const [requested, binanceSym] of requestedToBinance.entries()) {
+      const ticker = tickerMap.get(binanceSym);
+      if (ticker) {
+        const price = parseFloat(ticker.lastPrice);
+        if (isNaN(price) || price === 0) {
+          results.set(requested, mockCryptoPrice(requested));
+          continue;
+        }
+        results.set(requested, {
+          symbol: requested,
+          type: 'crypto',
+          price,
+          change24h: parseFloat(parseFloat(ticker.priceChangePercent).toFixed(2)),
+          volume: parseFloat(ticker.quoteVolume) || 0,
+          marketCap: 0,
+          high24h: parseFloat(ticker.highPrice),
+          low24h: parseFloat(ticker.lowPrice),
+        });
+      } else {
+        results.set(requested, mockCryptoPrice(requested));
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.warn(`Binance batch fetch failed: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+/** Batch fetch crypto prices from CoinGecko (fallback) */
+async function batchFetchCryptoPricesCoinGecko(symbols: string[]): Promise<Map<string, PriceResult>> {
   const results = new Map<string, PriceResult>();
   const coinIdsToFetch: string[] = [];
   const symbolToCoinId: Map<string, string> = new Map();
@@ -190,7 +279,6 @@ async function batchFetchCryptoPrices(symbols: string[]): Promise<Map<string, Pr
       results.set(symbol.toUpperCase(), mockCryptoPrice(symbol));
       continue;
     }
-    // Avoid duplicate coin IDs (e.g., BTCUSDT and BTC both map to bitcoin)
     if (!coinIdsToFetch.includes(coinId)) {
       coinIdsToFetch.push(coinId);
     }
@@ -248,12 +336,23 @@ async function batchFetchCryptoPrices(symbols: string[]): Promise<Map<string, Pr
   return results;
 }
 
+/** Unified batch crypto fetch: Binance primary, CoinGecko fallback, mock last resort */
+async function batchFetchCryptoPrices(symbols: string[]): Promise<Map<string, PriceResult>> {
+  if (symbols.length === 0) return new Map();
+
+  // Try Binance first (one API call for all symbols)
+  const binanceResults = await batchFetchCryptoPricesBinance(symbols);
+  if (binanceResults) return binanceResults;
+
+  // Fallback: CoinGecko
+  return batchFetchCryptoPricesCoinGecko(symbols);
+}
+
 /** Batch fetch forex prices (single API call for USD-based rates, with mock fallback) */
 async function batchFetchForexPrices(symbols: string[]): Promise<Map<string, PriceResult>> {
   const results = new Map<string, PriceResult>();
 
   try {
-    // Always fetch from USD base
     const url = 'https://open.er-api.com/v6/latest/USD';
     const res = await fetchWithTimeout(url, { next: { revalidate: 3600 }, timeoutMs: 8000 });
     if (!res.ok) {

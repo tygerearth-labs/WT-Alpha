@@ -105,8 +105,8 @@ export default function BusinessSales() {
       fetch(`/api/business/${businessId}/customers`).then((r) => (r.ok ? r.json() : [])),
     ])
       .then(([salesData, customersData]) => {
-        setSales(salesData);
-        setCustomers(customersData);
+        setSales(salesData?.sales || []);
+        setCustomers(customersData?.customers || []);
       })
       .catch(() => {
         setSales([]);

@@ -45,6 +45,7 @@ import {
   Gem,
   BookOpen,
   Palette,
+  CheckCircle2,
   type LucideIcon,
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
@@ -69,6 +70,8 @@ import InvestmentDashboard from '@/components/investment/InvestmentDashboard';
 import InvestmentPortfolio from '@/components/investment/InvestmentPortfolio';
 import TradingJournal from '@/components/investment/TradingJournal';
 import InvestmentRegisterDialog from '@/components/investment/InvestmentRegisterDialog';
+import QuantTradeMode from '@/components/investment/QuantTradeMode';
+import MacroEconomy from '@/components/investment/MacroEconomy';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -78,7 +81,7 @@ type PageType =
   | 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile'
   | 'biz-dashboard' | 'biz-kas' | 'biz-penjualan' | 'biz-invoice' | 'biz-customer'
   | 'biz-hutang' | 'biz-allocation' | 'biz-laporan' | 'biz-invoice-settings'
-  | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal';
+  | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal' | 'inv-quant' | 'inv-macro';
 
 interface NavItem {
   id: PageType;
@@ -239,6 +242,8 @@ export function MainLayout() {
   const investmentNav: NavItem[] = useMemo(() => [
     { id: 'inv-dashboard', label: t('inv.invDashboard'), icon: LineChart, desc: 'Dashboard Investasi' },
     { id: 'inv-portfolio', label: t('inv.portfolios'), icon: Gem, desc: 'Portofolio' },
+    { id: 'inv-quant', label: 'Quant Trade', icon: TrendingUp, desc: 'Analisis Teknikal' },
+    { id: 'inv-macro', label: 'Ekonomi Makro', icon: BarChart3, desc: 'Market Overview' },
     { id: 'inv-journal', label: t('inv.tradingJournal'), icon: BookOpen, desc: 'Trading Journal' },
   ], [t]);
 
@@ -248,10 +253,21 @@ export function MainLayout() {
     return personalNav;
   }, [mode, personalNav, businessNav, investmentNav]);
 
+  // Check registered categories
+  const hasBisnis = businesses.some(b => b.category === 'bisnis');
+  const hasInvestasi = businesses.some(b => b.category === 'investasi');
+
   const renderPage = () => {
     if (mode === 'bisnis') {
-      if (!businesses.find(b => b.category === 'bisnis')) {
-        return <Dashboard />; // placeholder until dialog registers
+      if (!hasBisnis) {
+        return (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Briefcase className="h-12 w-12 text-[#03DAC6]/30 mx-auto mb-3" />
+              <p className="text-white/50 text-sm">{t('biz.registerFirst') || 'Silakan daftarkan Bisnis terlebih dahulu'}</p>
+            </div>
+          </div>
+        );
       }
       switch (currentPage) {
         case 'biz-dashboard': return <BusinessDashboard />;
@@ -267,12 +283,21 @@ export function MainLayout() {
       }
     }
     if (mode === 'investasi') {
-      if (!businesses.find(b => b.category === 'investasi')) {
-        return <Dashboard />; // placeholder until dialog registers
+      if (!hasInvestasi) {
+        return (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <LineChart className="h-12 w-12 text-[#FFD700]/30 mx-auto mb-3" />
+              <p className="text-white/50 text-sm">{t('inv.registerFirst') || 'Silakan daftarkan Investasi terlebih dahulu'}</p>
+            </div>
+          </div>
+        );
       }
       switch (currentPage) {
         case 'inv-dashboard': return <InvestmentDashboard />;
         case 'inv-portfolio': return <InvestmentPortfolio />;
+        case 'inv-quant': return <QuantTradeMode />;
+        case 'inv-macro': return <MacroEconomy />;
         case 'inv-journal': return <TradingJournal />;
         default: return <InvestmentDashboard />;
       }
@@ -317,32 +342,43 @@ export function MainLayout() {
   const ModeSwitch = ({ collapsed }: { collapsed: boolean }) => (
     <div className={cn('px-2 pb-3 mb-2', !collapsed && 'px-3')}>
       <div className={cn('flex items-center gap-0.5 p-0.5 rounded-xl bg-white/[0.03] border border-white/[0.04]', collapsed && 'flex-col')}>
-        {(['personal', 'bisnis', 'investasi'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => handleModeSwitch(m)}
-            className={cn(
-              'relative text-[10px] font-semibold rounded-lg transition-all duration-200',
-              collapsed ? 'p-2 mx-auto' : 'flex-1 py-1.5',
-              mode === m
-                ? m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC] shadow-sm'
-                  : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6] shadow-sm'
-                  : 'bg-[#FFD700]/20 text-[#FFD700] shadow-sm'
-                : 'text-white/35 hover:text-white/60',
-              m !== 'personal' && !isUltimate && 'opacity-30 pointer-events-none',
-            )}
-            title={collapsed ? (m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')) : undefined}
-          >
-            {m !== 'personal' && !isUltimate && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/60" />}
-            {collapsed ? (
-              m === 'personal' ? <LayoutDashboard className="h-3.5 w-3.5" />
-                : m === 'bisnis' ? <Briefcase className="h-3.5 w-3.5" />
-                : <Gem className="h-3.5 w-3.5" />
-            ) : (
-              m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')
-            )}
-          </button>
-        ))}
+        {(['personal', 'bisnis', 'investasi'] as const).map((m) => {
+          const isRegistered = m === 'bisnis' ? hasBisnis : m === 'investasi' ? hasInvestasi : true;
+          const isLocked = m !== 'personal' && !isUltimate;
+          return (
+            <button
+              key={m}
+              onClick={() => handleModeSwitch(m)}
+              className={cn(
+                'relative text-[10px] font-semibold rounded-lg transition-all duration-200',
+                collapsed ? 'p-2 mx-auto' : 'flex-1 py-1.5',
+                mode === m
+                  ? m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC] shadow-sm'
+                    : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6] shadow-sm'
+                    : 'bg-[#FFD700]/20 text-[#FFD700] shadow-sm'
+                  : 'text-white/35 hover:text-white/60',
+                isLocked && 'opacity-30 pointer-events-none',
+              )}
+              title={collapsed ? (m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')) : undefined}
+            >
+              {isLocked && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/60" />}
+              {/* Registered checkmark indicator */}
+              {!collapsed && isRegistered && m !== 'personal' && isUltimate && (
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#03DAC6]" />
+              )}
+              {collapsed ? (
+                m === 'personal' ? <LayoutDashboard className="h-3.5 w-3.5" />
+                  : m === 'bisnis' ? <Briefcase className="h-3.5 w-3.5" />
+                  : <Gem className="h-3.5 w-3.5" />
+              ) : (
+                <span className="flex items-center gap-1">
+                  {m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')}
+                  {isRegistered && m !== 'personal' && isUltimate && <CheckCircle2 className="h-2.5 w-2.5" />}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -703,7 +739,11 @@ export function MainLayout() {
           if (!bizExists) { setMode('personal'); setCurrentPage('dashboard'); setPageKey(prev => prev + 1); }
         }}}
         onSuccess={() => {
-          // After successful registration, navigate to biz dashboard
+          // After successful registration, re-fetch businesses to ensure data integrity
+          fetch('/api/business').then(r => r.ok ? r.json() : null).then(data => {
+            if (data) setBusinesses(data.businesses || []);
+          }).catch(() => {});
+          // Navigate to biz dashboard
           const biz = useBusinessStore.getState().businesses.find(b => b.category === 'bisnis');
           if (biz) setActiveBusiness(biz);
           setMode('bisnis');
@@ -718,6 +758,11 @@ export function MainLayout() {
           if (!bizExists) { setMode('personal'); setCurrentPage('dashboard'); setPageKey(prev => prev + 1); }
         }}}
         onSuccess={() => {
+          // After successful registration, re-fetch businesses to ensure data integrity
+          fetch('/api/business').then(r => r.ok ? r.json() : null).then(data => {
+            if (data) setBusinesses(data.businesses || []);
+          }).catch(() => {});
+          // Navigate to inv dashboard
           const biz = useBusinessStore.getState().businesses.find(b => b.category === 'investasi');
           if (biz) setActiveBusiness(biz);
           setMode('investasi');

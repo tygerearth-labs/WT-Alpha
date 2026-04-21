@@ -106,7 +106,7 @@ export default function BusinessDebts() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((data) => setDebts(data || []))
+      .then((data) => setDebts(data?.debts || []))
       .catch(() => setDebts([]))
       .finally(() => setLoading(false));
   }, [businessId]);

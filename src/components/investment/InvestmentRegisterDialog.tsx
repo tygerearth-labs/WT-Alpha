@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
+  DialogTitle,
 } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +22,7 @@ import {
   FileText,
   Sparkles,
   TrendingUp,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface InvestmentRegisterDialogProps {
@@ -34,7 +37,12 @@ export default function InvestmentRegisterDialog({
   onSuccess,
 }: InvestmentRegisterDialogProps) {
   const { t } = useTranslation();
-  const { setBusinesses, setActiveBusiness } = useBusinessStore();
+  const { setBusinesses, setActiveBusiness, businesses } = useBusinessStore();
+
+  // Check if investasi is already registered
+  const isAlreadyRegistered = useMemo(() => {
+    return businesses.some(b => b.category === 'investasi');
+  }, [businesses]);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -42,9 +50,16 @@ export default function InvestmentRegisterDialog({
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
     if (!name.trim()) return;
+
+    // Prevent duplicate registration
+    if (isAlreadyRegistered) {
+      toast.error(t('biz.alreadyRegistered') || 'Investasi sudah terdaftar');
+      onOpenChange(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -65,7 +80,8 @@ export default function InvestmentRegisterDialog({
         throw new Error(data.error || 'Failed to create investment');
       }
 
-      const business = await res.json();
+      const data = await res.json();
+      const business = data.business;
 
       const { businesses: existing } = useBusinessStore.getState();
       const updated = [...existing, business];
@@ -87,12 +103,44 @@ export default function InvestmentRegisterDialog({
     }
   };
 
+  // If already registered, show already-registered message
+  if (isAlreadyRegistered) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent aria-describedby={undefined} className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl">
+          <VisuallyHidden>
+            <DialogTitle>{t('inv.alreadyRegistered') || 'Investasi Sudah Terdaftar'}</DialogTitle>
+          </VisuallyHidden>
+          <div className="relative bg-gradient-to-br from-[#FFD700]/20 via-[#FFD700]/5 to-transparent p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#FFD700]/15 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-[#FFD700]" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">{t('inv.alreadyRegistered') || 'Investasi Sudah Terdaftar'}</h2>
+            <p className="text-sm text-white/50 mb-6">
+              {t('inv.alreadyRegisteredDesc') || 'Anda sudah mendaftarkan akun Investasi. Satu akun hanya bisa memiliki satu Investasi.'}
+            </p>
+            <Button
+              onClick={() => onOpenChange(false)}
+              className="bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#0D0D0D] px-8"
+            >
+              {t('common.close') || 'Tutup'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
+        aria-describedby={undefined}
         className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl"
       >
+        <VisuallyHidden>
+          <DialogTitle>{t('inv.createInvestment')}</DialogTitle>
+        </VisuallyHidden>
         {/* Visual Header */}
         <div className="relative bg-gradient-to-br from-[#FFD700]/20 via-[#FFD700]/5 to-transparent p-6 pb-5">
           {/* Decorative elements */}
@@ -142,8 +190,8 @@ export default function InvestmentRegisterDialog({
           </div>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 pt-5 space-y-4">
+        {/* Scrollable Form Body */}
+        <div className="p-6 pt-5 space-y-4 max-h-[55vh] overflow-y-auto">
           {/* Investment Name */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white/70 flex items-center gap-2">
@@ -208,27 +256,28 @@ export default function InvestmentRegisterDialog({
               {t('inv.trackInvestmentsDesc')}
             </p>
           </div>
+        </div>
 
-          {/* Footer Buttons */}
-          <DialogFooter className="gap-3 pt-2 sm:gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1 h-11 border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || !name.trim()}
-              className="flex-1 h-11 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#0D0D0D] rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t('common.save')}
-            </Button>
-          </DialogFooter>
-        </form>
+        {/* Footer Buttons - fixed at bottom */}
+        <DialogFooter className="gap-3 p-6 pt-3 sm:gap-3 border-t border-white/[0.06]">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="flex-1 h-11 border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            disabled={loading || !name.trim()}
+            className="flex-1 h-11 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#0D0D0D] rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={handleSubmit}
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t('common.save')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

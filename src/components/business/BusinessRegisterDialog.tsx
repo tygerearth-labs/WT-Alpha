@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
+  DialogTitle,
 } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useBusinessStore } from '@/store/useBusinessStore';
+import { useBusinessStore, type BusinessCategory } from '@/store/useBusinessStore';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -30,6 +32,7 @@ import {
   Tag,
   ChevronRight,
   Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface BusinessRegisterDialogProps {
@@ -71,10 +74,32 @@ export default function BusinessRegisterDialog({
   defaultCategory = 'bisnis',
 }: BusinessRegisterDialogProps) {
   const { t } = useTranslation();
-  const { setBusinesses, setActiveBusiness } = useBusinessStore();
+  const { setBusinesses, setActiveBusiness, businesses } = useBusinessStore();
+
+  // Check which categories are already registered
+  const registeredCategories = useMemo(() => {
+    return new Set(businesses.map(b => b.category as BusinessCategory));
+  }, [businesses]);
+
+  // Determine available categories
+  const availableCategories = useMemo(() => {
+    const cats: ('bisnis' | 'investasi')[] = [];
+    if (!registeredCategories.has('bisnis')) cats.push('bisnis');
+    if (!registeredCategories.has('investasi')) cats.push('investasi');
+    return cats;
+  }, [registeredCategories]);
+
+  const isAllRegistered = availableCategories.length === 0;
+
+  // Initial category: use default if available, otherwise first available
+  const initialCategory = useMemo(() => {
+    if (isAllRegistered) return 'bisnis';
+    if (availableCategories.includes(defaultCategory)) return defaultCategory;
+    return availableCategories[0];
+  }, [defaultCategory, availableCategories, isAllRegistered]);
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<'bisnis' | 'investasi'>(defaultCategory);
+  const [category, setCategory] = useState<'bisnis' | 'investasi'>(initialCategory);
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -82,10 +107,17 @@ export default function BusinessRegisterDialog({
 
   const config = accentConfig[category];
   const HeaderIcon = config.icon;
+  const showCategorySelector = availableCategories.length > 1;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
     if (!name.trim()) return;
+
+    // Prevent duplicate registration
+    if (registeredCategories.has(category)) {
+      toast.error(t('biz.alreadyRegistered') || `${category === 'bisnis' ? 'Bisnis' : 'Investasi'} sudah terdaftar`);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -100,7 +132,8 @@ export default function BusinessRegisterDialog({
         throw new Error(data.error || 'Failed to create business');
       }
 
-      const business = await res.json();
+      const data = await res.json();
+      const business = data.business;
 
       const { businesses: existing } = useBusinessStore.getState();
       const updated = [...existing, business];
@@ -122,12 +155,48 @@ export default function BusinessRegisterDialog({
     }
   };
 
+  // If all categories are registered, show already-registered message
+  if (isAllRegistered) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent aria-describedby={undefined} className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl">
+          <VisuallyHidden>
+            <DialogTitle>{t('biz.allRegistered') || 'Semua Sudah Terdaftar'}</DialogTitle>
+          </VisuallyHidden>
+          <div className="relative bg-gradient-to-br from-[#03DAC6]/20 via-[#FFD700]/5 to-transparent p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#03DAC6]/15 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-[#03DAC6]" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">{t('biz.allRegistered') || 'Semua Sudah Terdaftar'}</h2>
+            <p className="text-sm text-white/50 mb-6">
+              {t('biz.allRegisteredDesc') || 'Anda sudah mendaftarkan Bisnis dan Investasi. Satu akun hanya bisa memiliki satu Bisnis dan satu Investasi.'}
+            </p>
+            <Button
+              onClick={() => onOpenChange(false)}
+              className="bg-[#BB86FC] hover:bg-[#9B6FDB] text-black px-8"
+            >
+              {t('common.close') || 'Tutup'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
+        aria-describedby={undefined}
         className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl"
       >
+        <VisuallyHidden>
+          <DialogTitle>
+            {category === 'bisnis'
+              ? t('biz.createBusiness')
+              : t('biz.createInvestment')}
+          </DialogTitle>
+        </VisuallyHidden>
         {/* Visual Header */}
         <div className={`relative bg-gradient-to-br ${config.gradient} p-6 pb-5`}>
           {/* Decorative elements */}
@@ -184,38 +253,54 @@ export default function BusinessRegisterDialog({
           </div>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 pt-5 space-y-4">
-          {/* Category Selector */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white/70 flex items-center gap-2">
-              <Tag className="w-4 h-4 text-white/40" />
-              {t('biz.selectCategory')}
-              <span className="text-white/30">*</span>
-            </label>
-            <Select
-              value={category}
-              onValueChange={(val) => setCategory(val as 'bisnis' | 'investasi')}
-            >
-              <SelectTrigger className={`w-full h-11 bg-white/[0.05] border-white/[0.08] text-white rounded-xl focus:border-[${category === 'bisnis' ? '#03DAC6' : '#FFD700'}]/40 focus:ring-[${category === 'bisnis' ? '#03DAC6' : '#FFD700'}]/10`}>
-                <SelectValue placeholder={t('biz.selectCategory')} />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1A1A2E] border-white/[0.1] rounded-xl">
-                <SelectItem value="bisnis" className="text-white focus:bg-white/[0.06] focus:text-white rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-[#03DAC6]" />
-                    {t('biz.bisnis')}
-                  </div>
-                </SelectItem>
-                <SelectItem value="investasi" className="text-white focus:bg-white/[0.06] focus:text-white rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <LineChart className="w-4 h-4 text-[#FFD700]" />
-                    {t('biz.investasi')}
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Scrollable Form Body */}
+        <div className="p-6 pt-5 space-y-4 max-h-[55vh] overflow-y-auto">
+          {/* Category Selector - only show if multiple categories available */}
+          {showCategorySelector ? (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/70 flex items-center gap-2">
+                <Tag className="w-4 h-4 text-white/40" />
+                {t('biz.selectCategory')}
+                <span className="text-white/30">*</span>
+              </label>
+              <Select
+                value={category}
+                onValueChange={(val) => setCategory(val as 'bisnis' | 'investasi')}
+              >
+                <SelectTrigger className="w-full h-11 bg-white/[0.05] border-white/[0.08] text-white rounded-xl focus:border-white/20 focus:ring-white/10">
+                  <SelectValue placeholder={t('biz.selectCategory')} />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A2E] border-white/[0.1] rounded-xl">
+                  {!registeredCategories.has('bisnis') && (
+                    <SelectItem value="bisnis" className="text-white focus:bg-white/[0.06] focus:text-white rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-[#03DAC6]" />
+                        {t('biz.bisnis')}
+                      </div>
+                    </SelectItem>
+                  )}
+                  {!registeredCategories.has('investasi') && (
+                    <SelectItem value="investasi" className="text-white focus:bg-white/[0.06] focus:text-white rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <LineChart className="w-4 h-4 text-[#FFD700]" />
+                        {t('biz.investasi')}
+                      </div>
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            /* Show selected category as a non-interactive badge */
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+              {category === 'bisnis' ? (
+                <Briefcase className="w-4 h-4 text-[#03DAC6]" />
+              ) : (
+                <LineChart className="w-4 h-4 text-[#FFD700]" />
+              )}
+              <span className="text-sm font-medium text-white/70">{category === 'bisnis' ? t('biz.bisnis') : t('biz.investasi')}</span>
+            </div>
+          )}
 
           {/* Business / Investment Name */}
           <div className="space-y-2">
@@ -283,27 +368,28 @@ export default function BusinessRegisterDialog({
               {t(config.hintDesc)}
             </p>
           </div>
+        </div>
 
-          {/* Footer Buttons */}
-          <DialogFooter className="gap-3 pt-2 sm:gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1 h-11 border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || !name.trim()}
-              className={`flex-1 h-11 ${config.btnGradient} rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
-            >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t('common.save')}
-            </Button>
-          </DialogFooter>
-        </form>
+        {/* Footer Buttons - fixed at bottom */}
+        <DialogFooter className="gap-3 p-6 pt-3 sm:gap-3 border-t border-white/[0.06]">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="flex-1 h-11 border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            disabled={loading || !name.trim()}
+            className={`flex-1 h-11 ${config.btnGradient} rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+            onClick={handleSubmit}
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t('common.save')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

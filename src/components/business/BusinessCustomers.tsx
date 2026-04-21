@@ -79,7 +79,7 @@ export default function BusinessCustomers() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((data) => setCustomers(data || []))
+      .then((data) => setCustomers(data?.customers || []))
       .catch(() => setCustomers([]))
       .finally(() => setLoading(false));
   }, [businessId]);

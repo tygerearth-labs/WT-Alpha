@@ -52,18 +52,18 @@ const CRYPTO_SYMBOL_TO_ID: Record<string, string> = {
 // ── Mock saham (Indonesian stocks) data ──────────────────────────────────────
 const SAHAM_MOCK_DATA: Record<string, { name: string; basePrice: number; sector: string }> = {
   BBCA: { name: 'Bank Central Asia', basePrice: 9750, sector: 'Banking' },
-  BBRI: { name: 'Bank Rakyat Indonesia', basePrice: 5450, sector: 'Banking' },
+  BBRI: { name: 'Bank Rakyat Indonesia', basePrice: 4650, sector: 'Banking' },
   BMRI: { name: 'Bank Mandiri', basePrice: 6200, sector: 'Banking' },
   BBNI: { name: 'Bank Negara Indonesia', basePrice: 4800, sector: 'Banking' },
-  TLKM: { name: 'Telkom Indonesia', basePrice: 3900, sector: 'Telecom' },
+  TLKM: { name: 'Telkom Indonesia', basePrice: 3350, sector: 'Telecom' },
   ASII: { name: 'Astra International', basePrice: 5200, sector: 'Conglomerate' },
-  UNVR: { name: 'Unilever Indonesia', basePrice: 3100, sector: 'Consumer' },
-  GOTO: { name: 'GoTo Gojek Tokopedia', basePrice: 82, sector: 'Technology' },
+  UNVR: { name: 'Unilever Indonesia', basePrice: 2350, sector: 'Consumer' },
+  GOTO: { name: 'GoTo Gojek Tokopedia', basePrice: 74, sector: 'Technology' },
   BUKA: { name: 'Bukalapak', basePrice: 126, sector: 'Technology' },
-  ARTO: { name: 'Bank Jago', basePrice: 2850, sector: 'Banking' },
+  ARTO: { name: 'Bank Jago', basePrice: 2650, sector: 'Banking' },
   ACST: { name: 'Ace Hardware Indonesia', basePrice: 710, sector: 'Retail' },
-  ANTM: { name: 'Aneka Tambang', basePrice: 1650, sector: 'Mining' },
-  BRIS: { name: 'Bank Syariah Indonesia', basePrice: 2650, sector: 'Banking' },
+  ANTM: { name: 'Aneka Tambang', basePrice: 1350, sector: 'Mining' },
+  BRIS: { name: 'Bank Syariah Indonesia', basePrice: 2400, sector: 'Banking' },
   CPIN: { name: 'Charoen Pokphand Indonesia', basePrice: 7800, sector: 'Consumer' },
   EMTK: { name: 'Elang Mahkota Teknologi', basePrice: 630, sector: 'Media' },
   ERAA: { name: 'Erajaya Swasembada', basePrice: 478, sector: 'Technology' },
@@ -149,32 +149,47 @@ function seededRandom(seed: string): number {
   return (Math.abs(hash) % 10000) / 10000;
 }
 
+/** Convert a crypto symbol to Binance format (always XXXUSDT) */
+function toBinanceSymbol(symbol: string): string {
+  const upper = symbol.toUpperCase();
+  if (upper.endsWith('USDT')) return upper;
+  return upper + 'USDT';
+}
+
+/** Map days parameter to Binance interval and limit */
+function getBinanceInterval(days: number): { interval: string; limit: number } {
+  if (days <= 1) return { interval: '1m', limit: 200 };
+  if (days <= 7) return { interval: '1h', limit: 200 };
+  if (days <= 30) return { interval: '4h', limit: 200 };
+  return { interval: '1d', limit: 200 };
+}
+
 /** Generate mock crypto price data (used as fallback when CoinGecko is unavailable) */
 function generateMockCryptoPrice(symbol: string): Record<string, unknown> {
   const upper = symbol.toUpperCase();
   const basePrices: Record<string, number> = {
-    BTCUSDT: 67500, BTC: 67500,
-    ETHUSDT: 3450, ETH: 3450,
-    BNBUSDT: 580, BNB: 580,
-    XRPUSDT: 0.52, XRP: 0.52,
-    ADAUSDT: 0.45, ADA: 0.45,
-    SOLUSDT: 145, SOL: 145,
-    DOTUSDT: 6.8, DOT: 6.8,
-    DOGEUSDT: 0.12, DOGE: 0.12,
-    AVAXUSDT: 35, AVAX: 35,
-    MATICUSDT: 0.72, MATIC: 0.72,
-    LINKUSDT: 14.5, LINK: 14.5,
+    BTCUSDT: 75937, BTC: 75937,
+    ETHUSDT: 2312, ETH: 2312,
+    BNBUSDT: 633, BNB: 633,
+    XRPUSDT: 1.43, XRP: 1.43,
+    ADAUSDT: 0.248, ADA: 0.248,
+    SOLUSDT: 85.89, SOL: 85.89,
+    DOTUSDT: 1.27, DOT: 1.27,
+    DOGEUSDT: 0.095, DOGE: 0.095,
+    AVAXUSDT: 9.35, AVAX: 9.35,
+    MATICUSDT: 0.45, MATIC: 0.45,
+    LINKUSDT: 9.39, LINK: 9.39,
     USDTUSDT: 1.0, USDT: 1.0,
     USDCUSDT: 1.0, USDC: 1.0,
-    SHIBUSDT: 0.000025, SHIB: 0.000025,
-    LTCUSDT: 72, LTC: 72,
-    TRXUSDT: 0.11, TRX: 0.11,
+    SHIBUSDT: 0.000012, SHIB: 0.000012,
+    LTCUSDT: 108, LTC: 108,
+    TRXUSDT: 0.25, TRX: 0.25,
     ATOMUSDT: 8.5, ATOM: 8.5,
     UNIUSDT: 7.2, UNI: 7.2,
-    NEARUSDT: 5.8, NEAR: 5.8,
-    ARBUSDT: 1.05, ARB: 1.05,
-    OPUSDT: 2.4, OP: 2.4,
-    INJUSDT: 24, INJ: 24,
+    NEARUSDT: 2.7, NEAR: 2.7,
+    ARBUSDT: 0.35, ARB: 0.35,
+    OPUSDT: 1.1, OP: 1.1,
+    INJUSDT: 11, INJ: 11,
   };
 
   const price = basePrices[upper] ?? (100 + seededRandom(upper) * 9000);
@@ -227,7 +242,107 @@ function generateMockOHLC(basePrice: number, days: number = 30, seed: string = '
   return ohlc;
 }
 
-/** Fetch crypto price data from CoinGecko (with mock fallback) */
+// ── Binance API helpers ─────────────────────────────────────────────────────
+
+/** Fetch crypto OHLC data from Binance API (primary) */
+async function fetchBinanceOHLC(symbol: string, days: number): Promise<{ ohlc: number[][]; volumes: number[] } | null> {
+  try {
+    const binanceSymbol = toBinanceSymbol(symbol);
+    const { interval, limit } = getBinanceInterval(days);
+    const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
+
+    const res = await fetchWithTimeout(url, {
+      next: { revalidate: 300 },
+      timeoutMs: 8000,
+    });
+
+    if (!res.ok) {
+      console.warn(`Binance klines API returned ${res.status} for ${symbol}`);
+      return null;
+    }
+
+    const klines = await res.json();
+
+    if (!Array.isArray(klines) || klines.length === 0) {
+      console.warn(`Binance returned empty klines for ${symbol}`);
+      return null;
+    }
+
+    const ohlc: number[][] = [];
+    const volumes: number[] = [];
+
+    for (const kline of klines) {
+      // kline: [open_time, open, high, low, close, volume, close_time, quote_volume, trades, taker_buy_volume, taker_buy_quote_volume, ignore]
+      if (!Array.isArray(kline) || kline.length < 12) continue;
+
+      const openTime = typeof kline[0] === 'number' ? kline[0] : Number(kline[0]);
+      const open = typeof kline[1] === 'number' ? kline[1] : parseFloat(kline[1]);
+      const high = typeof kline[2] === 'number' ? kline[2] : parseFloat(kline[2]);
+      const low = typeof kline[3] === 'number' ? kline[3] : parseFloat(kline[3]);
+      const close = typeof kline[4] === 'number' ? kline[4] : parseFloat(kline[4]);
+      const volume = typeof kline[5] === 'number' ? kline[5] : parseFloat(kline[5]);
+
+      if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) continue;
+
+      ohlc.push([openTime, open, high, low, close]);
+      volumes.push(isNaN(volume) ? 0 : volume);
+    }
+
+    if (ohlc.length === 0) return null;
+
+    return { ohlc, volumes };
+  } catch (error) {
+    console.warn(`Binance OHLC fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+/** Fetch crypto price from Binance 24hr ticker (fallback for prices) */
+async function fetchBinanceTickerPrice(symbol: string): Promise<Record<string, unknown> | null> {
+  try {
+    const binanceSymbol = toBinanceSymbol(symbol);
+    const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+
+    const res = await fetchWithTimeout(url, {
+      next: { revalidate: 30 },
+      timeoutMs: 8000,
+    });
+
+    if (!res.ok) {
+      console.warn(`Binance ticker API returned ${res.status} for ${symbol}`);
+      return null;
+    }
+
+    const data = await res.json();
+
+    if (!data || !data.symbol) {
+      console.warn(`Binance ticker returned invalid data for ${symbol}`);
+      return null;
+    }
+
+    const price = parseFloat(data.lastPrice);
+    if (isNaN(price) || price === 0) return null;
+
+    return {
+      symbol: data.symbol,
+      type: 'crypto',
+      price,
+      change24h: parseFloat(parseFloat(data.priceChangePercent).toFixed(2)),
+      volume: parseFloat(data.quoteVolume) || 0,
+      marketCap: 0, // Binance doesn't provide market cap
+      high24h: parseFloat(data.highPrice),
+      low24h: parseFloat(data.lowPrice),
+      source: 'binance',
+    };
+  } catch (error) {
+    console.warn(`Binance ticker fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+// ── CoinGecko API helpers (fallback) ────────────────────────────────────────
+
+/** Fetch crypto price data from CoinGecko */
 async function fetchCryptoPrice(symbol: string): Promise<Record<string, unknown>> {
   const coinId = CRYPTO_SYMBOL_TO_ID[symbol.toUpperCase()];
   if (!coinId) {
@@ -276,6 +391,7 @@ async function fetchCryptoPrice(symbol: string): Promise<Record<string, unknown>
       marketCap,
       high24h,
       low24h,
+      source: 'coingecko',
     };
   } catch (error) {
     console.warn(`CoinGecko price fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}, using mock`);
@@ -283,56 +399,86 @@ async function fetchCryptoPrice(symbol: string): Promise<Record<string, unknown>
   }
 }
 
-/** Fetch crypto OHLC data from CoinGecko (with mock fallback) */
-async function fetchCryptoOHLC(symbol: string, days: number = 30): Promise<{ ohlc: number[][] }> {
+/** Fetch crypto OHLC data from CoinGecko (fallback) */
+async function fetchCoinGeckoOHLC(symbol: string, days: number): Promise<{ ohlc: number[][]; volumes: number[] }> {
   const coinId = CRYPTO_SYMBOL_TO_ID[symbol.toUpperCase()];
   if (!coinId) {
     throw new Error(`Unknown crypto symbol: ${symbol}`);
   }
 
+  const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`;
+
+  const res = await fetchWithTimeout(url, {
+    next: { revalidate: 300 },
+    timeoutMs: 8000,
+  });
+
+  if (!res.ok) {
+    console.warn(`CoinGecko OHLC API returned ${res.status} for ${symbol}, using mock`);
+    return generateMockCryptoOHLC(symbol, days);
+  }
+
+  const ohlc = await res.json();
+
+  if (!Array.isArray(ohlc) || ohlc.length === 0) {
+    console.warn(`CoinGecko returned empty/invalid OHLC for ${symbol}, using mock`);
+    return generateMockCryptoOHLC(symbol, days);
+  }
+
+  const valid = ohlc.every((entry: unknown) =>
+    Array.isArray(entry) && entry.length === 5 && entry.every((v: unknown) => typeof v === 'number')
+  );
+
+  if (!valid) {
+    console.warn(`CoinGecko OHLC data format invalid for ${symbol}, using mock`);
+    return generateMockCryptoOHLC(symbol, days);
+  }
+
+  // CoinGecko doesn't provide volume in OHLC, return empty volumes
+  return { ohlc, volumes: [] };
+}
+
+/** Generate mock crypto OHLC data using approximate base prices */
+function generateMockCryptoOHLC(symbol: string, days: number): { ohlc: number[][]; volumes: number[] } {
+  const mockPrice = generateMockCryptoPrice(symbol);
+  const price = mockPrice.price as number;
+  const ohlc = generateMockOHLC(price, days, symbol + 'mock');
+  const volumes = ohlc.map(() => Math.floor(seededRandom(symbol + 'mockvol' + Math.random().toString()) * 1000000));
+  return { ohlc, volumes };
+}
+
+// ── Unified crypto fetchers with Binance primary + CoinGecko fallback ────────
+
+/** Fetch crypto price: CoinGecko primary, Binance ticker fallback, mock last resort */
+async function fetchCryptoPriceUnified(symbol: string): Promise<Record<string, unknown>> {
+  // Primary: CoinGecko (has market cap, IDR price, etc.)
+  const coinGeckoResult = await fetchCryptoPrice(symbol);
+  if (!coinGeckoResult.mock) return coinGeckoResult;
+
+  // Fallback: Binance ticker (no API key needed, real volume)
+  const binanceResult = await fetchBinanceTickerPrice(symbol);
+  if (binanceResult) return binanceResult;
+
+  // Last resort: mock
+  return coinGeckoResult;
+}
+
+/** Fetch crypto OHLC: Binance primary (with volume), CoinGecko fallback, mock last resort */
+async function fetchCryptoOHLCUnified(symbol: string, days: number): Promise<{ ohlc: number[][]; volumes: number[] }> {
+  // Primary: Binance (real OHLCV data, no API key)
+  const binanceResult = await fetchBinanceOHLC(symbol, days);
+  if (binanceResult) return binanceResult;
+
+  // Fallback: CoinGecko (no volume, but accurate OHLC)
   try {
-    const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`;
-
-    const res = await fetchWithTimeout(url, {
-      next: { revalidate: 300 },
-      timeoutMs: 8000,
-    });
-
-    if (!res.ok) {
-      console.warn(`CoinGecko OHLC API returned ${res.status} for ${symbol}, using mock`);
-      return generateMockCryptoOHLC(symbol, days);
-    }
-
-    const ohlc = await res.json();
-
-    if (!Array.isArray(ohlc) || ohlc.length === 0) {
-      console.warn(`CoinGecko returned empty/invalid OHLC for ${symbol}, using mock`);
-      return generateMockCryptoOHLC(symbol, days);
-    }
-
-    // Validate OHLC entries have the expected [timestamp, o, h, l, c] format
-    const valid = ohlc.every((entry: unknown) =>
-      Array.isArray(entry) && entry.length === 5 && entry.every((v: unknown) => typeof v === 'number')
-    );
-
-    if (!valid) {
-      console.warn(`CoinGecko OHLC data format invalid for ${symbol}, using mock`);
-      return generateMockCryptoOHLC(symbol, days);
-    }
-
-    return { ohlc };
-  } catch (error) {
-    console.warn(`CoinGecko OHLC fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}, using mock`);
+    const coinGeckoResult = await fetchCoinGeckoOHLC(symbol, days);
+    return coinGeckoResult;
+  } catch {
     return generateMockCryptoOHLC(symbol, days);
   }
 }
 
-/** Generate mock crypto OHLC data using approximate base prices */
-function generateMockCryptoOHLC(symbol: string, days: number): { ohlc: number[][] } {
-  const mockPrice = generateMockCryptoPrice(symbol);
-  const price = mockPrice.price as number;
-  return { ohlc: generateMockOHLC(price, days, symbol + 'mock') };
-}
+// ── Forex & Saham helpers (unchanged) ───────────────────────────────────────
 
 /** Fetch forex price data from exchange rate API (with mock fallback) */
 async function fetchForexPrice(symbol: string): Promise<Record<string, unknown>> {
@@ -372,7 +518,7 @@ async function fetchForexPrice(symbol: string): Promise<Record<string, unknown>>
     let price: number;
 
     if (upper === 'XAUUSD') {
-      price = 2350 + seededRandom(upper + Date.now().toString().slice(0, -4)) * 50;
+      price = 3325 + seededRandom(upper + Date.now().toString().slice(0, -4)) * 50;
     } else if (isDirect) {
       price = rates[quote] || 0;
     } else {
@@ -408,10 +554,10 @@ async function fetchForexPrice(symbol: string): Promise<Record<string, unknown>>
 /** Generate mock forex price data */
 function generateMockForexPrice(symbol: string, upper: string, decimals: number): Record<string, unknown> {
   const mockRates: Record<string, number> = {
-    EURUSD: 1.0842, GBPUSD: 1.2650, USDJPY: 149.50, USDIDR: 15850,
-    AUDUSD: 0.6530, USDCAD: 1.3620, USDCHF: 0.8830, NZDUSD: 0.6120,
-    USDSGD: 1.3410, EURGBP: 0.8572, EURJPY: 162.10, GBPJPY: 189.20,
-    XAUUSD: 2350,
+    EURUSD: 1.1776, GBPUSD: 1.3528, USDJPY: 158.80, USDIDR: 17136,
+    AUDUSD: 0.7170, USDCAD: 1.3653, USDCHF: 0.8830, NZDUSD: 0.5897,
+    USDSGD: 1.3410, EURGBP: 0.8705, EURJPY: 187.00, GBPJPY: 214.80,
+    XAUUSD: 3325,
   };
   const price = mockRates[upper] ?? 1.0;
   const timeSeed = Math.floor(Date.now() / 60000).toString();
@@ -439,7 +585,6 @@ function fetchSahamPrice(symbol: string): Record<string, unknown> {
   const mockInfo = SAHAM_MOCK_DATA[upper];
 
   if (!mockInfo) {
-    // Generate generic mock data for unknown stocks
     const basePrice = 1000 + seededRandom(symbol) * 9000;
     const change24h = parseFloat(((seededRandom(symbol + 'ch') - 0.45) * 4).toFixed(2));
 
@@ -456,7 +601,6 @@ function fetchSahamPrice(symbol: string): Record<string, unknown> {
     };
   }
 
-  // Generate slightly varying price based on current time (changes every minute)
   const timeSeed = Math.floor(Date.now() / 60000).toString();
   const priceVariance = (seededRandom(upper + timeSeed) - 0.5) * mockInfo.basePrice * 0.02;
   const price = mockInfo.basePrice + priceVariance;
@@ -493,12 +637,11 @@ async function fetchForexOHLC(symbol: string, days: number = 30): Promise<{ ohlc
     const price = priceData.price as number;
     return { ohlc: generateMockOHLC(price, days, symbol + 'forex') };
   } catch {
-    // Last-resort fallback
     const mockRates: Record<string, number> = {
-      EURUSD: 1.0842, GBPUSD: 1.2650, USDJPY: 149.50, USDIDR: 15850,
-      AUDUSD: 0.6530, USDCAD: 1.3620, USDCHF: 0.8830, NZDUSD: 0.6120,
-      USDSGD: 1.3410, EURGBP: 0.8572, EURJPY: 162.10, GBPJPY: 189.20,
-      XAUUSD: 2350,
+      EURUSD: 1.1776, GBPUSD: 1.3528, USDJPY: 158.80, USDIDR: 17136,
+      AUDUSD: 0.7170, USDCAD: 1.3653, USDCHF: 0.8830, NZDUSD: 0.5897,
+      USDSGD: 1.3410, EURGBP: 0.8705, EURJPY: 187.00, GBPJPY: 214.80,
+      XAUUSD: 3325,
     };
     const price = mockRates[symbol.toUpperCase()] ?? 1.0;
     return { ohlc: generateMockOHLC(price, days, symbol + 'forex') };
@@ -539,31 +682,41 @@ export async function GET(
 
     if (chart) {
       // Return OHLC chart data
-      let ohlcData: { ohlc: number[][] };
-
       switch (type) {
-        case 'crypto':
-          ohlcData = await fetchCryptoOHLC(symbol, days);
-          break;
-        case 'forex':
-          ohlcData = await fetchForexOHLC(symbol, days);
-          break;
-        case 'saham':
-          ohlcData = fetchSahamOHLC(symbol, days);
-          break;
+        case 'crypto': {
+          const cryptoData = await fetchCryptoOHLCUnified(symbol, days);
+          return NextResponse.json({
+            symbol: symbol.toUpperCase(),
+            type,
+            days,
+            ohlc: cryptoData.ohlc,
+            volumes: cryptoData.volumes,
+          });
+        }
+        case 'forex': {
+          const forexData = await fetchForexOHLC(symbol, days);
+          return NextResponse.json({
+            symbol: symbol.toUpperCase(),
+            type,
+            days,
+            ...forexData,
+          });
+        }
+        case 'saham': {
+          const sahamData = fetchSahamOHLC(symbol, days);
+          return NextResponse.json({
+            symbol: symbol.toUpperCase(),
+            type,
+            days,
+            ...sahamData,
+          });
+        }
         default:
           return NextResponse.json(
             { error: 'Invalid asset type' },
             { status: 400 }
           );
       }
-
-      return NextResponse.json({
-        symbol: symbol.toUpperCase(),
-        type,
-        days,
-        ...ohlcData,
-      });
     }
 
     // Return price data
@@ -571,7 +724,7 @@ export async function GET(
 
     switch (type) {
       case 'crypto':
-        priceData = await fetchCryptoPrice(symbol);
+        priceData = await fetchCryptoPriceUnified(symbol);
         break;
       case 'forex':
         priceData = await fetchForexPrice(symbol);
