@@ -117,11 +117,27 @@ export default function AssetSearchInput({
   const totalShown = grouped.reduce((s, g) => s + g.assets.length, 0);
   const hasMore = filtered.length > totalShown;
 
+  // ── Handle select (declared before auto-select useEffect) ──────────────────
+  const handleSelect = useCallback((asset: AssetDef) => {
+    const key = `${asset.type}:${asset.symbol}`;
+    const marketData = prices[key];
+    const currentPrice = marketData?.price ?? 0;
+
+    onSelect({
+      symbol: asset.symbol,
+      name: asset.name || asset.label,
+      type: asset.type,
+      currentPrice,
+    });
+
+    setOpen(false);
+    setQuery('');
+  }, [prices, onSelect]);
+
   // ── Auto-select: if only 1 result and query ≥ 2 chars, auto-pick ──────────
   const prevFilteredLenRef = useRef(0);
   useEffect(() => {
     if (query.length >= 2 && filtered.length === 1 && prevFilteredLenRef.current > 1) {
-      // Auto-select the single match
       handleSelect(filtered[0]);
     }
     prevFilteredLenRef.current = filtered.length;
@@ -129,7 +145,6 @@ export default function AssetSearchInput({
 
   // ── Fetch prices for filtered assets (debounced, max 20) ──────────────────
   const priceSymbols = useMemo(() => {
-    // Only fetch for first 20 to avoid overload
     return filtered.slice(0, 20).map((a) => ({ type: a.type, symbol: a.symbol }));
   }, [filtered]);
 
@@ -167,23 +182,6 @@ export default function AssetSearchInput({
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [open, businessId, priceSymbols]);
-
-  // ── Handle select ─────────────────────────────────────────────────────────
-  const handleSelect = useCallback((asset: AssetDef) => {
-    const key = `${asset.type}:${asset.symbol}`;
-    const marketData = prices[key];
-    const currentPrice = marketData?.price ?? 0;
-
-    onSelect({
-      symbol: asset.symbol,
-      name: asset.name || asset.label,
-      type: asset.type,
-      currentPrice,
-    });
-
-    setOpen(false);
-    setQuery('');
-  }, [prices, onSelect]);
 
   // ── Trigger button text ───────────────────────────────────────────────────
   const displayValue = value
