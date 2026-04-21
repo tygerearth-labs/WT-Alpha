@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth';
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface SymbolRequest {
-  type: 'saham' | 'crypto' | 'forex';
+  type: 'saham' | 'crypto' | 'forex' | 'komoditas' | 'indeks';
   symbol: string;
 }
 
@@ -511,9 +511,9 @@ export async function POST(
           { status: 400 }
         );
       }
-      if (!['saham', 'crypto', 'forex'].includes(entry.type)) {
+      if (!['saham', 'crypto', 'forex', 'komoditas', 'indeks'].includes(entry.type)) {
         return NextResponse.json(
-          { error: `Invalid type "${entry.type}" for symbol ${entry.symbol}. Must be saham, crypto, or forex` },
+          { error: `Invalid type "${entry.type}" for symbol ${entry.symbol}. Must be saham, crypto, forex, komoditas, or indeks` },
           { status: 400 }
         );
       }
@@ -523,12 +523,16 @@ export async function POST(
     const cryptoSymbols = symbols.filter(s => s.type === 'crypto').map(s => s.symbol);
     const forexSymbols = symbols.filter(s => s.type === 'forex').map(s => s.symbol);
     const sahamSymbols = symbols.filter(s => s.type === 'saham').map(s => s.symbol);
+    const komoditasSymbols = symbols.filter(s => s.type === 'komoditas').map(s => s.symbol);
+    const indeksSymbols = symbols.filter(s => s.type === 'indeks').map(s => s.symbol);
 
-    // Fetch all types in parallel
-    const [cryptoResults, forexResults, sahamResults] = await Promise.all([
+    // Fetch all types in parallel (komoditas/indeks use saham mock as base)
+    const [cryptoResults, forexResults, sahamResults, komoditasResults, indeksResults] = await Promise.all([
       cryptoSymbols.length > 0 ? batchFetchCryptoPrices(cryptoSymbols) : Promise.resolve(new Map<string, PriceResult>()),
       forexSymbols.length > 0 ? batchFetchForexPrices(forexSymbols) : Promise.resolve(new Map<string, PriceResult>()),
       Promise.resolve(sahamSymbols.length > 0 ? batchFetchSahamPrices(sahamSymbols) : new Map<string, PriceResult>()),
+      Promise.resolve(komoditasSymbols.length > 0 ? batchFetchSahamPrices(komoditasSymbols) : new Map<string, PriceResult>()),
+      Promise.resolve(indeksSymbols.length > 0 ? batchFetchSahamPrices(indeksSymbols) : new Map<string, PriceResult>()),
     ]);
 
     // Merge results maintaining request order
@@ -536,6 +540,8 @@ export async function POST(
       const key = entry.symbol.toUpperCase();
       const resultMap = entry.type === 'crypto' ? cryptoResults
         : entry.type === 'forex' ? forexResults
+        : entry.type === 'komoditas' ? komoditasResults
+        : entry.type === 'indeks' ? indeksResults
         : sahamResults;
 
       return resultMap.get(key) || {

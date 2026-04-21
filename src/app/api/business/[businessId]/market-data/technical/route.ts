@@ -60,10 +60,8 @@ function toYahooSymbol(symbol: string): string {
 /** Symbol → CoinGecko ID */
 function toCoinGeckoId(symbol: string): string {
   const upper = symbol.toUpperCase();
-  return COINGECKO_IDS[upper] || lower.toLowerCase();
+  return COINGECKO_IDS[upper] || symbol.toLowerCase();
 }
-
-function lower(s: string): string { return s.toLowerCase(); }
 
 // ── Technical Indicator Computations ─────────────────────────────────────────
 
