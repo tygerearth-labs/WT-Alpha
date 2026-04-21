@@ -65,7 +65,7 @@ interface TechnicalAnalysis {
   change24h: number;
   indicators: {
     rsi: { value: number; signal: string };
-    macd: { value: number; signal: number; histogram: number; signal: string };
+    macd: { value: number; signal: number; histogram: number; signalLabel?: string };
     bollingerBands: { upper: number; middle: number; lower: number; signal: string };
     sma20: number;
     sma50: number;
@@ -160,7 +160,7 @@ const cardVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { delay: i * 0.06, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { delay: i * 0.06, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] as const },
   }),
 };
 
@@ -171,7 +171,7 @@ const fadeIn = {
 
 const slideUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
 };
 
 // ── Inline Sub-components ────────────────────────────────────────────────────
