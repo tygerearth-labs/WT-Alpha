@@ -907,6 +907,10 @@ export const translations = {
     upgradeToUltimate: 'Upgrade ke Ultimate untuk akses Bisnis & Investasi',
     registerBusiness: 'Daftarkan Bisnis',
     registerFirst: 'Daftarkan bisnis Anda terlebih dahulu',
+    manageFinance: 'Kelola keuangan bisnis Anda',
+    manageFinanceDesc: 'Pantau arus kas, hutang, piutang, dan laporan keuangan bisnis',
+    trackInvestments: 'Lacak investasi Anda',
+    trackInvestmentsDesc: 'Kelola dan pantau semua portofolio investasi Anda dalam satu tempat',
     selectCategory: 'Pilih Kategori',
     categoryName: 'Nama Bisnis',
     businessAddress: 'Alamat',
@@ -1045,6 +1049,11 @@ export const translations = {
   },
   // Investment Module
   inv: {
+    createInvestment: 'Buat Portofolio Investasi',
+    investmentName: 'Nama Portofolio',
+    investmentNamePlaceholder: 'Nama portofolio investasi Anda',
+    trackInvestments: 'Lacak investasi Anda',
+    trackInvestmentsDesc: 'Kelola dan pantau semua portofolio investasi Anda dalam satu tempat',
     switchLabel: 'Mode Investasi',
     portfolio: 'Portofolio',
     portfolios: 'Portofolio',

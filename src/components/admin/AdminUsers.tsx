@@ -21,8 +21,8 @@ import {
   Search, MoreVertical, Edit, Trash2, Key, Shield,
   Crown, Sparkles, UserCheck, UserX, Users, ChevronLeft, ChevronRight,
   Filter, RefreshCw, Eye, Settings, FileDown, UserPlus, CheckSquare,
-  Square, X, UserCircle, Activity, CreditCard, Target, TrendingUp,
-  TrendingDown, ArrowUpRight, Clock, Wallet, Ban, UserCog, BarChart3,
+  Square, X, UserCircle, Activity, CreditCard, Target, TrendingUp, Check,
+  TrendingDown, ArrowUpRight, Clock, Wallet, Ban, UserCog, BarChart3, Gem,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -295,463 +295,33 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
 
   const formatDate = (date: string) => new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // Access Control view mode
-  if (showAccessControl) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-white/90">Access Control & Limits</h2>
-          <p className="text-sm text-white/40 mt-1">Manage user access rights, feature limits, and permissions</p>
-        </div>
+  const [checkExpiring, setCheckExpiring] = useState(false);
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Plan Comparison */}
-          <Card className="bg-[#0D0D0D] border-white/[0.06]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-                <Settings className="h-4 w-4 text-[#03DAC6]" />
-                Plan Feature Limits
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div />
-                  <div className="flex items-center justify-center gap-1.5 py-2">
-                    <Sparkles className="h-3.5 w-3.5 text-white/40" />
-                    <span className="text-[11px] font-bold text-white/50">BASIC</span>
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 py-2">
-                    <Crown className="h-3.5 w-3.5 text-[#FFD700]" />
-                    <span className="text-[11px] font-bold text-[#FFD700]">PRO</span>
-                  </div>
-                </div>
-                {[
-                  { feature: 'Max Categories', basic: '10', pro: '50' },
-                  { feature: 'Max Savings Targets', basic: '3', pro: '20' },
-                  { feature: 'Basic Dashboard', basic: true, pro: true },
-                  { feature: 'AI Consultant', basic: false, pro: true },
-                  { feature: 'Export Reports', basic: true, pro: true },
-                  { feature: 'Priority Support', basic: false, pro: true },
-                  { feature: 'Custom Currency', basic: false, pro: true },
-                  { feature: 'Data Backup', basic: false, pro: true },
-                ].map((row) => (
-                  <div key={row.feature} className="grid grid-cols-3 gap-2 text-center items-center py-2.5 border-t border-white/[0.04]">
-                    <span className="text-[12px] text-white/50 text-left">{row.feature}</span>
-                    <span className="text-[12px] text-white/40">{typeof row.basic === 'boolean' ? (row.basic ? '✓' : '—') : row.basic}</span>
-                    <span className="text-[12px] text-[#FFD700]/70">{typeof row.pro === 'boolean' ? (row.pro ? '✓' : '—') : row.pro}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+  const handleCheckExpiredSubscriptions = async () => {
+    setCheckExpiring(true);
+    try {
+      const res = await fetch('/api/admin/users');
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.users);
+        setPagination(data.pagination);
+        toast.success('Subscription data refreshed successfully');
+      } else {
+        toast.error('Failed to refresh subscriptions');
+      }
+    } catch {
+      toast.error('Failed to check subscriptions');
+    } finally {
+      setCheckExpiring(false);
+    }
+  };
 
-          {/* Quick Actions */}
-          <Card className="bg-[#0D0D0D] border-white/[0.06]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-[#BB86FC]" />
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-[12px] text-white/30 mb-4">
-                Use the Users page to individually manage each user&apos;s access rights, limits, and permissions.
-              </p>
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full justify-start gap-3 bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] text-white/60"
-                  onClick={() => window.location.reload()}>
-                  <RefreshCw className="h-4 w-4" />
-                  <span className="text-sm">Check Expired Subscriptions</span>
-                </Button>
-                <Button variant="outline" className="w-full justify-start gap-3 bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] text-white/60">
-                  <UserX className="h-4 w-4" />
-                  <span className="text-sm">Suspend All Free Trial Users</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+  const handleSuspendFreeTrials = () => {
+    toast.info('Suspend All Free Trial Users', { description: 'This feature is coming soon. Stay tuned!' });
+  };
 
-        {/* User Limits Table */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Users className="h-4 w-4 text-[#03DAC6]" />
-              Current User Limits
-              <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30">
-                {pagination.total} users
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.02] animate-pulse" />)}
-              </div>
-            ) : users.length === 0 ? (
-              <div className="text-center py-8 text-white/25 text-sm">No users</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/[0.06]">
-                      <th className="text-left py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">User</th>
-                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Plan</th>
-                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Categories</th>
-                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Savings</th>
-                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Status</th>
-                      <th className="text-right py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => {
-                      const avatarColor = getAvatarColor(u.id);
-                      return (
-                        <tr key={u.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                                style={{ background: avatarColor.bg, border: `1px solid ${avatarColor.border}`, color: avatarColor.text }}>
-                                {u.username.slice(0, 2).toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[12px] font-medium text-white/70 truncate max-w-[150px]">{u.username}</p>
-                                <p className="text-[10px] text-white/25 truncate max-w-[150px]">{u.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            <Badge variant="outline" className={cn(
-                              'text-[9px] font-bold uppercase px-2 py-0.5',
-                              u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : u.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
-                            )}>
-                              {u.plan === 'ultimate' ? '⭐ ULTIMATE' : u.plan}
-                            </Badge>
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            <div className="inline-flex flex-col items-center">
-                              <span className="text-[12px] text-white/50">{u._count.categories}/{u.maxCategories}</span>
-                              <div className="w-12 h-1 rounded-full bg-white/[0.06] mt-1 overflow-hidden">
-                                <div className="h-full rounded-full bg-[#03DAC6]/50 transition-all"
-                                  style={{ width: `${Math.min((u._count.categories / u.maxCategories) * 100, 100)}%` }} />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            <div className="inline-flex flex-col items-center">
-                              <span className="text-[12px] text-white/50">{u._count.savingsTargets}/{u.maxSavings}</span>
-                              <div className="w-12 h-1 rounded-full bg-white/[0.06] mt-1 overflow-hidden">
-                                <div className="h-full rounded-full bg-[#BB86FC]/50 transition-all"
-                                  style={{ width: `${Math.min((u._count.savingsTargets / u.maxSavings) * 100, 100)}%` }} />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            <Badge variant="outline" className={cn(
-                              'text-[9px] font-bold uppercase px-2 py-0.5',
-                              u.status === 'active' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-[#CF6679]/20 text-[#CF6679] bg-[#CF6679]/5',
-                            )}>
-                              {u.status}
-                            </Badge>
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            <Button size="sm" variant="ghost" className="h-7 text-[11px] text-[#03DAC6] hover:text-[#03DAC6] hover:bg-[#03DAC6]/10"
-                              onClick={() => openEditDialog(u)}>
-                              <Edit className="h-3 w-3 mr-1" /> Edit
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white/90">User Management</h2>
-          <p className="text-sm text-white/40 mt-1">{pagination.total} total users</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
-            onClick={() => fetchUsers(pagination.page)}>
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
-          </Button>
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
-            onClick={exportCSV} disabled={users.length === 0}>
-            <FileDown className="h-3.5 w-3.5" /> Export
-          </Button>
-          <Button size="sm" className="h-8 gap-1.5 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px]"
-            onClick={() => setShowCreateUser(true)}>
-            <UserPlus className="h-3.5 w-3.5" /> Create User
-          </Button>
-        </div>
-      </div>
-
-      {/* Bulk Actions Bar - Smooth slide-down */}
-      <div className={cn(
-        'grid transition-all duration-300 ease-in-out',
-        selectedIds.size > 0
-          ? 'grid-rows-[1fr] opacity-100'
-          : 'grid-rows-[0fr] opacity-0 pointer-events-none',
-      )}>
-        <div className="overflow-hidden">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-[#03DAC6]/5 border border-[#03DAC6]/15">
-          <div className="flex items-center gap-2">
-            <CheckSquare className="h-4 w-4 text-[#03DAC6]" />
-            <span className="text-[12px] font-semibold text-[#03DAC6]">{selectedIds.size} selected</span>
-          </div>
-          <div className="h-4 w-px bg-[#03DAC6]/20" />
-          <Select value={bulkAction} onValueChange={setBulkAction}>
-            <SelectTrigger className="h-7 w-[140px] text-[11px] rounded-lg bg-[#03DAC6]/10 border-[#03DAC6]/20 text-[#03DAC6]">
-              <SelectValue placeholder="Bulk action..." />
-            </SelectTrigger>
-            <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
-              <SelectItem value="suspend">Suspend Users</SelectItem>
-              <SelectItem value="activate">Activate Users</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button size="sm" className="h-7 text-[11px] bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90"
-            onClick={handleBulkAction} disabled={!bulkAction}>
-            Apply
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/40 hover:text-white ml-auto"
-            onClick={() => setSelectedIds(new Set())}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
-      </div>
-
-      {/* Search & Filters */}
-      <Card className="bg-[#0D0D0D] border-white/[0.06]">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/25" />
-              <Input
-                placeholder="Search by email, username, or ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-10 rounded-xl bg-white/[0.03] border-white/[0.06] text-white/80 text-sm placeholder:text-white/20"
-                onKeyDown={(e) => e.key === 'Enter' && fetchUsers(1)}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={filterPlan} onValueChange={(v) => setFilterPlan(v === 'all' ? '' : v)}>
-                <SelectTrigger className="h-10 w-[120px] rounded-xl bg-white/[0.03] border-white/[0.06] text-white/60 text-sm">
-                  <Filter className="h-3.5 w-3.5 mr-1 text-white/30" />
-                  <SelectValue placeholder="Plan" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
-                  <SelectItem value="all">All Plans</SelectItem>
-                  <SelectItem value="basic">Basic</SelectItem>
-                  <SelectItem value="pro">Pro</SelectItem>
-                  <SelectItem value="ultimate">Ultimate</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
-                <SelectTrigger className="h-10 w-[130px] rounded-xl bg-white/[0.03] border-white/[0.06] text-white/60 text-sm">
-                  <Filter className="h-3.5 w-3.5 mr-1 text-white/30" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Users List */}
-      <Card className="bg-[#0D0D0D] border-white/[0.06]">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-2 p-4">
-              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-16 rounded-xl bg-white/[0.02] animate-pulse" />)}
-            </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-16 relative overflow-hidden">
-              <div className="absolute inset-0 opacity-50"
-                style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(3,218,198,0.03) 0%, transparent 70%)' }} />
-              <div className="relative">
-                <div className="w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-4">
-                  <UserCircle className="h-10 w-10 text-white/[0.07]" />
-                </div>
-                <p className="text-white/30 text-sm font-medium">No users found</p>
-                <p className="text-white/15 text-[11px] mt-1.5">Try adjusting your search or filters</p>
-                <Button variant="outline" size="sm" className="mt-4 h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/70"
-                  onClick={() => { setSearch(''); setFilterPlan(''); setFilterStatus(''); fetchUsers(1); }}>
-                  <RefreshCw className="h-3 w-3" /> Clear Filters
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="divide-y divide-white/[0.04]">
-              {users.map((u, rowIdx) => {
-                const avatarColor = getAvatarColor(u.id);
-                const isSelected = selectedIds.has(u.id);
-                return (
-                  <div key={u.id} className={cn(
-                    'flex items-center justify-between p-4 hover:bg-white/[0.02] transition-all duration-200 animate-in fade-in-0 slide-in-from-bottom-1',
-                    isSelected && 'bg-[#03DAC6]/[0.03]',
-                  )} style={{ animationDelay: `${rowIdx * 30}ms`, animationFillMode: 'backwards' }}>
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Selection checkbox */}
-                      <button
-                        onClick={() => toggleSelect(u.id)}
-                        className={cn(
-                          'shrink-0 transition-all duration-200',
-                          isSelected ? 'text-[#03DAC6] scale-110' : 'text-white/20 hover:text-white/50',
-                        )}
-                      >
-                        {isSelected
-                          ? <CheckSquare className="h-4 w-4 text-[#03DAC6]" />
-                          : <Square className="h-4 w-4" />
-                        }
-                      </button>
-
-                      {/* Avatar with hover glow */}
-                      <div className="relative shrink-0">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 group-hover:shadow-[0_0_12px_var(--avatar-glow)]"
-                          style={{ background: avatarColor.bg, border: `1px solid ${avatarColor.border}`, color: avatarColor.text, '--avatar-glow': avatarColor.text } as React.CSSProperties}>
-                          {u.username.slice(0, 2).toUpperCase()}
-                        </div>
-                        {/* Pulsing green dot for active users */}
-                        {u.status === 'active' && (
-                          <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#03DAC6] opacity-50" />
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#03DAC6] ring-2 ring-[#0D0D0D]" />
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium text-white/80 truncate">{u.username}</p>
-                          <Badge variant="outline" className={cn(
-                            'text-[8px] font-bold uppercase px-1.5 py-0 shrink-0',
-                            u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : u.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
-                          )}>
-                            {u.plan === 'ultimate' ? <><Sparkles className="h-2 w-2 mr-0.5 inline" />ULTIMATE</> : u.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
-                          </Badge>
-                          <Badge variant="outline" className={cn(
-                            'text-[8px] font-bold uppercase px-1.5 py-0 shrink-0',
-                            u.status === 'active' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-[#CF6679]/20 text-[#CF6679] bg-[#CF6679]/5',
-                          )}>
-                            {u.status}
-                          </Badge>
-                          {u.role === 'admin' && (
-                            <Badge variant="outline" className="text-[8px] font-bold uppercase px-1.5 py-0 shrink-0 border-[#BB86FC]/20 text-[#BB86FC] bg-[#BB86FC]/5">
-                              <Shield className="h-2 w-2 mr-0.5 inline" />ADMIN
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-white/30 truncate">{u.email}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[10px] text-white/20">Joined {formatDate(u.createdAt)}</span>
-                          <span className="text-[10px] text-white/20">•</span>
-                          <span className="text-[10px] text-white/20">{u._count.transactions} txns</span>
-                          {u.subscriptionEnd && (
-                            <>
-                              <span className="text-[10px] text-white/20">•</span>
-                              <span className="text-[10px] text-[#FFD700]/50">Exp: {formatDate(u.subscriptionEnd)}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-white/30 hover:text-white/60">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] w-48">
-                        <DropdownMenuItem className="text-white/60 focus:text-white focus:bg-white/[0.05] cursor-pointer"
-                          onClick={() => openDetailProfile(u)}>
-                          <Eye className="mr-2 h-3.5 w-3.5" /> View Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-white/60 focus:text-white focus:bg-white/[0.05] cursor-pointer"
-                          onClick={() => openEditDialog(u)}>
-                          <Edit className="mr-2 h-3.5 w-3.5" /> Edit User
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-white/60 focus:text-white focus:bg-white/[0.05] cursor-pointer"
-                          onClick={() => { setResetPwUser(u); setNewPassword(''); }}>
-                          <Key className="mr-2 h-3.5 w-3.5" /> Reset Password
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-white/[0.06]" />
-                        <DropdownMenuItem className="text-[#CF6679]/70 focus:text-[#CF6679] focus:bg-[#CF6679]/5 cursor-pointer"
-                          onClick={() => setDeleteUser(u)}>
-                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.04]">
-            <p className="text-[11px] text-white/25">
-              Page {pagination.page} of {pagination.totalPages} · {pagination.total} users
-            </p>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/40 hover:text-white hover:bg-white/[0.05]"
-                disabled={pagination.page <= 1} onClick={() => fetchUsers(pagination.page - 1)}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              {/* Page numbers */}
-              {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
-                let pageNum: number;
-                if (pagination.totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (pagination.page <= 3) {
-                  pageNum = i + 1;
-                } else if (pagination.page >= pagination.totalPages - 2) {
-                  pageNum = pagination.totalPages - 4 + i;
-                } else {
-                  pageNum = pagination.page - 2 + i;
-                }
-                return (
-                  <Button key={pageNum} variant="ghost" size="sm"
-                    className={cn(
-                      'h-7 w-7 p-0 text-[11px] font-medium',
-                      pageNum === pagination.page
-                        ? 'text-[#03DAC6] bg-[#03DAC6]/10'
-                        : 'text-white/40 hover:text-white hover:bg-white/[0.05]',
-                    )}
-                    onClick={() => fetchUsers(pageNum)}>
-                    {pageNum}
-                  </Button>
-                );
-              })}
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/40 hover:text-white hover:bg-white/[0.05]"
-                disabled={pagination.page >= pagination.totalPages} onClick={() => fetchUsers(pagination.page + 1)}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
-
+  const renderDialogs = () => (
+    <>
       {/* Create User Dialog */}
       <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
         <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
@@ -1191,6 +761,544 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  // Access Control view mode
+  if (showAccessControl) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-white/90">Access Control & Limits</h2>
+          <p className="text-sm text-white/40 mt-1">Manage user access rights, feature limits, and permissions</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Plan Comparison */}
+          <Card className="bg-[#0D0D0D] border-white/[0.06]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+                <Settings className="h-4 w-4 text-[#03DAC6]" />
+                Plan Feature Limits
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-0">
+                {/* Header */}
+                <div className="grid grid-cols-4 gap-2 text-center mb-2">
+                  <div />
+                  <div className="flex flex-col items-center gap-0.5 py-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-white/40" />
+                    <span className="text-[10px] font-bold text-white/50 tracking-wider">BASIC</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5 py-1.5">
+                    <Crown className="h-3.5 w-3.5 text-[#FFD700]" />
+                    <span className="text-[10px] font-bold text-[#FFD700] tracking-wider">PRO</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5 py-1.5">
+                    <Gem className="h-3.5 w-3.5 text-[#03DAC6]" />
+                    <span className="text-[10px] font-bold text-[#03DAC6] tracking-wider">ULTIMATE</span>
+                  </div>
+                </div>
+
+                {/* Resource Limits Section */}
+                <div className="grid grid-cols-4 gap-2 items-center py-1.5 border-t border-white/[0.06]">
+                  <span className="text-[10px] font-semibold text-[#BB86FC]/60 uppercase tracking-wider text-left">Resource Limits</span>
+                  <span className="text-[10px] text-white/20" />
+                  <span className="text-[10px] text-white/20" />
+                  <span className="text-[10px] text-white/20" />
+                </div>
+                {(
+                  [
+                    { feature: 'Max Categories', basic: '10', pro: '50', ultimate: '100' },
+                    { feature: 'Max Savings', basic: '3', pro: '20', ultimate: '50' },
+                  ] as const
+                ).map((row) => (
+                  <div key={row.feature} className="grid grid-cols-4 gap-2 text-center items-center py-2 border-t border-white/[0.03]">
+                    <span className="text-[11px] text-white/50 text-left">{row.feature}</span>
+                    <span className="text-[11px] font-medium text-white/35 bg-white/[0.02] rounded-md py-0.5 px-1.5 inline-block">{row.basic}</span>
+                    <span className="text-[11px] font-medium text-[#FFD700]/50 bg-[#FFD700]/[0.04] rounded-md py-0.5 px-1.5 inline-block">{row.pro}</span>
+                    <span className="text-[11px] font-medium text-[#03DAC6]/50 bg-[#03DAC6]/[0.04] rounded-md py-0.5 px-1.5 inline-block">{row.ultimate}</span>
+                  </div>
+                ))}
+
+                {/* Core Features Section */}
+                <div className="grid grid-cols-4 gap-2 items-center py-1.5 border-t border-white/[0.06] mt-1">
+                  <span className="text-[10px] font-semibold text-[#03DAC6]/60 uppercase tracking-wider text-left">Core Features</span>
+                  <span className="text-[10px] text-white/20" />
+                  <span className="text-[10px] text-white/20" />
+                  <span className="text-[10px] text-white/20" />
+                </div>
+                {(
+                  [
+                    { feature: 'Basic Dashboard', basic: true, pro: true, ultimate: true },
+                    { feature: 'Export Reports', basic: true, pro: true, ultimate: true },
+                    { feature: 'AI Consultant', basic: false, pro: true, ultimate: true },
+                    { feature: 'Priority Support', basic: false, pro: true, ultimate: true },
+                    { feature: 'Custom Currency', basic: false, pro: true, ultimate: true },
+                    { feature: 'Data Backup', basic: false, pro: true, ultimate: true },
+                  ] as const
+                ).map((row) => (
+                  <div key={row.feature} className="grid grid-cols-4 gap-2 text-center items-center py-2 border-t border-white/[0.03]">
+                    <span className="text-[11px] text-white/50 text-left">{row.feature}</span>
+                    {([row.basic, row.pro, row.ultimate] as const).map((val, i) => {
+                      const colors = ['text-white/35', 'text-[#FFD700]/60', 'text-[#03DAC6]/60'];
+                      return val ? (
+                        <span key={i} className="flex justify-center">
+                          <Check className={cn('h-3.5 w-3.5', colors[i])} />
+                        </span>
+                      ) : (
+                        <span key={i} className="flex justify-center">
+                          <X className="h-3 w-3 text-white/10" />
+                        </span>
+                      );
+                    })}
+                  </div>
+                ))}
+
+                {/* Premium Features Section */}
+                <div className="grid grid-cols-4 gap-2 items-center py-1.5 border-t border-white/[0.06] mt-1">
+                  <span className="text-[10px] font-semibold text-[#FFD700]/60 uppercase tracking-wider text-left">Premium</span>
+                  <span className="text-[10px] text-white/20" />
+                  <span className="text-[10px] text-white/20" />
+                  <span className="text-[10px] text-white/20" />
+                </div>
+                {(
+                  [
+                    { feature: 'Business Module', basic: false, pro: false, ultimate: true },
+                    { feature: 'Investment Module', basic: false, pro: false, ultimate: true },
+                    { feature: 'Live Charts', basic: false, pro: false, ultimate: true },
+                    { feature: 'Invoice Branding', basic: false, pro: false, ultimate: true },
+                  ] as const
+                ).map((row) => (
+                  <div key={row.feature} className="grid grid-cols-4 gap-2 text-center items-center py-2 border-t border-white/[0.03]">
+                    <span className="text-[11px] text-white/50 text-left">{row.feature}</span>
+                    {([row.basic, row.pro, row.ultimate] as const).map((val, i) => {
+                      const colors = ['text-white/35', 'text-[#FFD700]/60', 'text-[#03DAC6]/60'];
+                      return val ? (
+                        <span key={i} className="flex justify-center">
+                          <Check className={cn('h-3.5 w-3.5', colors[i])} />
+                        </span>
+                      ) : (
+                        <span key={i} className="flex justify-center">
+                          <X className="h-3 w-3 text-white/10" />
+                        </span>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card className="bg-[#0D0D0D] border-white/[0.06]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+                <Shield className="h-4 w-4 text-[#BB86FC]" />
+                Quick Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-[12px] text-white/30 mb-4">
+                Use the Users page to individually manage each user&apos;s access rights, limits, and permissions.
+              </p>
+              <div className="space-y-3">
+                <Button variant="outline" className="w-full justify-start gap-3 bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] text-white/60"
+                  onClick={handleCheckExpiredSubscriptions} disabled={checkExpiring}>
+                  <RefreshCw className={cn('h-4 w-4', checkExpiring && 'animate-spin')} />
+                  <span className="text-sm">{checkExpiring ? 'Checking...' : 'Check Expired Subscriptions'}</span>
+                </Button>
+                <Button variant="outline" className="w-full justify-start gap-3 bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] text-white/60"
+                  onClick={handleSuspendFreeTrials}>
+                  <UserX className="h-4 w-4" />
+                  <span className="text-sm">Suspend All Free Trial Users</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* User Limits Table */}
+        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Users className="h-4 w-4 text-[#03DAC6]" />
+              Current User Limits
+              <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30">
+                {pagination.total} users
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.02] animate-pulse" />)}
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-8 text-white/25 text-sm">No users</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.06]">
+                      <th className="text-left py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">User</th>
+                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Plan</th>
+                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Categories</th>
+                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Savings</th>
+                      <th className="text-center py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Status</th>
+                      <th className="text-right py-3 px-3 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => {
+                      const avatarColor = getAvatarColor(u.id);
+                      return (
+                        <tr key={u.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                                style={{ background: avatarColor.bg, border: `1px solid ${avatarColor.border}`, color: avatarColor.text }}>
+                                {u.username.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[12px] font-medium text-white/70 truncate max-w-[150px]">{u.username}</p>
+                                <p className="text-[10px] text-white/25 truncate max-w-[150px]">{u.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <Badge variant="outline" className={cn(
+                              'text-[9px] font-bold uppercase px-2 py-0.5',
+                              u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : u.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
+                            )}>
+                              {u.plan === 'ultimate' ? '⭐ ULTIMATE' : u.plan}
+                            </Badge>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <div className="inline-flex flex-col items-center">
+                              <span className="text-[12px] text-white/50">{u._count.categories}/{u.maxCategories}</span>
+                              <div className="w-12 h-1 rounded-full bg-white/[0.06] mt-1 overflow-hidden">
+                                <div className="h-full rounded-full bg-[#03DAC6]/50 transition-all"
+                                  style={{ width: `${Math.min((u._count.categories / u.maxCategories) * 100, 100)}%` }} />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <div className="inline-flex flex-col items-center">
+                              <span className="text-[12px] text-white/50">{u._count.savingsTargets}/{u.maxSavings}</span>
+                              <div className="w-12 h-1 rounded-full bg-white/[0.06] mt-1 overflow-hidden">
+                                <div className="h-full rounded-full bg-[#BB86FC]/50 transition-all"
+                                  style={{ width: `${Math.min((u._count.savingsTargets / u.maxSavings) * 100, 100)}%` }} />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <Badge variant="outline" className={cn(
+                              'text-[9px] font-bold uppercase px-2 py-0.5',
+                              u.status === 'active' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-[#CF6679]/20 text-[#CF6679] bg-[#CF6679]/5',
+                            )}>
+                              {u.status}
+                            </Badge>
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <Button size="sm" variant="ghost" className="h-7 text-[11px] text-[#03DAC6] hover:text-[#03DAC6] hover:bg-[#03DAC6]/10"
+                              onClick={() => openEditDialog(u)}>
+                              <Edit className="h-3 w-3 mr-1" /> Edit
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {renderDialogs()}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white/90">User Management</h2>
+          <p className="text-sm text-white/40 mt-1">{pagination.total} total users</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
+            onClick={() => fetchUsers(pagination.page)}>
+            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
+            onClick={exportCSV} disabled={users.length === 0}>
+            <FileDown className="h-3.5 w-3.5" /> Export
+          </Button>
+          <Button size="sm" className="h-8 gap-1.5 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px]"
+            onClick={() => setShowCreateUser(true)}>
+            <UserPlus className="h-3.5 w-3.5" /> Create User
+          </Button>
+        </div>
+      </div>
+
+      {/* Bulk Actions Bar - Smooth slide-down */}
+      <div className={cn(
+        'grid transition-all duration-300 ease-in-out',
+        selectedIds.size > 0
+          ? 'grid-rows-[1fr] opacity-100'
+          : 'grid-rows-[0fr] opacity-0 pointer-events-none',
+      )}>
+        <div className="overflow-hidden">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[#03DAC6]/5 border border-[#03DAC6]/15">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4 text-[#03DAC6]" />
+            <span className="text-[12px] font-semibold text-[#03DAC6]">{selectedIds.size} selected</span>
+          </div>
+          <div className="h-4 w-px bg-[#03DAC6]/20" />
+          <Select value={bulkAction} onValueChange={setBulkAction}>
+            <SelectTrigger className="h-7 w-[140px] text-[11px] rounded-lg bg-[#03DAC6]/10 border-[#03DAC6]/20 text-[#03DAC6]">
+              <SelectValue placeholder="Bulk action..." />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+              <SelectItem value="suspend">Suspend Users</SelectItem>
+              <SelectItem value="activate">Activate Users</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" className="h-7 text-[11px] bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90"
+            onClick={handleBulkAction} disabled={!bulkAction}>
+            Apply
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/40 hover:text-white ml-auto"
+            onClick={() => setSelectedIds(new Set())}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+      </div>
+
+      {/* Search & Filters */}
+      <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/25" />
+              <Input
+                placeholder="Search by email, username, or ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 h-10 rounded-xl bg-white/[0.03] border-white/[0.06] text-white/80 text-sm placeholder:text-white/20"
+                onKeyDown={(e) => e.key === 'Enter' && fetchUsers(1)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={filterPlan} onValueChange={(v) => setFilterPlan(v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-10 w-[120px] rounded-xl bg-white/[0.03] border-white/[0.06] text-white/60 text-sm">
+                  <Filter className="h-3.5 w-3.5 mr-1 text-white/30" />
+                  <SelectValue placeholder="Plan" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  <SelectItem value="all">All Plans</SelectItem>
+                  <SelectItem value="basic">Basic</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="ultimate">Ultimate</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-10 w-[130px] rounded-xl bg-white/[0.03] border-white/[0.06] text-white/60 text-sm">
+                  <Filter className="h-3.5 w-3.5 mr-1 text-white/30" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Users List */}
+      <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="space-y-2 p-4">
+              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-16 rounded-xl bg-white/[0.02] animate-pulse" />)}
+            </div>
+          ) : users.length === 0 ? (
+            <div className="text-center py-16 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-50"
+                style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(3,218,198,0.03) 0%, transparent 70%)' }} />
+              <div className="relative">
+                <div className="w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-4">
+                  <UserCircle className="h-10 w-10 text-white/[0.07]" />
+                </div>
+                <p className="text-white/30 text-sm font-medium">No users found</p>
+                <p className="text-white/15 text-[11px] mt-1.5">Try adjusting your search or filters</p>
+                <Button variant="outline" size="sm" className="mt-4 h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/70"
+                  onClick={() => { setSearch(''); setFilterPlan(''); setFilterStatus(''); fetchUsers(1); }}>
+                  <RefreshCw className="h-3 w-3" /> Clear Filters
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-white/[0.04]">
+              {users.map((u, rowIdx) => {
+                const avatarColor = getAvatarColor(u.id);
+                const isSelected = selectedIds.has(u.id);
+                return (
+                  <div key={u.id} className={cn(
+                    'flex items-center justify-between p-4 hover:bg-white/[0.02] transition-all duration-200 animate-in fade-in-0 slide-in-from-bottom-1',
+                    isSelected && 'bg-[#03DAC6]/[0.03]',
+                  )} style={{ animationDelay: `${rowIdx * 30}ms`, animationFillMode: 'backwards' }}>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Selection checkbox */}
+                      <button
+                        onClick={() => toggleSelect(u.id)}
+                        className={cn(
+                          'shrink-0 transition-all duration-200',
+                          isSelected ? 'text-[#03DAC6] scale-110' : 'text-white/20 hover:text-white/50',
+                        )}
+                      >
+                        {isSelected
+                          ? <CheckSquare className="h-4 w-4 text-[#03DAC6]" />
+                          : <Square className="h-4 w-4" />
+                        }
+                      </button>
+
+                      {/* Avatar with hover glow */}
+                      <div className="relative shrink-0">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 group-hover:shadow-[0_0_12px_var(--avatar-glow)]"
+                          style={{ background: avatarColor.bg, border: `1px solid ${avatarColor.border}`, color: avatarColor.text, '--avatar-glow': avatarColor.text } as React.CSSProperties}>
+                          {u.username.slice(0, 2).toUpperCase()}
+                        </div>
+                        {/* Pulsing green dot for active users */}
+                        {u.status === 'active' && (
+                          <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#03DAC6] opacity-50" />
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#03DAC6] ring-2 ring-[#0D0D0D]" />
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium text-white/80 truncate">{u.username}</p>
+                          <Badge variant="outline" className={cn(
+                            'text-[8px] font-bold uppercase px-1.5 py-0 shrink-0',
+                            u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : u.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
+                          )}>
+                            {u.plan === 'ultimate' ? <><Sparkles className="h-2 w-2 mr-0.5 inline" />ULTIMATE</> : u.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
+                          </Badge>
+                          <Badge variant="outline" className={cn(
+                            'text-[8px] font-bold uppercase px-1.5 py-0 shrink-0',
+                            u.status === 'active' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-[#CF6679]/20 text-[#CF6679] bg-[#CF6679]/5',
+                          )}>
+                            {u.status}
+                          </Badge>
+                          {u.role === 'admin' && (
+                            <Badge variant="outline" className="text-[8px] font-bold uppercase px-1.5 py-0 shrink-0 border-[#BB86FC]/20 text-[#BB86FC] bg-[#BB86FC]/5">
+                              <Shield className="h-2 w-2 mr-0.5 inline" />ADMIN
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-white/30 truncate">{u.email}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] text-white/20">Joined {formatDate(u.createdAt)}</span>
+                          <span className="text-[10px] text-white/20">•</span>
+                          <span className="text-[10px] text-white/20">{u._count.transactions} txns</span>
+                          {u.subscriptionEnd && (
+                            <>
+                              <span className="text-[10px] text-white/20">•</span>
+                              <span className="text-[10px] text-[#FFD700]/50">Exp: {formatDate(u.subscriptionEnd)}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-white/30 hover:text-white/60">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] w-48 z-[60]">
+                        <DropdownMenuItem className="text-white/60 focus:text-white focus:bg-white/[0.05] cursor-pointer"
+                          onClick={() => openDetailProfile(u)}>
+                          <Eye className="mr-2 h-3.5 w-3.5" /> View Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-white/60 focus:text-white focus:bg-white/[0.05] cursor-pointer"
+                          onClick={() => openEditDialog(u)}>
+                          <Edit className="mr-2 h-3.5 w-3.5" /> Edit User
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-white/60 focus:text-white focus:bg-white/[0.05] cursor-pointer"
+                          onClick={() => { setResetPwUser(u); setNewPassword(''); }}>
+                          <Key className="mr-2 h-3.5 w-3.5" /> Reset Password
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-white/[0.06]" />
+                        <DropdownMenuItem className="text-[#CF6679]/70 focus:text-[#CF6679] focus:bg-[#CF6679]/5 cursor-pointer"
+                          onClick={() => setDeleteUser(u)}>
+                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.04]">
+            <p className="text-[11px] text-white/25">
+              Page {pagination.page} of {pagination.totalPages} · {pagination.total} users
+            </p>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/40 hover:text-white hover:bg-white/[0.05]"
+                disabled={pagination.page <= 1} onClick={() => fetchUsers(pagination.page - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {/* Page numbers */}
+              {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                let pageNum: number;
+                if (pagination.totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (pagination.page <= 3) {
+                  pageNum = i + 1;
+                } else if (pagination.page >= pagination.totalPages - 2) {
+                  pageNum = pagination.totalPages - 4 + i;
+                } else {
+                  pageNum = pagination.page - 2 + i;
+                }
+                return (
+                  <Button key={pageNum} variant="ghost" size="sm"
+                    className={cn(
+                      'h-7 w-7 p-0 text-[11px] font-medium',
+                      pageNum === pagination.page
+                        ? 'text-[#03DAC6] bg-[#03DAC6]/10'
+                        : 'text-white/40 hover:text-white hover:bg-white/[0.05]',
+                    )}
+                    onClick={() => fetchUsers(pageNum)}>
+                    {pageNum}
+                  </Button>
+                );
+              })}
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/40 hover:text-white hover:bg-white/[0.05]"
+                disabled={pagination.page >= pagination.totalPages} onClick={() => fetchUsers(pagination.page + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+      {renderDialogs()}
     </div>
   );
 }

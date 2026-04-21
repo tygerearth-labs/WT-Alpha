@@ -159,8 +159,8 @@ export function AdminSettings() {
   const [proPlanDiscountLabel, setProPlanDiscountLabel] = useState('');
   const [basicPurchaseUrl, setBasicPurchaseUrl] = useState('');
   const [proPurchaseUrl, setProPurchaseUrl] = useState('');
-  const [sectionVisibility, setSectionVisibility] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {} });
-  const [exportEnabled, setExportEnabled] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {} });
+  const [sectionVisibility, setSectionVisibility] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
+  const [exportEnabled, setExportEnabled] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
 
   useEffect(() => {
     const fetchHealth = async () => {
@@ -215,29 +215,29 @@ export function AdminSettings() {
             setProPlanDiscountLabel(data.config.proPlanDiscountLabel || '');
             setBasicPurchaseUrl(data.config.basicPurchaseUrl || '');
             setProPurchaseUrl(data.config.proPurchaseUrl || '');
+            const defaultSectionVisibility = {
+              basic: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: false, exportPdf: false, exportExcel: false },
+              pro: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true, exportPdf: true, exportExcel: true },
+              ultimate: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true, exportPdf: true, exportExcel: true },
+            };
             try {
               const sv = data.config.sectionVisibility ? JSON.parse(data.config.sectionVisibility) : null;
-              setSectionVisibility(sv && typeof sv === 'object' ? sv : {
-                basic: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: false, exportPdf: false, exportExcel: false },
-                pro: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true, exportPdf: true, exportExcel: true },
-              });
+              const merged = sv && typeof sv === 'object' ? { ...defaultSectionVisibility, ...sv, ultimate: sv.ultimate || defaultSectionVisibility.ultimate } : defaultSectionVisibility;
+              setSectionVisibility(merged);
             } catch {
-              setSectionVisibility({
-                basic: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: false, exportPdf: false, exportExcel: false },
-                pro: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true, exportPdf: true, exportExcel: true },
-              });
+              setSectionVisibility(defaultSectionVisibility);
             }
+            const defaultExportEnabled = {
+              basic: { pdf: false, excel: false },
+              pro: { pdf: true, excel: true },
+              ultimate: { pdf: true, excel: true },
+            };
             try {
               const ee = data.config.exportEnabled ? JSON.parse(data.config.exportEnabled) : null;
-              setExportEnabled(ee && typeof ee === 'object' ? ee : {
-                basic: { pdf: false, excel: false },
-                pro: { pdf: true, excel: true },
-              });
+              const mergedEe = ee && typeof ee === 'object' ? { ...defaultExportEnabled, ...ee, ultimate: ee.ultimate || defaultExportEnabled.ultimate } : defaultExportEnabled;
+              setExportEnabled(mergedEe);
             } catch {
-              setExportEnabled({
-                basic: { pdf: false, excel: false },
-                pro: { pdf: true, excel: true },
-              });
+              setExportEnabled(defaultExportEnabled);
             }
             setConfigLoaded(true);
           }
@@ -857,13 +857,15 @@ export function AdminSettings() {
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
           <p className="text-[10px] text-white/25">Control which dashboard sections and export features are visible to users based on their plan.</p>
-          {['basic', 'pro'].map((plan) => {
+          {['basic', 'pro', 'ultimate'].map((plan) => {
             const planVis = sectionVisibility[plan] || {};
             const planExp = exportEnabled[plan] || {};
             return (
               <div key={plan} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-4">
                 <div className="flex items-center gap-2">
-                  {plan === 'pro' ? (
+                  {plan === 'ultimate' ? (
+                    <Sparkles className="h-3.5 w-3.5 text-[#03DAC6]/60" />
+                  ) : plan === 'pro' ? (
                     <Crown className="h-3.5 w-3.5 text-[#FFD700]/60" />
                   ) : (
                     <Sparkles className="h-3.5 w-3.5 text-white/30" />
@@ -892,7 +894,7 @@ export function AdminSettings() {
                             [plan]: { ...prev[plan], [section.key]: val }
                           }));
                         }}
-                        activeColor={plan === 'pro' ? '#FFD700' : '#03DAC6'}
+                        activeColor={plan === 'ultimate' ? '#03DAC6' : plan === 'pro' ? '#FFD700' : '#03DAC6'}
                       />
                     </div>
                   ))}

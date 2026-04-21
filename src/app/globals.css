@@ -135,6 +135,10 @@
     overflow-x: hidden;
     max-width: 100vw;
   }
+  /* Prevent content shift when Dialog/Select/Dropdown opens (Radix adds overflow:hidden to body) */
+  html {
+    overflow-y: scroll;
+  }
   /* Prevent Safari auto-zoom on input focus */
   @media screen and (max-width: 768px) {
     input[type="text"],

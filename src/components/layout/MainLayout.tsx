@@ -205,12 +205,12 @@ export function MainLayout() {
     }
     const cat = newMode === 'bisnis' ? 'bisnis' : 'investasi';
     const existingBiz = businesses.find(b => b.category === cat);
-    if (existingBiz) {
-      setActiveBusiness(existingBiz);
-      setMode(newMode);
-      setCurrentPage(newMode === 'bisnis' ? 'biz-dashboard' : 'inv-dashboard');
-      setPageKey(prev => prev + 1);
-    } else {
+    // Always set mode & page first so sidebar nav updates immediately
+    setMode(newMode);
+    setActiveBusiness(existingBiz || null);
+    setCurrentPage(newMode === 'bisnis' ? 'biz-dashboard' : 'inv-dashboard');
+    setPageKey(prev => prev + 1);
+    if (!existingBiz) {
       if (newMode === 'bisnis') setShowBizRegister(true);
       else setShowInvRegister(true);
     }
@@ -254,7 +254,7 @@ export function MainLayout() {
   const renderPage = () => {
     if (mode === 'bisnis') {
       if (!businesses.find(b => b.category === 'bisnis')) {
-        return <BusinessRegisterDialog open={showBizRegister} onOpenChange={(o) => { setShowBizRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />;
+        return <Dashboard />; // placeholder until dialog registers
       }
       switch (currentPage) {
         case 'biz-dashboard': return <BusinessDashboard />;
@@ -271,7 +271,7 @@ export function MainLayout() {
     }
     if (mode === 'investasi') {
       if (!businesses.find(b => b.category === 'investasi')) {
-        return <InvestmentRegisterDialog open={showInvRegister} onOpenChange={(o) => { setShowInvRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />;
+        return <Dashboard />; // placeholder until dialog registers
       }
       switch (currentPage) {
         case 'inv-dashboard': return <InvestmentDashboard />;
@@ -634,7 +634,7 @@ export function MainLayout() {
 
           {/* Page Content */}
           <main className={cn('flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out',
-            'pb-[72px] lg:pb-8', sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64')}>
+            'pb-[92px] lg:pb-8', sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64')}>
             {isTransitioning && (
               <div className="fixed left-0 right-0 z-50 h-[2px]" style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
                 <div className="h-full" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #BB86FC)', backgroundSize: '200% 100%', animation: 'progressShimmer 1s ease-in-out infinite', boxShadow: '0 0 12px rgba(187,134,252,0.4), 0 0 4px rgba(3,218,198,0.3)' }} />
@@ -653,18 +653,24 @@ export function MainLayout() {
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.06] safe-area-inset-bottom md:hidden"
         style={{ background: 'rgba(13, 13, 13, 0.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
         {/* Mobile Mode Switch */}
-        {isUltimate && (
-          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-white/[0.04]">
-            {(['personal', 'bisnis', 'investasi'] as const).map((m) => (
-              <button key={m} onClick={() => handleModeSwitch(m)}
-                className={cn('flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all',
-                  mode === m ? (m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC]' : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6]' : 'bg-[#FFD700]/20 text-[#FFD700]')
-                    : 'text-white/30')}>
-                {m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-1 px-2 py-1.5 border-b border-white/[0.04]">
+          {(['personal', 'bisnis', 'investasi'] as const).map((m) => (
+            <button key={m} onClick={() => handleModeSwitch(m)}
+              className={cn(
+                'relative flex-1 flex items-center justify-center gap-1 text-[10px] font-semibold py-1.5 rounded-lg transition-all',
+                mode === m
+                  ? (m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC]' : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6]' : 'bg-[#FFD700]/20 text-[#FFD700]')
+                  : 'text-white/30',
+                m !== 'personal' && !isUltimate && 'opacity-30 pointer-events-none',
+              )}>
+              {m === 'personal' ? <LayoutDashboard className="h-3 w-3" />
+                : m === 'bisnis' ? <Briefcase className="h-3 w-3" />
+                : <Gem className="h-3 w-3" />}
+              {m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')}
+              {m !== 'personal' && !isUltimate && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/60" />}
+            </button>
+          ))}
+        </div>
         <div className="flex items-center justify-around px-2 h-[52px]">
           {navigation.slice(0, 5).map((item) => {
             const Icon = item.icon;
@@ -693,8 +699,36 @@ export function MainLayout() {
       </footer>
 
       {/* Dialogs */}
-      <BusinessRegisterDialog open={showBizRegister} onOpenChange={(o) => { setShowBizRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />
-      <InvestmentRegisterDialog open={showInvRegister} onOpenChange={(o) => { setShowInvRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />
+      <BusinessRegisterDialog
+        open={showBizRegister}
+        onOpenChange={(o) => { setShowBizRegister(o); if (!o) {
+          // Only reset to personal if registration was cancelled (no business exists yet)
+          const bizExists = useBusinessStore.getState().businesses.some(b => b.category === 'bisnis');
+          if (!bizExists) { setMode('personal'); setCurrentPage('dashboard'); setPageKey(prev => prev + 1); }
+        }}}
+        onSuccess={() => {
+          // After successful registration, navigate to biz dashboard
+          const biz = useBusinessStore.getState().businesses.find(b => b.category === 'bisnis');
+          if (biz) setActiveBusiness(biz);
+          setMode('bisnis');
+          setCurrentPage('biz-dashboard');
+          setPageKey(prev => prev + 1);
+        }}
+      />
+      <InvestmentRegisterDialog
+        open={showInvRegister}
+        onOpenChange={(o) => { setShowInvRegister(o); if (!o) {
+          const bizExists = useBusinessStore.getState().businesses.some(b => b.category === 'investasi');
+          if (!bizExists) { setMode('personal'); setCurrentPage('dashboard'); setPageKey(prev => prev + 1); }
+        }}}
+        onSuccess={() => {
+          const biz = useBusinessStore.getState().businesses.find(b => b.category === 'investasi');
+          if (biz) setActiveBusiness(biz);
+          setMode('investasi');
+          setCurrentPage('inv-dashboard');
+          setPageKey(prev => prev + 1);
+        }}
+      />
       {quickTransactionVisible && mode === 'personal' && <QuickTransaction />}
     </div>
   );
