@@ -69,8 +69,7 @@ import InvestmentDashboard from '@/components/investment/InvestmentDashboard';
 import InvestmentPortfolio from '@/components/investment/InvestmentPortfolio';
 import TradingJournal from '@/components/investment/TradingJournal';
 import InvestmentRegisterDialog from '@/components/investment/InvestmentRegisterDialog';
-import QuantTradeMode from '@/components/investment/QuantTradeMode';
-import MacroEconomy from '@/components/investment/MacroEconomy';
+import QuantMacroPanel from '@/components/investment/QuantMacroPanel';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -240,8 +239,7 @@ export function MainLayout() {
   const investmentNav: NavItem[] = useMemo(() => [
     { id: 'inv-dashboard', label: t('inv.invDashboard'), icon: LineChart, desc: t('inv.dashGuideDashboard').split(' — ')[0] },
     { id: 'inv-portfolio', label: t('inv.portfolios'), icon: Gem, desc: t('inv.dashGuidePortfolio').split(' — ')[0] },
-    { id: 'inv-quant', label: 'Quant Trade', icon: TrendingUp, desc: t('inv.dashGuideQuant').split(' — ')[0] },
-    { id: 'inv-macro', label: t('macro.title'), icon: BarChart3, desc: t('inv.dashGuideMacro').split(' — ')[0] },
+    { id: 'inv-quant', label: 'Quant & Market', icon: TrendingUp, desc: t('inv.dashGuideQuant').split(' — ')[0] },
     { id: 'inv-journal', label: t('inv.tradingJournal'), icon: BookOpen, desc: t('inv.dashGuideJournal').split(' — ')[0] },
   ], [t]);
 
@@ -294,8 +292,8 @@ export function MainLayout() {
       switch (currentPage) {
         case 'inv-dashboard': return <InvestmentDashboard />;
         case 'inv-portfolio': return <InvestmentPortfolio />;
-        case 'inv-quant': return <QuantTradeMode />;
-        case 'inv-macro': return <MacroEconomy />;
+        case 'inv-quant': return <QuantMacroPanel />;
+        case 'inv-macro': return <QuantMacroPanel />;
         case 'inv-journal': return <TradingJournal />;
         default: return <InvestmentDashboard />;
       }
@@ -351,7 +349,10 @@ export function MainLayout() {
 
   const ModeSwitch = ({ collapsed }: { collapsed: boolean }) => (
     <div className={cn('pb-3 mb-1', collapsed ? 'px-1.5' : 'px-2')}>
-      <div className={cn('relative flex items-center gap-0.5 p-[3px] rounded-xl bg-white/[0.03] border border-white/[0.05]', collapsed && 'flex-col')}>
+      <div className={cn(
+        'relative flex items-center gap-1 p-[3px] rounded-xl bg-white/[0.03] border border-white/[0.05]',
+        collapsed && 'flex-col gap-1',
+      )}>
         {/* Sliding pill indicator (expanded only) */}
         {!collapsed && (
           <div
@@ -378,11 +379,16 @@ export function MainLayout() {
               onClick={() => handleModeSwitch(m.key)}
               className={cn(
                 'relative z-10 rounded-lg transition-all duration-200',
-                collapsed ? 'p-2.5 mx-auto my-0.5' : 'flex-1 flex items-center justify-center gap-1.5 py-2',
+                collapsed
+                  ? 'w-10 h-10 grid place-items-center mx-auto border border-white/[0.05] bg-white/[0.02]'
+                  : isActive
+                    ? 'flex-1 flex items-center justify-center gap-1.5 py-2'
+                    : 'flex-1 grid place-items-center py-2',
                 isActive ? modeColorClass(m.key) : 'text-white/30 hover:text-white/55',
                 isLocked && 'opacity-25 pointer-events-none',
+                !collapsed && !isActive && 'bg-white/[0.02] hover:bg-white/[0.04]',
               )}
-              title={collapsed ? m.label : undefined}
+              title={m.label}
             >
               {isLocked && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/50" />}
               <Icon className={cn(
@@ -390,15 +396,16 @@ export function MainLayout() {
                 collapsed ? 'h-4 w-4' : 'h-3.5 w-3.5',
                 isActive && 'drop-shadow-[0_0_4px_currentColor]',
               )} strokeWidth={isActive ? 2.2 : 1.5} />
-              {!collapsed && (
+              {/* Text: only show when expanded AND active */}
+              {!collapsed && isActive && (
                 <span className={cn(
                   'text-[10px] font-bold uppercase tracking-wide whitespace-nowrap',
-                  isActive && 'drop-shadow-[0_0_4px_currentColor]',
+                  'drop-shadow-[0_0_4px_currentColor]',
                 )}>
                   {m.label}
                 </span>
               )}
-              {/* Registered dot */}
+              {/* Registered indicators */}
               {!collapsed && isRegistered && m.key !== 'personal' && isUltimate && (
                 <CheckCircle2 className="h-2.5 w-2.5 shrink-0 opacity-70" />
               )}

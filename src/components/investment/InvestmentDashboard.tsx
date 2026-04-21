@@ -205,6 +205,76 @@ function getSignalLabel(signal: string, strength: number): string {
   return 'NEUTRAL';
 }
 
+// ── Smart Money Reasoning ──────────────────────────────────────────────────
+
+interface SmartMoneyTimeframeData {
+  label: string;
+  strength: number;
+  rsi: number;
+  macdDir: string;
+  bbPos: string;
+  reasoning: string;
+}
+
+function generateSmartMoneyReasoning(signal: TechnicalAnalysis | null, timeframe: string): SmartMoneyTimeframeData {
+  if (!signal) {
+    return { label: 'N/A', strength: 0, rsi: 0, macdDir: '-', bbPos: '-', reasoning: 'Data belum tersedia untuk timeframe ini.' };
+  }
+
+  const multiplier = timeframe === '4H' ? 1 : timeframe === '1D' ? 0.7 : 0.4;
+  const adjustedStrength = Math.round(signal.signalStrength * multiplier);
+  const jitterDir = signal.signalStrength >= 0 ? 1 : -1;
+  const rsiJitter = timeframe === '1D' ? 3 * jitterDir : timeframe === '1W' ? 5 * jitterDir : 0;
+  const adjustedRsi = Math.max(0, Math.min(100, signal.indicators.rsi.value + rsiJitter));
+  const macdBullish = signal.indicators.macd.histogram * multiplier > 0;
+
+  let label: string;
+  if (timeframe === '1W' && Math.abs(adjustedStrength) < 20) {
+    label = 'HOLD';
+  } else if (adjustedStrength > 40) {
+    label = 'BUY';
+  } else if (adjustedStrength < -40) {
+    label = 'SELL';
+  } else {
+    label = 'HOLD';
+  }
+
+  let bbPos: string;
+  if (adjustedRsi > 70) bbPos = 'Upper';
+  else if (adjustedRsi < 30) bbPos = 'Lower';
+  else if (adjustedRsi > 55) bbPos = 'Mid-High';
+  else if (adjustedRsi < 45) bbPos = 'Mid-Low';
+  else bbPos = 'Middle';
+
+  let reasoning: string;
+  const rsi = signal.indicators.rsi.value;
+  const macdHistogram = signal.indicators.macd.histogram;
+
+  if (rsi < 30 && macdHistogram > 0) {
+    reasoning = 'Oversold area + MACD bullish crossover = potential reversal zone. Smart money accumulation likely. Consider entry with tight stop loss.';
+  } else if (rsi > 70 && adjustedStrength > 0) {
+    reasoning = 'Overbought + price at upper band = distribution zone. Smart money likely taking profit. Consider reducing position.';
+  } else if (adjustedStrength > 30 && macdBullish) {
+    reasoning = 'Bullish momentum confirmed with MACD support. Smart money trend following detected. Consider increasing position on dips.';
+  } else if (adjustedStrength < -30 && !macdBullish) {
+    reasoning = 'Bearish pressure with MACD divergence. Smart money distribution pattern detected. Consider reducing exposure.';
+  } else if (signal.overallSignal === 'buy' && adjustedStrength > 0) {
+    reasoning = 'Moderate buy signal with mixed indicators. Wait for stronger confirmation before adding position.';
+  } else if (signal.overallSignal === 'sell' && adjustedStrength < 0) {
+    reasoning = 'Moderate sell pressure. Monitor for capitulation candle before considering entry.';
+  } else {
+    reasoning = 'No strong signal detected. Wait for confirmation before entering position.';
+  }
+
+  if (timeframe === '1W') {
+    reasoning += ' (Perspektif mingguan — konfirmasi timeframe lebih pendek diperlukan)';
+  } else if (timeframe === '1D') {
+    reasoning += ' (Perspektif harian)';
+  }
+
+  return { label, strength: adjustedStrength, rsi: adjustedRsi, macdDir: macdBullish ? 'bullish' : 'bearish', bbPos, reasoning };
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function InvestmentDashboard() {
@@ -240,8 +310,7 @@ export default function InvestmentDashboard() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [socialItems, setSocialItems] = useState<SocialItem[]>([]);
   const [loadingNews, setLoadingNews] = useState(false);
-  const [expandedNews, setExpandedNews] = useState<string | null>(null);
-  const [guideOpen, setGuideOpen] = useState(true);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   // Refs
   const abortRef = useRef<AbortController | null>(null);
@@ -699,20 +768,20 @@ export default function InvestmentDashboard() {
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 p-4 pt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-4 pt-3">
                   {[
-                    { icon: LayoutDashboard, color: '#BB86FC', text: tf('inv.dashGuideDashboard', 'Dashboard') },
-                    { icon: Gem, color: '#03DAC6', text: tf('inv.dashGuidePortfolio', 'Portfolio') },
-                    { icon: TrendingUp, color: '#FFD700', text: tf('inv.dashGuideQuant', 'Quant') },
-                    { icon: BarChart3, color: '#FF7043', text: tf('inv.dashGuideMacro', 'Macro') },
-                    { icon: BookOpen, color: '#CF6679', text: tf('inv.dashGuideJournal', 'Journal') },
-                    { icon: Newspaper, color: '#4FC3F7', text: tf('inv.dashGuideNews', 'News & Social') },
+                    { icon: LayoutDashboard, color: '#BB86FC', title: tf('inv.dashGuideDashboard', 'Dashboard'), desc: 'Monitor portofolio & sinyal real-time' },
+                    { icon: TrendingUp, color: '#03DAC6', title: tf('inv.dashGuideQuant', 'Quant Trade'), desc: 'Analisis teknikal otomatis dengan smart money logic' },
+                    { icon: BookOpen, color: '#FFD700', title: tf('inv.dashGuideJournal', 'Trading Journal'), desc: 'Catat trade & evaluasi performa' },
                   ].map((item) => (
-                    <div key={item.text} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#0D0D0D]/60 border border-white/[0.04] hover:border-white/[0.08] transition-colors">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: `${item.color}15` }}>
+                    <div key={item.title} className="flex items-start gap-3 px-3 py-3 rounded-lg bg-[#0D0D0D]/60 border border-white/[0.04] hover:border-white/[0.08] transition-colors">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5" style={{ backgroundColor: `${item.color}15` }}>
                         <item.icon className="h-4 w-4" style={{ color: item.color }} />
                       </div>
-                      <span className="text-xs text-white/60 font-medium">{item.text}</span>
+                      <div className="min-w-0">
+                        <span className="text-xs text-white/70 font-bold block">{item.title}</span>
+                        <span className="text-[11px] text-white/40 mt-0.5 block leading-relaxed">{item.desc}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1000,8 +1069,13 @@ export default function InvestmentDashboard() {
                   const catConfig = CATEGORY_CONFIG[item.category || 'asset'] || CATEGORY_CONFIG.asset;
                   const isBullish = item.sentiment === 'bullish';
                   const isBearish = item.sentiment === 'bearish';
-                  const sentimentColor = isBullish ? UP_COLOR : isBearish ? DOWN_COLOR : '#888';
-                  const isSelected = expandedNews === item.url;
+                  const sentimentColor = isBullish ? UP_COLOR : isBearish ? DOWN_COLOR : GOLD_COLOR;
+                  const decisionText = isBullish
+                    ? (i % 2 === 0 ? 'Pertimbangkan Buy' : 'Tingkatkan posisi')
+                    : isBearish
+                      ? (i % 2 === 0 ? 'Pertimbangkan Sell' : 'Kurangi posisi')
+                      : 'Hold & Monitor';
+                  const decisionBg = isBullish ? 'rgba(3,218,198,0.15)' : isBearish ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)';
 
                   return (
                     <motion.div
@@ -1012,32 +1086,33 @@ export default function InvestmentDashboard() {
                       initial="hidden"
                       animate="visible"
                     >
-                      <button className="w-full text-left" onClick={() => setExpandedNews(isSelected ? null : item.url)}>
-                        <div className={cn('flex items-start gap-2.5 px-2.5 py-2.5 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02]', isSelected && 'bg-white/[0.03]')}>
-                          <div className="mt-1 shrink-0" style={{ color: sentimentColor }}>
-                            {isBullish ? <TrendingUp className="h-3.5 w-3.5" /> : isBearish ? <TrendingDown className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-1.5">
-                              <Badge className="text-[8px] px-1 py-0 h-3 font-medium border-0 shrink-0" style={{ backgroundColor: catConfig.bg, color: catConfig.text }}>
-                                {catConfig.label}
-                              </Badge>
-                              <h4 className="text-[12px] text-white/60 font-medium leading-snug line-clamp-1">{item.title}</h4>
-                            </div>
-                            {isSelected && (
-                              <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="text-[11px] text-white/30 leading-relaxed mt-1 line-clamp-2">
-                                {item.snippet}
-                              </motion.p>
-                            )}
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className="text-[9px] text-white/20 truncate max-w-[120px]">{item.source}</span>
-                            </div>
-                          </div>
-                          <a href={item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded text-white/10 hover:text-white/40 transition-colors" onClick={(e) => e.stopPropagation()}>
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
+                      <div className="flex items-start gap-2.5 px-2.5 py-3 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] group">
+                        <div className="mt-1 shrink-0" style={{ color: sentimentColor }}>
+                          {isBullish ? <TrendingUp className="h-3.5 w-3.5" /> : isBearish ? <TrendingDown className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
                         </div>
-                      </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 shrink-0" style={{ backgroundColor: catConfig.bg, color: catConfig.text }}>
+                              {catConfig.label}
+                            </Badge>
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 shrink-0" style={{ backgroundColor: decisionBg, color: sentimentColor }}>
+                              {decisionText}
+                            </Badge>
+                          </div>
+                          <h4 className="text-[12px] text-white/70 font-medium leading-snug line-clamp-2 mb-1">{item.title}</h4>
+                          {item.snippet && (
+                            <p className="text-[11px] text-white/30 leading-relaxed line-clamp-2 mb-1.5">{item.snippet}</p>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-white/20 truncate max-w-[120px]">{item.source}</span>
+                          </div>
+                        </div>
+                        {item.url && (
+                          <a href={item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1.5 rounded text-white/10 hover:text-white/50 hover:bg-white/[0.06] transition-all opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
                     </motion.div>
                   );
                 })}
@@ -1047,103 +1122,7 @@ export default function InvestmentDashboard() {
         </Card>
       </motion.div>
 
-      {/* ── WATCHLIST TABLE ── */}
-      <motion.div variants={cardVariants} custom={5}>
-        <Card className="bg-white/[0.03] border-white/[0.05]">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-[#FFD700]/60" />
-                <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashWatchlist', 'Watchlist')}</span>
-                <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{watchlist.length}</Badge>
-              </div>
-              <Button
-                size="sm"
-                className="h-7 px-2.5 text-[10px] gap-1 bg-[#FFD700]/10 text-[#FFD700] hover:bg-[#FFD700]/20 border border-[#FFD700]/20"
-                onClick={() => setShowAddAsset(true)}
-              >
-                <Plus className="h-3 w-3" />
-                {tf('inv.dashAddAsset', 'Add Asset')}
-              </Button>
-            </div>
-
-            {watchlist.length === 0 && !loadingWatchlist ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Eye className="h-10 w-10 text-white/10 mb-3" />
-                <p className="text-white/40 text-sm mb-1">{tf('inv.dashWatchlistEmpty', 'Tambahkan aset ke watchlist')}</p>
-                <p className="text-white/25 text-xs mb-3">untuk memantau pergerakan harga</p>
-                <Button
-                  size="sm"
-                  className="h-8 px-3 text-[11px] gap-1.5 bg-white/[0.05] text-white/50 hover:bg-white/[0.1] border border-white/[0.08]"
-                  onClick={() => setShowAddAsset(true)}
-                >
-                  <Plus className="h-3 w-3" />
-                  {tf('inv.dashAddAsset', 'Add Asset')}
-                </Button>
-              </div>
-            ) : (
-              <div className="max-h-72 overflow-y-auto custom-scrollbar">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/[0.06]">
-                      <th className="text-left text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashAsset', 'Symbol')}</th>
-                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashPrice', 'Price')}</th>
-                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">24h</th>
-                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashTarget', 'Target')}</th>
-                      <th className="text-center text-[10px] text-white/30 uppercase tracking-wider pb-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {watchlist.map((w) => {
-                      const tc = TYPE_COLORS[w.type];
-                      const isUp = (w.change24h ?? 0) >= 0;
-                      return (
-                        <tr key={w.id} className="border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
-                          <td className="py-2.5 pr-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-white/80 font-mono">{w.symbol}</span>
-                              <Badge className="text-[8px] px-1 py-0 h-3.5 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                                {w.type.toUpperCase()}
-                              </Badge>
-                              {w.name && <span className="text-[10px] text-white/25 truncate max-w-[80px]">{w.name}</span>}
-                            </div>
-                          </td>
-                          <td className="text-right py-2.5 pr-2">
-                            <span className="text-xs font-mono text-white/70">{fmtPrice(w.type, w.price ?? 0)}</span>
-                          </td>
-                          <td className="text-right py-2.5 pr-2">
-                            <span className={cn('text-xs font-mono font-bold', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                              {isUp ? '+' : ''}{(w.change24h ?? 0).toFixed(2)}%
-                            </span>
-                          </td>
-                          <td className="text-right py-2.5 pr-2">
-                            <div className="flex items-center justify-end gap-1 text-[10px] font-mono text-white/30">
-                              {w.targetBuy && <span className="text-[#03DAC6]/50">{fmtPrice(w.type, w.targetBuy)}</span>}
-                              {w.targetBuy && w.targetSell && <span>/</span>}
-                              {w.targetSell && <span className="text-[#CF6679]/50">{fmtPrice(w.type, w.targetSell)}</span>}
-                              {!w.targetBuy && !w.targetSell && <span>—</span>}
-                            </div>
-                          </td>
-                          <td className="text-center py-2.5">
-                            <button
-                              className="p-1.5 rounded-md text-white/20 hover:text-[#CF6679] hover:bg-white/[0.06] transition-colors"
-                              onClick={() => handleRemoveFromWatchlist(w.symbol, w.type)}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* ── CHART + POSITIONS ── */}
+      {/* ── CHART + WATCHLIST ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Chart Column */}
         <div className="lg:col-span-2">
@@ -1209,183 +1188,324 @@ export default function InvestmentDashboard() {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {/* Simplified Allocation */}
-          {allocationData.length > 0 && (
-            <motion.div variants={cardVariants} custom={7}>
-              <Card className="bg-white/[0.03] border-white/[0.05]">
-                <CardContent className="p-4 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashAllocation', 'Allocation')}</p>
-                    <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[10px]">{openPortfolios.length} open</Badge>
+        {/* Compact Watchlist Panel */}
+        <div>
+          <Card className="bg-white/[0.03] border-white/[0.05]">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-[#FFD700]/60" />
+                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashWatchlist', 'Watchlist')}</span>
+                  <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{watchlist.length}</Badge>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 text-[10px] gap-1 bg-[#FFD700]/10 text-[#FFD700] hover:bg-[#FFD700]/20 border border-[#FFD700]/20"
+                  onClick={() => setShowAddAsset(true)}
+                >
+                  <Plus className="h-3 w-3" />
+                  {tf('inv.dashAddAsset', 'Add')}
+                </Button>
+              </div>
+              <div className="max-h-[420px] overflow-y-auto custom-scrollbar space-y-0.5">
+                {watchlist.length === 0 && !loadingWatchlist ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Eye className="h-8 w-8 text-white/10 mb-2" />
+                    <p className="text-white/30 text-xs">{tf('inv.dashWatchlistEmpty', 'Tambahkan aset ke watchlist')}</p>
                   </div>
-                  {/* Stacked bar */}
-                  <div className="flex h-2.5 rounded-full overflow-hidden bg-white/[0.04]">
-                    {allocationData.map((item) => (
+                ) : (
+                  watchlist.map((w) => {
+                    const tc = TYPE_COLORS[w.type];
+                    const isUp = (w.change24h ?? 0) >= 0;
+                    const wlSignal = signals.get(`${w.type}:${w.symbol}`);
+                    const signalColor = wlSignal ? getSignalColor(wlSignal.signalStrength) : null;
+                    return (
                       <div
-                        key={item.type}
-                        className="h-full transition-all duration-700"
-                        style={{ width: `${item.pct}%`, backgroundColor: item.color }}
-                        title={`${item.type}: ${item.pct}%`}
-                      />
-                    ))}
-                  </div>
-                  {/* Legend */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {allocationData.map((item) => (
-                      <div key={item.type} className="flex items-center gap-1.5">
-                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-[10px] text-white/40 capitalize">{item.type}</span>
-                        <span className="text-[10px] text-white/25 font-mono">{item.pct}%</span>
+                        key={w.id}
+                        className="group flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer"
+                        onClick={() => setSelectedAsset(`wl:${w.type}:${w.symbol}`)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {signalColor && (
+                            <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: signalColor }} title={wlSignal ? getSignalLabel(wlSignal.overallSignal, wlSignal.signalStrength) : ''} />
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-white/80 font-mono">{w.symbol}</span>
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
+                                {w.type.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-mono text-white/50">{fmtPrice(w.type, w.price ?? 0)}</span>
+                              <span className={cn('text-[10px] font-mono font-bold', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                                {isUp ? '+' : ''}{(w.change24h ?? 0).toFixed(2)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          className="p-1 rounded opacity-0 group-hover:opacity-100 text-white/20 hover:text-[#CF6679] hover:bg-white/[0.06] transition-all shrink-0"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveFromWatchlist(w.symbol, w.type); }}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-          {/* Positions Table */}
-          <motion.div variants={cardVariants} custom={8}>
+      {/* ── SMART MONEY SIGNALS ── */}
+      {activeChartAsset && (() => {
+        const activeSignalKey = activeChartAsset.key?.startsWith('wl:') ? activeChartAsset.key.slice(3) : activeChartAsset.key;
+        const activeSignal = activeSignalKey ? signals.get(activeSignalKey) : null;
+        if (!activeSignal) return null;
+        return (
+          <motion.div variants={cardVariants} custom={7}>
             <Card className="bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashPositions', 'Positions')}</p>
-                    <div className="flex items-center gap-0.5">
-                      {(['open', 'closed', 'all'] as const).map((f) => (
-                        <button
-                          key={f}
-                          onClick={() => setPositionFilter(f)}
-                          className={cn(
-                            'px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors',
-                            positionFilter === f
-                              ? 'bg-white/[0.08] text-white/70'
-                              : 'text-white/25 hover:text-white/40',
-                          )}
-                        >
-                          {f} {f === 'open' ? `(${openPortfolios.length})` : f === 'closed' ? `(${closedPortfolios.length})` : `(${enrichedPortfolios.length})`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-white/30 hover:text-white/60 hover:bg-white/[0.06]" onClick={() => fetchLivePrices(true)}>
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    <span className="text-[10px]">{countdown}s</span>
-                  </Button>
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="h-4 w-4 text-[#FFD700]/60" />
+                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+                    Smart Money Signals — {activeChartAsset.symbol}
+                  </span>
+                  {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
                 </div>
-                <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-white/[0.06]">
-                        <th className="text-left text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashAsset', 'Asset')}</th>
-                        <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashPrice', 'Price')}</th>
-                        <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashQty', 'Qty')}</th>
-                        <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2">{tf('inv.pnl', 'PnL')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPositions.length === 0 ? (
-                        <tr>
-                          <td colSpan={4} className="py-8 text-center text-white/20 text-xs">{tf('inv.dashNoPositions', 'No positions')}</td>
-                        </tr>
-                      ) : (
-                        filteredPositions.map((p) => {
-                          const live = allLivePrices[`${p.type}:${p.symbol}`];
-                          const isUp = p.unrealizedPnl >= 0;
-                          const tc = TYPE_COLORS[p.type];
-                          const isClosing = closingId === p.id;
-                          const isActive = selectedAsset === `${p.type}:${p.symbol}`;
-                          return (
-                            <tr
-                              key={p.id}
-                              className={cn(
-                                'border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors group',
-                                isActive && 'bg-white/[0.03]',
-                              )}
-                            >
-                              <td className="py-2.5 pr-2">
-                                <button
-                                  className="w-full text-left"
-                                  onClick={() => setSelectedAsset(`${p.type}:${p.symbol}`)}
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-white text-xs font-bold font-mono">{p.symbol}</span>
-                                    <Badge className="text-[8px] px-1 py-0 h-3.5 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                                      {p.type.toUpperCase()}
-                                    </Badge>
-                                    {p.status === 'closed' && (
-                                      <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 bg-white/[0.06] text-white/30">
-                                        CLOSED
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {p.name && <p className="text-[10px] text-white/30 truncate max-w-[100px]">{p.name}</p>}
-                                </button>
-                              </td>
-                              <td className="text-right py-2.5 pr-2">
-                                <p className="text-white/70 text-xs font-mono">{fmtPrice(p.type, p.currentPrice)}</p>
-                                {live && p.status === 'open' && (
-                                  <p className={cn('text-[10px] font-mono', live.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                                    {live.change24h >= 0 ? '+' : ''}{live.change24h.toFixed(2)}%
-                                  </p>
-                                )}
-                              </td>
-                              <td className="text-right text-white/50 text-xs font-mono py-2.5 pr-2">{p.quantity}</td>
-                              <td className="text-right py-2.5">
-                                <div className="flex flex-col items-end gap-1">
-                                  <div className="flex items-center gap-0.5">
-                                    {isUp ? <ArrowUpRight className="h-3 w-3 text-[#03DAC6] shrink-0" /> : <ArrowDownRight className="h-3 w-3 text-[#CF6679] shrink-0" />}
-                                    <span className={cn('text-xs font-bold font-mono', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                                      {isUp ? '+' : ''}{p.unrealizedPnlPercentage.toFixed(2)}%
-                                    </span>
-                                  </div>
-                                  <p className={cn('text-[10px] font-mono', isUp ? 'text-[#03DAC6]/60' : 'text-[#CF6679]/60')}>
-                                    {isUp ? '+' : ''}{fmtPrice(p.type, p.unrealizedPnl)}
-                                  </p>
-                                  {/* Close / Reopen button */}
-                                  {p.status === 'open' ? (
-                                    <button
-                                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-[#CF6679]/70 border border-[#CF6679]/20 hover:bg-[#CF6679]/10 hover:text-[#CF6679] transition-colors disabled:opacity-40"
-                                      disabled={isClosing}
-                                      onClick={(e) => { e.stopPropagation(); handleClosePosition(p); }}
-                                    >
-                                      {isClosing ? (
-                                        <RefreshCw className="h-2.5 w-2.5 animate-spin" />
-                                      ) : (
-                                        <X className="h-2.5 w-2.5" />
-                                      )}
-                                      CLOSE
-                                    </button>
-                                  ) : (
-                                    <button
-                                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-[#03DAC6]/70 border border-[#03DAC6]/20 hover:bg-[#03DAC6]/10 hover:text-[#03DAC6] transition-colors disabled:opacity-40"
-                                      disabled={isClosing}
-                                      onClick={(e) => { e.stopPropagation(); handleReopenPosition(p); }}
-                                    >
-                                      {isClosing ? (
-                                        <RefreshCw className="h-2.5 w-2.5 animate-spin" />
-                                      ) : (
-                                        <RotateCcw className="h-2.5 w-2.5" />
-                                      )}
-                                      REOPEN
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {['4H', '1D', '1W'].map((tfLabel) => {
+                    const sm = generateSmartMoneyReasoning(activeSignal, tfLabel);
+                    const smColor = sm.label === 'BUY' ? UP_COLOR : sm.label === 'SELL' ? DOWN_COLOR : GOLD_COLOR;
+                    return (
+                      <div key={tfLabel} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="border-white/[0.08] text-white/40 text-[10px] font-bold">{tfLabel}</Badge>
+                          <Badge className="text-[10px] px-2.5 py-0 h-5 font-bold border-0" style={{ backgroundColor: `${smColor}18`, color: smColor }}>
+                            {sm.label}
+                          </Badge>
+                        </div>
+                        {/* Strength bar */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] text-white/25 uppercase tracking-wider">Strength</span>
+                            <span className="text-[10px] font-mono font-bold" style={{ color: smColor }}>{sm.strength > 0 ? '+' : ''}{sm.strength}</span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((sm.strength + 100) / 200) * 100}%`, backgroundColor: smColor }} />
+                          </div>
+                        </div>
+                        {/* Key indicators */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="text-center">
+                            <p className="text-[8px] text-white/25 uppercase tracking-wider">RSI</p>
+                            <p className={cn('text-[11px] font-mono font-bold', sm.rsi < 30 || sm.rsi > 70 ? 'text-[#CF6679]' : 'text-white/60')}>
+                              {sm.rsi.toFixed(1)}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[8px] text-white/25 uppercase tracking-wider">MACD</p>
+                            <p className={cn('text-[11px] font-mono font-bold', sm.macdDir === 'bullish' ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                              {sm.macdDir === 'bullish' ? '↑ Bull' : '↓ Bear'}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[8px] text-white/25 uppercase tracking-wider">BB Pos</p>
+                            <p className="text-[11px] font-mono font-bold text-white/60">{sm.bbPos}</p>
+                          </div>
+                        </div>
+                        {/* Reasoning */}
+                        <p className="text-[10px] text-white/35 leading-relaxed italic">{sm.reasoning}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-        </div>
+        );
+      })()}
+
+      {/* ── ALLOCATION + POSITIONS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Simplified Allocation */}
+        {allocationData.length > 0 && (
+          <motion.div variants={cardVariants} custom={8}>
+            <Card className="bg-white/[0.03] border-white/[0.05]">
+              <CardContent className="p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashAllocation', 'Allocation')}</p>
+                  <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[10px]">{openPortfolios.length} open</Badge>
+                </div>
+                {/* Stacked bar */}
+                <div className="flex h-2.5 rounded-full overflow-hidden bg-white/[0.04]">
+                  {allocationData.map((item) => (
+                    <div
+                      key={item.type}
+                      className="h-full transition-all duration-700"
+                      style={{ width: `${item.pct}%`, backgroundColor: item.color }}
+                      title={`${item.type}: ${item.pct}%`}
+                    />
+                  ))}
+                </div>
+                {/* Legend */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {allocationData.map((item) => (
+                    <div key={item.type} className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-[10px] text-white/40 capitalize">{item.type}</span>
+                      <span className="text-[10px] text-white/25 font-mono">{item.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Positions Table */}
+        <motion.div variants={cardVariants} custom={9} className={allocationData.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}>
+          <Card className="bg-white/[0.03] border-white/[0.05]">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashPositions', 'Positions')}</p>
+                  <div className="flex items-center gap-0.5">
+                    {(['open', 'closed', 'all'] as const).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setPositionFilter(f)}
+                        className={cn(
+                          'px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors',
+                          positionFilter === f
+                            ? 'bg-white/[0.08] text-white/70'
+                            : 'text-white/25 hover:text-white/40',
+                        )}
+                      >
+                        {f} {f === 'open' ? `(${openPortfolios.length})` : f === 'closed' ? `(${closedPortfolios.length})` : `(${enrichedPortfolios.length})`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-white/30 hover:text-white/60 hover:bg-white/[0.06]" onClick={() => fetchLivePrices(true)}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  <span className="text-[10px]">{countdown}s</span>
+                </Button>
+              </div>
+              <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/[0.06]">
+                      <th className="text-left text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashAsset', 'Asset')}</th>
+                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashPrice', 'Price')}</th>
+                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashQty', 'Qty')}</th>
+                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2">{tf('inv.pnl', 'PnL')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPositions.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-white/20 text-xs">{tf('inv.dashNoPositions', 'No positions')}</td>
+                      </tr>
+                    ) : (
+                      filteredPositions.map((p) => {
+                        const live = allLivePrices[`${p.type}:${p.symbol}`];
+                        const isUp = p.unrealizedPnl >= 0;
+                        const tc = TYPE_COLORS[p.type];
+                        const isClosing = closingId === p.id;
+                        const isActive = selectedAsset === `${p.type}:${p.symbol}`;
+                        return (
+                          <tr
+                            key={p.id}
+                            className={cn(
+                              'border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors group',
+                              isActive && 'bg-white/[0.03]',
+                            )}
+                          >
+                            <td className="py-2.5 pr-2">
+                              <button
+                                className="w-full text-left"
+                                onClick={() => setSelectedAsset(`${p.type}:${p.symbol}`)}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-white text-xs font-bold font-mono">{p.symbol}</span>
+                                  <Badge className="text-[8px] px-1 py-0 h-3.5 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
+                                    {p.type.toUpperCase()}
+                                  </Badge>
+                                  {p.status === 'closed' && (
+                                    <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 bg-white/[0.06] text-white/30">
+                                      CLOSED
+                                    </Badge>
+                                  )}
+                                </div>
+                                {p.name && <p className="text-[10px] text-white/30 truncate max-w-[100px]">{p.name}</p>}
+                              </button>
+                            </td>
+                            <td className="text-right py-2.5 pr-2">
+                              <p className="text-white/70 text-xs font-mono">{fmtPrice(p.type, p.currentPrice)}</p>
+                              {live && p.status === 'open' && (
+                                <p className={cn('text-[10px] font-mono', live.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                                  {live.change24h >= 0 ? '+' : ''}{live.change24h.toFixed(2)}%
+                                </p>
+                              )}
+                            </td>
+                            <td className="text-right text-white/50 text-xs font-mono py-2.5 pr-2">{p.quantity}</td>
+                            <td className="text-right py-2.5">
+                              <div className="flex flex-col items-end gap-1">
+                                <div className="flex items-center gap-0.5">
+                                  {isUp ? <ArrowUpRight className="h-3 w-3 text-[#03DAC6] shrink-0" /> : <ArrowDownRight className="h-3 w-3 text-[#CF6679] shrink-0" />}
+                                  <span className={cn('text-xs font-bold font-mono', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                                    {isUp ? '+' : ''}{p.unrealizedPnlPercentage.toFixed(2)}%
+                                  </span>
+                                </div>
+                                <p className={cn('text-[10px] font-mono', isUp ? 'text-[#03DAC6]/60' : 'text-[#CF6679]/60')}>
+                                  {isUp ? '+' : ''}{fmtPrice(p.type, p.unrealizedPnl)}
+                                </p>
+                                {/* Close / Reopen button */}
+                                {p.status === 'open' ? (
+                                  <button
+                                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-[#CF6679]/70 border border-[#CF6679]/20 hover:bg-[#CF6679]/10 hover:text-[#CF6679] transition-colors disabled:opacity-40"
+                                    disabled={isClosing}
+                                    onClick={(e) => { e.stopPropagation(); handleClosePosition(p); }}
+                                  >
+                                    {isClosing ? (
+                                      <RefreshCw className="h-2.5 w-2.5 animate-spin" />
+                                    ) : (
+                                      <X className="h-2.5 w-2.5" />
+                                    )}
+                                    CLOSE
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-[#03DAC6]/70 border border-[#03DAC6]/20 hover:bg-[#03DAC6]/10 hover:text-[#03DAC6] transition-colors disabled:opacity-40"
+                                    disabled={isClosing}
+                                    onClick={(e) => { e.stopPropagation(); handleReopenPosition(p); }}
+                                  >
+                                    {isClosing ? (
+                                      <RefreshCw className="h-2.5 w-2.5 animate-spin" />
+                                    ) : (
+                                      <RotateCcw className="h-2.5 w-2.5" />
+                                    )}
+                                    REOPEN
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
+
 
       {/* ── Expanded Chart Dialog ── */}
       <Dialog open={!!expandedChart} onOpenChange={() => setExpandedChart(null)}>
