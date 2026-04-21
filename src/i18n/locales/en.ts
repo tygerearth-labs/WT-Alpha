@@ -29,6 +29,8 @@ export const translations = {
     target: 'Targets',
     laporan: 'Reports',
     profile: 'Profile',
+    bisnis: 'Business',
+    investasi: 'Investment',
   },
   auth: {
     login: 'Login',
