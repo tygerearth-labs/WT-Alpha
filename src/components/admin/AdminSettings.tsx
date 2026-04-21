@@ -522,6 +522,12 @@ export function AdminSettings() {
                     Pro Plan
                   </div>
                 </SelectItem>
+                <SelectItem value="ultimate" className="text-white/70 focus:bg-white/[0.06] focus:text-white">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3 w-3 text-[#03DAC6]" />
+                    Ultimate Plan
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-[10px] text-white/20">Plan assigned to new users who register without an invite</p>
@@ -698,6 +704,12 @@ export function AdminSettings() {
                         <div className="flex items-center gap-2">
                           <Crown className="h-3 w-3 text-[#FFD700]" />
                           Pro Plan
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ultimate" className="text-white/70 focus:bg-white/[0.06] focus:text-white">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-[#03DAC6]" />
+                          Ultimate Plan
                         </div>
                       </SelectItem>
                     </SelectContent>

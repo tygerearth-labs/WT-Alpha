@@ -453,6 +453,7 @@ export function AdminSubscriptions() {
                 <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
                   <SelectItem value="basic">Basic</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="ultimate">Ultimate</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -424,9 +424,9 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                           <td className="py-2.5 px-3 text-center">
                             <Badge variant="outline" className={cn(
                               'text-[9px] font-bold uppercase px-2 py-0.5',
-                              u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
+                              u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : u.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
                             )}>
-                              {u.plan}
+                              {u.plan === 'ultimate' ? '⭐ ULTIMATE' : u.plan}
                             </Badge>
                           </td>
                           <td className="py-2.5 px-3 text-center">
@@ -556,6 +556,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <SelectItem value="all">All Plans</SelectItem>
                   <SelectItem value="basic">Basic</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="ultimate">Ultimate</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
@@ -642,9 +643,9 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                           <p className="text-sm font-medium text-white/80 truncate">{u.username}</p>
                           <Badge variant="outline" className={cn(
                             'text-[8px] font-bold uppercase px-1.5 py-0 shrink-0',
-                            u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
+                            u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : u.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
                           )}>
-                            {u.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
+                            {u.plan === 'ultimate' ? <><Sparkles className="h-2 w-2 mr-0.5 inline" />ULTIMATE</> : u.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
                           </Badge>
                           <Badge variant="outline" className={cn(
                             'text-[8px] font-bold uppercase px-1.5 py-0 shrink-0',
@@ -821,7 +822,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
               <Select value={editPlan} onValueChange={(v) => {
                 setEditPlan(v);
                 // Auto-update limits based on plan defaults
-                const defaults = { basic: { cats: 10, savings: 3 }, pro: { cats: 50, savings: 20 } };
+                const defaults = { basic: { cats: 10, savings: 3 }, pro: { cats: 50, savings: 20 }, ultimate: { cats: 100, savings: 50 } };
                 const d = defaults[v as keyof typeof defaults] || defaults.basic;
                 setEditMaxCats(String(d.cats));
                 setEditMaxSavings(String(d.savings));
@@ -832,6 +833,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                 <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
                   <SelectItem value="basic">Basic</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="ultimate">Ultimate</SelectItem>
                 </SelectContent>
               </Select>
             </div>
