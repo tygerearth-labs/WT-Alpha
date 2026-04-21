@@ -457,7 +457,7 @@ export function FinancialHealthScore() {
                 border: `1px solid ${scoreColor}20`,
               }}
             >
-              Got it
+              {t('common.close')}
             </Button>
             </div>
           </div>

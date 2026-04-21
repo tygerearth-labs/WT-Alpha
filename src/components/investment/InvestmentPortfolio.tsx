@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { AssetType } from '@/lib/asset-catalogue';
 import {
   Card,
@@ -68,6 +67,8 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   saham: { bg: 'bg-purple-500/15', text: 'text-purple-400' },
   crypto: { bg: 'bg-teal-500/15', text: 'text-teal-400' },
   forex: { bg: 'bg-pink-500/15', text: 'text-pink-400' },
+  komoditas: { bg: 'bg-yellow-500/15', text: 'text-yellow-400' },
+  indeks: { bg: 'bg-blue-500/15', text: 'text-blue-400' },
 };
 
 // Currency formatting based on asset type
@@ -80,6 +81,8 @@ function getInvCurrencyLabel(type: string): string {
 function getInvCurrencyPrefix(type: string): string {
   if (type === 'saham') return 'Rp';
   if (type === 'crypto') return '$';
+  if (type === 'komoditas') return '$';
+  if (type === 'indeks') return '';
   return '';
 }
 
@@ -87,8 +90,11 @@ function formatInvPrice(type: string, amount: number): string {
   if (type === 'saham') {
     return 'Rp' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
   }
-  if (type === 'crypto') {
+  if (type === 'crypto' || type === 'komoditas') {
     return '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  }
+  if (type === 'indeks') {
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
   }
   // forex
   return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 }).format(amount);
@@ -102,7 +108,6 @@ const STATUS_VARIANTS: Record<string, string> = {
 export default function InvestmentPortfolio() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
-  const { formatAmount } = useCurrencyFormat();
 
   const [portfolios, setPortfolios] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -290,10 +295,12 @@ export default function InvestmentPortfolio() {
               <SelectValue placeholder="Tipe" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Tipe</SelectItem>
-              <SelectItem value="saham">Saham</SelectItem>
-              <SelectItem value="crypto">Crypto</SelectItem>
-              <SelectItem value="forex">Forex</SelectItem>
+              <SelectItem value="all">{t('inv.dashAllType')}</SelectItem>
+              <SelectItem value="crypto">{t('inv.typeCrypto')}</SelectItem>
+              <SelectItem value="saham">{t('inv.typeSaham')}</SelectItem>
+              <SelectItem value="forex">{t('inv.typeForex')}</SelectItem>
+              <SelectItem value="komoditas">Komoditas</SelectItem>
+              <SelectItem value="indeks">Indeks</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -301,9 +308,9 @@ export default function InvestmentPortfolio() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="open">Terbuka</SelectItem>
-              <SelectItem value="closed">Tertutup</SelectItem>
+              <SelectItem value="all">{t('inv.dashAllStatus')}</SelectItem>
+              <SelectItem value="open">{t('inv.statusOpen')}</SelectItem>
+              <SelectItem value="closed">{t('inv.statusClosed')}</SelectItem>
             </SelectContent>
           </Select>
           <Badge variant="outline" className="border-white/[0.1] text-white/50 text-xs">
@@ -378,7 +385,7 @@ export default function InvestmentPortfolio() {
                         if (!livePrice) return null;
                         return (
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-white/40">LIVE</span>
+                            <span className="text-[10px] text-white/40">{t('inv.dashTicker')}</span>
                             <span className={cn('text-xs font-medium', livePrice.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
                               {livePrice.change24h >= 0 ? '+' : ''}{livePrice.change24h.toFixed(2)}%
                             </span>
@@ -498,7 +505,6 @@ export default function InvestmentPortfolio() {
                 <div className="flex-1">
                   <AssetSearchInput
                     businessId={businessId}
-                    typeFilter={form.type as AssetType | 'all'}
                     value={selectedAsset}
                     onSelect={(asset) => {
                       setSelectedAsset(asset);
@@ -532,29 +538,9 @@ export default function InvestmentPortfolio() {
               <p className="text-[11px] text-white/25">{t('inv.searchAssetHint')}</p>
             </div>
 
-            {/* Type & Status row */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.portfolioType')}</Label>
-                <Select value={form.type} onValueChange={(v) => {
-                  setForm({ ...form, type: v });
-                  // Clear search selection if type changed manually
-                  if (selectedAsset && selectedAsset.type !== v) {
-                    setSelectedAsset(null);
-                  }
-                }}>
-                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="saham">{t('inv.typeSaham')}</SelectItem>
-                    <SelectItem value="crypto">{t('inv.typeCrypto')}</SelectItem>
-                    <SelectItem value="forex">{t('inv.typeForex')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.status')}</Label>
+            {/* Status (type auto-detected from search) */}
+            <div className="space-y-2">
+              <Label className="text-white/80">{t('inv.status')}</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                   <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
                     <SelectValue />
@@ -564,7 +550,6 @@ export default function InvestmentPortfolio() {
                     <SelectItem value="closed">{t('inv.statusClosed')}</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
             </div>
 
             {/* Selected asset info card */}
@@ -596,26 +581,43 @@ export default function InvestmentPortfolio() {
 
             {/* Manual symbol/name fallback (when no asset selected) */}
             {!selectedAsset && (
-              <div className="grid grid-cols-2 gap-3">
+              <>
                 <div className="space-y-2">
-                  <Label className="text-white/80">{t('inv.symbol')} *</Label>
-                  <Input
-                    value={form.symbol}
-                    onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
-                    placeholder="BBCA"
-                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                  />
+                  <Label className="text-white/80">{t('inv.portfolioType')}</Label>
+                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                    <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="saham">{t('inv.typeSaham')}</SelectItem>
+                      <SelectItem value="crypto">{t('inv.typeCrypto')}</SelectItem>
+                      <SelectItem value="forex">{t('inv.typeForex')}</SelectItem>
+                      <SelectItem value="komoditas">Komoditas</SelectItem>
+                      <SelectItem value="indeks">Indeks</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-white/80">{t('inv.assetName')}</Label>
-                  <Input
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Bank BC"
-                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-white/80">{t('inv.symbol')} *</Label>
+                    <Input
+                      value={form.symbol}
+                      onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
+                      placeholder="BBCA"
+                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/80">{t('inv.assetName')}</Label>
+                    <Input
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="Bank BC"
+                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                    />
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Currency hint */}

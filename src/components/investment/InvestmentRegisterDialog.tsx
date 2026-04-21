@@ -56,7 +56,7 @@ export default function InvestmentRegisterDialog({
 
     // Prevent duplicate registration
     if (isAlreadyRegistered) {
-      toast.error(t('biz.alreadyRegistered') || 'Investasi sudah terdaftar');
+      toast.error(t('inv.alreadyRegistered'));
       onOpenChange(false);
       return;
     }
@@ -109,21 +109,21 @@ export default function InvestmentRegisterDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent aria-describedby={undefined} className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl">
           <VisuallyHidden>
-            <DialogTitle>{t('inv.alreadyRegistered') || 'Investasi Sudah Terdaftar'}</DialogTitle>
+            <DialogTitle>{t('inv.alreadyRegistered')}</DialogTitle>
           </VisuallyHidden>
           <div className="relative bg-gradient-to-br from-[#FFD700]/20 via-[#FFD700]/5 to-transparent p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#FFD700]/15 flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-[#FFD700]" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">{t('inv.alreadyRegistered') || 'Investasi Sudah Terdaftar'}</h2>
+            <h2 className="text-xl font-bold text-white mb-2">{t('inv.alreadyRegistered')}</h2>
             <p className="text-sm text-white/50 mb-6">
-              {t('inv.alreadyRegisteredDesc') || 'Anda sudah mendaftarkan akun Investasi. Satu akun hanya bisa memiliki satu Investasi.'}
+              {t('inv.alreadyRegisteredDesc')}
             </p>
             <Button
               onClick={() => onOpenChange(false)}
               className="bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#0D0D0D] px-8"
             >
-              {t('common.close') || 'Tutup'}
+              {t('common.close')}
             </Button>
           </div>
         </DialogContent>

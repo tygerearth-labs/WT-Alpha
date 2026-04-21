@@ -22,6 +22,8 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   saham: { bg: 'rgba(187,134,252,0.12)', text: '#BB86FC' },
   crypto: { bg: 'rgba(3,218,198,0.12)', text: '#03DAC6' },
   forex: { bg: 'rgba(207,102,121,0.12)', text: '#CF6679' },
+  komoditas: { bg: 'rgba(255,215,0,0.12)', text: '#FFD700' },
+  indeks: { bg: 'rgba(100,181,246,0.12)', text: '#64B5F6' },
 };
 
 const INTERVALS = [
@@ -43,6 +45,18 @@ function toTradingViewSymbol(symbol: string, type: string): string {
       if (upper === 'XAUUSD') return 'OANDA:XAUUSD';
       if (upper.startsWith('USD')) return `FX_IDC:${upper}`;
       return `FX:${upper}`;
+    case 'komoditas':
+      if (upper === 'XAUUSD') return 'OANDA:XAUUSD';
+      if (upper === 'XAGUSD') return 'OANDA:XAGUSD';
+      if (upper === 'WTIUSD' || upper === 'BRENTUSD') return `TVCOMMODITIES:${upper.replace('USD', '')}`;
+      return `TVCOMMODITIES:${upper}`;
+    case 'indeks':
+      if (upper === 'US100' || upper === 'NASDAQ100') return 'NASDAQ:NDX';
+      if (upper === 'US30') return 'CBOT_MINI:YM1!';
+      if (upper === 'SPX500') return 'SP:SPX';
+      if (upper === 'DXY') return 'FX:DX-Y.NYB';
+      if (upper === 'VIX') return 'CBOE:VIX';
+      return `TVINDEX:${upper}`;
     case 'saham':
     default:
       return `IDX:${upper}`;

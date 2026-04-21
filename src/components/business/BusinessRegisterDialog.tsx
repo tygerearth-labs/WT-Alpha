@@ -115,7 +115,7 @@ export default function BusinessRegisterDialog({
 
     // Prevent duplicate registration
     if (registeredCategories.has(category)) {
-      toast.error(t('biz.alreadyRegistered') || `${category === 'bisnis' ? 'Bisnis' : 'Investasi'} sudah terdaftar`);
+      toast.error(t('biz.alreadyRegistered'));
       return;
     }
 
@@ -161,21 +161,21 @@ export default function BusinessRegisterDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent aria-describedby={undefined} className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl">
           <VisuallyHidden>
-            <DialogTitle>{t('biz.allRegistered') || 'Semua Sudah Terdaftar'}</DialogTitle>
+            <DialogTitle>{t('biz.allRegistered')}</DialogTitle>
           </VisuallyHidden>
           <div className="relative bg-gradient-to-br from-[#03DAC6]/20 via-[#FFD700]/5 to-transparent p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#03DAC6]/15 flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-[#03DAC6]" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">{t('biz.allRegistered') || 'Semua Sudah Terdaftar'}</h2>
+            <h2 className="text-xl font-bold text-white mb-2">{t('biz.allRegistered')}</h2>
             <p className="text-sm text-white/50 mb-6">
-              {t('biz.allRegisteredDesc') || 'Anda sudah mendaftarkan Bisnis dan Investasi. Satu akun hanya bisa memiliki satu Bisnis dan satu Investasi.'}
+              {t('biz.allRegisteredDesc')}
             </p>
             <Button
               onClick={() => onOpenChange(false)}
               className="bg-[#BB86FC] hover:bg-[#9B6FDB] text-black px-8"
             >
-              {t('common.close') || 'Tutup'}
+              {t('common.close')}
             </Button>
           </div>
         </DialogContent>

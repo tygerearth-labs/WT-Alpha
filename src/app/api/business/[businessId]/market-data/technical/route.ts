@@ -55,12 +55,11 @@ function ema(data: number[], period: number): number {
 
 /** Relative Strength Index (14-period) */
 function computeRSI(closes: number[], period: number = 14): number {
-  if (closes.length < period + 1) return 50; // neutral if not enough data
+  if (closes.length < period + 1) return 50;
 
   let gains = 0;
   let losses = 0;
 
-  // Initial average gain/loss
   for (let i = closes.length - period; i < closes.length; i++) {
     const change = closes[i] - closes[i - 1];
     if (change > 0) {
@@ -70,20 +69,15 @@ function computeRSI(closes: number[], period: number = 14): number {
     }
   }
 
-  let avgGain = gains / period;
-  let avgLoss = losses / period;
-
-  // Use Wilder's smoothing
-  const smoothingFactor = (period - 1) / period;
-  // For simplicity with limited data points we just use the initial calculation
-  // In a real implementation you'd iterate through all historical data
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
 
   if (avgLoss === 0) return 100;
   const rs = avgGain / avgLoss;
   return 100 - (100 / (1 + rs));
 }
 
-/** MACD (12/26/9) - returns { macd, signal, histogram } */
+/** MACD (12/26/9) */
 function computeMACD(closes: number[]): { macd: number; signal: number; histogram: number } {
   if (closes.length < 26) {
     return { macd: 0, signal: 0, histogram: 0 };
@@ -93,8 +87,6 @@ function computeMACD(closes: number[]): { macd: number; signal: number; histogra
   const ema26 = ema(closes, 26);
   const macdLine = ema12 - ema26;
 
-  // Compute MACD signal line (9-period EMA of MACD values)
-  // We approximate by computing MACD at multiple points
   const macdValues: number[] = [];
   for (let i = 9; i <= closes.length; i++) {
     const slice = closes.slice(0, i);
@@ -124,7 +116,6 @@ function computeBollingerBands(closes: number[], period: number = 20, stdDev: nu
   const slice = closes.slice(closes.length - period);
   const mean = slice.reduce((sum, val) => sum + val, 0) / period;
 
-  // Standard deviation
   const squaredDiffs = slice.map(val => Math.pow(val - mean, 2));
   const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / period;
   const sd = Math.sqrt(variance);
@@ -136,9 +127,172 @@ function computeBollingerBands(closes: number[], period: number = 20, stdDev: nu
   };
 }
 
+// ── Smart Money Concepts (SMC) ───────────────────────────────────────────────
+
+interface Candle {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+/** Detect Fair Value Gap (FVG) from recent candles */
+function detectFVG(candles: Candle[]): { high: number; low: number; filled: boolean; description: string } | null {
+  if (candles.length < 3) return null;
+
+  for (let i = candles.length - 3; i >= Math.max(0, candles.length - 20); i--) {
+    // Bullish FVG: candle[i+2].low > candle[i].high
+    if (candles[i + 2].low > candles[i].high) {
+      const gapHigh = candles[i + 2].low;
+      const gapLow = candles[i].high;
+      const currentPrice = candles[candles.length - 1].close;
+      const filled = currentPrice <= gapLow;
+      return {
+        high: gapHigh,
+        low: gapLow,
+        filled,
+        description: `Bullish FVG di ${fmtNum(gapLow)} - ${fmtNum(gapHigh)} (${filled ? 'sudah terisi' : 'belum terisi, potensi naik'})`,
+      };
+    }
+    // Bearish FVG: candle[i].low > candle[i+2].high
+    if (candles[i].low > candles[i + 2].high) {
+      const gapHigh = candles[i].low;
+      const gapLow = candles[i + 2].high;
+      const currentPrice = candles[candles.length - 1].close;
+      const filled = currentPrice >= gapHigh;
+      return {
+        high: gapHigh,
+        low: gapLow,
+        filled,
+        description: `Bearish FVG di ${fmtNum(gapLow)} - ${fmtNum(gapHigh)} (${filled ? 'sudah terisi' : 'belum terisi, potensi turun'})`,
+      };
+    }
+  }
+  return null;
+}
+
+/** Detect Order Block zone from recent candles */
+function detectOrderBlock(candles: Candle[]): { zone: { high: number; low: number }; type: 'bullish' | 'bearish'; description: string } | null {
+  if (candles.length < 5) return null;
+
+  for (let i = candles.length - 4; i >= Math.max(0, candles.length - 20); i--) {
+    const lookbackStart = Math.max(0, i - 3);
+    const prevHigh = Math.max(...candles.slice(lookbackStart, i).map(c => c.high));
+    const prevLow = Math.min(...candles.slice(lookbackStart, i).map(c => c.low));
+
+    // Bullish breakout: next candles break above resistance
+    if (candles[i + 1].high > prevHigh && candles[i + 2].high > prevHigh) {
+      const zoneHigh = Math.max(candles[i].high, candles[i].open);
+      const zoneLow = Math.min(candles[i].low, candles[i].close);
+      return {
+        zone: { high: zoneHigh, low: zoneLow },
+        type: 'bullish',
+        description: `Bullish Order Block di ${fmtNum(zoneLow)} - ${fmtNum(zoneHigh)}`,
+      };
+    }
+    // Bearish breakout: next candles break below support
+    if (candles[i + 1].low < prevLow && candles[i + 2].low < prevLow) {
+      const zoneHigh = Math.max(candles[i].high, candles[i].close);
+      const zoneLow = Math.min(candles[i].low, candles[i].open);
+      return {
+        zone: { high: zoneHigh, low: zoneLow },
+        type: 'bearish',
+        description: `Bearish Order Block di ${fmtNum(zoneLow)} - ${fmtNum(zoneHigh)}`,
+      };
+    }
+  }
+  return null;
+}
+
+/** Detect Liquidity Sweep: wick beyond recent high/low then reverses */
+function detectLiquiditySweep(candles: Candle[]): { level: number; swept: boolean; description: string; type: 'high' | 'low' } | null {
+  if (candles.length < 10) return null;
+
+  const lookback = 10;
+  const recentCandles = candles.slice(Math.max(0, candles.length - lookback - 1), candles.length - 1);
+  const recentHigh = Math.max(...recentCandles.map(c => c.high));
+  const recentLow = Math.min(...recentCandles.map(c => c.low));
+  const lastCandle = candles[candles.length - 1];
+
+  // Sweep above high then close below (bearish sweep)
+  if (lastCandle.high > recentHigh && lastCandle.close < lastCandle.open) {
+    return {
+      level: recentHigh,
+      swept: true,
+      type: 'high',
+      description: `Liquidity sweep di atas ${fmtNum(recentHigh)} — harga menembus lalu ditolak, potensi reversal bearish`,
+    };
+  }
+
+  // Sweep below low then close above (bullish sweep)
+  if (lastCandle.low < recentLow && lastCandle.close > lastCandle.open) {
+    return {
+      level: recentLow,
+      swept: true,
+      type: 'low',
+      description: `Liquidity sweep di bawah ${fmtNum(recentLow)} — harga menembus lalu memantul, potensi reversal bullish`,
+    };
+  }
+
+  return null;
+}
+
+/** Detect Trend Structure: bullish/bearish/ranging from swing points */
+function detectTrendStructure(candles: Candle[]): 'bullish' | 'bearish' | 'ranging' {
+  if (candles.length < 10) return 'ranging';
+
+  // Simple swing detection
+  let higherHighs = 0;
+  let lowerHighs = 0;
+  let higherLows = 0;
+  let lowerLows = 0;
+
+  const step = Math.max(1, Math.floor(candles.length / 5));
+  for (let i = step; i < candles.length - step; i += step) {
+    const prevHigh = Math.max(...candles.slice(Math.max(0, i - step), i).map(c => c.high));
+    const prevLow = Math.min(...candles.slice(Math.max(0, i - step), i).map(c => c.low));
+    const nextHigh = Math.max(...candles.slice(i, Math.min(candles.length, i + step)).map(c => c.high));
+    const nextLow = Math.min(...candles.slice(i, Math.min(candles.length, i + step)).map(c => c.low));
+
+    if (nextHigh > prevHigh) higherHighs++;
+    else if (nextHigh < prevHigh) lowerHighs++;
+    if (nextLow > prevLow) higherLows++;
+    else if (nextLow < prevLow) lowerLows++;
+  }
+
+  const bullishScore = higherHighs + higherLows;
+  const bearishScore = lowerHighs + lowerLows;
+
+  if (bullishScore > bearishScore * 1.5) return 'bullish';
+  if (bearishScore > bullishScore * 1.5) return 'bearish';
+  return 'ranging';
+}
+
+/** Premium/Discount zone relative to equilibrium (50-period EMA) */
+function detectPremiumDiscount(candles: Candle[]): 'premium' | 'discount' | 'equilibrium' {
+  if (candles.length < 10) return 'equilibrium';
+
+  const closes = candles.map(c => c.close);
+  const eq = sma(closes, Math.min(50, closes.length));
+  const currentPrice = closes[closes.length - 1];
+  const range = Math.max(eq * 0.01, 1); // 1% threshold
+
+  if (currentPrice > eq + range) return 'premium';
+  if (currentPrice < eq - range) return 'discount';
+  return 'equilibrium';
+}
+
+/** Format number for display */
+function fmtNum(n: number): string {
+  if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (n >= 1) return n.toFixed(2);
+  return n.toFixed(6);
+}
+
 // ── Data Fetchers ────────────────────────────────────────────────────────────
 
 interface OHLCVData {
+  candles: Candle[];
   closes: number[];
   volumes: number[];
   lastPrice: number;
@@ -148,7 +302,6 @@ interface OHLCVData {
 async function fetchBinanceOHLCV(symbol: string): Promise<OHLCVData | null> {
   try {
     const binanceSymbol = toBinanceSymbol(symbol);
-    // Fetch daily klines with 100 data points (enough for 50-period SMA and all indicators)
     const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=1d&limit=100`;
 
     const res = await fetchWithTimeout(url, { next: { revalidate: 120 }, timeoutMs: 8000 });
@@ -160,21 +313,26 @@ async function fetchBinanceOHLCV(symbol: string): Promise<OHLCVData | null> {
     const klines = await res.json();
     if (!Array.isArray(klines) || klines.length < 2) return null;
 
+    const candles: Candle[] = [];
     const closes: number[] = [];
     const volumes: number[] = [];
 
     for (const kline of klines) {
       if (!Array.isArray(kline) || kline.length < 12) continue;
+      const open = parseFloat(kline[1]);
+      const high = parseFloat(kline[2]);
+      const low = parseFloat(kline[3]);
       const close = parseFloat(kline[4]);
       const vol = parseFloat(kline[5]);
-      if (isNaN(close)) continue;
+      if (isNaN(close) || isNaN(open) || isNaN(high) || isNaN(low)) continue;
+      candles.push({ open, high, low, close });
       closes.push(close);
       volumes.push(isNaN(vol) ? 0 : vol);
     }
 
     if (closes.length < 2) return null;
 
-    return { closes, volumes, lastPrice: closes[closes.length - 1] };
+    return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
   } catch (error) {
     console.warn(`Binance OHLCV fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
     return null;
@@ -183,21 +341,32 @@ async function fetchBinanceOHLCV(symbol: string): Promise<OHLCVData | null> {
 
 /** Generate mock OHLCV for non-crypto types */
 function generateMockOHLCV(basePrice: number, symbol: string): OHLCVData {
+  const candles: Candle[] = [];
   const closes: number[] = [];
   const volumes: number[] = [];
   let price = basePrice * 0.85;
-  const now = Math.floor(Date.now() / 86400000); // days since epoch
+  const now = Math.floor(Date.now() / 86400000);
 
   for (let i = 100; i >= 0; i--) {
     const seed = symbol + String(now - i);
     const volatility = basePrice * 0.025;
     const change = (seededRandom(seed) - 0.45) * volatility;
+    const open = price;
     price = price + change;
-    closes.push(parseFloat(price.toFixed(price < 1 ? 6 : 2)));
+    const high = Math.max(open, price) * (1 + seededRandom(seed + 'h') * 0.015);
+    const low = Math.min(open, price) * (1 - seededRandom(seed + 'l') * 0.015);
+    const close = parseFloat(price.toFixed(price < 1 ? 6 : 2));
+    candles.push({
+      open: parseFloat(open.toFixed(open < 1 ? 6 : 2)),
+      high: parseFloat(high.toFixed(high < 1 ? 6 : 2)),
+      low: parseFloat(low.toFixed(low < 1 ? 6 : 2)),
+      close,
+    });
+    closes.push(close);
     volumes.push(Math.floor(seededRandom(seed + 'v') * 10000000));
   }
 
-  return { closes, volumes, lastPrice: closes[closes.length - 1] };
+  return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
 }
 
 /** Fetch Binance 24hr ticker for price & change24h */
@@ -222,22 +391,264 @@ async function fetchBinanceTicker(symbol: string): Promise<{ price: number; chan
   }
 }
 
+// ── AI Analysis via LLM ──────────────────────────────────────────────────────
+
+interface AIAnalysisResult {
+  overallSignal: 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL';
+  signalStrength: number;
+  confidence: number;
+  reasoning: string;
+  strategy: string;
+  priceForecast: {
+    shortTerm: { target: number; timeframe: string };
+    midTerm: { target: number; timeframe: string };
+    longTerm: { target: number; timeframe: string };
+  };
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  entryZone: string;
+  stopLossZone: string;
+  takeProfitZone: string;
+}
+
+function buildFallbackAIAnalysis(
+  currentPrice: number,
+  rsiValue: number,
+  trendStructure: 'bullish' | 'bearish' | 'ranging',
+  signalStrength: number,
+  premiumDiscount: 'premium' | 'discount' | 'equilibrium',
+  type: string,
+  symbol: string,
+  ob: { zone: { high: number; low: number }; type: string } | null,
+  fvg: { high: number; low: number; filled: boolean } | null,
+  sweep: { level: number; description: string } | null,
+): AIAnalysisResult {
+  const prefix = type === 'saham' ? 'Rp' : type === 'forex' ? '' : '$';
+  const fmtP = (v: number) => `${prefix}${fmtNum(v)}`;
+
+  let overallSignal: AIAnalysisResult['overallSignal'] = 'NEUTRAL';
+  if (signalStrength >= 60) overallSignal = 'STRONG_BUY';
+  else if (signalStrength >= 20) overallSignal = 'BUY';
+  else if (signalStrength <= -60) overallSignal = 'STRONG_SELL';
+  else if (signalStrength <= -20) overallSignal = 'SELL';
+
+  const confidence = Math.min(95, Math.max(30, Math.abs(signalStrength) + 25));
+  const isBullish = trendStructure === 'bullish';
+
+  const reasoningParts: string[] = [];
+  if (trendStructure === 'bullish') reasoningParts.push(`Struktur tren ${symbol} menunjukkan pola higher-high dan higher-low yang mengindikasikan tekanan beli kuat.`);
+  else if (trendStructure === 'bearish') reasoningParts.push(`Struktur tren ${symbol} menunjukkan pola lower-high dan lower-low yang mengindikasikan tekanan jual dominan.`);
+  else reasoningParts.push(`Struktur tren ${symbol} bergerak sideways (ranging), menunggu breakout arah yang jelas.`);
+
+  if (premiumDiscount === 'discount' && isBullish) reasoningParts.push('Harga berada di zona diskon (di bawah equilibrium), area ini menarik untuk akumulasi bagi smart money.');
+  else if (premiumDiscount === 'premium' && !isBullish) reasoningParts.push('Harga berada di zona premium (di atas equilibrium), potensi profit-taking atau distribusi dari institusi besar.');
+
+  if (ob) reasoningParts.push(`${ob.type === 'bullish' ? 'Bullish' : 'Bearish'} order block terdeteksi sebagai area ${ob.type === 'bullish' ? 'support' : 'resistance'} utama.`);
+  if (fvg && !fvg.filled) reasoningParts.push('Fair value gap yang belum terisi menandakan ketidakseimbangan harga yang cenderung akan ditutup.');
+
+  const shortTarget = currentPrice * (isBullish ? 1.02 : isBullish === false ? 0.98 : 1.005);
+  const midTarget = currentPrice * (isBullish ? 1.05 : isBullish === false ? 0.95 : 1.01);
+  const longTarget = currentPrice * (isBullish ? 1.10 : isBullish === false ? 0.90 : 1.02);
+
+  const strategies: string[] = [];
+  if (ob) strategies.push('Order Block');
+  if (fvg && !fvg.filled) strategies.push('FVG Fill');
+  if (sweep) strategies.push('Liquidity Sweep');
+  if (strategies.length === 0) strategies.push('Trend Structure');
+
+  return {
+    overallSignal,
+    signalStrength,
+    confidence,
+    reasoning: reasoningParts.join(' '),
+    strategy: strategies.join(' + '),
+    priceForecast: {
+      shortTerm: { target: parseFloat(shortTarget.toFixed(2)), timeframe: '1-3 hari' },
+      midTerm: { target: parseFloat(midTarget.toFixed(2)), timeframe: '1-2 minggu' },
+      longTerm: { target: parseFloat(longTarget.toFixed(2)), timeframe: '1-3 bulan' },
+    },
+    riskLevel: Math.abs(signalStrength) > 50 ? 'HIGH' : Math.abs(signalStrength) > 25 ? 'MEDIUM' : 'LOW',
+    entryZone: isBullish
+      ? `Masuk di area ${fmtP(currentPrice * 0.995)} - ${fmtP(currentPrice * 1.002)}`
+      : `Tunggu konfirmasi di area ${fmtP(currentPrice * 0.998)} - ${fmtP(currentPrice * 1.005)}`,
+    stopLossZone: isBullish
+      ? `Stop loss di bawah ${fmtP(ob ? ob.zone.low * 0.995 : currentPrice * 0.97)}`
+      : `Stop loss di atas ${fmtP(ob ? ob.zone.high * 1.005 : currentPrice * 1.03)}`,
+    takeProfitZone: isBullish
+      ? `Take profit di area ${fmtP(midTarget)} - ${fmtP(longTarget)}`
+      : `Take profit di area ${fmtP(midTarget)} - ${fmtP(longTarget)}`,
+  };
+}
+
+async function generateAIAnalysis(
+  symbol: string,
+  type: string,
+  price: number,
+  change24h: number,
+  rsiValue: number,
+  macdResult: { macd: number; signal: number; histogram: number },
+  bbResult: { upper: number; middle: number; lower: number },
+  sma20: number,
+  sma50: number,
+  fvg: { high: number; low: number; filled: boolean; description: string } | null,
+  ob: { zone: { high: number; low: number }; type: string; description: string } | null,
+  sweep: { level: number; swept: boolean; description: string } | null,
+  trendStructure: 'bullish' | 'bearish' | 'ranging',
+  premiumDiscount: 'premium' | 'discount' | 'equilibrium',
+  signalStrength: number,
+): Promise<AIAnalysisResult | null> {
+  try {
+    const zai = await import('z-ai-web-dev-sdk');
+    const ZAI = zai.default;
+    const zaiClient = await ZAI.create();
+
+    const prompt = `Kamu adalah analis Smart Money Concepts (SMC) profesional. Analisis ${symbol} (${type}) berdasarkan data berikut:
+
+Harga saat ini: ${price} (${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}% 24h)
+
+Smart Money Concepts:
+- FVG: ${fvg ? JSON.stringify(fvg) : 'Tidak terdeteksi'}
+- Order Block: ${ob ? JSON.stringify(ob) : 'Tidak terdeteksi'}
+- Liquidity Sweep: ${sweep ? JSON.stringify(sweep) : 'Tidak terdeteksi'}
+- Trend Structure: ${trendStructure}
+- Premium/Discount: ${premiumDiscount}
+
+Technical Indicators:
+- RSI: ${rsiValue.toFixed(1)}
+- MACD: histogram ${macdResult.histogram.toFixed(2)}, signal ${macdResult.signal.toFixed(2)}
+- Bollinger Bands: upper ${bbResult.upper.toFixed(2)}, middle ${bbResult.middle.toFixed(2)}, lower ${bbResult.lower.toFixed(2)}
+- SMA20: ${sma20.toFixed(2)}, SMA50: ${sma50.toFixed(2)}
+
+Skor sinyal agregat: ${signalStrength} (-100 to 100)
+
+Berikan analisis dalam bahasa Indonesia yang mudah dipahami investor awam. Response format JSON:
+{
+  "overallSignal": "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL",
+  "signalStrength": <number -100 to 100>,
+  "confidence": <number 0-100>,
+  "reasoning": "<3-4 kalimat dalam bahasa Indonesia menjelaskan kenapa signal ini BUY/SELL/NEUTRAL, sertakan analisis SMC dan indikator teknikal>",
+  "strategy": "<nama strategi yang terdeteksi, misal 'FVG Reversal + Liquidity Sweep'>",
+  "priceForecast": {
+    "shortTerm": { "target": <number>, "timeframe": "1-3 hari" },
+    "midTerm": { "target": <number>, "timeframe": "1-2 minggu" },
+    "longTerm": { "target": <number>, "timeframe": "1-3 bulan" }
+  },
+  "riskLevel": "LOW" | "MEDIUM" | "HIGH",
+  "entryZone": "<zona entry dalam format harga dengan simbol mata uang>",
+  "stopLossZone": "<zona stop loss>",
+  "takeProfitZone": "<zona take profit>"
+}
+
+Hanya response JSON saja, tanpa penjelasan tambahan.`;
+
+    const result = await zaiClient.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const content = result.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty LLM response');
+
+    // Extract JSON from response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in LLM response');
+
+    const parsed = JSON.parse(jsonMatch[0]) as AIAnalysisResult;
+
+    // Validate and sanitize
+    const validSignals = ['STRONG_BUY', 'BUY', 'NEUTRAL', 'SELL', 'STRONG_SELL'];
+    if (!validSignals.includes(parsed.overallSignal)) parsed.overallSignal = 'NEUTRAL';
+    parsed.signalStrength = Math.max(-100, Math.min(100, Number(parsed.signalStrength) || 0));
+    parsed.confidence = Math.max(10, Math.min(99, Number(parsed.confidence) || 50));
+    if (!['LOW', 'MEDIUM', 'HIGH'].includes(parsed.riskLevel)) parsed.riskLevel = 'MEDIUM';
+    if (!parsed.reasoning) parsed.reasoning = `Analisis teknikal ${symbol} menunjukkan sinyal ${parsed.overallSignal} berdasarkan indikator SMC dan teknikal.`;
+    if (!parsed.strategy) parsed.strategy = 'Technical + SMC Analysis';
+
+    return parsed;
+  } catch (error) {
+    console.warn(`AI analysis failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+// ── News Confirmation ────────────────────────────────────────────────────────
+
+async function fetchNewsConfirmation(
+  symbol: string,
+  type: string,
+): Promise<{ confirmed: boolean; recentEvents: string[]; sentiment: 'bullish' | 'bearish' | 'neutral'; source: string }> {
+  try {
+    const zai = await import('z-ai-web-dev-sdk');
+    const ZAI = zai.default;
+    const zaiClient = await ZAI.create();
+
+    const assetType = type === 'crypto' ? 'crypto' : type === 'forex' ? 'forex' : 'stock';
+    const searchQuery = `${symbol} ${assetType} news today latest`;
+
+    const newsResults = await zaiClient.functions.invoke('web_search', {
+      query: searchQuery,
+      num: 3,
+      recency_days: 1,
+    });
+
+    const events: string[] = [];
+    let bullishCount = 0;
+    let bearishCount = 0;
+
+    if (Array.isArray(newsResults)) {
+      for (const item of newsResults.slice(0, 3)) {
+        const title = item.name || '';
+        const snippet = item.snippet || '';
+        events.push(title);
+
+        const text = (title + ' ' + snippet).toLowerCase();
+        const bullishWords = ['surge', 'rally', 'bullish', 'gain', 'profit', 'soar', 'up', 'positive', 'growth', 'naik', 'untung'];
+        const bearishWords = ['drop', 'fall', 'crash', 'bearish', 'loss', 'decline', 'down', 'negative', 'turun', 'rugi'];
+
+        for (const w of bullishWords) { if (text.includes(w)) bullishCount++; }
+        for (const w of bearishWords) { if (text.includes(w)) bearishCount++; }
+      }
+    }
+
+    const sentiment = bullishCount > bearishCount ? 'bullish' : bearishCount > bullishCount ? 'bearish' : 'neutral';
+
+    return {
+      confirmed: events.length > 0,
+      recentEvents: events,
+      sentiment,
+      source: events.length > 0 ? `Berdasarkan ${events.length} berita terbaru` : 'Tidak ada berita terkini',
+    };
+  } catch (error) {
+    console.warn(`News confirmation failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
+    return {
+      confirmed: false,
+      recentEvents: [],
+      sentiment: 'neutral',
+      source: 'Gagal mengambil berita',
+    };
+  }
+}
+
 // ── Signal Aggregation ───────────────────────────────────────────────────────
 
 interface SignalDetail {
   indicator: string;
-  signal: 'bullish' | 'bearish' | 'neutral';
+  signal: string;
   weight: number;
+  description: string;
 }
 
-/** Aggregate all indicator signals into a single recommendation */
+/** Aggregate all indicator signals including SMC */
 function aggregateSignals(
   rsi: number,
   macdHist: number,
   currentPrice: number,
   bb: { upper: number; middle: number; lower: number },
   sma20: number,
-  sma50: number
+  sma50: number,
+  fvg: { high: number; low: number; filled: boolean; description: string } | null,
+  ob: { zone: { high: number; low: number }; type: string; description: string } | null,
+  sweep: { level: number; swept: boolean; type: 'high' | 'low'; description: string } | null,
+  trendStructure: 'bullish' | 'bearish' | 'ranging',
+  premiumDiscount: 'premium' | 'discount' | 'equilibrium',
 ): {
   overallSignal: 'buy' | 'sell' | 'neutral';
   signalStrength: number;
@@ -246,94 +657,203 @@ function aggregateSignals(
   const signalDetails: SignalDetail[] = [];
   let totalScore = 0;
 
-  // 1. RSI Signal (±25)
-  let rsiSignal: 'bullish' | 'bearish' | 'neutral';
+  // 1. RSI Signal (±15)
+  let rsiSignal: string;
   let rsiWeight = 0;
   if (rsi < 30) {
-    rsiSignal = 'bullish';
-    // Stronger signal the lower the RSI
-    rsiWeight = Math.min(25, 15 + (30 - rsi) * 0.5);
+    rsiSignal = 'BULLISH';
+    rsiWeight = 15;
   } else if (rsi > 70) {
-    rsiSignal = 'bearish';
-    rsiWeight = Math.max(-25, -15 - (rsi - 70) * 0.5);
+    rsiSignal = 'BEARISH';
+    rsiWeight = -15;
   } else if (rsi < 40) {
-    rsiSignal = 'bullish';
+    rsiSignal = 'BULLISH';
     rsiWeight = 5;
   } else if (rsi > 60) {
-    rsiSignal = 'bearish';
+    rsiSignal = 'BEARISH';
     rsiWeight = -5;
   } else {
-    rsiSignal = 'neutral';
+    rsiSignal = 'NEUTRAL';
     rsiWeight = 0;
   }
   totalScore += rsiWeight;
-  signalDetails.push({ indicator: 'RSI', signal: rsiSignal, weight: Math.abs(rsiWeight) });
+  signalDetails.push({
+    indicator: 'RSI',
+    signal: rsiSignal,
+    weight: Math.abs(rsiWeight),
+    description: rsi < 30
+      ? `RSI di ${rsi.toFixed(1)} (oversold), potensi rebound`
+      : rsi > 70
+        ? `RSI di ${rsi.toFixed(1)} (overbought), potensi koreksi`
+        : `RSI di ${rsi.toFixed(1)}, zona netral tanpa tekanan ekstrem`,
+  });
 
-  // 2. MACD Histogram Signal (±25)
-  let macdSignal: 'bullish' | 'bearish' | 'neutral';
+  // 2. MACD Histogram Signal (±15)
+  let macdSignal: string;
   let macdWeight = 0;
   if (macdHist > 0) {
-    macdSignal = 'bullish';
-    macdWeight = Math.min(25, 10 + Math.abs(macdHist) * 0.1);
+    macdSignal = 'BULLISH';
+    macdWeight = Math.min(15, 8 + Math.abs(macdHist) * 0.05);
   } else if (macdHist < 0) {
-    macdSignal = 'bearish';
-    macdWeight = Math.max(-25, -10 - Math.abs(macdHist) * 0.1);
+    macdSignal = 'BEARISH';
+    macdWeight = Math.max(-15, -8 - Math.abs(macdHist) * 0.05);
   } else {
-    macdSignal = 'neutral';
+    macdSignal = 'NEUTRAL';
     macdWeight = 0;
   }
   totalScore += macdWeight;
-  signalDetails.push({ indicator: 'MACD', signal: macdSignal, weight: Math.abs(macdWeight) });
+  signalDetails.push({
+    indicator: 'MACD',
+    signal: macdSignal,
+    weight: Math.abs(macdWeight),
+    description: macdHist > 0
+      ? `Histogram MACD positif (${macdHist.toFixed(2)}), momentum bullish`
+      : macdHist < 0
+        ? `Histogram MACD negatif (${macdHist.toFixed(2)}), momentum bearish`
+        : 'MACD mendekati zero line, momentum netral',
+  });
 
-  // 3. Bollinger Bands Signal (±25)
-  let bbSignal: 'bullish' | 'bearish' | 'neutral';
+  // 3. Bollinger Bands Signal (±10)
+  let bbSignal: string;
   let bbWeight = 0;
   if (currentPrice <= bb.lower) {
-    bbSignal = 'bullish';
-    bbWeight = 25;
+    bbSignal = 'BULLISH';
+    bbWeight = 10;
   } else if (currentPrice >= bb.upper) {
-    bbSignal = 'bearish';
-    bbWeight = -25;
+    bbSignal = 'BEARISH';
+    bbWeight = -10;
   } else {
-    // Position within the bands
     const range = bb.upper - bb.lower;
     if (range > 0) {
-      const position = (currentPrice - bb.lower) / range; // 0 to 1
+      const position = (currentPrice - bb.lower) / range;
       if (position < 0.2) {
-        bbSignal = 'bullish';
-        bbWeight = 10;
+        bbSignal = 'BULLISH';
+        bbWeight = 5;
       } else if (position > 0.8) {
-        bbSignal = 'bearish';
-        bbWeight = -10;
+        bbSignal = 'BEARISH';
+        bbWeight = -5;
       } else {
-        bbSignal = 'neutral';
+        bbSignal = 'NEUTRAL';
         bbWeight = 0;
       }
     } else {
-      bbSignal = 'neutral';
+      bbSignal = 'NEUTRAL';
       bbWeight = 0;
     }
   }
   totalScore += bbWeight;
-  signalDetails.push({ indicator: 'Bollinger Bands', signal: bbSignal, weight: Math.abs(bbWeight) });
+  signalDetails.push({
+    indicator: 'Bollinger Bands',
+    signal: bbSignal,
+    weight: Math.abs(bbWeight),
+    description: currentPrice <= bb.lower
+      ? 'Harga di bawah lower band, potensi bounce dari support dinamis'
+      : currentPrice >= bb.upper
+        ? 'Harga di atas upper band, waspada potensi pullback'
+        : 'Harga berada di dalam bollinger bands, pergerakan normal',
+  });
 
-  // 4. Moving Average Cross Signal (±25)
-  let maSignal: 'bullish' | 'bearish' | 'neutral';
+  // 4. Moving Average Cross Signal (±10)
+  let maSignal: string;
   let maWeight = 0;
   if (sma20 > sma50) {
-    maSignal = 'bullish'; // Golden cross
-    const spread = ((sma20 - sma50) / sma50) * 100;
-    maWeight = Math.min(25, 10 + spread * 5);
+    maSignal = 'BULLISH';
+    maWeight = 10;
   } else if (sma20 < sma50) {
-    maSignal = 'bearish'; // Death cross
-    const spread = ((sma50 - sma20) / sma50) * 100;
-    maWeight = Math.max(-25, -10 - spread * 5);
+    maSignal = 'BEARISH';
+    maWeight = -10;
   } else {
-    maSignal = 'neutral';
+    maSignal = 'NEUTRAL';
     maWeight = 0;
   }
   totalScore += maWeight;
-  signalDetails.push({ indicator: 'MA Cross', signal: maSignal, weight: Math.abs(maWeight) });
+  signalDetails.push({
+    indicator: 'MA Cross',
+    signal: maSignal,
+    weight: Math.abs(maWeight),
+    description: sma20 > sma50
+      ? 'SMA20 di atas SMA50 (golden cross), tren naik terkonfirmasi'
+      : sma20 < sma50
+        ? 'SMA20 di bawah SMA50 (death cross), tren turun terkonfirmasi'
+        : 'SMA20 dan SMA50 berdekatan, menunggu cross',
+  });
+
+  // 5. FVG Signal (±15)
+  if (fvg && !fvg.filled) {
+    // Bullish FVG: gap is above, price should fill upward
+    // Bearish FVG: gap is below, price should fill downward
+    const isBullishFVG = fvg.low > currentPrice * 0.99;
+    const fvgSignal = isBullishFVG ? 'BULLISH' : 'BEARISH';
+    const fvgWeight = isBullishFVG ? 15 : -15;
+    totalScore += fvgWeight;
+    signalDetails.push({
+      indicator: 'FVG',
+      signal: fvgSignal,
+      weight: 15,
+      description: fvg.description,
+    });
+  } else if (fvg?.filled) {
+    signalDetails.push({
+      indicator: 'FVG',
+      signal: 'NEUTRAL',
+      weight: 3,
+      description: fvg.description,
+    });
+  }
+
+  // 6. Order Block Signal (±15)
+  if (ob) {
+    const isBullishOB = ob.type === 'bullish';
+    const obWeight = isBullishOB ? 15 : -15;
+    totalScore += obWeight;
+    signalDetails.push({
+      indicator: 'Order Block',
+      signal: isBullishOB ? 'BULLISH' : 'BEARISH',
+      weight: 15,
+      description: ob.description + (isBullishOB ? ' — area support kuat' : ' — area resistance kuat'),
+    });
+  }
+
+  // 7. Liquidity Sweep Signal (±10)
+  if (sweep) {
+    const isBullishSweep = sweep.type === 'low';
+    const sweepWeight = isBullishSweep ? 10 : -10;
+    totalScore += sweepWeight;
+    signalDetails.push({
+      indicator: 'Liquidity Sweep',
+      signal: isBullishSweep ? 'BULLISH' : 'BEARISH',
+      weight: 10,
+      description: sweep.description,
+    });
+  }
+
+  // 8. Trend Structure Signal (±10)
+  const trendWeight = trendStructure === 'bullish' ? 10 : trendStructure === 'bearish' ? -10 : 0;
+  totalScore += trendWeight;
+  signalDetails.push({
+    indicator: 'Trend Structure',
+    signal: trendStructure.toUpperCase(),
+    weight: Math.abs(trendWeight) || 3,
+    description: trendStructure === 'bullish'
+      ? 'Pola higher-high dan higher-low terdeteksi, tren naik aktif'
+      : trendStructure === 'bearish'
+        ? 'Pola lower-high dan lower-low terdeteksi, tren turun aktif'
+        : 'Harga bergerak sideways, belum ada arah tren yang jelas',
+  });
+
+  // 9. Premium/Discount Signal (±5)
+  const pdWeight = premiumDiscount === 'discount' ? 5 : premiumDiscount === 'premium' ? -5 : 0;
+  totalScore += pdWeight;
+  signalDetails.push({
+    indicator: 'Premium/Discount',
+    signal: premiumDiscount.toUpperCase(),
+    weight: Math.abs(pdWeight) || 2,
+    description: premiumDiscount === 'discount'
+      ? 'Harga di zona diskon, area value untuk pembelian'
+      : premiumDiscount === 'premium'
+        ? 'Harga di zona premium, potensi profit-taking'
+        : 'Harga di equilibrium, zona netral',
+  });
 
   // Clamp total score to -100 to 100
   const signalStrength = Math.max(-100, Math.min(100, Math.round(totalScore)));
@@ -385,7 +905,6 @@ export async function GET(
     let change24h = 0;
 
     if (type === 'crypto') {
-      // Fetch real data from Binance
       ohlcvData = await fetchBinanceOHLCV(symbol);
       const ticker = await fetchBinanceTicker(symbol);
       if (ticker) {
@@ -422,10 +941,10 @@ export async function GET(
       change24h = parseFloat(((seededRandom(symbol + 'ch') - 0.45) * 4).toFixed(2));
     }
 
-    const { closes } = ohlcvData;
+    const { candles, closes } = ohlcvData;
     const currentPrice = closes[closes.length - 1] ?? 0;
 
-    // Compute all technical indicators
+    // ── Compute Basic Technical Indicators ──────────────────────────────
     const rsiValue = computeRSI(closes, 14);
     const macdResult = computeMACD(closes);
     const bbResult = computeBollingerBands(closes, 20, 2);
@@ -434,7 +953,45 @@ export async function GET(
     const ema12Value = ema(closes, 12);
     const ema26Value = ema(closes, 26);
 
-    // Determine individual signal labels
+    // ── Compute Smart Money Concepts ────────────────────────────────────
+    const fvg = detectFVG(candles);
+    const ob = detectOrderBlock(candles);
+    const sweep = detectLiquiditySweep(candles);
+    const trendStructure = detectTrendStructure(candles);
+    const premiumDiscount = detectPremiumDiscount(candles);
+
+    // ── Aggregate Signals ───────────────────────────────────────────────
+    const { overallSignal, signalStrength, signalDetails } = aggregateSignals(
+      rsiValue,
+      macdResult.histogram,
+      currentPrice,
+      bbResult,
+      sma20Value,
+      sma50Value,
+      fvg,
+      ob,
+      sweep,
+      trendStructure,
+      premiumDiscount,
+    );
+
+    // ── AI Analysis ────────────────────────────────────────────────────
+    const aiAnalysis = await generateAIAnalysis(
+      symbol.toUpperCase(), type, price, change24h,
+      rsiValue, macdResult, bbResult, sma20Value, sma50Value,
+      fvg, ob, sweep, trendStructure, premiumDiscount, signalStrength,
+    );
+
+    // Fallback if AI failed
+    const finalAI = aiAnalysis || buildFallbackAIAnalysis(
+      currentPrice, rsiValue, trendStructure, signalStrength,
+      premiumDiscount, type, symbol.toUpperCase(), ob, fvg, sweep,
+    );
+
+    // ── News Confirmation ──────────────────────────────────────────────
+    const newsConfirmation = await fetchNewsConfirmation(symbol, type);
+
+    // ── Determine indicator labels ─────────────────────────────────────
     let rsiLabel: string;
     if (rsiValue < 30) rsiLabel = 'oversold';
     else if (rsiValue > 70) rsiLabel = 'overbought';
@@ -447,26 +1004,28 @@ export async function GET(
     else if (macdResult.histogram < 0 && macdResult.macd < macdResult.signal) macdLabel = 'bearish';
     else macdLabel = 'neutral';
 
-    let bbLabel: string;
-    if (currentPrice <= bbResult.lower) bbLabel = 'below_lower';
-    else if (currentPrice >= bbResult.upper) bbLabel = 'above_upper';
-    else bbLabel = 'neutral';
-
-    // Aggregate signals
-    const { overallSignal, signalStrength, signalDetails } = aggregateSignals(
-      rsiValue,
-      macdResult.histogram,
-      currentPrice,
-      bbResult,
-      sma20Value,
-      sma50Value
-    );
+    let bbPosition: string;
+    let bbSignal: string;
+    if (currentPrice <= bbResult.lower) { bbPosition = 'below_lower'; bbSignal = 'bounce_expected'; }
+    else if (currentPrice >= bbResult.upper) { bbPosition = 'above_upper'; bbSignal = 'pullback_expected'; }
+    else { bbPosition = 'within_bands'; bbSignal = 'neutral'; }
 
     return NextResponse.json({
       symbol: symbol.toUpperCase(),
       type,
-      price: currentPrice,
+      price,
       change24h,
+
+      // Smart Money Concepts
+      smc: {
+        fairValueGaps: fvg || { high: 0, low: 0, filled: true, description: 'Tidak ada FVG terdeteksi' },
+        orderBlock: ob || { zone: { high: 0, low: 0 }, type: 'bullish' as const, description: 'Tidak ada order block terdeteksi' },
+        liquiditySweep: sweep || { level: 0, swept: false, description: 'Tidak ada liquidity sweep terdeteksi' },
+        trendStructure,
+        premiumDiscount,
+      },
+
+      // Basic indicators
       indicators: {
         rsi: {
           value: parseFloat(rsiValue.toFixed(1)),
@@ -476,21 +1035,28 @@ export async function GET(
           value: parseFloat(macdResult.macd.toFixed(2)),
           signal: parseFloat(macdResult.signal.toFixed(2)),
           histogram: parseFloat(macdResult.histogram.toFixed(2)),
-          signal_label: macdLabel,
+          signalLabel: macdLabel,
         },
         bollingerBands: {
           upper: parseFloat(bbResult.upper.toFixed(bbResult.upper < 1 ? 6 : 2)),
           middle: parseFloat(bbResult.middle.toFixed(bbResult.middle < 1 ? 6 : 2)),
           lower: parseFloat(bbResult.lower.toFixed(bbResult.lower < 1 ? 6 : 2)),
-          signal: bbLabel,
+          position: bbPosition,
+          signal: bbSignal,
         },
         sma20: parseFloat(sma20Value.toFixed(sma20Value < 1 ? 6 : 2)),
         sma50: parseFloat(sma50Value.toFixed(sma50Value < 1 ? 6 : 2)),
         ema12: parseFloat(ema12Value.toFixed(ema12Value < 1 ? 6 : 2)),
         ema26: parseFloat(ema26Value.toFixed(ema26Value < 1 ? 6 : 2)),
       },
-      overallSignal,
-      signalStrength,
+
+      // AI Analysis
+      aiAnalysis: finalAI,
+
+      // News Confirmation
+      newsConfirmation,
+
+      // Signal Details
       signalDetails,
       lastUpdated: new Date().toISOString(),
     });

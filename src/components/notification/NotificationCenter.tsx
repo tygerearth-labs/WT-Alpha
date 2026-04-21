@@ -31,7 +31,7 @@ interface Notification {
   id: string;
   type: NotificationType;
   title: string;
-  description: string;
+  message: string;
   amount?: number | null;
   isRead: boolean;
   actionUrl?: string | null;
@@ -228,7 +228,13 @@ export function NotificationCenter() {
       if (!notification.isRead) {
         await markAsRead(notification.id);
       }
-      // Toggle expand instead of navigating to actionUrl
+      // If the notification has an actionUrl, navigate to it
+      if (notification.actionUrl) {
+        setOpen(false);
+        window.location.href = notification.actionUrl;
+        return;
+      }
+      // Otherwise toggle expand
       setExpandedId((prev) => (prev === notification.id ? null : notification.id));
     },
     [markAsRead],
@@ -397,14 +403,39 @@ export function NotificationCenter() {
                         />
                       )}
                     </div>
+                    {/* Amount badge for income/expense */}
+                    {notification.amount != null &&
+                      (notification.type === 'income' || notification.type === 'expense') && (
+                        <span
+                          className="inline-flex items-center text-[11px] font-bold mt-1 px-1.5 py-0.5 rounded"
+                          style={{
+                            color:
+                              notification.type === 'income'
+                                ? TYPE_CONFIG.income.color
+                                : TYPE_CONFIG.expense.color,
+                            background:
+                              notification.type === 'income'
+                                ? TYPE_CONFIG.income.bgColor
+                                : TYPE_CONFIG.expense.bgColor,
+                          }}
+                        >
+                          {notification.type === 'income' ? '+' : '-'}
+                          {notification.amount.toLocaleString('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0,
+                          })}
+                        </span>
+                      )}
                     <p
                       className={cn(
-                        'text-[11px] leading-relaxed mt-0.5',
+                        'text-[11px] leading-relaxed mt-0.5 whitespace-pre-line',
                         isExpanded ? 'line-clamp-none' : 'line-clamp-2',
                       )}
                       style={{ color: '#777' }}
                     >
-                      {notification.description}
+                      {notification.message}
                     </p>
                     {isExpanded && (
                       <p
