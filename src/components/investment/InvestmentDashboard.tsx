@@ -21,6 +21,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   LayoutDashboard,
   Gem,
   TrendingUp,
@@ -47,6 +63,15 @@ import {
   RotateCcw,
   ChevronDown,
   BookOpen,
+  Shield,
+  AlertTriangle,
+  Brain,
+  Clock,
+  ArrowRight,
+  CheckCircle2,
+  Info,
+  Calculator,
+  CircleDollarSign,
 } from 'lucide-react';
 import InvestmentChart from '@/components/investment/InvestmentChart';
 import AssetSearchInput, { type SelectedAsset } from '@/components/investment/AssetSearchInput';
@@ -110,8 +135,43 @@ interface TechnicalAnalysis {
   signalStrength: number;
   indicators: {
     rsi: { value: number; signal: string };
-    macd: { histogram: number };
+    macd: { value: number; signal: number; histogram: number; signalLabel?: string };
+    bollingerBands?: { upper: number; middle: number; lower: number; position?: string; signal?: string };
+    sma20?: number;
+    sma50?: number;
+    ema12?: number;
+    ema26?: number;
   };
+  smc?: {
+    fairValueGaps: { high: number; low: number; filled: boolean; description: string };
+    orderBlock: { zone: { high: number; low: number }; type: string; description: string };
+    liquiditySweep: { level: number; swept: boolean; description: string };
+    trendStructure: string;
+    premiumDiscount: string;
+  };
+  aiAnalysis?: {
+    overallSignal: string;
+    signalStrength: number;
+    confidence: number;
+    reasoning: string;
+    strategy: string;
+    priceForecast: {
+      shortTerm: { target: number; timeframe: string };
+      midTerm: { target: number; timeframe: string };
+      longTerm: { target: number; timeframe: string };
+    };
+    riskLevel: string;
+    entryZone: string;
+    stopLossZone: string;
+    takeProfitZone: string;
+  };
+  newsConfirmation?: {
+    confirmed: boolean;
+    recentEvents: string[];
+    sentiment: string;
+    source: string;
+  };
+  signalDetails?: Array<{ indicator: string; signal: string; weight: number; description: string }>;
 }
 
 interface WatchlistItem {
@@ -144,6 +204,18 @@ interface SocialItem {
   sentiment: 'bullish' | 'bearish' | 'neutral';
   url: string;
   category: 'asset' | 'macro' | 'policy';
+}
+
+interface NewsImpact {
+  symbol: string;
+  type: string;
+  impact: 'positive' | 'negative' | 'mixed';
+  confidence: number;
+  action: 'BUY' | 'SELL' | 'HOLD' | 'WATCH';
+  entryPrice?: string;
+  targetPrice?: string;
+  stopLoss?: string;
+  reasoning: string;
 }
 
 // ── Design Tokens ────────────────────────────────────────────────────────────
@@ -205,76 +277,6 @@ function getSignalLabel(signal: string, strength: number): string {
   return 'NEUTRAL';
 }
 
-// ── Smart Money Reasoning ──────────────────────────────────────────────────
-
-interface SmartMoneyTimeframeData {
-  label: string;
-  strength: number;
-  rsi: number;
-  macdDir: string;
-  bbPos: string;
-  reasoning: string;
-}
-
-function generateSmartMoneyReasoning(signal: TechnicalAnalysis | null, timeframe: string): SmartMoneyTimeframeData {
-  if (!signal) {
-    return { label: 'N/A', strength: 0, rsi: 0, macdDir: '-', bbPos: '-', reasoning: 'Data belum tersedia untuk timeframe ini.' };
-  }
-
-  const multiplier = timeframe === '4H' ? 1 : timeframe === '1D' ? 0.7 : 0.4;
-  const adjustedStrength = Math.round(signal.signalStrength * multiplier);
-  const jitterDir = signal.signalStrength >= 0 ? 1 : -1;
-  const rsiJitter = timeframe === '1D' ? 3 * jitterDir : timeframe === '1W' ? 5 * jitterDir : 0;
-  const adjustedRsi = Math.max(0, Math.min(100, signal.indicators.rsi.value + rsiJitter));
-  const macdBullish = signal.indicators.macd.histogram * multiplier > 0;
-
-  let label: string;
-  if (timeframe === '1W' && Math.abs(adjustedStrength) < 20) {
-    label = 'HOLD';
-  } else if (adjustedStrength > 40) {
-    label = 'BUY';
-  } else if (adjustedStrength < -40) {
-    label = 'SELL';
-  } else {
-    label = 'HOLD';
-  }
-
-  let bbPos: string;
-  if (adjustedRsi > 70) bbPos = 'Upper';
-  else if (adjustedRsi < 30) bbPos = 'Lower';
-  else if (adjustedRsi > 55) bbPos = 'Mid-High';
-  else if (adjustedRsi < 45) bbPos = 'Mid-Low';
-  else bbPos = 'Middle';
-
-  let reasoning: string;
-  const rsi = signal.indicators.rsi.value;
-  const macdHistogram = signal.indicators.macd.histogram;
-
-  if (rsi < 30 && macdHistogram > 0) {
-    reasoning = 'Oversold area + MACD bullish crossover = potential reversal zone. Smart money accumulation likely. Consider entry with tight stop loss.';
-  } else if (rsi > 70 && adjustedStrength > 0) {
-    reasoning = 'Overbought + price at upper band = distribution zone. Smart money likely taking profit. Consider reducing position.';
-  } else if (adjustedStrength > 30 && macdBullish) {
-    reasoning = 'Bullish momentum confirmed with MACD support. Smart money trend following detected. Consider increasing position on dips.';
-  } else if (adjustedStrength < -30 && !macdBullish) {
-    reasoning = 'Bearish pressure with MACD divergence. Smart money distribution pattern detected. Consider reducing exposure.';
-  } else if (signal.overallSignal === 'buy' && adjustedStrength > 0) {
-    reasoning = 'Moderate buy signal with mixed indicators. Wait for stronger confirmation before adding position.';
-  } else if (signal.overallSignal === 'sell' && adjustedStrength < 0) {
-    reasoning = 'Moderate sell pressure. Monitor for capitulation candle before considering entry.';
-  } else {
-    reasoning = 'No strong signal detected. Wait for confirmation before entering position.';
-  }
-
-  if (timeframe === '1W') {
-    reasoning += ' (Perspektif mingguan — konfirmasi timeframe lebih pendek diperlukan)';
-  } else if (timeframe === '1D') {
-    reasoning += ' (Perspektif harian)';
-  }
-
-  return { label, strength: adjustedStrength, rsi: adjustedRsi, macdDir: macdBullish ? 'bullish' : 'bearish', bbPos, reasoning };
-}
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function InvestmentDashboard() {
@@ -306,9 +308,19 @@ export default function InvestmentDashboard() {
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
   const [showAddAsset, setShowAddAsset] = useState(false);
 
-  // News + Social
+  // Quick add portfolio (from dashboard)
+  const [showAddPortfolio, setShowAddPortfolio] = useState(false);
+  const [addPortfolioForm, setAddPortfolioForm] = useState({
+    symbol: '', name: '', type: 'crypto' as string, entryPrice: '', quantity: '', notes: '',
+  });
+  const [addPortfolioSelected, setAddPortfolioSelected] = useState<SelectedAsset | null>(null);
+  const [savingPortfolio, setSavingPortfolio] = useState(false);
+
+  // News + Social + Impacts
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [socialItems, setSocialItems] = useState<SocialItem[]>([]);
+  const [newsImpacts, setNewsImpacts] = useState<NewsImpact[]>([]);
+  const [newsSentiment, setNewsSentiment] = useState<string>('neutral');
   const [loadingNews, setLoadingNews] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
 
@@ -385,14 +397,18 @@ export default function InvestmentDashboard() {
     return () => clearTimeout(timer);
   }, [businessId, fetchWatchlist]);
 
-  // ── Fetch news + social ───────────────────────────────────────────────────
+  // ── Fetch news + social + impacts ────────────────────────────────────────
   const fetchNewsAndSocial = useCallback(() => {
     if (!businessId) return;
     setLoadingNews(true);
     Promise.allSettled([
       fetch(`/api/business/${businessId}/market-data/news`)
-        .then((res) => (res.ok ? res.json() : { news: [] }))
-        .then((data) => { setNewsItems(data.news || []); })
+        .then((res) => (res.ok ? res.json() : { news: [], sentiment: 'neutral', impacts: [] }))
+        .then((data) => {
+          setNewsItems(data.news || []);
+          setNewsImpacts(data.impacts || []);
+          setNewsSentiment(data.sentiment || 'neutral');
+        })
         .catch(() => {}),
       fetch(`/api/business/${businessId}/market-data/social`)
         .then((res) => (res.ok ? res.json() : { social: [] }))
@@ -451,10 +467,10 @@ export default function InvestmentDashboard() {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [businessId, portfolios, fetchLivePrices]);
 
-  // ── Fetch quant signals for top 6 assets ─────────────────────────────────
-  const fetchSignals = useCallback(async (items: PortfolioItem[]) => {
+  // ── Fetch quant signals for top 6 assets (portfolio + watchlist) ─────────
+  const fetchSignals = useCallback(async (items: Array<{ type: string; symbol: string }>) => {
     if (!businessId || items.length === 0) return;
-    const topAssets = items.slice(0, 6);
+    const topAssets = items.slice(0, 8);
     const newSignals = new Map<string, TechnicalAnalysis>();
 
     await Promise.allSettled(
@@ -475,22 +491,42 @@ export default function InvestmentDashboard() {
   }, [businessId]);
 
   useEffect(() => {
-    if (portfolios.length > 0) {
+    const items: Array<{ type: string; symbol: string }> = [
+      ...portfolios.filter((p) => p.status === 'open').map((p) => ({ type: p.type, symbol: p.symbol })),
+      ...watchlist.map((w) => ({ type: w.type, symbol: w.symbol })),
+    ];
+    // Deduplicate
+    const unique = items.filter(
+      (item, i, arr) =>
+        arr.findIndex((a) => `${a.type}:${a.symbol}` === `${item.type}:${item.symbol}`) === i,
+    );
+
+    if (unique.length > 0) {
       const timer = setTimeout(() => {
         setLoadingSignals(true);
-        fetchSignals(portfolios.filter((p) => p.status === 'open'));
+        fetchSignals(unique);
       }, 0);
       return () => clearTimeout(timer);
+    } else {
+      setLoadingSignals(false);
     }
-  }, [portfolios, fetchSignals]);
+  }, [portfolios, watchlist, fetchSignals]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleAnalyzeAll = useCallback(async () => {
     setAnalyzingAll(true);
-    await fetchSignals(portfolios.filter((p) => p.status === 'open'));
+    const items: Array<{ type: string; symbol: string }> = [
+      ...portfolios.filter((p) => p.status === 'open').map((p) => ({ type: p.type, symbol: p.symbol })),
+      ...watchlist.map((w) => ({ type: w.type, symbol: w.symbol })),
+    ];
+    const unique = items.filter(
+      (item, i, arr) =>
+        arr.findIndex((a) => `${a.type}:${a.symbol}` === `${item.type}:${item.symbol}`) === i,
+    );
+    await fetchSignals(unique);
     setAnalyzingAll(false);
     toast.success(tf('quant.analyzing', 'Analysis complete!'));
-  }, [fetchSignals, portfolios, tf]);
+  }, [fetchSignals, portfolios, watchlist, tf]);
 
   const handleAddToWatchlist = useCallback(async (asset: SelectedAsset) => {
     try {
@@ -500,11 +536,12 @@ export default function InvestmentDashboard() {
         body: JSON.stringify({ symbol: asset.symbol, type: asset.type, name: asset.name }),
       });
       if (res.ok) {
-        toast.success(tf('inv.dashAddedWatchlist', `${asset.symbol} added to watchlist`));
+        toast.success(tf('inv.dashAddedWatchlist', `${asset.symbol} ditambahkan ke watchlist`));
         fetchWatchlist();
+        setShowAddAsset(false);
       }
     } catch {
-      toast.error(tf('inv.dashAddedWatchlist', 'Failed to add to watchlist'));
+      toast.error(tf('inv.dashAddedWatchlist', 'Gagal menambahkan ke watchlist'));
     }
   }, [businessId, fetchWatchlist, tf]);
 
@@ -577,6 +614,48 @@ export default function InvestmentDashboard() {
       setClosingId(null);
     }
   }, [businessId, fetchPortfolios, tf]);
+
+  // ── Quick add portfolio handler ─────────────────────────────────────────────
+  const handleQuickAddPortfolio = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!businessId || !addPortfolioForm.symbol || !addPortfolioForm.entryPrice || !addPortfolioForm.quantity) return;
+    setSavingPortfolio(true);
+    try {
+      const res = await fetch(`/api/business/${businessId}/portfolio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: addPortfolioForm.type,
+          symbol: addPortfolioForm.symbol,
+          name: addPortfolioForm.name,
+          entryPrice: parseFloat(addPortfolioForm.entryPrice),
+          quantity: parseFloat(addPortfolioForm.quantity),
+          currentPrice: parseFloat(addPortfolioForm.entryPrice),
+          notes: addPortfolioForm.notes || null,
+          status: 'open',
+        }),
+      });
+      if (res.ok) {
+        toast.success(tf('inv.portfolioCreated', 'Portofolio berhasil dibuat'));
+        setShowAddPortfolio(false);
+        setAddPortfolioForm({ symbol: '', name: '', type: 'crypto', entryPrice: '', quantity: '', notes: '' });
+        setAddPortfolioSelected(null);
+        fetchPortfolios();
+      } else {
+        toast.error(tf('common.error', 'Gagal membuat portofolio'));
+      }
+    } catch {
+      toast.error(tf('common.error', 'Gagal membuat portofolio'));
+    } finally {
+      setSavingPortfolio(false);
+    }
+  }, [businessId, addPortfolioForm, fetchPortfolios, tf]);
+
+  const openQuickAddPortfolio = useCallback(() => {
+    setAddPortfolioForm({ symbol: '', name: '', type: 'crypto', entryPrice: '', quantity: '', notes: '' });
+    setAddPortfolioSelected(null);
+    setShowAddPortfolio(true);
+  }, []);
 
   const fmtPrice = (type: string, val: number) => {
     const prefix = currencyPrefix(type as 'saham' | 'crypto' | 'forex');
@@ -680,7 +759,15 @@ export default function InvestmentDashboard() {
 
   const allLivePrices = useMemo(() => ({ ...livePrices, ...watchlistPrices }), [livePrices, watchlistPrices]);
 
-  // Merged feed from news + social
+  // Build a set of portfolio/watchlist asset keys for impact matching
+  const portfolioAssetKeys = useMemo(() => {
+    const keys = new Set<string>();
+    openPortfolios.forEach((p) => keys.add(p.symbol.toUpperCase()));
+    watchlist.forEach((w) => keys.add(w.symbol.toUpperCase()));
+    return keys;
+  }, [openPortfolios, watchlist]);
+
+  // Merged feed from news + social, with minimum 5 items, prioritize portfolio asset news
   const mergedFeed = useMemo(() => {
     const feed: Array<NewsItem & { category?: string }> = [
       ...newsItems.map((n) => ({ ...n, category: 'asset' })),
@@ -693,8 +780,25 @@ export default function InvestmentDashboard() {
         category: s.category,
       })),
     ];
-    return feed.slice(0, 15);
-  }, [newsItems, socialItems]);
+
+    // Sort: items matching portfolio assets first
+    feed.sort((a, b) => {
+      const aMatch = portfolioAssetKeys.has(a.title.split(' ').find((w) => w.length > 2)?.toUpperCase() || '') ? 0 : 1;
+      const bMatch = portfolioAssetKeys.has(b.title.split(' ').find((w) => w.length > 2)?.toUpperCase() || '') ? 0 : 1;
+      return aMatch - bMatch;
+    });
+
+    return feed.slice(0, Math.max(15, feed.length));
+  }, [newsItems, socialItems, portfolioAssetKeys]);
+
+  // Get the active chart signal for AI Insights
+  const activeChartSignal = useMemo(() => {
+    if (!activeChartAsset) return null;
+    const key = activeChartAsset.key.startsWith('wl:')
+      ? activeChartAsset.key.slice(3)
+      : activeChartAsset.key;
+    return signals.get(key) || null;
+  }, [activeChartAsset, signals]);
 
   const pnlColor = (val: number) => (val >= 0 ? UP_COLOR : DOWN_COLOR);
 
@@ -987,23 +1091,23 @@ export default function InvestmentDashboard() {
                 size="sm"
                 className="h-7 px-2.5 text-[10px] gap-1 bg-[#03DAC6]/10 text-[#03DAC6] hover:bg-[#03DAC6]/20 border border-[#03DAC6]/20"
                 onClick={handleAnalyzeAll}
-                disabled={analyzingAll || openPortfolios.length === 0}
+                disabled={analyzingAll}
               >
                 <RefreshCw className={cn('h-3 w-3', analyzingAll && 'animate-spin')} />
                 Analyze All
               </Button>
             </div>
             <div className="max-h-[320px] overflow-y-auto custom-scrollbar space-y-2">
-              {openPortfolios.length === 0 ? (
+              {(openPortfolios.length === 0 && watchlist.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <BarChart3 className="h-10 w-10 text-white/10 mb-2" />
                   <p className="text-white/30 text-xs">{tf('inv.noSignals', 'Add positions to see signals')}</p>
                 </div>
               ) : (
-                openPortfolios.slice(0, 6).map((p) => {
-                  const key = `${p.type}:${p.symbol}`;
+                [...openPortfolios.slice(0, 6), ...watchlist.slice(0, 2)].map((item) => {
+                  const key = `${item.type}:${item.symbol}`;
                   const signal = signals.get(key);
-                  const tc = TYPE_COLORS[p.type];
+                  const tc = TYPE_COLORS[item.type];
                   const strength = signal?.signalStrength ?? 0;
                   const signalColor = signal ? getSignalColor(strength) : '#666';
                   const signalLabel = signal ? getSignalLabel(signal.overallSignal, strength) : 'LOADING';
@@ -1011,10 +1115,13 @@ export default function InvestmentDashboard() {
                   return (
                     <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setSelectedAsset(key)}>
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-bold text-white/80 font-mono">{p.symbol}</span>
+                        <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
                         <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                          {p.type.toUpperCase()}
+                          {item.type.toUpperCase()}
                         </Badge>
+                        {!('status' in item) ? (
+                          <Eye className="h-3 w-3 text-white/15" />
+                        ) : null}
                         {signal && (
                           <div className="flex items-center gap-1.5 ml-2">
                             <span className="text-[9px] text-white/25">RSI</span>
@@ -1055,7 +1162,17 @@ export default function InvestmentDashboard() {
                 <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashNewsSocial', 'News & Social')}</span>
                 {loadingNews && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
               </div>
-              <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{mergedFeed.length} items</Badge>
+              <div className="flex items-center gap-1.5">
+                {newsSentiment && newsSentiment !== 'neutral' && (
+                  <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                    backgroundColor: newsSentiment === 'bullish' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
+                    color: newsSentiment === 'bullish' ? UP_COLOR : DOWN_COLOR,
+                  }}>
+                    {newsSentiment.toUpperCase()}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{mergedFeed.length} items</Badge>
+              </div>
             </div>
             <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
               {mergedFeed.length === 0 && !loadingNews && (
@@ -1070,12 +1187,22 @@ export default function InvestmentDashboard() {
                   const isBullish = item.sentiment === 'bullish';
                   const isBearish = item.sentiment === 'bearish';
                   const sentimentColor = isBullish ? UP_COLOR : isBearish ? DOWN_COLOR : GOLD_COLOR;
-                  const decisionText = isBullish
+
+                  // Find any matching news impact for this item
+                  const matchedImpact = newsImpacts.find((imp) =>
+                    item.title.toLowerCase().includes(imp.symbol.toLowerCase()),
+                  );
+                  const decisionText = matchedImpact ? matchedImpact.action : (isBullish
                     ? (i % 2 === 0 ? 'Pertimbangkan Buy' : 'Tingkatkan posisi')
                     : isBearish
                       ? (i % 2 === 0 ? 'Pertimbangkan Sell' : 'Kurangi posisi')
-                      : 'Hold & Monitor';
-                  const decisionBg = isBullish ? 'rgba(3,218,198,0.15)' : isBearish ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)';
+                      : 'Hold & Monitor');
+                  const decisionBg = matchedImpact
+                    ? matchedImpact.action === 'BUY' ? 'rgba(3,218,198,0.2)' : matchedImpact.action === 'SELL' ? 'rgba(207,102,121,0.2)' : 'rgba(255,215,0,0.15)'
+                    : isBullish ? 'rgba(3,218,198,0.15)' : isBearish ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)';
+                  const isPortfolioAsset = portfolioAssetKeys.has(
+                    item.title.split(' ').find((w) => w.length > 2)?.toUpperCase() || '',
+                  );
 
                   return (
                     <motion.div
@@ -1091,17 +1218,33 @@ export default function InvestmentDashboard() {
                           {isBullish ? <TrendingUp className="h-3.5 w-3.5" /> : isBearish ? <TrendingDown className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 shrink-0" style={{ backgroundColor: catConfig.bg, color: catConfig.text }}>
                               {catConfig.label}
                             </Badge>
-                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 shrink-0" style={{ backgroundColor: decisionBg, color: sentimentColor }}>
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 shrink-0" style={{ backgroundColor: decisionBg, color: matchedImpact ? (decisionText === 'BUY' ? UP_COLOR : decisionText === 'SELL' ? DOWN_COLOR : GOLD_COLOR) : sentimentColor }}>
                               {decisionText}
                             </Badge>
+                            {matchedImpact && (
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(187,134,252,0.15)', color: PURPLE_COLOR }}>
+                                {matchedImpact.confidence}%
+                              </Badge>
+                            )}
+                            {isPortfolioAsset && (
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(3,218,198,0.1)', color: UP_COLOR }}>
+                                IN PORTFOLIO
+                              </Badge>
+                            )}
                           </div>
                           <h4 className="text-[12px] text-white/70 font-medium leading-snug line-clamp-2 mb-1">{item.title}</h4>
                           {item.snippet && (
                             <p className="text-[11px] text-white/30 leading-relaxed line-clamp-2 mb-1.5">{item.snippet}</p>
+                          )}
+                          {matchedImpact && matchedImpact.reasoning && (
+                            <p className="text-[10px] text-white/25 leading-relaxed italic mb-1.5 flex items-start gap-1">
+                              <Brain className="h-3 w-3 shrink-0 mt-0.5" style={{ color: PURPLE_COLOR }} />
+                              {matchedImpact.reasoning}
+                            </p>
                           )}
                           <div className="flex items-center gap-1.5">
                             <span className="text-[9px] text-white/20 truncate max-w-[120px]">{item.source}</span>
@@ -1117,6 +1260,34 @@ export default function InvestmentDashboard() {
                   );
                 })}
               </AnimatePresence>
+              {/* AI News Impact Summary */}
+              {newsImpacts.length > 0 && (
+                <div className="mt-2 px-2.5 py-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Brain className="h-3.5 w-3.5 text-[#BB86FC]" />
+                    <span className="text-[10px] text-white/50 font-bold uppercase tracking-wider">AI Impact Analysis</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {newsImpacts.slice(0, 4).map((imp, idx) => {
+                      const impColor = imp.action === 'BUY' ? UP_COLOR : imp.action === 'SELL' ? DOWN_COLOR : GOLD_COLOR;
+                      return (
+                        <div key={idx} className="flex items-center justify-between text-[10px]">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-bold text-white/60 font-mono">{imp.symbol}</span>
+                            <span className="text-white/20 truncate">{imp.reasoning}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-white/25 font-mono">{imp.confidence}%</span>
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: `${impColor}18`, color: impColor }}>
+                              {imp.action}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1182,6 +1353,114 @@ export default function InvestmentDashboard() {
                 <CardContent className="flex flex-col items-center justify-center py-20">
                   <BarChart3 className="h-12 w-12 text-white/15 mb-3" />
                   <p className="text-white/30 text-sm">{tf('inv.dashNoChartAssets', 'No open positions or watchlist items')}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── AI INSIGHTS PANEL (below chart) ── */}
+          {activeChartAsset && activeChartSignal && (
+            <motion.div variants={cardVariants} custom={7} className="mt-4">
+              <Card className="bg-white/[0.03] border-white/[0.05]">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Brain className="h-4 w-4 text-[#BB86FC]/80" />
+                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+                      AI Insights — {activeChartAsset.symbol}
+                    </span>
+                    {activeChartSignal.aiAnalysis && (
+                      <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 ml-auto" style={{
+                        backgroundColor: `${activeChartSignal.aiAnalysis.confidence > 70 ? UP_COLOR : activeChartSignal.aiAnalysis.confidence > 50 ? GOLD_COLOR : DOWN_COLOR}18`,
+                        color: activeChartSignal.aiAnalysis.confidence > 70 ? UP_COLOR : activeChartSignal.aiAnalysis.confidence > 50 ? GOLD_COLOR : DOWN_COLOR,
+                      }}>
+                        {activeChartSignal.aiAnalysis.confidence}% confidence
+                      </Badge>
+                    )}
+                  </div>
+
+                  {activeChartSignal.aiAnalysis ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* AI Reasoning + Strategy */}
+                      <div className="space-y-3">
+                        {/* Reasoning */}
+                        <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Info className="h-3 w-3 text-white/30" />
+                            <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Analysis</span>
+                          </div>
+                          <p className="text-[11px] text-white/50 leading-relaxed">{activeChartSignal.aiAnalysis.reasoning}</p>
+                        </div>
+                        {/* Strategy + Risk */}
+                        <div className="flex gap-2">
+                          <div className="flex-1 rounded-lg bg-white/[0.02] border border-white/[0.04] p-2.5">
+                            <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Strategy</span>
+                            <p className="text-[11px] text-white/60 font-medium">{activeChartSignal.aiAnalysis.strategy}</p>
+                          </div>
+                          <div className="flex-1 rounded-lg bg-white/[0.02] border border-white/[0.04] p-2.5">
+                            <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Risk Level</span>
+                            <Badge className="text-[10px] px-2 py-0 h-4 font-bold border-0" style={{
+                              backgroundColor: activeChartSignal.aiAnalysis.riskLevel === 'LOW' ? 'rgba(3,218,198,0.15)' : activeChartSignal.aiAnalysis.riskLevel === 'HIGH' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+                              color: activeChartSignal.aiAnalysis.riskLevel === 'LOW' ? UP_COLOR : activeChartSignal.aiAnalysis.riskLevel === 'HIGH' ? DOWN_COLOR : GOLD_COLOR,
+                            }}>
+                              <Shield className="h-3 w-3 mr-1" />
+                              {activeChartSignal.aiAnalysis.riskLevel}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Price Forecast */}
+                      <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <Target className="h-3 w-3 text-white/30" />
+                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Price Forecast</span>
+                        </div>
+                        {[
+                          { label: 'Short Term', data: activeChartSignal.aiAnalysis.priceForecast.shortTerm, icon: Clock, color: UP_COLOR },
+                          { label: 'Mid Term', data: activeChartSignal.aiAnalysis.priceForecast.midTerm, icon: TrendingUp, color: GOLD_COLOR },
+                          { label: 'Long Term', data: activeChartSignal.aiAnalysis.priceForecast.longTerm, icon: ArrowRight, color: PURPLE_COLOR },
+                        ].map((fc) => (
+                          <div key={fc.label} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <fc.icon className="h-3 w-3" style={{ color: fc.color }} />
+                              <span className="text-[10px] text-white/40">{fc.label}</span>
+                              <span className="text-[9px] text-white/20">({fc.data.timeframe})</span>
+                            </div>
+                            <span className="text-[11px] font-mono font-bold text-white/70">
+                              {fmtPrice(activeChartAsset.type, fc.data.target)}
+                            </span>
+                          </div>
+                        ))}
+
+                        {/* Trade Zones */}
+                        <div className="border-t border-white/[0.04] pt-2.5 mt-1 space-y-1.5">
+                          <span className="text-[8px] text-white/25 uppercase tracking-wider block">Trade Zones</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
+                            <span className="text-[9px] text-white/25 w-14">Entry</span>
+                            <span className="text-[10px] text-white/50 font-mono text-xs">{activeChartSignal.aiAnalysis.entryZone}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-1.5 rounded-full bg-[#CF6679]" />
+                            <span className="text-[9px] text-white/25 w-14">Stop Loss</span>
+                            <span className="text-[10px] text-[#CF6679]/70 font-mono text-xs">{activeChartSignal.aiAnalysis.stopLossZone}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-1.5 rounded-full bg-[#FFD700]" />
+                            <span className="text-[9px] text-white/25 w-14">Take Profit</span>
+                            <span className="text-[10px] text-[#FFD700]/70 font-mono text-xs">{activeChartSignal.aiAnalysis.takeProfitZone}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-6">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="h-3.5 w-3.5 text-white/15 animate-spin" />
+                        <span className="text-[11px] text-white/25">Loading AI analysis...</span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -1261,67 +1540,221 @@ export default function InvestmentDashboard() {
       </div>
 
       {/* ── SMART MONEY SIGNALS ── */}
-      {activeChartAsset && (() => {
-        const activeSignalKey = activeChartAsset.key?.startsWith('wl:') ? activeChartAsset.key.slice(3) : activeChartAsset.key;
-        const activeSignal = activeSignalKey ? signals.get(activeSignalKey) : null;
-        if (!activeSignal) return null;
+      {activeChartAsset && activeChartSignal && (() => {
+        const signal = activeChartSignal;
+        const ai = signal.aiAnalysis;
+        const smc = signal.smc;
+        const newsConf = signal.newsConfirmation;
+        const signalDetails = signal.signalDetails;
+
+        const strength = signal.signalStrength ?? 0;
+        const signalColor = getSignalColor(strength);
+        const signalLabel = getSignalLabel(signal.overallSignal, strength);
+
         return (
-          <motion.div variants={cardVariants} custom={7}>
+          <motion.div variants={cardVariants} custom={8}>
             <Card className="bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="h-4 w-4 text-[#FFD700]/60" />
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
-                    Smart Money Signals — {activeChartAsset.symbol}
-                  </span>
-                  {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-[#FFD700]/60" />
+                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+                      Smart Money Signals — {activeChartAsset.symbol}
+                    </span>
+                    {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
+                  </div>
+                  <Badge className="text-[10px] px-2.5 py-0 h-5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
+                    {signalLabel} {strength > 0 ? '+' : ''}{strength}
+                  </Badge>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {['4H', '1D', '1W'].map((tfLabel) => {
-                    const sm = generateSmartMoneyReasoning(activeSignal, tfLabel);
-                    const smColor = sm.label === 'BUY' ? UP_COLOR : sm.label === 'SELL' ? DOWN_COLOR : GOLD_COLOR;
-                    return (
-                      <div key={tfLabel} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2.5">
+                  {/* Column 1: AI Analysis */}
+                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Brain className="h-3.5 w-3.5 text-[#BB86FC]" />
+                      <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">AI Analysis</span>
+                    </div>
+                    {ai ? (
+                      <>
+                        <p className="text-[10px] text-white/45 leading-relaxed">{ai.reasoning}</p>
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-white/25">Strategy</span>
+                            <span className="text-[10px] text-white/60 font-medium">{ai.strategy}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-white/25">Confidence</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div className="h-full rounded-full bg-[#BB86FC]" style={{ width: `${ai.confidence}%` }} />
+                              </div>
+                              <span className="text-[10px] font-mono font-bold text-[#BB86FC]">{ai.confidence}%</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-white/25">Risk</span>
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                              backgroundColor: ai.riskLevel === 'LOW' ? 'rgba(3,218,198,0.15)' : ai.riskLevel === 'HIGH' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+                              color: ai.riskLevel === 'LOW' ? UP_COLOR : ai.riskLevel === 'HIGH' ? DOWN_COLOR : GOLD_COLOR,
+                            }}>
+                              {ai.riskLevel}
+                            </Badge>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-white/25 italic">AI analysis not available</p>
+                    )}
+                  </div>
+
+                  {/* Column 2: SMC Concepts */}
+                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-[#03DAC6]" />
+                      <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">SMC Concepts</span>
+                    </div>
+                    {smc ? (
+                      <div className="space-y-1.5">
+                        {/* Trend Structure */}
                         <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="border-white/[0.08] text-white/40 text-[10px] font-bold">{tfLabel}</Badge>
-                          <Badge className="text-[10px] px-2.5 py-0 h-5 font-bold border-0" style={{ backgroundColor: `${smColor}18`, color: smColor }}>
-                            {sm.label}
+                          <span className="text-[9px] text-white/25">Trend</span>
+                          <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                            backgroundColor: smc.trendStructure === 'bullish' ? 'rgba(3,218,198,0.15)' : smc.trendStructure === 'bearish' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+                            color: smc.trendStructure === 'bullish' ? UP_COLOR : smc.trendStructure === 'bearish' ? DOWN_COLOR : GOLD_COLOR,
+                          }}>
+                            {smc.trendStructure.toUpperCase()}
                           </Badge>
                         </div>
-                        {/* Strength bar */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[9px] text-white/25 uppercase tracking-wider">Strength</span>
-                            <span className="text-[10px] font-mono font-bold" style={{ color: smColor }}>{sm.strength > 0 ? '+' : ''}{sm.strength}</span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((sm.strength + 100) / 200) * 100}%`, backgroundColor: smColor }} />
-                          </div>
+                        {/* Premium/Discount */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-white/25">Zone</span>
+                          <span className={cn('text-[10px] font-mono font-bold', smc.premiumDiscount === 'discount' ? 'text-[#03DAC6]' : smc.premiumDiscount === 'premium' ? 'text-[#CF6679]' : 'text-white/50')}>
+                            {smc.premiumDiscount.charAt(0).toUpperCase() + smc.premiumDiscount.slice(1)}
+                          </span>
                         </div>
-                        {/* Key indicators */}
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="text-center">
-                            <p className="text-[8px] text-white/25 uppercase tracking-wider">RSI</p>
-                            <p className={cn('text-[11px] font-mono font-bold', sm.rsi < 30 || sm.rsi > 70 ? 'text-[#CF6679]' : 'text-white/60')}>
-                              {sm.rsi.toFixed(1)}
-                            </p>
+                        {/* FVG */}
+                        {smc.fairValueGaps && (
+                          <div className="flex items-start gap-1.5 pt-1">
+                            <span className="text-[9px] text-white/25 shrink-0 w-8">FVG</span>
+                            <div className="min-w-0">
+                              <p className={cn('text-[9px] leading-relaxed', smc.fairValueGaps.filled ? 'text-white/25' : 'text-white/50')}>
+                                {smc.fairValueGaps.description}
+                              </p>
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 mt-0.5" style={{
+                                backgroundColor: smc.fairValueGaps.filled ? 'rgba(255,255,255,0.05)' : 'rgba(3,218,198,0.12)',
+                                color: smc.fairValueGaps.filled ? 'text-white/25' : UP_COLOR,
+                              }}>
+                                {smc.fairValueGaps.filled ? 'FILLED' : 'UNFILLED'}
+                              </Badge>
+                            </div>
                           </div>
-                          <div className="text-center">
-                            <p className="text-[8px] text-white/25 uppercase tracking-wider">MACD</p>
-                            <p className={cn('text-[11px] font-mono font-bold', sm.macdDir === 'bullish' ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                              {sm.macdDir === 'bullish' ? '↑ Bull' : '↓ Bear'}
-                            </p>
+                        )}
+                        {/* Order Block */}
+                        {smc.orderBlock && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-[9px] text-white/25 shrink-0 w-8">OB</span>
+                            <div className="min-w-0">
+                              <p className="text-[9px] text-white/45 leading-relaxed">{smc.orderBlock.description}</p>
+                              {smc.orderBlock.zone && (
+                                <span className="text-[8px] text-white/20 font-mono">
+                                  {fmtPrice(activeChartAsset.type, smc.orderBlock.zone.low)} — {fmtPrice(activeChartAsset.type, smc.orderBlock.zone.high)}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-center">
-                            <p className="text-[8px] text-white/25 uppercase tracking-wider">BB Pos</p>
-                            <p className="text-[11px] font-mono font-bold text-white/60">{sm.bbPos}</p>
+                        )}
+                        {/* Liquidity Sweep */}
+                        {smc.liquiditySweep && smc.liquiditySweep.swept && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-[9px] text-white/25 shrink-0 w-8">Sweep</span>
+                            <div className="min-w-0">
+                              <p className="text-[9px] text-[#FFD700]/70 leading-relaxed">{smc.liquiditySweep.description}</p>
+                            </div>
                           </div>
-                        </div>
-                        {/* Reasoning */}
-                        <p className="text-[10px] text-white/35 leading-relaxed italic">{sm.reasoning}</p>
+                        )}
                       </div>
-                    );
-                  })}
+                    ) : (
+                      <p className="text-[10px] text-white/25 italic">SMC data not available</p>
+                    )}
+
+                    {/* Signal Details */}
+                    {signalDetails && signalDetails.length > 0 && (
+                      <div className="border-t border-white/[0.04] pt-2 mt-1 space-y-1 max-h-[100px] overflow-y-auto custom-scrollbar">
+                        <span className="text-[8px] text-white/25 uppercase tracking-wider">Indicator Breakdown</span>
+                        {signalDetails.slice(0, 5).map((sd, idx) => (
+                          <div key={idx} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <div className="h-1.5 w-1.5 rounded-full" style={{
+                                backgroundColor: sd.signal === 'BULLISH' ? UP_COLOR : sd.signal === 'BEARISH' ? DOWN_COLOR : GOLD_COLOR,
+                              }} />
+                              <span className="text-[9px] text-white/30">{sd.indicator}</span>
+                            </div>
+                            <span className="text-[8px] text-white/20 font-mono">{sd.weight}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Column 3: Trade Zones + News Confirmation */}
+                  <div className="space-y-3">
+                    {/* Trade Zones */}
+                    {ai && (
+                      <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Target className="h-3.5 w-3.5 text-[#FFD700]" />
+                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Trade Zones</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-[#03DAC6] shrink-0" />
+                            <span className="text-[9px] text-white/25 w-14 shrink-0">Entry</span>
+                            <span className="text-[10px] text-white/50 font-mono truncate">{ai.entryZone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-[#CF6679] shrink-0" />
+                            <span className="text-[9px] text-white/25 w-14 shrink-0">Stop Loss</span>
+                            <span className="text-[10px] text-[#CF6679]/70 font-mono truncate">{ai.stopLossZone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-[#FFD700] shrink-0" />
+                            <span className="text-[9px] text-white/25 w-14 shrink-0">TP</span>
+                            <span className="text-[10px] text-[#FFD700]/70 font-mono truncate">{ai.takeProfitZone}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* News Confirmation */}
+                    {newsConf && (
+                      <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Newspaper className="h-3.5 w-3.5 text-white/30" />
+                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">News Confirmation</span>
+                          {newsConf.confirmed ? (
+                            <CheckCircle2 className="h-3 w-3 text-[#03DAC6] ml-auto" />
+                          ) : (
+                            <AlertTriangle className="h-3 w-3 text-white/20 ml-auto" />
+                          )}
+                        </div>
+                        <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                          backgroundColor: newsConf.sentiment === 'bullish' ? 'rgba(3,218,198,0.15)' : newsConf.sentiment === 'bearish' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+                          color: newsConf.sentiment === 'bullish' ? UP_COLOR : newsConf.sentiment === 'bearish' ? DOWN_COLOR : GOLD_COLOR,
+                        }}>
+                          {newsConf.sentiment?.toUpperCase() || 'NEUTRAL'}
+                        </Badge>
+                        {newsConf.recentEvents && newsConf.recentEvents.length > 0 && (
+                          <div className="space-y-1 mt-1">
+                            {newsConf.recentEvents.slice(0, 2).map((event, idx) => (
+                              <p key={idx} className="text-[9px] text-white/25 leading-relaxed line-clamp-2">• {event}</p>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-[8px] text-white/15 italic">{newsConf.source}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1333,7 +1766,7 @@ export default function InvestmentDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Simplified Allocation */}
         {allocationData.length > 0 && (
-          <motion.div variants={cardVariants} custom={8}>
+          <motion.div variants={cardVariants} custom={9}>
             <Card className="bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -1367,7 +1800,7 @@ export default function InvestmentDashboard() {
         )}
 
         {/* Positions Table */}
-        <motion.div variants={cardVariants} custom={9} className={allocationData.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}>
+        <motion.div variants={cardVariants} custom={10} className={allocationData.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}>
           <Card className="bg-white/[0.03] border-white/[0.05]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
@@ -1390,10 +1823,20 @@ export default function InvestmentDashboard() {
                     ))}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-white/30 hover:text-white/60 hover:bg-white/[0.06]" onClick={() => fetchLivePrices(true)}>
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  <span className="text-[10px]">{countdown}s</span>
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    className="h-7 px-2.5 text-[10px] gap-1 bg-[#BB86FC]/10 text-[#BB86FC] hover:bg-[#BB86FC]/20 border border-[#BB86FC]/20"
+                    onClick={openQuickAddPortfolio}
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span className="hidden sm:inline">{tf('inv.addPortfolio', 'Tambah Porto')}</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-white/30 hover:text-white/60 hover:bg-white/[0.06]" onClick={() => fetchLivePrices(true)}>
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    <span className="text-[10px]">{countdown}s</span>
+                  </Button>
+                </div>
               </div>
               <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
                 <table className="w-full">
@@ -1556,7 +1999,151 @@ export default function InvestmentDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Add Asset Dialog ── */}
+      {/* ── Quick Add Portfolio Sheet ── */}
+      <Sheet open={showAddPortfolio} onOpenChange={setShowAddPortfolio}>
+        <SheetContent side="right" className="w-[400px] max-w-[92vw] bg-[#0D0D0D] border-white/[0.06] text-white overflow-y-auto">
+          <SheetHeader className="pt-8 pb-4">
+            <SheetTitle className="text-white flex items-center gap-2">
+              <Gem className="h-5 w-5 text-[#BB86FC]" />
+              Tambah Posisi Portofolio
+            </SheetTitle>
+          </SheetHeader>
+
+          <form onSubmit={handleQuickAddPortfolio} className="space-y-5 px-6 pb-8">
+            {/* Asset Search */}
+            <div className="space-y-2">
+              <Label className="text-white/80 text-sm">Cari Aset *</Label>
+              {businessId && (
+                <AssetSearchInput
+                  businessId={businessId}
+                  value={addPortfolioSelected}
+                  onSelect={(asset) => {
+                    setAddPortfolioSelected(asset);
+                    setAddPortfolioForm({
+                      ...addPortfolioForm,
+                      type: asset.type,
+                      symbol: asset.symbol,
+                      name: asset.name,
+                      entryPrice: asset.currentPrice ? asset.currentPrice.toString() : '',
+                    });
+                  }}
+                />
+              )}
+              <p className="text-[11px] text-white/30">Ketik kode aset — harga otomatis terisi</p>
+            </div>
+
+            {/* Live price card */}
+            {addPortfolioSelected && addPortfolioSelected.currentPrice > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#03DAC6]/[0.06] border border-[#03DAC6]/15">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-2 w-2 rounded-full bg-[#03DAC6] animate-pulse" />
+                  <span className="text-[10px] text-[#03DAC6]/70 uppercase tracking-wider font-bold">Harga Pasar</span>
+                </div>
+                <span className="text-white font-bold font-mono text-sm">
+                  {fmtPrice(addPortfolioForm.type, addPortfolioSelected.currentPrice)}
+                </span>
+              </div>
+            )}
+
+            {/* Entry Price */}
+            <div className="space-y-2">
+              <Label className="text-white/80 text-sm">Harga Masuk ({addPortfolioForm.type === 'saham' ? 'IDR' : 'USD'}) *</Label>
+              <Input
+                type="number"
+                value={addPortfolioForm.entryPrice}
+                onChange={(e) => setAddPortfolioForm({ ...addPortfolioForm, entryPrice: e.target.value })}
+                placeholder={addPortfolioForm.type === 'saham' ? '9750' : '65000'}
+                min="0"
+                step="any"
+                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/20 text-lg font-mono h-12"
+              />
+              {addPortfolioSelected && addPortfolioSelected.currentPrice > 0 && parseFloat(addPortfolioForm.entryPrice) === addPortfolioSelected.currentPrice && (
+                <p className="text-[10px] text-[#03DAC6]/60 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Mengikuti harga pasar
+                </p>
+              )}
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-2">
+              <Label className="text-white/80 text-sm">Jumlah Aset (unit) *</Label>
+              <Input
+                type="number"
+                value={addPortfolioForm.quantity}
+                onChange={(e) => setAddPortfolioForm({ ...addPortfolioForm, quantity: e.target.value })}
+                placeholder="Contoh: 0.5 BTC, 100 BBCA, 1000 EUR"
+                min="0"
+                step="any"
+                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/20 text-lg font-mono h-12"
+              />
+              <p className="text-[11px] text-white/25">Jumlah unit aset yang kamu beli / pegang</p>
+            </div>
+
+            {/* Auto-calculated nominal */}
+            {addPortfolioForm.entryPrice && addPortfolioForm.quantity && parseFloat(addPortfolioForm.entryPrice) > 0 && parseFloat(addPortfolioForm.quantity) > 0 && (() => {
+              const nominal = parseFloat(addPortfolioForm.entryPrice) * parseFloat(addPortfolioForm.quantity);
+              const isSaham = addPortfolioForm.type === 'saham';
+              const nominalStr = isSaham
+                ? 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(nominal)
+                : '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(nominal);
+              const idrEstimate = !isSaham
+                ? 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(nominal * 15500)
+                : null;
+              return (
+                <div className="rounded-xl bg-[#BB86FC]/[0.07] border border-[#BB86FC]/15 p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-[#BB86FC]/70" />
+                    <span className="text-xs text-[#BB86FC]/70 uppercase tracking-wider font-bold">Total Investasi</span>
+                  </div>
+                  <p className="text-white font-bold font-mono text-xl">{nominalStr}</p>
+                  {idrEstimate && (
+                    <p className="text-[11px] text-white/30 flex items-center gap-1">
+                      <CircleDollarSign className="h-3 w-3" />
+                      ≈ {idrEstimate} (estimasi kurs ~15.500)
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label className="text-white/80 text-sm">Catatan (opsional)</Label>
+              <Input
+                value={addPortfolioForm.notes}
+                onChange={(e) => setAddPortfolioForm({ ...addPortfolioForm, notes: e.target.value })}
+                placeholder="Alasan beli, strategi, dll..."
+                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/20"
+              />
+            </div>
+
+            <SheetFooter className="gap-2 pt-2 px-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddPortfolio(false)}
+                className="border-white/[0.1] text-white hover:bg-white/10 flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={savingPortfolio || !addPortfolioForm.symbol || !addPortfolioForm.entryPrice || !addPortfolioForm.quantity}
+                className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB] flex-1 h-11"
+              >
+                {savingPortfolio ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-1.5" />
+                )}
+                Simpan Posisi
+              </Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Add Watchlist Dialog ── */}
       <Dialog open={showAddAsset} onOpenChange={setShowAddAsset}>
         <DialogContent aria-describedby={undefined} className="max-w-md bg-[#0D0D0D] border-white/[0.06]">
           <DialogHeader>
@@ -1570,7 +2157,7 @@ export default function InvestmentDashboard() {
               />
             )}
             <p className="text-[11px] text-white/30 mt-2">
-              Search for crypto, forex, or saham assets to add to your watchlist
+              Cari aset untuk dipantau — crypto, saham, forex, komoditas, indeks
             </p>
           </div>
         </DialogContent>

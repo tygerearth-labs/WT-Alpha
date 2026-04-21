@@ -46,6 +46,19 @@ import {
   Coins,
   Flame,
   PieChart,
+  Triangle,
+  Square,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Brain,
+  Newspaper,
+  Crosshair,
+  Clock,
+  Trophy,
+  Wallet,
+  MinusCircle,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -60,6 +73,10 @@ interface PortfolioItem {
   currentPrice: number;
   quantity: number;
   status: string;
+  currentValue?: number;
+  investedValue?: number;
+  unrealizedPnl?: number;
+  unrealizedPnlPercentage?: number;
 }
 
 interface WatchlistItem {
@@ -79,15 +96,44 @@ interface TechnicalAnalysis {
   indicators: {
     rsi: { value: number; signal: string };
     macd: { value: number; signal: number; histogram: number; signalLabel?: string };
-    bollingerBands: { upper: number; middle: number; lower: number; signal: string };
-    sma20: number;
-    sma50: number;
-    ema12: number;
-    ema26: number;
+    bollingerBands: { upper: number; middle: number; lower: number; position?: string; signal?: string };
+    sma20?: number;
+    sma50?: number;
+    ema12?: number;
+    ema26?: number;
+  };
+  smc?: {
+    fairValueGaps: { high: number; low: number; filled: boolean; description: string };
+    orderBlock: { zone: { high: number; low: number }; type: string; description: string };
+    liquiditySweep: { level: number; swept: boolean; description: string };
+    trendStructure: string;
+    premiumDiscount: string;
+  };
+  aiAnalysis?: {
+    overallSignal: string;
+    signalStrength: number;
+    confidence: number;
+    reasoning: string;
+    strategy: string;
+    priceForecast: {
+      shortTerm: { target: number; timeframe: string };
+      midTerm: { target: number; timeframe: string };
+      longTerm: { target: number; timeframe: string };
+    };
+    riskLevel: string;
+    entryZone: string;
+    stopLossZone: string;
+    takeProfitZone: string;
+  };
+  newsConfirmation?: {
+    confirmed: boolean;
+    recentEvents: string[];
+    sentiment: string;
+    source: string;
   };
   overallSignal: 'buy' | 'sell' | 'neutral';
   signalStrength: number;
-  signalDetails: Array<{ indicator: string; signal: string; weight: number }>;
+  signalDetails: Array<{ indicator: string; signal: string; weight: number; description?: string }>;
   lastUpdated: string;
 }
 
@@ -123,7 +169,7 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; hex: string }> = {
   crypto: { bg: 'rgba(3,218,198,0.12)', text: '#03DAC6', hex: '#03DAC6' },
   forex: { bg: 'rgba(207,102,121,0.12)', text: '#CF6679', hex: '#CF6679' },
   komoditas: { bg: 'rgba(255,215,0,0.12)', text: '#FFD700', hex: '#FFD700' },
-  indeks: { bg: 'rgba(100,181,246,0.12)', text: '#64B5F6', hex: '#64B5F6' },
+  indeks: { bg: 'rgba(100,181,252,0.12)', text: '#64B5F6', hex: '#64B5F6' },
 };
 
 const STRONG_BUY_COLOR = '#03DAC6';
@@ -134,6 +180,7 @@ const STRONG_SELL_COLOR = '#CF6679';
 const UP_COLOR = '#03DAC6';
 const DOWN_COLOR = '#CF6679';
 const GOLD_COLOR = '#FFD54F';
+const PURPLE_COLOR = '#BB86FC';
 
 // ── Formatting Helpers ───────────────────────────────────────────────────────
 
@@ -184,6 +231,31 @@ function getSignalLabel(signal: string, strength: number): string {
 function fmtPrice(type: string, val: number): string {
   const prefix = currencyPrefix(type as 'saham' | 'crypto' | 'forex');
   return `${prefix}${formatAssetPrice(val, type as 'saham' | 'crypto' | 'forex')}`;
+}
+
+function getRiskColor(risk: string): string {
+  switch (risk?.toUpperCase()) {
+    case 'LOW': return '#03DAC6';
+    case 'MEDIUM': return '#FFD700';
+    case 'HIGH': return '#FF7043';
+    default: return '#888';
+  }
+}
+
+function getTrendColor(trend: string): string {
+  switch (trend?.toLowerCase()) {
+    case 'bullish': return '#03DAC6';
+    case 'bearish': return '#CF6679';
+    default: return '#FFD700';
+  }
+}
+
+function getTrendIcon(trend: string) {
+  switch (trend?.toLowerCase()) {
+    case 'bullish': return <TrendingUp className="h-3 w-3" />;
+    case 'bearish': return <TrendingDown className="h-3 w-3" />;
+    default: return <MinusCircle className="h-3 w-3" />;
+  }
 }
 
 // ── Sentiment Helper (for Macro tab) ────────────────────────────────────────
@@ -428,6 +500,101 @@ function DominanceBar({ value, color }: { value: number; color: string }) {
   );
 }
 
+// ── SMC Status Indicators ────────────────────────────────────────────────────
+
+function SMCStatusIcons({ smc }: { smc: TechnicalAnalysis['smc'] }) {
+  if (!smc) return null;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={cn(
+            'flex items-center justify-center w-4 h-4 rounded-sm transition-colors',
+            !smc.fairValueGaps.filled ? 'bg-[#03DAC6]/15 text-[#03DAC6]' : 'bg-white/[0.04] text-white/20'
+          )}>
+            <Triangle className="h-2.5 w-2.5" fill="currentColor" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="bg-[#1A1A2E] border-white/[0.06] text-white/60 text-[10px]">
+          FVG: {!smc.fairValueGaps.filled ? 'Active' : 'Filled'}
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={cn(
+            'flex items-center justify-center w-4 h-4 rounded-sm transition-colors',
+            smc.orderBlock.type === 'bullish' ? 'bg-[#03DAC6]/15 text-[#03DAC6]' : smc.orderBlock.type === 'bearish' ? 'bg-[#CF6679]/15 text-[#CF6679]' : 'bg-white/[0.04] text-white/20'
+          )}>
+            <Square className="h-2.5 w-2.5" fill="currentColor" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="bg-[#1A1A2E] border-white/[0.06] text-white/60 text-[10px]">
+          OB: {smc.orderBlock.type}
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={cn(
+            'flex items-center justify-center w-4 h-4 rounded-sm transition-colors',
+            smc.liquiditySweep.swept ? 'bg-[#FFD700]/15 text-[#FFD700]' : 'bg-white/[0.04] text-white/20'
+          )}>
+            <Zap className="h-2.5 w-2.5" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="bg-[#1A1A2E] border-white/[0.06] text-white/60 text-[10px]">
+          Liq Sweep: {smc.liquiditySweep.swept ? 'Swept' : 'No'}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+// ── AI Confidence Bar ───────────────────────────────────────────────────────
+
+function AIConfidenceBadge({ confidence }: { confidence: number }) {
+  const color = confidence >= 70 ? '#03DAC6' : confidence >= 40 ? '#FFD700' : '#CF6679';
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-1.5">
+          <Brain className="h-3 w-3" style={{ color }} />
+          <div className="h-1.5 w-12 rounded-full bg-white/[0.06] overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ backgroundColor: color }}
+              initial={{ width: '0%' }}
+              animate={{ width: `${confidence}%` }}
+              transition={{ duration: 0.6 }}
+            />
+          </div>
+          <span className="text-[9px] font-mono font-bold" style={{ color }}>{confidence}%</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="bg-[#1A1A2E] border-white/[0.06] text-white/60 text-[10px]">
+        AI Confidence: {confidence}%
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// ── Trend Structure Badge ────────────────────────────────────────────────────
+
+function TrendBadge({ trend }: { trend: string }) {
+  const color = getTrendColor(trend);
+  const icon = getTrendIcon(trend);
+
+  return (
+    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${color}12` }}>
+      <span style={{ color }}>{icon}</span>
+      <span className="text-[9px] font-bold uppercase" style={{ color }}>{trend}</span>
+    </div>
+  );
+}
+
 // ── Unified signal card item for portfolio + watchlist ───────────────────────
 
 interface SignalGridItem {
@@ -489,14 +656,17 @@ function SignalCard({
                 {item.type.toUpperCase()}
               </Badge>
             </div>
-            {!item.isWatchlist && (
-              <button
-                className="p-1.5 rounded-md text-white/20 hover:text-[#FFD700] hover:bg-white/[0.06] transition-colors opacity-0 group-hover:opacity-100"
-                onClick={(e) => { e.stopPropagation(); onAddToWatchlist(item.symbol); }}
-              >
-                <Star className="h-3.5 w-3.5" />
-              </button>
-            )}
+            <div className="flex items-center gap-1.5">
+              {signal?.smc && <SMCStatusIcons smc={signal.smc} />}
+              {!item.isWatchlist && (
+                <button
+                  className="p-1.5 rounded-md text-white/20 hover:text-[#FFD700] hover:bg-white/[0.06] transition-colors opacity-0 group-hover:opacity-100"
+                  onClick={(e) => { e.stopPropagation(); onAddToWatchlist(item.symbol); }}
+                >
+                  <Star className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Price & change */}
@@ -528,20 +698,30 @@ function SignalCard({
           {/* Strength bar */}
           {signal ? <SignalBar strength={strength} /> : <Skeleton className="h-4 w-full rounded-full bg-white/[0.06]" />}
 
-          {/* Mini indicators */}
+          {/* Mini indicators + SMC + AI row */}
           {signal && (
-            <div className="flex items-center gap-3 mt-3 pt-2 border-t border-white/[0.04]">
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] text-white/25">RSI</span>
-                <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
-                  {signal.indicators.rsi.value.toFixed(1)}
-                </span>
+            <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/[0.04]">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-white/25">RSI</span>
+                  <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
+                    {signal.indicators.rsi.value.toFixed(1)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-white/25">MACD</span>
+                  <span className={cn('text-[10px] font-mono font-bold', signal.indicators.macd.histogram >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                    {signal.indicators.macd.histogram >= 0 ? '▲' : '▼'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] text-white/25">MACD</span>
-                <span className={cn('text-[10px] font-mono font-bold', signal.indicators.macd.histogram >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                  {signal.indicators.macd.histogram >= 0 ? '▲' : '▼'}
-                </span>
+              <div className="flex items-center gap-2">
+                {signal.smc && (
+                  <TrendBadge trend={signal.smc.trendStructure} />
+                )}
+                {signal.aiAnalysis && (
+                  <AIConfidenceBadge confidence={signal.aiAnalysis.confidence} />
+                )}
               </div>
             </div>
           )}
@@ -563,6 +743,7 @@ export default function QuantMacroPanel() {
 
   // ── Quant state ────────────────────────────────────────────────────────────
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [allPortfolioItems, setAllPortfolioItems] = useState<PortfolioItem[]>([]);
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
   const [signals, setSignals] = useState<Map<string, TechnicalAnalysis>>(new Map());
   const [selectedAsset, setSelectedAsset] = useState<TechnicalAnalysis | null>(null);
@@ -585,7 +766,7 @@ export default function QuantMacroPanel() {
     return t(key) || fallback;
   }, [t]);
 
-  // ── Fetch portfolio ────────────────────────────────────────────────────────
+  // ── Fetch portfolio (all items, for PNL stats) ─────────────────────────────
   useEffect(() => {
     if (!businessId) return;
     let cancelled = false;
@@ -593,15 +774,44 @@ export default function QuantMacroPanel() {
       .then(res => res.ok ? res.json() : { portfolios: [] })
       .then(data => {
         if (!cancelled) {
-          setPortfolioItems((data.portfolios || []).filter((p: PortfolioItem) => p.status === 'open'));
+          const items = data.portfolios || [];
+          setAllPortfolioItems(items);
+          setPortfolioItems(items.filter((p: PortfolioItem) => p.status === 'open'));
           setLoadingPortfolio(false);
         }
       })
       .catch(() => {
-        if (!cancelled) { setPortfolioItems([]); setLoadingPortfolio(false); }
+        if (!cancelled) { setAllPortfolioItems([]); setPortfolioItems([]); setLoadingPortfolio(false); }
       });
     return () => { cancelled = true; };
   }, [businessId]);
+
+  // ── PNL Stats ──────────────────────────────────────────────────────────────
+  const portfolioStats = useMemo(() => {
+    const openItems = allPortfolioItems.filter(p => p.status === 'open');
+    const closedItems = allPortfolioItems.filter(p => p.status === 'closed');
+
+    const totalValue = openItems.reduce((s, p) => s + ((p.currentValue ?? p.currentPrice * p.quantity) || 0), 0);
+    const investedValue = openItems.reduce((s, p) => s + ((p.investedValue ?? p.entryPrice * p.quantity) || 0), 0);
+    const unrealizedPnl = openItems.reduce((s, p) => s + ((p.unrealizedPnl ?? 0) || 0), 0);
+    const unrealizedPnlPct = investedValue > 0 ? (unrealizedPnl / investedValue) * 100 : 0;
+
+    const realizedPnl = closedItems.reduce((s, p) => {
+      const cv = (p.currentValue ?? p.currentPrice * p.quantity) || 0;
+      const iv = (p.investedValue ?? p.entryPrice * p.quantity) || 0;
+      return s + (cv - iv);
+    }, 0);
+
+    const winTrades = closedItems.filter(p => {
+      const cv = (p.currentValue ?? p.currentPrice * p.quantity) || 0;
+      const iv = (p.investedValue ?? p.entryPrice * p.quantity) || 0;
+      return (cv - iv) > 0;
+    }).length;
+    const totalTrades = closedItems.length;
+    const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+
+    return { totalValue, investedValue, unrealizedPnl, unrealizedPnlPct, realizedPnl, winRate, totalTrades };
+  }, [allPortfolioItems]);
 
   // ── Fetch watchlist ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -769,8 +979,8 @@ export default function QuantMacroPanel() {
           <Skeleton className="h-10 w-32 rounded-lg bg-[#1A1A2E]" />
           <Skeleton className="h-10 w-32 rounded-lg bg-[#1A1A2E]" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (<Skeleton key={i} className="h-20 rounded-xl bg-[#1A1A2E]" />))}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (<Skeleton key={i} className="h-20 rounded-xl bg-[#1A1A2E]" />))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {Array.from({ length: 3 }).map((_, i) => (<Skeleton key={i} className="h-40 rounded-xl bg-[#1A1A2E]" />))}
@@ -778,6 +988,69 @@ export default function QuantMacroPanel() {
       </div>
     );
   }
+
+  // ── PNL Summary Strip ──────────────────────────────────────────────────────
+  const renderPNLStrip = () => (
+    <motion.div
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {[
+        {
+          label: 'Portfolio Value',
+          value: formatLargeNumber(portfolioStats.totalValue),
+          icon: Wallet,
+          color: '#03DAC6',
+          sub: `${portfolioItems.length} open positions`,
+        },
+        {
+          label: 'Unrealized PnL',
+          value: `${portfolioStats.unrealizedPnl >= 0 ? '+' : ''}${formatLargeNumber(Math.abs(portfolioStats.unrealizedPnl))}`,
+          icon: portfolioStats.unrealizedPnl >= 0 ? TrendingUp : TrendingDown,
+          color: portfolioStats.unrealizedPnl >= 0 ? '#03DAC6' : '#CF6679',
+          sub: `${portfolioStats.unrealizedPnlPct >= 0 ? '+' : ''}${portfolioStats.unrealizedPnlPct.toFixed(2)}%`,
+        },
+        {
+          label: 'Realized PnL',
+          value: `${portfolioStats.realizedPnl >= 0 ? '+' : ''}${formatLargeNumber(Math.abs(portfolioStats.realizedPnl))}`,
+          icon: portfolioStats.realizedPnl >= 0 ? Trophy : AlertTriangle,
+          color: portfolioStats.realizedPnl >= 0 ? '#03DAC6' : '#CF6679',
+          sub: 'All closed trades',
+        },
+        {
+          label: 'Win Rate',
+          value: `${portfolioStats.winRate.toFixed(1)}%`,
+          icon: Crosshair,
+          color: portfolioStats.winRate >= 50 ? '#03DAC6' : portfolioStats.winRate >= 30 ? '#FFD700' : '#CF6679',
+          sub: `${portfolioStats.totalTrades > 0 ? Math.round(portfolioStats.winRate * portfolioStats.totalTrades / 100) : 0}W / ${portfolioStats.totalTrades}T`,
+        },
+        {
+          label: 'Total Trades',
+          value: portfolioStats.totalTrades.toString(),
+          icon: BarChart3,
+          color: '#BB86FC',
+          sub: `${portfolioItems.length} open`,
+        },
+      ].map((item, i) => (
+        <motion.div key={item.label} variants={cardVariants} custom={i}>
+          <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all group">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[9px] text-white/35 uppercase tracking-wider font-medium">{item.label}</span>
+                <div className="flex h-5 w-5 items-center justify-center rounded-md" style={{ backgroundColor: `${item.color}12` }}>
+                  <item.icon className="h-3 w-3" style={{ color: item.color }} />
+                </div>
+              </div>
+              <p className="text-sm font-bold text-white/90 font-mono tracking-tight">{item.value}</p>
+              <p className="text-[10px] text-white/25 font-mono mt-0.5">{item.sub}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </motion.div>
+  );
 
   // ── Macro tab no-data state ────────────────────────────────────────────────
   const renderMacroNoData = () => (
@@ -992,6 +1265,9 @@ export default function QuantMacroPanel() {
   // ── Quant tab content ──────────────────────────────────────────────────────
   const renderQuantTab = () => (
     <div className="space-y-5">
+      {/* PNL Summary Strip */}
+      {renderPNLStrip()}
+
       {/* Global Market Overview */}
       {macroData && (
         <motion.div variants={fadeIn} initial="hidden" animate="visible">
@@ -1149,6 +1425,255 @@ export default function QuantMacroPanel() {
     </div>
   );
 
+  // ── Bloomberg-Style Detail Panel Section ───────────────────────────────────
+
+  const renderSMCPanel = (smc: NonNullable<TechnicalAnalysis['smc']>) => (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#BB86FC]/10">
+          <Layers className="h-3 w-3 text-[#BB86FC]" />
+        </div>
+        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Smart Money Concepts</span>
+      </div>
+
+      {/* Trend Structure + Premium/Discount */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Trend Structure</span>
+          <TrendBadge trend={smc.trendStructure} />
+        </div>
+        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Premium / Discount</span>
+          <Badge className="text-[9px] px-2 py-0.5 h-5 font-bold border-0"
+            style={{
+              backgroundColor: smc.premiumDiscount === 'discount' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
+              color: smc.premiumDiscount === 'discount' ? '#03DAC6' : '#CF6679',
+            }}>
+            {smc.premiumDiscount === 'discount' ? '▼ Discount' : '▲ Premium'}
+          </Badge>
+        </div>
+      </div>
+
+      {/* FVG */}
+      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Triangle className="h-3 w-3 text-[#03DAC6]" fill="currentColor" />
+            <span className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Fair Value Gap</span>
+          </div>
+          <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0"
+            style={{ backgroundColor: !smc.fairValueGaps.filled ? 'rgba(3,218,198,0.15)' : 'rgba(255,255,255,0.06)', color: !smc.fairValueGaps.filled ? '#03DAC6' : '#666' }}>
+            {!smc.fairValueGaps.filled ? 'ACTIVE' : 'FILLED'}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] font-mono">
+          <span className="text-white/30">Range:</span>
+          <span className="text-[#03DAC6]/80">{smc.fairValueGaps.low.toLocaleString()}</span>
+          <ArrowLeftRight className="h-3 w-3 text-white/20" />
+          <span className="text-[#CF6679]/80">{smc.fairValueGaps.high.toLocaleString()}</span>
+        </div>
+        <p className="text-[9px] text-white/25 leading-relaxed line-clamp-2">{smc.fairValueGaps.description}</p>
+      </div>
+
+      {/* Order Block */}
+      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Square className="h-3 w-3" style={{ color: smc.orderBlock.type === 'bullish' ? '#03DAC6' : '#CF6679' }} fill="currentColor" />
+            <span className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Order Block</span>
+          </div>
+          <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 capitalize"
+            style={{ backgroundColor: smc.orderBlock.type === 'bullish' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: smc.orderBlock.type === 'bullish' ? '#03DAC6' : '#CF6679' }}>
+            {smc.orderBlock.type}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] font-mono">
+          <span className="text-white/30">Zone:</span>
+          <span className="text-white/50">{smc.orderBlock.zone.low.toLocaleString()}</span>
+          <span className="text-white/20">—</span>
+          <span className="text-white/50">{smc.orderBlock.zone.high.toLocaleString()}</span>
+        </div>
+        <p className="text-[9px] text-white/25 leading-relaxed line-clamp-2">{smc.orderBlock.description}</p>
+      </div>
+
+      {/* Liquidity Sweep */}
+      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Zap className="h-3 w-3 text-[#FFD700]" />
+            <span className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Liquidity Sweep</span>
+          </div>
+          <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0"
+            style={{ backgroundColor: smc.liquiditySweep.swept ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.06)', color: smc.liquiditySweep.swept ? '#FFD700' : '#666' }}>
+            {smc.liquiditySweep.swept ? 'SWEPT' : 'NO SWEEP'}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] font-mono">
+          <span className="text-white/30">Level:</span>
+          <span className="text-[#FFD700]/80">{smc.liquiditySweep.level.toLocaleString()}</span>
+        </div>
+        <p className="text-[9px] text-white/25 leading-relaxed line-clamp-2">{smc.liquiditySweep.description}</p>
+      </div>
+    </div>
+  );
+
+  const renderAIPanel = (ai: NonNullable<TechnicalAnalysis['aiAnalysis']>, news: TechnicalAnalysis['newsConfirmation']) => (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#03DAC6]/10">
+          <Brain className="h-3 w-3 text-[#03DAC6]" />
+        </div>
+        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">AI Analysis</span>
+      </div>
+
+      {/* Confidence + Risk */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg bg-white/[0.03] p-2.5 text-center space-y-1">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Confidence</span>
+          <div className="flex items-center justify-center gap-1.5">
+            <motion.div
+              className="h-2 rounded-full"
+              style={{ backgroundColor: getSignalColor(ai.signalStrength), width: `${ai.confidence * 0.6}px` }}
+              initial={{ width: 0 }}
+              animate={{ width: `${ai.confidence * 0.6}px` }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            />
+            <span className="text-sm font-bold font-mono" style={{ color: getSignalColor(ai.signalStrength) }}>{ai.confidence}%</span>
+          </div>
+        </div>
+        <div className="rounded-lg bg-white/[0.03] p-2.5 text-center space-y-1">
+          <span className="text-[9px] text-white/30 uppercase tracking-wider">Risk Level</span>
+          <div className="flex items-center justify-center gap-1.5">
+            {ai.riskLevel === 'LOW' && <ShieldCheck className="h-3.5 w-3.5 text-[#03DAC6]" />}
+            {ai.riskLevel === 'MEDIUM' && <ShieldAlert className="h-3.5 w-3.5 text-[#FFD700]" />}
+            {ai.riskLevel === 'HIGH' && <ShieldAlert className="h-3.5 w-3.5 text-[#CF6679]" />}
+            {!['LOW', 'MEDIUM', 'HIGH'].includes(ai.riskLevel) && <Shield className="h-3.5 w-3.5 text-white/40" />}
+            <span className="text-sm font-bold font-mono" style={{ color: getRiskColor(ai.riskLevel) }}>{ai.riskLevel}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Reasoning */}
+      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+        <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">Reasoning</span>
+        <p className="text-[11px] text-white/60 leading-relaxed">{ai.reasoning}</p>
+      </div>
+
+      {/* Strategy */}
+      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+        <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">Detected Strategy</span>
+        <div className="flex items-center gap-1.5">
+          <Crosshair className="h-3 w-3 text-[#BB86FC]" />
+          <span className="text-[11px] text-[#BB86FC] font-medium">{ai.strategy}</span>
+        </div>
+      </div>
+
+      {/* News Confirmation */}
+      {news && (
+        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Newspaper className="h-3 w-3 text-[#03DAC6]" />
+              <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">News Confirmation</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {news.confirmed ? (
+                <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: 'rgba(3,218,198,0.15)', color: '#03DAC6' }}>
+                  <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> CONFIRMED
+                </Badge>
+              ) : (
+                <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: '#666' }}>
+                  UNCONFIRMED
+                </Badge>
+              )}
+              <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 capitalize"
+                style={{ backgroundColor: `${getTrendColor(news.sentiment)}15`, color: getTrendColor(news.sentiment) }}>
+                {news.sentiment}
+              </Badge>
+            </div>
+          </div>
+          {news.recentEvents && news.recentEvents.length > 0 && (
+            <div className="space-y-1">
+              {news.recentEvents.map((event, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-[10px] text-white/40">
+                  <span className="text-white/15 font-mono shrink-0">•</span>
+                  <span className="leading-relaxed">{event}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {news.source && (
+            <p className="text-[9px] text-white/20 font-mono italic">{news.source}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTradeZonesPanel = (ai: NonNullable<TechnicalAnalysis['aiAnalysis']>) => (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#FFD700]/10">
+          <Crosshair className="h-3 w-3 text-[#FFD700]" />
+        </div>
+        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Trade Zones & Forecast</span>
+      </div>
+
+      {/* Entry / SL / TP */}
+      <div className="space-y-2">
+        <div className="rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10 p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
+            <span className="text-[9px] text-[#03DAC6]/60 uppercase tracking-wider font-bold">Entry Zone</span>
+          </div>
+          <p className="text-[11px] text-white/60 font-medium">{ai.entryZone}</p>
+        </div>
+
+        <div className="rounded-lg bg-[#CF6679]/[0.04] border border-[#CF6679]/10 p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#CF6679]" />
+            <span className="text-[9px] text-[#CF6679]/60 uppercase tracking-wider font-bold">Stop Loss Zone</span>
+          </div>
+          <p className="text-[11px] text-white/60 font-medium">{ai.stopLossZone}</p>
+        </div>
+
+        <div className="rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10 p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
+            <span className="text-[9px] text-[#03DAC6]/60 uppercase tracking-wider font-bold">Take Profit Zone</span>
+          </div>
+          <p className="text-[11px] text-white/60 font-medium">{ai.takeProfitZone}</p>
+        </div>
+      </div>
+
+      {/* Price Forecast Table */}
+      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-2">
+        <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Price Forecast</span>
+        <div className="space-y-1.5">
+          {[
+            { label: 'Short Term', data: ai.priceForecast.shortTerm, color: '#03DAC6' },
+            { label: 'Mid Term', data: ai.priceForecast.midTerm, color: '#FFD700' },
+            { label: 'Long Term', data: ai.priceForecast.longTerm, color: '#BB86FC' },
+          ].map(row => (
+            <div key={row.label} className="flex items-center justify-between px-2 py-1.5 rounded-md bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-4 rounded-full" style={{ backgroundColor: row.color }} />
+                <span className="text-[10px] text-white/40 font-medium">{row.label}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-bold font-mono text-white/70">{row.data.target.toLocaleString()}</span>
+                <div className="flex items-center gap-1 text-[9px] text-white/25">
+                  <Clock className="h-2.5 w-2.5" />
+                  <span className="font-mono">{row.data.timeframe}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Main Render ────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
@@ -1248,7 +1773,7 @@ export default function QuantMacroPanel() {
 
       {/* ── Expanded Analysis Dialog (shared between tabs) ─────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-3xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
+        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
           {selectedAsset && (
             <>
               <DialogHeader className="px-5 pt-5 pb-3">
@@ -1259,6 +1784,9 @@ export default function QuantMacroPanel() {
                       style={{ backgroundColor: TYPE_COLORS[selectedAsset.type]?.bg || 'rgba(255,255,255,0.06)', color: TYPE_COLORS[selectedAsset.type]?.text || '#888' }}>
                       {selectedAsset.type.toUpperCase()}
                     </Badge>
+                    {selectedAsset.smc && (
+                      <TrendBadge trend={selectedAsset.smc.trendStructure} />
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <button className="p-2 rounded-lg text-white/30 hover:text-[#FFD700] hover:bg-white/[0.06] transition-colors"
@@ -1279,75 +1807,114 @@ export default function QuantMacroPanel() {
                       {selectedAsset.change24h >= 0 ? '+' : ''}{selectedAsset.change24h.toFixed(2)}%
                     </span>
                   </div>
+                  <div className="ml-auto flex items-center gap-2">
+                    <Badge className="text-xs px-3 py-1 h-6 font-bold border-0"
+                      style={{ backgroundColor: `${getSignalColor(selectedAsset.signalStrength)}20`, color: getSignalColor(selectedAsset.signalStrength), boxShadow: `0 0 16px ${getSignalColor(selectedAsset.signalStrength)}20` }}>
+                      {getSignalLabel(selectedAsset.overallSignal, selectedAsset.signalStrength)}
+                    </Badge>
+                    {selectedAsset.aiAnalysis && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03]">
+                        <Brain className="h-3.5 w-3.5 text-[#03DAC6]" />
+                        <span className="text-[11px] font-mono font-bold" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>
+                          {selectedAsset.aiAnalysis.confidence}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </DialogHeader>
               <ScrollArea className="max-h-[calc(90vh-180px)]">
                 <div className="px-5 pb-5 space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 space-y-3">
-                      <SignalBar strength={selectedAsset.signalStrength} />
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">{tf('quant.signal', 'Signal')}</span>
-                        <Badge className="text-xs px-3 py-1 h-6 font-bold border-0"
-                          style={{ backgroundColor: `${getSignalColor(selectedAsset.signalStrength)}20`, color: getSignalColor(selectedAsset.signalStrength), boxShadow: `0 0 16px ${getSignalColor(selectedAsset.signalStrength)}20` }}>
-                          {getSignalLabel(selectedAsset.overallSignal, selectedAsset.signalStrength)}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border p-4 flex flex-col items-center justify-center text-center space-y-2"
-                      style={{ backgroundColor: `${getSignalColor(selectedAsset.signalStrength)}08`, borderColor: `${getSignalColor(selectedAsset.signalStrength)}20` }}>
-                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('quant.recommendation', 'Recommendation')}</span>
-                      <div className="flex items-center gap-2">
-                        {selectedAsset.overallSignal === 'buy' ? <CheckCircle2 className="h-6 w-6 text-[#03DAC6]" /> : selectedAsset.overallSignal === 'sell' ? <AlertTriangle className="h-6 w-6 text-[#CF6679]" /> : <Minus className="h-6 w-6 text-[#FFD700]" />}
-                        <span className="text-2xl font-black font-mono" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>
-                          {selectedAsset.overallSignal === 'buy' ? tf('quant.buy', 'BUY') : selectedAsset.overallSignal === 'sell' ? tf('quant.sell', 'SELL') : tf('quant.neutral', 'NEUTRAL')}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-white/30">Confidence</span>
-                        <div className="h-1.5 w-20 rounded-full bg-white/[0.06] overflow-hidden">
-                          <motion.div className="h-full rounded-full" style={{ backgroundColor: getSignalColor(selectedAsset.signalStrength), width: `${Math.abs(selectedAsset.signalStrength)}%` }}
-                            initial={{ width: '0%' }} animate={{ width: `${Math.abs(selectedAsset.signalStrength)}%` }} transition={{ duration: 0.8, delay: 0.3 }} />
-                        </div>
-                        <span className="text-xs font-mono font-bold" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>{Math.abs(selectedAsset.signalStrength)}%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
-                      <BarChart3 className="h-3.5 w-3.5" /> {tf('quant.indicators', 'Indicators')}
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4"><RSIGauge value={selectedAsset.indicators.rsi.value} /></div>
-                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4"><MACDHistogram macd={selectedAsset.indicators.macd.value} signal={selectedAsset.indicators.macd.signal} histogram={selectedAsset.indicators.macd.histogram} /></div>
-                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4"><BollingerBandsInfo upper={selectedAsset.indicators.bollingerBands.upper} middle={selectedAsset.indicators.bollingerBands.middle} lower={selectedAsset.indicators.bollingerBands.lower} price={selectedAsset.price} /></div>
-                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4"><MovingAverageSection sma20={selectedAsset.indicators.sma20} sma50={selectedAsset.indicators.sma50} ema12={selectedAsset.indicators.ema12} ema26={selectedAsset.indicators.ema26} /></div>
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
-                      <Target className="h-3.5 w-3.5" /> Signal Breakdown
-                    </span>
-                    <div className="space-y-2">
-                      {selectedAsset.signalDetails.map(detail => {
-                        const signalColor = detail.signal === 'BUY' ? '#03DAC6' : detail.signal === 'SELL' ? '#CF6679' : '#FFD700';
-                        return (
-                          <div key={detail.indicator} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02]">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-white/60 font-medium w-16">{detail.indicator}</span>
-                              <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold border-0" style={{ backgroundColor: `${signalColor}15`, color: signalColor }}>{detail.signal}</Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="h-1.5 w-16 rounded-full bg-white/[0.06] overflow-hidden">
-                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${detail.weight}%`, backgroundColor: signalColor }} />
-                              </div>
-                              <span className="text-[10px] text-white/30 font-mono w-8 text-right">{detail.weight}%</span>
-                            </div>
+                  {/* Bloomberg-style 4-column grid for SMC + AI data */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Column 1: Signal Overview + Indicators */}
+                    <div className="space-y-4">
+                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-5 w-5 items-center justify-center rounded-md" style={{ backgroundColor: `${getSignalColor(selectedAsset.signalStrength)}15` }}>
+                            <Activity className="h-3 w-3" style={{ color: getSignalColor(selectedAsset.signalStrength) }} />
                           </div>
-                        );
-                      })}
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Signal Overview</span>
+                        </div>
+                        <SignalBar strength={selectedAsset.signalStrength} />
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">{tf('quant.signal', 'Signal')}</span>
+                          <div className="flex items-center gap-2">
+                            {selectedAsset.overallSignal === 'buy' ? <CheckCircle2 className="h-5 w-5 text-[#03DAC6]" /> : selectedAsset.overallSignal === 'sell' ? <AlertTriangle className="h-5 w-5 text-[#CF6679]" /> : <Minus className="h-5 w-5 text-[#FFD700]" />}
+                            <span className="text-lg font-black font-mono" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>
+                              {selectedAsset.overallSignal === 'buy' ? 'BUY' : selectedAsset.overallSignal === 'sell' ? 'SELL' : 'NEUTRAL'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Indicators */}
+                      <div>
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
+                          <BarChart3 className="h-3.5 w-3.5" /> {tf('quant.indicators', 'Indicators')}
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><RSIGauge value={selectedAsset.indicators.rsi.value} /></div>
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MACDHistogram macd={selectedAsset.indicators.macd.value} signal={selectedAsset.indicators.macd.signal} histogram={selectedAsset.indicators.macd.histogram} /></div>
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><BollingerBandsInfo upper={selectedAsset.indicators.bollingerBands.upper} middle={selectedAsset.indicators.bollingerBands.middle} lower={selectedAsset.indicators.bollingerBands.lower} price={selectedAsset.price} /></div>
+                          {selectedAsset.indicators.sma20 && selectedAsset.indicators.sma50 && selectedAsset.indicators.ema12 && selectedAsset.indicators.ema26 && (
+                            <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MovingAverageSection sma20={selectedAsset.indicators.sma20} sma50={selectedAsset.indicators.sma50} ema12={selectedAsset.indicators.ema12} ema26={selectedAsset.indicators.ema26} /></div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Signal Breakdown */}
+                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
+                          <Target className="h-3.5 w-3.5" /> Signal Breakdown
+                        </span>
+                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar">
+                          {selectedAsset.signalDetails.map(detail => {
+                            const signalColor = detail.signal === 'BUY' || detail.signal === 'BULLISH' ? '#03DAC6' : detail.signal === 'SELL' || detail.signal === 'BEARISH' ? '#CF6679' : '#FFD700';
+                            return (
+                              <div key={detail.indicator} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs text-white/60 font-medium w-16">{detail.indicator}</span>
+                                  <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold border-0" style={{ backgroundColor: `${signalColor}15`, color: signalColor }}>{detail.signal}</Badge>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-1.5 w-16 rounded-full bg-white/[0.06] overflow-hidden">
+                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${detail.weight}%`, backgroundColor: signalColor }} />
+                                  </div>
+                                  <span className="text-[10px] text-white/30 font-mono w-8 text-right">{detail.weight}%</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Column 2: SMC + AI + Trade Zones */}
+                    <div className="space-y-4">
+                      {/* SMC Analysis */}
+                      {selectedAsset.smc && (
+                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
+                          {renderSMCPanel(selectedAsset.smc)}
+                        </div>
+                      )}
+
+                      {/* AI Analysis */}
+                      {selectedAsset.aiAnalysis && (
+                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
+                          {renderAIPanel(selectedAsset.aiAnalysis, selectedAsset.newsConfirmation)}
+                        </div>
+                      )}
+
+                      {/* Trade Zones & Forecast */}
+                      {selectedAsset.aiAnalysis && (
+                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
+                          {renderTradeZonesPanel(selectedAsset.aiAnalysis)}
+                        </div>
+                      )}
                     </div>
                   </div>
+
                   <div className="flex items-center justify-center gap-2 text-white/20">
                     <Eye className="h-3 w-3" />
                     <span className="text-[10px] font-mono">{new Date(selectedAsset.lastUpdated).toLocaleString()}</span>

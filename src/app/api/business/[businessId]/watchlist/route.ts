@@ -105,10 +105,10 @@ export async function POST(
       );
     }
 
-    const allowedTypes = ['crypto', 'saham', 'forex'];
+    const allowedTypes = ['crypto', 'saham', 'forex', 'komoditas', 'indeks'];
     if (!allowedTypes.includes(body.type)) {
       return NextResponse.json(
-        { error: 'type must be one of: crypto, saham, forex' },
+        { error: 'type must be one of: crypto, saham, forex, komoditas, indeks' },
         { status: 400 },
       );
     }
