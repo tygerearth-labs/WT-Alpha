@@ -52,7 +52,7 @@ export async function GET(
         try {
           const zai = await import('z-ai-web-dev-sdk');
           const ZAI = zai.default;
-          const zaiClient = new ZAI();
+          const zaiClient = await ZAI.create();
 
           const results = await zaiClient.functions.invoke('web_search', {
             query,
@@ -95,7 +95,7 @@ export async function GET(
       try {
         const zai = await import('z-ai-web-dev-sdk');
         const ZAI = zai.default;
-        const zaiClient = new ZAI();
+        const zaiClient = await ZAI.create();
 
         // Read portfolio from DB
         const { db } = await import('@/lib/db');
