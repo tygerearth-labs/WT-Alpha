@@ -279,7 +279,7 @@ export function AdminAnnouncements() {
     inactive: 'border-white/10 text-white/40 bg-white/[0.02]',
   };
 
-  const renderForm = (isEdit: boolean) => (
+  const renderForm = (_isEdit: boolean) => (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label className="text-[11px] text-white/50">Title</Label>

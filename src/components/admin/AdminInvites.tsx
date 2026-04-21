@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,9 +18,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  UserPlus, Copy, Trash2, Link, Clock, Mail, RefreshCw,
+  UserPlus, Copy, Trash2, Link, Clock, Mail,
   CheckCircle, XCircle, AlertTriangle, ChevronLeft, ChevronRight,
-  ExternalLink, Sparkles, Crown, QrCode, Zap, Gem,
+  Sparkles, Crown, QrCode, Zap, Gem,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/select';
 import {
   CreditCard, Clock, AlertTriangle, CheckCircle, Plus,
-  Search, RefreshCw, Crown, Sparkles, ChevronLeft, ChevronRight,
-  Calendar, Zap, Timer, TrendingUp, Megaphone, Gem,
+  RefreshCw, Crown, Sparkles, ChevronLeft, ChevronRight,
+  Calendar, Zap, Timer, Gem,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';

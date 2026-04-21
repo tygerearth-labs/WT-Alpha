@@ -4,12 +4,12 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Loader2, TrendingUp, TrendingDown, Minus, Wallet,
+  TrendingUp, TrendingDown, Minus, Wallet,
   ArrowUpRight, ArrowDownRight, Activity, Target,
   PieChart as PieChartIcon, BarChart3, Sparkles,
   AlertTriangle, Trophy, Flame, CheckCircle2, Zap,
   Shield, ChevronLeft, ChevronRight, Banknote, Timer, Radar, Eye, Brain,
-  BarChart2, Lightbulb, PiggyBank, Sun, Moon, Star, Lock,
+  BarChart2, Lightbulb, Sun, Moon, Star, Lock,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 // embla-carousel removed — replaced with lightweight CSS transform carousel

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, BellRing, Info, AlertTriangle, CheckCircle2, XCircle, ExternalLink, Check, Loader2 } from 'lucide-react';
+import { Bell, BellRing, Info, AlertTriangle, CheckCircle2, XCircle, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 

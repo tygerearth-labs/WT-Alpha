@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, AlertTriangle, ArrowDownCircle, ArrowUpCircle, CreditCard } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';

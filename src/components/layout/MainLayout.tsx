@@ -341,12 +341,6 @@ export function MainLayout() {
     m === 'bisnis' ? '#03DAC6' : m === 'investasi' ? '#FFD700' : '#BB86FC';
   const modeColorClass = (m: string) =>
     m === 'bisnis' ? 'text-[#03DAC6]' : m === 'investasi' ? 'text-[#FFD700]' : 'text-[#BB86FC]';
-  const modeBgClass = (m: string) =>
-    m === 'bisnis' ? 'bg-[#03DAC6]/15' : m === 'investasi' ? 'bg-[#FFD700]/15' : 'bg-[#BB86FC]/15';
-  const modeBorderClass = (m: string) =>
-    m === 'bisnis' ? 'border-[#03DAC6]/20' : m === 'investasi' ? 'border-[#FFD700]/20' : 'border-[#BB86FC]/20';
-  const modeGlowClass = (m: string) =>
-    m === 'bisnis' ? 'shadow-[0_0_12px_rgba(3,218,198,0.15)]' : m === 'investasi' ? 'shadow-[0_0_12px_rgba(255,215,0,0.12)]' : 'shadow-[0_0_12px_rgba(187,134,252,0.15)]';
 
   /* ── Mode Switch Component ── */
   const modeList: { key: BusinessMode; icon: LucideIcon; label: string }[] = [

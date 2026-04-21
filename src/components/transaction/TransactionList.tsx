@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Pencil, Trash2, Inbox, Plus, Wallet, Receipt, ArrowDownToLine, TrendingUp, Search, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Pencil, Trash2, Plus, Receipt, ArrowDownToLine, TrendingUp, Search, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';

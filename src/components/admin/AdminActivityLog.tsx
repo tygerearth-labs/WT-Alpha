@@ -9,9 +9,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Activity, Clock, Edit, Trash2, Key, UserPlus, CreditCard,
+  Activity, Edit, Trash2, Key, UserPlus, CreditCard,
   ChevronLeft, ChevronRight, RefreshCw, Shield, UserMinus,
-  Search, FileDown, Zap,
+  Search, FileDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -83,12 +83,6 @@ export function AdminActivityLog() {
     a.href = url; a.download = `activity-log-${new Date().toISOString().split('T')[0]}.csv`;
     a.click(); URL.revokeObjectURL(url);
     toast.success('Activity log exported');
-  };
-
-  const formatTime = (date: string) => {
-    const d = new Date(date);
-    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) +
-      ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   };
 
   const getRelativeTime = (date: string) => {

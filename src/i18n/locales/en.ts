@@ -1015,7 +1015,6 @@ export const translations = {
     alreadyRegistered: 'Already Registered',
     allRegistered: 'All Registered',
     allRegisteredDesc: 'You have registered both Business and Investment. Each account can only have one of each.',
-    invoiceSettings: 'Invoice Template',
   },
   inv: {
     registerFirst: 'Register your investment first',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
@@ -18,10 +18,6 @@ import {
   TrendingDown,
   Activity,
   RefreshCw,
-  ArrowUpRight,
-  ArrowDownRight,
-  Zap,
-  Target,
   ShieldAlert,
   Minus,
   BrainCircuit,

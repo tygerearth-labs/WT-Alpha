@@ -35,7 +35,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Users, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
