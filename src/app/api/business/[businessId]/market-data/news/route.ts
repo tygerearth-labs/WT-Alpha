@@ -99,7 +99,7 @@ export async function GET(
 
         // Read portfolio from DB
         const { db } = await import('@/lib/db');
-        const portfolio = await db.portfolioItem.findMany({
+        const portfolio = await db.investmentPortfolio.findMany({
           where: { businessId, status: 'open' },
           select: { symbol: true, type: true, entryPrice: true },
         });
