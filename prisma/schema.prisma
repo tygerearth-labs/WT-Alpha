@@ -239,6 +239,7 @@ model Business {
   debts            BusinessDebt[]
   incomeAllocs     BusinessIncomeAllocation[]
   portfolios       InvestmentPortfolio[]
+  watchlist        WatchlistItem[]
   invoiceSettings  InvoiceSettings?
 
   @@index([userId, category])
@@ -402,6 +403,24 @@ model TradingJournal {
   updatedAt     DateTime @updatedAt
 
   @@index([portfolioId, date])
+}
+
+model WatchlistItem {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  symbol      String
+  type        String
+  name        String?
+  targetBuy   Float?
+  targetSell  Float?
+  alertOnSignal Boolean @default(true)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@unique([businessId, symbol, type])
 }
 
 // ============================================
