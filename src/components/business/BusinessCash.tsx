@@ -78,11 +78,18 @@ export default function BusinessCash() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CashEntry | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    description: string;
+    amount: string;
+    date: string;
+    type: 'kas_besar' | 'kas_kecil' | 'kas_keluar';
+    category: string;
+    notes: string;
+  }>({
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    type: 'kas_besar' as const,
+    type: 'kas_besar',
     category: '',
     notes: '',
   });

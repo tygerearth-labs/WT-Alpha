@@ -37,6 +37,7 @@ interface DashboardData {
   profitMargin: number;
   totalKasBesar: number;
   totalKasKecil: number;
+  totalKasKeluar: number;
   netCash: number;
   pendingInvoices: number;
   totalHutang: number;
