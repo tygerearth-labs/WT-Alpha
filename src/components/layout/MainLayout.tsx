@@ -47,6 +47,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
+import { ModeSwitch, ModeSwitchMobile } from '@/components/layout/ModeSwitch';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { KasMasuk } from '@/components/kas/KasMasuk';
 import { KasKeluar } from '@/components/kas/KasKeluar';
@@ -309,44 +310,17 @@ export function MainLayout() {
     );
   };
 
-  /* ── Mode Switch Component ── */
-  const ModeSwitch = ({ collapsed }: { collapsed: boolean }) => (
-    <div className={cn('px-2 pb-3 mb-2', !collapsed && 'px-3')}>
-      <div className={cn('flex items-center gap-0.5 p-0.5 rounded-xl bg-white/[0.03] border border-white/[0.04]', collapsed && 'flex-col')}>
-        {(['personal', 'bisnis', 'investasi'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => handleModeSwitch(m)}
-            className={cn(
-              'relative text-[10px] font-semibold rounded-lg transition-all duration-200',
-              collapsed ? 'p-2 mx-auto' : 'flex-1 py-1.5',
-              mode === m
-                ? m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC] shadow-sm'
-                  : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6] shadow-sm'
-                  : 'bg-[#FFD700]/20 text-[#FFD700] shadow-sm'
-                : 'text-white/35 hover:text-white/60',
-              m !== 'personal' && !isUltimate && 'opacity-30 pointer-events-none',
-            )}
-            title={collapsed ? (m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')) : undefined}
-          >
-            {m !== 'personal' && !isUltimate && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/60" />}
-            {collapsed ? (
-              m === 'personal' ? <LayoutDashboard className="h-3.5 w-3.5" />
-                : m === 'bisnis' ? <Briefcase className="h-3.5 w-3.5" />
-                : <Gem className="h-3.5 w-3.5" />
-            ) : (
-              m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
   /* ── Shared sidebar nav renderer ── */
   const renderNavItems = (collapsed: boolean, onNavigate?: (page: PageType) => void) => (
     <nav className="relative flex-1 py-4 px-2 space-y-1 overflow-y-auto scrollbar-hide">
-      <ModeSwitch collapsed={collapsed} />
+      <ModeSwitch
+        mode={mode}
+        isUltimate={isUltimate}
+        businesses={businesses}
+        collapsed={collapsed}
+        onSwitch={handleModeSwitch}
+        labels={{ personal: t('biz.personal'), bisnis: t('nav.bisnis'), investasi: t('nav.investasi') }}
+      />
       {navigation.map((item) => {
         const Icon = item.icon;
         const isActive = currentPage === item.id;
@@ -646,16 +620,13 @@ export function MainLayout() {
         style={{ background: 'rgba(13, 13, 13, 0.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
         {/* Mobile Mode Switch */}
         {isUltimate && (
-          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-white/[0.04]">
-            {(['personal', 'bisnis', 'investasi'] as const).map((m) => (
-              <button key={m} onClick={() => handleModeSwitch(m)}
-                className={cn('flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all',
-                  mode === m ? (m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC]' : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6]' : 'bg-[#FFD700]/20 text-[#FFD700]')
-                    : 'text-white/30')}>
-                {m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')}
-              </button>
-            ))}
-          </div>
+          <ModeSwitchMobile
+            mode={mode}
+            isUltimate={isUltimate}
+            businesses={businesses}
+            onSwitch={handleModeSwitch}
+            labels={{ personal: t('biz.personal'), bisnis: t('nav.bisnis'), investasi: t('nav.investasi') }}
+          />
         )}
         <div className="flex items-center justify-around px-2 h-[52px]">
           {navigation.slice(0, 5).map((item) => {

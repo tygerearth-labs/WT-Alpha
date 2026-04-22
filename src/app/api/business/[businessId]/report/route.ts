@@ -246,8 +246,13 @@ export async function GET(
 
     // Overall summary (only for full report)
     if (type === 'full') {
-      const salesSummary = report.sales?.summary as Record<string, number> | undefined;
-      const cashSummary = report.cash?.summary as Record<string, number> | undefined;
+      const salesData = report.sales as { summary?: Record<string, number> } | undefined;
+      const cashData = report.cash as { summary?: Record<string, number> } | undefined;
+      const debtData = report.debts as { summary?: Record<string, number> } | undefined;
+
+      const salesSummary = salesData?.summary;
+      const cashSummary = cashData?.summary;
+      const debtSummary = debtData?.summary;
 
       report.overallSummary = {
         totalPendapatan: salesSummary?.totalPenjualan || 0,
@@ -256,8 +261,8 @@ export async function GET(
         totalKasBesar: cashSummary?.totalKasBesar || 0,
         totalKasKecil: cashSummary?.totalKasKecil || 0,
         saldoBersih: cashSummary?.saldoBersih || 0,
-        totalHutang: (report.debts?.summary as Record<string, number>)?.totalHutang || 0,
-        totalPiutang: (report.debts?.summary as Record<string, number>)?.totalPiutang || 0,
+        totalHutang: debtSummary?.totalHutang || 0,
+        totalPiutang: debtSummary?.totalPiutang || 0,
       };
     }
 

@@ -44,9 +44,6 @@ export async function GET(
         customer: {
           select: { id: true, name: true },
         },
-        invoice: {
-          select: { id: true, invoiceNumber: true },
-        },
       },
       orderBy: { date: 'desc' },
       skip: (page - 1) * pageSize,

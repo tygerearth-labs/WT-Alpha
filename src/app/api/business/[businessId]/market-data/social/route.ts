@@ -31,7 +31,7 @@ export async function GET(
         where: { businessId, status: 'open' },
         select: { symbol: true, type: true },
       }),
-      db.watchlistItem.findMany({
+      db.investmentWatchlist.findMany({
         where: { businessId, isActive: true },
         select: { symbol: true, type: true },
       }),

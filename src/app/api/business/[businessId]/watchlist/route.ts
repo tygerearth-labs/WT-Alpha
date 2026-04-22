@@ -50,7 +50,7 @@ export async function GET(
 
     const { businessId } = await params;
 
-    const items = await db.watchlistItem.findMany({
+    const items = await db.investmentWatchlist.findMany({
       where: { businessId, isActive: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -114,9 +114,9 @@ export async function POST(
     }
 
     // Upsert: if it already exists, just reactivate it
-    const item = await db.watchlistItem.upsert({
+    const item = await db.investmentWatchlist.upsert({
       where: {
-        businessId_symbol_type: {
+        businessId_type_symbol: {
           businessId,
           symbol: body.symbol.toUpperCase(),
           type: body.type,
@@ -172,7 +172,7 @@ export async function DELETE(
       );
     }
 
-    await db.watchlistItem.deleteMany({
+    await db.investmentWatchlist.deleteMany({
       where: { businessId, symbol: symbol.toUpperCase(), type },
     });
 
