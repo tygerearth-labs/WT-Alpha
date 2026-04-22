@@ -125,7 +125,7 @@ async function fetchCoinGeckoTopMovers(): Promise<{
           topGainers.push({
             symbol: (coin.symbol || '').toUpperCase(),
             price: coin.current_price ?? 0,
-            change24h: coin.price_change_percentage_24h ?? 0,
+            change24h: coin.price_change_percentage_24h != null ? coin.price_change_percentage_24h : 0,
             volume: coin.total_volume ?? 0,
             high24h: coin.high_24h ?? 0,
             low24h: coin.low_24h ?? 0,
@@ -145,7 +145,7 @@ async function fetchCoinGeckoTopMovers(): Promise<{
           topLosers.push({
             symbol: (coin.symbol || '').toUpperCase(),
             price: coin.current_price ?? 0,
-            change24h: coin.price_change_percentage_24h ?? 0,
+            change24h: coin.price_change_percentage_24h != null ? coin.price_change_percentage_24h : 0,
             volume: coin.total_volume ?? 0,
             high24h: coin.high_24h ?? 0,
             low24h: coin.low_24h ?? 0,
@@ -235,33 +235,36 @@ export async function GET(
     const trending = (moversData?.trending ?? []).slice(0, 5).map(t => ({
       symbol: t.symbol,
       price: t.price,
-      change24h: parseFloat(t.change24h.toFixed(2)),
+      change24h: parseFloat((t.change24h ?? 0).toFixed(2)),
+      type: 'crypto',
     }));
 
     const topGainers = (moversData?.topGainers ?? []).slice(0, 10).map(t => ({
       symbol: t.symbol,
       price: t.price,
-      change24h: parseFloat(t.change24h.toFixed(2)),
+      change24h: parseFloat((t.change24h ?? 0).toFixed(2)),
       volume: t.quoteVolume,
       label: t.label,
+      type: 'crypto',
     }));
 
     const topLosers = (moversData?.topLosers ?? []).slice(0, 10).map(t => ({
       symbol: t.symbol,
       price: t.price,
-      change24h: parseFloat(t.change24h.toFixed(2)),
+      change24h: parseFloat((t.change24h ?? 0).toFixed(2)),
       volume: t.quoteVolume,
       label: t.label,
+      type: 'crypto',
     }));
 
     return NextResponse.json({
       global: {
         totalMarketCap: global.totalMarketCap,
         totalVolume: global.totalVolume,
-        btcDominance: parseFloat(global.btcDominance.toFixed(1)),
-        ethDominance: parseFloat(global.ethDominance.toFixed(1)),
+        btcDominance: parseFloat((global.btcDominance ?? 0).toFixed(1)),
+        ethDominance: parseFloat((global.ethDominance ?? 0).toFixed(1)),
         activeCryptos: global.activeCryptos,
-        marketCapChange24h: parseFloat(global.marketCapChange24h.toFixed(2)),
+        marketCapChange24h: parseFloat((global.marketCapChange24h ?? 0).toFixed(2)),
       },
       fearAndGreed: fearGreed,
       trending,

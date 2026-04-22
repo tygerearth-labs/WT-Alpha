@@ -184,20 +184,22 @@ const PURPLE_COLOR = '#BB86FC';
 
 // ── Formatting Helpers ───────────────────────────────────────────────────────
 
-function formatLargeNumber(num: number): string {
-  if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
-  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-  return `$${num.toFixed(2)}`;
+function formatLargeNumber(num: number | undefined | null): string {
+  const n = typeof num === 'number' && !isNaN(num) ? num : 0;
+  if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `$${(n / 1e3).toFixed(2)}K`;
+  return `$${n.toFixed(2)}`;
 }
 
-function formatVolume(num: number): string {
-  if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
-  if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
-  if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
-  if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
-  return num.toFixed(0);
+function formatVolume(num: number | undefined | null): string {
+  const n = typeof num === 'number' && !isNaN(num) ? num : 0;
+  if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return n.toFixed(0);
 }
 
 const compactFmt = new Intl.NumberFormat('en-US', {
@@ -206,12 +208,19 @@ const compactFmt = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
-function formatMarketCap(value: number): string {
-  return `$${compactFmt.format(value)}`;
+function formatMarketCap(value: number | undefined | null): string {
+  const n = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return `$${compactFmt.format(n)}`;
 }
 
-function formatCompact(value: number): string {
-  return compactFmt.format(value);
+function formatCompact(value: number | undefined | null): string {
+  const n = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return compactFmt.format(n);
+}
+
+function toF(val: number | undefined | null, digits = 2): string {
+  const n = typeof val === 'number' && !isNaN(val) ? val : 0;
+  return n.toFixed(digits);
 }
 
 function getSignalColor(strength: number): string {
@@ -489,13 +498,14 @@ function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number; s
   );
 }
 
-function DominanceBar({ value, color }: { value: number; color: string }) {
+function DominanceBar({ value, color }: { value: number | undefined | null; color: string }) {
+  const safeVal = typeof value === 'number' && !isNaN(value) ? value : 0;
   return (
     <div className="flex items-center gap-2 mt-1">
       <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(value, 100).toFixed(1)}%`, backgroundColor: color }} />
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(safeVal, 100).toFixed(1)}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[10px] text-white/25 font-mono shrink-0 w-9 text-right">{value.toFixed(1)}%</span>
+      <span className="text-[10px] text-white/25 font-mono shrink-0 w-9 text-right">{safeVal.toFixed(1)}%</span>
     </div>
   );
 }
@@ -677,7 +687,7 @@ function SignalCard({
                 <div className="flex items-center gap-1 mt-0.5">
                   {isUp ? <ArrowUpRight className="h-3 w-3 text-[#03DAC6]" /> : <ArrowDownRight className="h-3 w-3 text-[#CF6679]" />}
                   <span className={cn('text-xs font-mono font-medium', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                    {isUp ? '+' : ''}{signal.change24h.toFixed(2)}%
+                    {isUp ? '+' : ''}{toF(signal.change24h)}%
                   </span>
                 </div>
               </>
@@ -705,7 +715,7 @@ function SignalCard({
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] text-white/25">RSI</span>
                   <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
-                    {signal.indicators.rsi.value.toFixed(1)}
+                    {toF(signal.indicators?.rsi?.value, 1)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -1010,7 +1020,7 @@ export default function QuantMacroPanel() {
           value: `${portfolioStats.unrealizedPnl >= 0 ? '+' : ''}${formatLargeNumber(Math.abs(portfolioStats.unrealizedPnl))}`,
           icon: portfolioStats.unrealizedPnl >= 0 ? TrendingUp : TrendingDown,
           color: portfolioStats.unrealizedPnl >= 0 ? '#03DAC6' : '#CF6679',
-          sub: `${portfolioStats.unrealizedPnlPct >= 0 ? '+' : ''}${portfolioStats.unrealizedPnlPct.toFixed(2)}%`,
+          sub: `${portfolioStats.unrealizedPnlPct >= 0 ? '+' : ''}${toF(portfolioStats.unrealizedPnlPct)}%`,
         },
         {
           label: 'Realized PnL',
@@ -1021,7 +1031,7 @@ export default function QuantMacroPanel() {
         },
         {
           label: 'Win Rate',
-          value: `${portfolioStats.winRate.toFixed(1)}%`,
+          value: `${toF(portfolioStats.winRate, 1)}%`,
           icon: Crosshair,
           color: portfolioStats.winRate >= 50 ? '#03DAC6' : portfolioStats.winRate >= 30 ? '#FFD700' : '#CF6679',
           sub: `${portfolioStats.totalTrades > 0 ? Math.round(portfolioStats.winRate * portfolioStats.totalTrades / 100) : 0}W / ${portfolioStats.totalTrades}T`,
@@ -1072,12 +1082,12 @@ export default function QuantMacroPanel() {
     const g = macroData.global;
 
     const metricCards = [
-      { label: t('macro.totalMarketCap'), value: formatMarketCap(g.totalMarketCap), sub: `${g.marketCapChange24h >= 0 ? '+' : ''}${g.marketCapChange24h.toFixed(1)}%`, icon: Globe, color: g.marketCapChange24h >= 0 ? UP_COLOR : DOWN_COLOR },
-      { label: t('macro.totalVolume'), value: formatMarketCap(g.totalVolume), sub: `${((g.totalVolume / g.totalMarketCap) * 100).toFixed(2)}% of mcap`, icon: BarChart3, color: '#BB86FC' },
-      { label: t('macro.btcDominance'), value: `${g.btcDominance.toFixed(1)}%`, sub: <DominanceBar value={g.btcDominance} color="#F7931A" />, icon: Coins, color: '#F7931A' },
-      { label: t('macro.ethDominance'), value: `${g.ethDominance.toFixed(1)}%`, sub: <DominanceBar value={g.ethDominance} color="#627EEA" />, icon: Layers, color: '#627EEA' },
+      { label: t('macro.totalMarketCap'), value: formatMarketCap(g.totalMarketCap), sub: `${g.marketCapChange24h >= 0 ? '+' : ''}${toF(g.marketCapChange24h, 1)}%`, icon: Globe, color: g.marketCapChange24h >= 0 ? UP_COLOR : DOWN_COLOR },
+      { label: t('macro.totalVolume'), value: formatMarketCap(g.totalVolume), sub: `${toF(g.totalMarketCap ? (g.totalVolume / g.totalMarketCap) * 100 : 0)}% of mcap`, icon: BarChart3, color: '#BB86FC' },
+      { label: t('macro.btcDominance'), value: `${toF(g.btcDominance, 1)}%`, sub: <DominanceBar value={g.btcDominance} color="#F7931A" />, icon: Coins, color: '#F7931A' },
+      { label: t('macro.ethDominance'), value: `${toF(g.ethDominance, 1)}%`, sub: <DominanceBar value={g.ethDominance} color="#627EEA" />, icon: Layers, color: '#627EEA' },
       { label: t('macro.activeCryptos'), value: formatCompact(g.activeCryptos), sub: 'tracked assets', icon: Zap, color: '#03DAC6' },
-      { label: t('macro.marketChange24h'), value: `${g.marketCapChange24h >= 0 ? '+' : ''}${g.marketCapChange24h.toFixed(1)}%`, sub: '24 hours', icon: g.marketCapChange24h >= 0 ? TrendingUp : TrendingDown, color: g.marketCapChange24h >= 0 ? UP_COLOR : DOWN_COLOR },
+      { label: t('macro.marketChange24h'), value: `${g.marketCapChange24h >= 0 ? '+' : ''}${toF(g.marketCapChange24h, 1)}%`, sub: '24 hours', icon: g.marketCapChange24h >= 0 ? TrendingUp : TrendingDown, color: g.marketCapChange24h >= 0 ? UP_COLOR : DOWN_COLOR },
     ];
 
     return (
@@ -1126,7 +1136,7 @@ export default function QuantMacroPanel() {
                       </svg>
                     </div>
                     <Badge className="text-xs font-bold px-4 py-1 border-0 mb-1" style={{ backgroundColor: sentiment.bgColor, color: sentiment.color }}>{sentiment.label}</Badge>
-                    <p className="text-[11px] text-white/25 font-mono mt-1">{g.marketCapChange24h >= 0 ? '+' : ''}{g.marketCapChange24h.toFixed(2)}% 24h</p>
+                    <p className="text-[11px] text-white/25 font-mono mt-1">{g.marketCapChange24h >= 0 ? '+' : ''}{toF(g.marketCapChange24h)}% 24h</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1146,24 +1156,24 @@ export default function QuantMacroPanel() {
                       <span className="text-sm font-bold text-white/80 font-mono">{formatMarketCap(altcoinMarketCap)}</span>
                     </div>
                     <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min((altcoinMarketCap / g.totalMarketCap) * 100, 100).toFixed(1)}%`, backgroundColor: '#BB86FC' }} />
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${toF(g.totalMarketCap ? (altcoinMarketCap / g.totalMarketCap) * 100 : 0, 1)}%`, backgroundColor: '#BB86FC' }} />
                     </div>
-                    <p className="text-[10px] text-white/25 mt-1 font-mono">{((altcoinMarketCap / g.totalMarketCap) * 100).toFixed(1)}% of total</p>
+                    <p className="text-[10px] text-white/25 mt-1 font-mono">{toF(g.totalMarketCap ? (altcoinMarketCap / g.totalMarketCap) * 100 : 0, 1)}% of total</p>
                   </div>
                   <Separator className="bg-white/[0.04]" />
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[11px] text-white/50 font-medium">{t('macro.turnoverRate')}</span>
-                      <span className="text-sm font-bold text-white/80 font-mono">{turnoverRate.toFixed(2)}%</span>
+                      <span className="text-sm font-bold text-white/80 font-mono">{toF(turnoverRate)}%</span>
                     </div>
                     <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(turnoverRate * 4, 100).toFixed(1)}%`, backgroundColor: turnoverRate > 5 ? UP_COLOR : turnoverRate > 3 ? GOLD_COLOR : DOWN_COLOR }} />
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${toF(turnoverRate * 4, 1)}%`, backgroundColor: turnoverRate > 5 ? UP_COLOR : turnoverRate > 3 ? GOLD_COLOR : DOWN_COLOR }} />
                     </div>
                     <p className="text-[10px] text-white/25 mt-1 font-mono">Vol / MCap ratio</p>
                   </div>
                   <Separator className="bg-white/[0.04]" />
                   <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-[10px] text-white/25 uppercase mb-0.5">BTC + ETH</p><p className="text-base font-bold text-white/80 font-mono">{(g.btcDominance + g.ethDominance).toFixed(1)}%</p></div>
+                    <div><p className="text-[10px] text-white/25 uppercase mb-0.5">BTC + ETH</p><p className="text-base font-bold text-white/80 font-mono">{toF(g.btcDominance + g.ethDominance, 1)}%</p></div>
                     <div><p className="text-[10px] text-white/25 uppercase mb-0.5">Trending</p><p className="text-base font-bold text-white/80 font-mono">{macroData.trending.length}</p></div>
                   </div>
                 </div>
@@ -1189,7 +1199,7 @@ export default function QuantMacroPanel() {
                           <span className="text-[10px] text-white/20 font-mono w-4 text-right">{i + 1}</span>
                           <div className="flex flex-col"><span className="text-sm font-bold text-white/80 font-mono">{item.symbol}</span><span className="text-[11px] text-white/30 font-mono">{item.price}</span></div>
                         </div>
-                        <div className="flex items-center gap-1.5"><ArrowUpRight className="h-3.5 w-3.5 text-[#03DAC6]" /><span className="text-xs font-bold font-mono text-[#03DAC6]">+{item.change24h.toFixed(2)}%</span></div>
+                        <div className="flex items-center gap-1.5"><ArrowUpRight className="h-3.5 w-3.5 text-[#03DAC6]" /><span className="text-xs font-bold font-mono text-[#03DAC6]">+{(item.change24h ?? 0).toFixed(2)}%</span></div>
                       </div>
                     ))}
                   </div>
@@ -1212,7 +1222,7 @@ export default function QuantMacroPanel() {
                           <span className="text-[10px] text-white/20 font-mono w-4 text-right">{i + 1}</span>
                           <div className="flex flex-col"><span className="text-sm font-bold text-white/80 font-mono">{item.symbol}</span><span className="text-[11px] text-white/30 font-mono">{item.price}</span></div>
                         </div>
-                        <div className="flex items-center gap-1.5"><ArrowDownRight className="h-3.5 w-3.5 text-[#CF6679]" /><span className="text-xs font-bold font-mono text-[#CF6679]">{item.change24h.toFixed(2)}%</span></div>
+                        <div className="flex items-center gap-1.5"><ArrowDownRight className="h-3.5 w-3.5 text-[#CF6679]" /><span className="text-xs font-bold font-mono text-[#CF6679]">{(item.change24h ?? 0).toFixed(2)}%</span></div>
                       </div>
                     ))}
                   </div>
@@ -1247,7 +1257,7 @@ export default function QuantMacroPanel() {
                           <span className="text-[11px] text-white/30 font-mono">{item.price}</span>
                           <div className="flex items-center gap-0.5">
                             {isUp ? <ArrowUpRight className="h-3 w-3" style={{ color }} /> : <ArrowDownRight className="h-3 w-3" style={{ color }} />}
-                            <span className="text-[11px] font-bold font-mono" style={{ color }}>{isUp ? '+' : ''}{item.change24h.toFixed(2)}%</span>
+                            <span className="text-[11px] font-bold font-mono" style={{ color }}>{isUp ? '+' : ''}{(item.change24h ?? 0).toFixed(2)}%</span>
                           </div>
                         </div>
                       </motion.div>
@@ -1279,8 +1289,8 @@ export default function QuantMacroPanel() {
             {[
               { label: 'Market Cap', value: formatLargeNumber(macroData.global.totalMarketCap), change: macroData.global.marketCapChange24h, icon: BarChart3 },
               { label: '24h Volume', value: formatLargeNumber(macroData.global.totalVolume), change: null, icon: Activity },
-              { label: 'BTC Dominance', value: `${macroData.global.btcDominance.toFixed(1)}%`, change: null, icon: TrendingUp },
-              { label: 'ETH Dominance', value: `${macroData.global.ethDominance.toFixed(1)}%`, change: null, icon: Layers },
+              { label: 'BTC Dominance', value: `${toF(macroData.global.btcDominance, 1)}%`, change: null, icon: TrendingUp },
+              { label: 'ETH Dominance', value: `${toF(macroData.global.ethDominance, 1)}%`, change: null, icon: Layers },
               { label: 'Active Cryptos', value: macroData.global.activeCryptos.toLocaleString(), change: null, icon: Zap },
             ].map(card => {
               const isUp = card.change !== null && card.change >= 0;
@@ -1295,7 +1305,7 @@ export default function QuantMacroPanel() {
                     {card.change !== null && (
                       <div className="flex items-center gap-0.5 mt-0.5">
                         {isUp ? <ArrowUpRight className="h-3 w-3 text-[#03DAC6]" /> : <ArrowDownRight className="h-3 w-3 text-[#CF6679]" />}
-                        <span className={cn('text-[11px] font-mono font-medium', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>{isUp ? '+' : ''}{card.change!.toFixed(2)}%</span>
+                        <span className={cn('text-[11px] font-mono font-medium', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>{isUp ? '+' : ''}{(card.change ?? 0).toFixed(2)}%</span>
                       </div>
                     )}
                   </CardContent>
@@ -1376,13 +1386,13 @@ export default function QuantMacroPanel() {
                         </div>
                         <span className="text-xs font-bold text-white/80 font-mono group-hover/trend:text-[#03DAC6] transition-colors">{asset.symbol}</span>
                         <Badge className="text-[8px] px-1 py-0 h-3.5 font-medium border-0"
-                          style={{ backgroundColor: TYPE_COLORS[asset.type]?.bg || 'rgba(255,255,255,0.06)', color: TYPE_COLORS[asset.type]?.text || '#888' }}>
-                          {asset.type.toUpperCase()}
+                          style={{ backgroundColor: TYPE_COLORS[asset.type || 'crypto']?.bg || 'rgba(255,255,255,0.06)', color: TYPE_COLORS[asset.type || 'crypto']?.text || '#888' }}>
+                          {(asset.type || 'crypto').toUpperCase()}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-white/50">{asset.price}</span>
-                        <span className="text-[11px] font-mono font-bold text-[#03DAC6]">+{asset.change24h.toFixed(2)}%</span>
+                        <span className="text-[11px] font-mono font-bold text-[#03DAC6]">+{(asset.change24h ?? 0).toFixed(2)}%</span>
                       </div>
                     </button>
                   ))}
@@ -1406,13 +1416,13 @@ export default function QuantMacroPanel() {
                         </div>
                         <span className="text-xs font-bold text-white/80 font-mono group-hover/trend:text-[#CF6679] transition-colors">{asset.symbol}</span>
                         <Badge className="text-[8px] px-1 py-0 h-3.5 font-medium border-0"
-                          style={{ backgroundColor: TYPE_COLORS[asset.type]?.bg || 'rgba(255,255,255,0.06)', color: TYPE_COLORS[asset.type]?.text || '#888' }}>
-                          {asset.type.toUpperCase()}
+                          style={{ backgroundColor: TYPE_COLORS[asset.type || 'crypto']?.bg || 'rgba(255,255,255,0.06)', color: TYPE_COLORS[asset.type || 'crypto']?.text || '#888' }}>
+                          {(asset.type || 'crypto').toUpperCase()}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-white/50">{asset.price}</span>
-                        <span className="text-[11px] font-mono font-bold text-[#CF6679]">{asset.change24h.toFixed(2)}%</span>
+                        <span className="text-[11px] font-mono font-bold text-[#CF6679]">{(asset.change24h ?? 0).toFixed(2)}%</span>
                       </div>
                     </button>
                   ))}
@@ -1804,7 +1814,7 @@ export default function QuantMacroPanel() {
                   <div className="flex items-center gap-1 mb-1">
                     {selectedAsset.change24h >= 0 ? <ArrowUpRight className="h-5 w-5 text-[#03DAC6]" /> : <ArrowDownRight className="h-5 w-5 text-[#CF6679]" />}
                     <span className={cn('text-lg font-mono font-bold', selectedAsset.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                      {selectedAsset.change24h >= 0 ? '+' : ''}{selectedAsset.change24h.toFixed(2)}%
+                      {selectedAsset.change24h >= 0 ? '+' : ''}{toF(selectedAsset.change24h)}%
                     </span>
                   </div>
                   <div className="ml-auto flex items-center gap-2">
