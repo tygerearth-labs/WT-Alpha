@@ -179,6 +179,22 @@ interface TechnicalAnalysis {
     source: string;
   };
   signalDetails?: Array<{ indicator: string; signal: string; weight: number; description: string }>;
+  marketDetail?: {
+    marketCap: number | null;
+    totalVolume: number | null;
+    high24h: number | null;
+    low24h: number | null;
+    ath: number | null;
+    athChangePercentage: number | null;
+    atl: number | null;
+    atlChangePercentage: number | null;
+    priceChangePercentage7d: number | null;
+    priceChangePercentage30d: number | null;
+    circulatingSupply: number | null;
+    marketCapRank: number | null;
+    sparkline7d: number[] | null;
+    source: string;
+  } | null;
 }
 
 interface WatchlistItem {
@@ -267,6 +283,15 @@ const compactFmt = new Intl.NumberFormat('en-US', {
 function toF(val: number | undefined | null, digits = 2): string {
   const n = typeof val === 'number' && !isNaN(val) ? val : 0;
   return n.toFixed(digits);
+}
+
+function formatLargeNumber(num: number | null | undefined): string {
+  const n = typeof num === 'number' && !isNaN(num) ? num : 0;
+  if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `$${(n / 1e3).toFixed(2)}K`;
+  return `$${n.toFixed(2)}`;
 }
 
 function formatMarketCap(value: number | undefined | null): string {
@@ -1264,6 +1289,81 @@ export default function InvestmentDashboard() {
                     )}
                   </div>
 
+                  {/* Live Market Data Bar */}
+                  {activeChartSignal.marketDetail && (() => {
+                    const md = activeChartSignal.marketDetail;
+                    return (
+                      <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 mb-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <Activity className="h-3 w-3 text-[#03DAC6]/60" />
+                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Live Market Data</span>
+                          <Badge className="text-[7px] px-1 py-0 h-3 font-mono border-0 ml-auto" style={{
+                            backgroundColor: 'rgba(3,218,198,0.1)',
+                            color: '#03DAC6',
+                          }}>
+                            {md.source}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {md.marketCap != null && (
+                            <div>
+                              <span className="text-[8px] text-white/20 uppercase tracking-wider block mb-0.5">Market Cap</span>
+                              <span className="text-[11px] font-mono font-bold text-white/60">{formatLargeNumber(md.marketCap)}</span>
+                            </div>
+                          )}
+                          {md.totalVolume != null && (
+                            <div>
+                              <span className="text-[8px] text-white/20 uppercase tracking-wider block mb-0.5">Volume 24h</span>
+                              <span className="text-[11px] font-mono font-bold text-white/60">{formatLargeNumber(md.totalVolume)}</span>
+                            </div>
+                          )}
+                          {md.high24h != null && md.low24h != null && (
+                            <div>
+                              <span className="text-[8px] text-white/20 uppercase tracking-wider block mb-0.5">24h Range</span>
+                              <span className="text-[10px] font-mono text-white/50 block">
+                                <span className="text-[#03DAC6]/70">${md.low24h.toLocaleString(undefined, {maximumFractionDigits: md.low24h < 1 ? 6 : 2})}</span>
+                                <span className="text-white/15 mx-1">—</span>
+                                <span className="text-[#CF6679]/70">${md.high24h.toLocaleString(undefined, {maximumFractionDigits: md.high24h < 1 ? 6 : 2})}</span>
+                              </span>
+                            </div>
+                          )}
+                          {md.priceChangePercentage7d != null && (
+                            <div>
+                              <span className="text-[8px] text-white/20 uppercase tracking-wider block mb-0.5">7d Change</span>
+                              <span className={cn('text-[11px] font-mono font-bold', md.priceChangePercentage7d >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                                {md.priceChangePercentage7d >= 0 ? '+' : ''}{md.priceChangePercentage7d.toFixed(2)}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {(md.ath != null || md.atl != null) && (
+                          <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-white/[0.04]">
+                            {md.ath != null && (
+                              <div>
+                                <span className="text-[8px] text-white/20 uppercase tracking-wider block mb-0.5">ATH</span>
+                                <span className="text-[10px] font-mono text-white/40">${md.ath.toLocaleString(undefined, {maximumFractionDigits: md.ath < 1 ? 6 : 2})}</span>
+                                {md.athChangePercentage != null && (
+                                  <span className="text-[9px] text-[#CF6679]/60 ml-1 font-mono">({md.athChangePercentage.toFixed(1)}%)</span>
+                                )}
+                              </div>
+                            )}
+                            {md.atl != null && (
+                              <div>
+                                <span className="text-[8px] text-white/20 uppercase tracking-wider block mb-0.5">ATL</span>
+                                <span className="text-[10px] font-mono text-white/40">${md.atl.toLocaleString(undefined, {maximumFractionDigits: md.atl < 1 ? 6 : 2})}</span>
+                                {md.atlChangePercentage != null && (
+                                  <span className={cn('text-[9px] font-mono ml-1', md.atlChangePercentage >= 0 ? 'text-[#03DAC6]/60' : 'text-[#CF6679]/60')}>
+                                    (+{md.atlChangePercentage.toFixed(1)}%)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {activeChartSignal.aiAnalysis ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* AI Reasoning + Strategy */}
@@ -1650,6 +1750,65 @@ export default function InvestmentDashboard() {
                     {signalLabel} {strength > 0 ? '+' : ''}{strength}
                   </Badge>
                 </div>
+
+                {/* Compact Market Data Bar */}
+                {signal.marketDetail && (() => {
+                  const md = signal.marketDetail;
+                  return (
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/[0.06] overflow-x-auto">
+                      {md.marketCapRank != null && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Trophy className="h-3 w-3 text-[#FFD700]/50" />
+                          <span className="text-[10px] text-white/30 font-mono">#{md.marketCapRank}</span>
+                        </div>
+                      )}
+                      {md.marketCap != null && (
+                        <div className="shrink-0">
+                          <span className="text-[8px] text-white/20 uppercase">MCap</span>
+                          <span className="text-[10px] font-mono text-white/50 ml-1">{formatLargeNumber(md.marketCap)}</span>
+                        </div>
+                      )}
+                      {md.totalVolume != null && (
+                        <div className="shrink-0">
+                          <span className="text-[8px] text-white/20 uppercase">Vol</span>
+                          <span className="text-[10px] font-mono text-white/50 ml-1">{formatLargeNumber(md.totalVolume)}</span>
+                        </div>
+                      )}
+                      {md.high24h != null && md.low24h != null && (
+                        <div className="shrink-0">
+                          <span className="text-[8px] text-white/20 uppercase">24h</span>
+                          <span className="text-[10px] font-mono text-white/50 ml-1">
+                            ${md.low24h < 1 ? md.low24h.toFixed(6) : md.low24h.toLocaleString(undefined, {maximumFractionDigits: 2})}
+                            <span className="text-white/15">—</span>
+                            ${md.high24h < 1 ? md.high24h.toFixed(6) : md.high24h.toLocaleString(undefined, {maximumFractionDigits: 2})}
+                          </span>
+                        </div>
+                      )}
+                      {md.priceChangePercentage7d != null && (
+                        <div className="shrink-0">
+                          <span className="text-[8px] text-white/20 uppercase">7d</span>
+                          <span className={cn('text-[10px] font-mono font-bold ml-1', md.priceChangePercentage7d >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                            {md.priceChangePercentage7d >= 0 ? '+' : ''}{md.priceChangePercentage7d.toFixed(2)}%
+                          </span>
+                        </div>
+                      )}
+                      {md.priceChangePercentage30d != null && (
+                        <div className="shrink-0">
+                          <span className="text-[8px] text-white/20 uppercase">30d</span>
+                          <span className={cn('text-[10px] font-mono font-bold ml-1', md.priceChangePercentage30d >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                            {md.priceChangePercentage30d >= 0 ? '+' : ''}{md.priceChangePercentage30d.toFixed(2)}%
+                          </span>
+                        </div>
+                      )}
+                      <Badge className="text-[7px] px-1 py-0 h-3 font-mono border-0 shrink-0 ml-auto" style={{
+                        backgroundColor: 'rgba(3,218,198,0.1)',
+                        color: '#03DAC6',
+                      }}>
+                        {md.source}
+                      </Badge>
+                    </div>
+                  );
+                })()}
 
                 {/* ── BUY / SELL Signal Card — always visible ── */}
                 <div className={cn(

@@ -545,6 +545,78 @@ async function fetchCoinGeckoPrice(symbol: string): Promise<{ price: number; cha
   }
 }
 
+/** Fetch detailed market data from CoinGecko — market cap, volume, 24h H/L, ATH/ATL, sparkline */
+async function fetchCoinGeckoMarketDetail(symbol: string): Promise<{
+  marketCap: number | null;
+  totalVolume: number | null;
+  high24h: number | null;
+  low24h: number | null;
+  ath: number | null;
+  athChangePercentage: number | null;
+  atl: number | null;
+  atlChangePercentage: number | null;
+  priceChangePercentage7d: number | null;
+  priceChangePercentage30d: number | null;
+  circulatingSupply: number | null;
+  marketCapRank: number | null;
+  sparkline7d: number[] | null;
+} | null> {
+  try {
+    const cgId = toCoinGeckoId(symbol);
+    const url = `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=true`;
+    const res = await fetchWithTimeout(url, { timeoutMs: 12000 });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const md = data?.market_data;
+    if (!md) return null;
+    return {
+      marketCap: md.market_cap?.usd ?? null,
+      totalVolume: md.total_volume?.usd ?? null,
+      high24h: md.high_24h?.usd ?? null,
+      low24h: md.low_24h?.usd ?? null,
+      ath: md.ath?.usd ?? null,
+      athChangePercentage: md.ath_change_percentage?.usd ?? null,
+      atl: md.atl?.usd ?? null,
+      atlChangePercentage: md.atl_change_percentage?.usd ?? null,
+      priceChangePercentage7d: md.price_change_percentage_7d ?? null,
+      priceChangePercentage30d: md.price_change_percentage_30d ?? null,
+      circulatingSupply: md.circulating_supply ?? null,
+      marketCapRank: data.market_cap_rank ?? null,
+      sparkline7d: md.sparkline_7d?.price ?? null,
+    };
+  } catch (error) {
+    console.warn(`CoinGecko market detail failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+/** Fetch 24h ticker detail from Binance — fast, no API key */
+async function fetchBinance24hDetail(symbol: string): Promise<{
+  high24h: number | null;
+  low24h: number | null;
+  totalVolume: number | null;
+  quoteVolume: number | null;
+} | null> {
+  try {
+    let binanceSymbol = symbol.toUpperCase();
+    if (!binanceSymbol.endsWith('USDT') && !binanceSymbol.endsWith('BUSD')) {
+      binanceSymbol += 'USDT';
+    }
+    const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+    const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      high24h: typeof data.highPrice === 'string' ? parseFloat(data.highPrice) : (data.highPrice ?? null),
+      low24h: typeof data.lowPrice === 'string' ? parseFloat(data.lowPrice) : (data.lowPrice ?? null),
+      totalVolume: typeof data.volume === 'string' ? parseFloat(data.volume) : (data.volume ?? null),
+      quoteVolume: typeof data.quoteVolume === 'string' ? parseFloat(data.quoteVolume) : (data.quoteVolume ?? null),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch forex rate from frankfurter.app */
 async function fetchForexPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
   try {
@@ -1285,6 +1357,51 @@ export async function GET(
     // ── News Confirmation ──────────────────────────────────────────────
     const newsConfirmation = await fetchNewsConfirmation(symbol, type);
 
+    // ── Market Detail (CoinGecko / Binance) ──────────────────────────────
+    let marketDetail: {
+      marketCap: number | null;
+      totalVolume: number | null;
+      high24h: number | null;
+      low24h: number | null;
+      ath: number | null;
+      athChangePercentage: number | null;
+      atl: number | null;
+      atlChangePercentage: number | null;
+      priceChangePercentage7d: number | null;
+      priceChangePercentage30d: number | null;
+      circulatingSupply: number | null;
+      marketCapRank: number | null;
+      sparkline7d: number[] | null;
+      source: string;
+    } | null = null;
+
+    if (type === 'crypto') {
+      const cgDetail = await fetchCoinGeckoMarketDetail(symbol);
+      if (cgDetail) {
+        marketDetail = { ...cgDetail, source: 'coingecko' };
+      } else {
+        const binanceDetail = await fetchBinance24hDetail(symbol);
+        if (binanceDetail) {
+          marketDetail = {
+            marketCap: null,
+            totalVolume: binanceDetail.quoteVolume,
+            high24h: binanceDetail.high24h,
+            low24h: binanceDetail.low24h,
+            ath: null,
+            athChangePercentage: null,
+            atl: null,
+            atlChangePercentage: null,
+            priceChangePercentage7d: null,
+            priceChangePercentage30d: null,
+            circulatingSupply: null,
+            marketCapRank: null,
+            sparkline7d: null,
+            source: 'binance',
+          };
+        }
+      }
+    }
+
     // ── Determine indicator labels ─────────────────────────────────────
     let rsiLabel: string;
     if (rsiValue < 30) rsiLabel = 'oversold';
@@ -1311,6 +1428,7 @@ export async function GET(
       change24h,
       dataSource,
       priceSource,
+      marketDetail,
 
       // Smart Money Concepts
       smc: {

@@ -135,6 +135,22 @@ interface TechnicalAnalysis {
   signalStrength: number;
   signalDetails: Array<{ indicator: string; signal: string; weight: number; description?: string }>;
   lastUpdated: string;
+  marketDetail?: {
+    marketCap: number | null;
+    totalVolume: number | null;
+    high24h: number | null;
+    low24h: number | null;
+    ath: number | null;
+    athChangePercentage: number | null;
+    atl: number | null;
+    atlChangePercentage: number | null;
+    priceChangePercentage7d: number | null;
+    priceChangePercentage30d: number | null;
+    circulatingSupply: number | null;
+    marketCapRank: number | null;
+    sparkline7d: number[] | null;
+    source: string;
+  } | null;
 }
 
 interface TrendingAsset {
@@ -614,6 +630,45 @@ function TrendBadge({ trend }: { trend: string }) {
       <span style={{ color }}>{icon}</span>
       <span className="text-[9px] font-bold uppercase" style={{ color }}>{trend}</span>
     </div>
+  );
+}
+
+// ── Mini Sparkline Chart ────────────────────────────────────────────────────
+
+function MiniSparkline({ data }: { data: number[] }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const width = 280;
+  const height = 40;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+  const isUp = data[data.length - 1] >= data[0];
+  const color = isUp ? '#03DAC6' : '#CF6679';
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-10" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`sparkGrad-${isUp ? 'up' : 'down'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon
+        points={`0,${height} ${points} ${width},${height}`}
+        fill={`url(#sparkGrad-${isUp ? 'up' : 'down'})`}
+      />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -1856,6 +1911,128 @@ export default function QuantMacroPanel() {
               {/* ── Dialog Body ────────────────────────────────────────────────── */}
               <ScrollArea className="max-h-[calc(92vh-200px)]">
                 <div className="px-4 sm:px-6 py-5 space-y-5">
+                  {/* ── Live Market Data (from CoinGecko / Binance) ── */}
+                  {selectedAsset.marketDetail && (() => {
+                    const md = selectedAsset.marketDetail;
+                    return (
+                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 sm:p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#03DAC6]/10">
+                              <Activity className="h-3 w-3 text-[#03DAC6]" />
+                            </div>
+                            <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold">Live Market Data</span>
+                          </div>
+                          <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-mono border-0" style={{
+                            backgroundColor: 'rgba(3,218,198,0.1)',
+                            color: '#03DAC6',
+                          }}>
+                            {md.source}
+                          </Badge>
+                        </div>
+
+                        {/* Main stats grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                          {md.marketCapRank != null && (
+                            <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
+                              <Trophy className="h-3.5 w-3.5 text-[#FFD700]/50 mx-auto mb-1" />
+                              <span className="text-[8px] text-white/25 uppercase tracking-wider block">Rank</span>
+                              <span className="text-sm font-bold font-mono text-white/70">#{md.marketCapRank}</span>
+                            </div>
+                          )}
+                          {md.marketCap != null && (
+                            <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
+                              <span className="text-[8px] text-white/25 uppercase tracking-wider block">Market Cap</span>
+                              <span className="text-sm font-bold font-mono text-white/70">{formatMarketCap(md.marketCap)}</span>
+                            </div>
+                          )}
+                          {md.totalVolume != null && (
+                            <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
+                              <span className="text-[8px] text-white/25 uppercase tracking-wider block">Volume 24h</span>
+                              <span className="text-sm font-bold font-mono text-white/70">{formatMarketCap(md.totalVolume)}</span>
+                            </div>
+                          )}
+                          {md.circulatingSupply != null && (
+                            <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
+                              <span className="text-[8px] text-white/25 uppercase tracking-wider block">Supply</span>
+                              <span className="text-sm font-bold font-mono text-white/70">{formatCompact(md.circulatingSupply)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 24h Range bar */}
+                        {md.high24h != null && md.low24h != null && selectedAsset.price > 0 && (() => {
+                          const range = md.high24h - md.low24h;
+                          const position = range > 0 ? ((selectedAsset.price - md.low24h) / range) * 100 : 50;
+                          return (
+                            <div className="rounded-lg bg-white/[0.02] p-3 mb-3">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[9px] text-white/25 uppercase tracking-wider font-bold">24h Price Range</span>
+                              </div>
+                              <div className="relative h-1.5 rounded-full bg-gradient-to-r from-[#CF6679]/30 via-[#FFD700]/20 to-[#03DAC6]/30 mb-2">
+                                <div
+                                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-[#03DAC6] shadow-lg shadow-[#03DAC6]/30 transition-all"
+                                  style={{ left: `calc(${Math.min(Math.max(position, 2), 98)}% - 6px)` }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="text-left">
+                                  <span className="text-[8px] text-white/20 uppercase block">Low</span>
+                                  <span className="text-[11px] font-mono text-[#CF6679]/70">${md.low24h < 1 ? md.low24h.toFixed(6) : md.low24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                                </div>
+                                <div className="text-center">
+                                  <span className="text-[8px] text-white/20 uppercase block">Current</span>
+                                  <span className="text-[11px] font-mono text-white/60">${selectedAsset.price < 1 ? selectedAsset.price.toFixed(6) : selectedAsset.price.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-[8px] text-white/20 uppercase block">High</span>
+                                  <span className="text-[11px] font-mono text-[#03DAC6]/70">${md.high24h < 1 ? md.high24h.toFixed(6) : md.high24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Price changes row */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {md.priceChangePercentage7d != null && (
+                            <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
+                              <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-0.5">7d Change</span>
+                              <span className={cn('text-xs font-mono font-bold', md.priceChangePercentage7d >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                                {md.priceChangePercentage7d >= 0 ? '+' : ''}{md.priceChangePercentage7d.toFixed(2)}%
+                              </span>
+                            </div>
+                          )}
+                          {md.priceChangePercentage30d != null && (
+                            <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
+                              <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-0.5">30d Change</span>
+                              <span className={cn('text-xs font-mono font-bold', md.priceChangePercentage30d >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                                {md.priceChangePercentage30d >= 0 ? '+' : ''}{md.priceChangePercentage30d.toFixed(2)}%
+                              </span>
+                            </div>
+                          )}
+                          {md.ath != null && (
+                            <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
+                              <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-0.5">ATH</span>
+                              <span className="text-[10px] font-mono text-white/50">${md.ath < 1 ? md.ath.toFixed(6) : md.ath.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                              {md.athChangePercentage != null && (
+                                <span className="text-[9px] text-[#CF6679]/50 font-mono block">({md.athChangePercentage.toFixed(1)}%)</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 7d Sparkline */}
+                        {md.sparkline7d && md.sparkline7d.length > 10 && (
+                          <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                            <span className="text-[8px] text-white/25 uppercase tracking-wider font-bold block mb-2">7 Day Price</span>
+                            <MiniSparkline data={md.sparkline7d} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Two-column grid: desktop side-by-side, mobile stacked */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Column 1: Signal Overview + Indicators + Breakdown */}
