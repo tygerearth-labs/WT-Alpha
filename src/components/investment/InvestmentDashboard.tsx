@@ -1076,224 +1076,7 @@ export default function InvestmentDashboard() {
         </motion.div>
       )}
 
-      {/* ── QUANT SIGNALS + NEWS FEED ── */}
-      <motion.div variants={cardVariants} custom={4} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Quant Signals */}
-        <Card className="bg-white/[0.03] border-white/[0.05]">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-[#FFD700]/60" />
-                <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashQuantSignals', 'Quant Signals')}</span>
-                {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
-              </div>
-              <Button
-                size="sm"
-                className="h-7 px-2.5 text-[10px] gap-1 bg-[#03DAC6]/10 text-[#03DAC6] hover:bg-[#03DAC6]/20 border border-[#03DAC6]/20"
-                onClick={handleAnalyzeAll}
-                disabled={analyzingAll}
-              >
-                <RefreshCw className={cn('h-3 w-3', analyzingAll && 'animate-spin')} />
-                Analyze All
-              </Button>
-            </div>
-            <div className="max-h-[320px] overflow-y-auto custom-scrollbar space-y-2">
-              {(openPortfolios.length === 0 && watchlist.length === 0) ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <BarChart3 className="h-10 w-10 text-white/10 mb-2" />
-                  <p className="text-white/30 text-xs">{tf('inv.noSignals', 'Add positions to see signals')}</p>
-                </div>
-              ) : (
-                [...openPortfolios.slice(0, 6), ...watchlist.slice(0, 2)].map((item) => {
-                  const key = `${item.type}:${item.symbol}`;
-                  const signal = signals.get(key);
-                  const tc = TYPE_COLORS[item.type];
-                  const strength = signal?.signalStrength ?? 0;
-                  const signalColor = signal ? getSignalColor(strength) : '#666';
-                  const signalLabel = signal ? getSignalLabel(signal.overallSignal, strength) : 'LOADING';
-
-                  return (
-                    <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setSelectedAsset(key)}>
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
-                        <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                          {item.type.toUpperCase()}
-                        </Badge>
-                        {!('status' in item) ? (
-                          <Eye className="h-3 w-3 text-white/15" />
-                        ) : null}
-                        {signal && (
-                          <div className="flex items-center gap-1.5 ml-2">
-                            <span className="text-[9px] text-white/25">RSI</span>
-                            <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
-                              {signal.indicators.rsi.value.toFixed(1)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {signal ? (
-                          <>
-                            <div className="w-16 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                              <div className="h-full rounded-full transition-all" style={{ width: `${((strength + 100) / 200) * 100}%`, backgroundColor: signalColor }} />
-                            </div>
-                            <Badge className="text-[9px] px-2 py-0 h-4 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
-                              {signalLabel}
-                            </Badge>
-                          </>
-                        ) : (
-                          <Skeleton className="h-5 w-16 rounded bg-white/[0.06]" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* News + Social Feed */}
-        <Card className="bg-white/[0.03] border-white/[0.05]">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Newspaper className="h-4 w-4 text-[#FF7043]/60" />
-                <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashNewsSocial', 'News & Social')}</span>
-                {loadingNews && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
-              </div>
-              <div className="flex items-center gap-1.5">
-                {newsSentiment && newsSentiment !== 'neutral' && (
-                  <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
-                    backgroundColor: newsSentiment === 'bullish' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
-                    color: newsSentiment === 'bullish' ? UP_COLOR : DOWN_COLOR,
-                  }}>
-                    {newsSentiment.toUpperCase()}
-                  </Badge>
-                )}
-                <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{mergedFeed.length} items</Badge>
-              </div>
-            </div>
-            <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
-              {mergedFeed.length === 0 && !loadingNews && (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Newspaper className="h-10 w-10 text-white/10 mb-2" />
-                  <p className="text-white/30 text-xs">{tf('inv.dashNoNews', 'No news available')}</p>
-                </div>
-              )}
-              <AnimatePresence mode="popLayout">
-                {mergedFeed.map((item, i) => {
-                  const catConfig = CATEGORY_CONFIG[item.category || 'asset'] || CATEGORY_CONFIG.asset;
-                  const isBullish = item.sentiment === 'bullish';
-                  const isBearish = item.sentiment === 'bearish';
-                  const sentimentColor = isBullish ? UP_COLOR : isBearish ? DOWN_COLOR : GOLD_COLOR;
-
-                  // Find any matching news impact for this item
-                  const matchedImpact = newsImpacts.find((imp) =>
-                    item.title.toLowerCase().includes(imp.symbol.toLowerCase()),
-                  );
-                  const decisionText = matchedImpact ? matchedImpact.action : (isBullish
-                    ? (i % 2 === 0 ? 'Pertimbangkan Buy' : 'Tingkatkan posisi')
-                    : isBearish
-                      ? (i % 2 === 0 ? 'Pertimbangkan Sell' : 'Kurangi posisi')
-                      : 'Hold & Monitor');
-                  const decisionBg = matchedImpact
-                    ? matchedImpact.action === 'BUY' ? 'rgba(3,218,198,0.2)' : matchedImpact.action === 'SELL' ? 'rgba(207,102,121,0.2)' : 'rgba(255,215,0,0.15)'
-                    : isBullish ? 'rgba(3,218,198,0.15)' : isBearish ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)';
-                  const isPortfolioAsset = portfolioAssetKeys.has(
-                    item.title.split(' ').find((w) => w.length > 2)?.toUpperCase() || '',
-                  );
-
-                  return (
-                    <motion.div
-                      key={item.url || i}
-                      variants={cardVariants}
-                      custom={i}
-                      layout
-                      initial="hidden"
-                      animate="visible"
-                    >
-                      <div className="flex items-start gap-2.5 px-2.5 py-3 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] group">
-                        <div className="mt-1 shrink-0" style={{ color: sentimentColor }}>
-                          {isBullish ? <TrendingUp className="h-3.5 w-3.5" /> : isBearish ? <TrendingDown className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 shrink-0" style={{ backgroundColor: catConfig.bg, color: catConfig.text }}>
-                              {catConfig.label}
-                            </Badge>
-                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 shrink-0" style={{ backgroundColor: decisionBg, color: matchedImpact ? (decisionText === 'BUY' ? UP_COLOR : decisionText === 'SELL' ? DOWN_COLOR : GOLD_COLOR) : sentimentColor }}>
-                              {decisionText}
-                            </Badge>
-                            {matchedImpact && (
-                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(187,134,252,0.15)', color: PURPLE_COLOR }}>
-                                {matchedImpact.confidence}%
-                              </Badge>
-                            )}
-                            {isPortfolioAsset && (
-                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(3,218,198,0.1)', color: UP_COLOR }}>
-                                IN PORTFOLIO
-                              </Badge>
-                            )}
-                          </div>
-                          <h4 className="text-[12px] text-white/70 font-medium leading-snug line-clamp-2 mb-1">{item.title}</h4>
-                          {item.snippet && (
-                            <p className="text-[11px] text-white/30 leading-relaxed line-clamp-2 mb-1.5">{item.snippet}</p>
-                          )}
-                          {matchedImpact && matchedImpact.reasoning && (
-                            <p className="text-[10px] text-white/25 leading-relaxed italic mb-1.5 flex items-start gap-1">
-                              <Brain className="h-3 w-3 shrink-0 mt-0.5" style={{ color: PURPLE_COLOR }} />
-                              {matchedImpact.reasoning}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-white/20 truncate max-w-[120px]">{item.source}</span>
-                          </div>
-                        </div>
-                        {item.url && (
-                          <a href={item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1.5 rounded text-white/10 hover:text-white/50 hover:bg-white/[0.06] transition-all opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-              {/* AI News Impact Summary */}
-              {newsImpacts.length > 0 && (
-                <div className="mt-2 px-2.5 py-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Brain className="h-3.5 w-3.5 text-[#BB86FC]" />
-                    <span className="text-[10px] text-white/50 font-bold uppercase tracking-wider">AI Impact Analysis</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {newsImpacts.slice(0, 4).map((imp, idx) => {
-                      const impColor = imp.action === 'BUY' ? UP_COLOR : imp.action === 'SELL' ? DOWN_COLOR : GOLD_COLOR;
-                      return (
-                        <div key={idx} className="flex items-center justify-between text-[10px]">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-bold text-white/60 font-mono">{imp.symbol}</span>
-                            <span className="text-white/20 truncate">{imp.reasoning}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            <span className="text-white/25 font-mono">{imp.confidence}%</span>
-                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: `${impColor}18`, color: impColor }}>
-                              {imp.action}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* ── CHART + WATCHLIST ── */}
+      {/* ── CHART + WATCHLIST + QUANT SIGNALS + NEWS ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Chart Column */}
         <div className="lg:col-span-2">
@@ -1467,8 +1250,9 @@ export default function InvestmentDashboard() {
           )}
         </div>
 
-        {/* Compact Watchlist Panel */}
-        <div>
+        {/* Right Panel: Watchlist + Quant Signals + News stacked */}
+        <div className="flex flex-col gap-4">
+          {/* Compact Watchlist */}
           <Card className="bg-white/[0.03] border-white/[0.05]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
@@ -1486,14 +1270,14 @@ export default function InvestmentDashboard() {
                   {tf('inv.dashAddAsset', 'Add')}
                 </Button>
               </div>
-              <div className="max-h-[420px] overflow-y-auto custom-scrollbar space-y-0.5">
+              <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
                 {watchlist.length === 0 && !loadingWatchlist ? (
-                  <div className="flex flex-col items-center justify-center py-8">
+                  <div className="flex flex-col items-center justify-center py-6">
                     <Eye className="h-8 w-8 text-white/10 mb-2" />
                     <p className="text-white/30 text-xs">{tf('inv.dashWatchlistEmpty', 'Tambahkan aset ke watchlist')}</p>
                   </div>
                 ) : (
-                  watchlist.map((w) => {
+                  watchlist.slice(0, 5).map((w) => {
                     const tc = TYPE_COLORS[w.type];
                     const isUp = (w.change24h ?? 0) >= 0;
                     const wlSignal = signals.get(`${w.type}:${w.symbol}`);
@@ -1536,6 +1320,202 @@ export default function InvestmentDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Quant Signals */}
+          <Card className="bg-white/[0.03] border-white/[0.05]">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-[#FFD700]/60" />
+                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashQuantSignals', 'Quant Signals')}</span>
+                  {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
+                </div>
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 text-[10px] gap-1 bg-[#03DAC6]/10 text-[#03DAC6] hover:bg-[#03DAC6]/20 border border-[#03DAC6]/20"
+                  onClick={handleAnalyzeAll}
+                  disabled={analyzingAll}
+                >
+                  <RefreshCw className={cn('h-3 w-3', analyzingAll && 'animate-spin')} />
+                  Analyze
+                </Button>
+              </div>
+              <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-2">
+                {(openPortfolios.length === 0 && watchlist.length === 0) ? (
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <BarChart3 className="h-8 w-8 text-white/10 mb-2" />
+                    <p className="text-white/30 text-xs">{tf('inv.noSignals', 'Add positions to see signals')}</p>
+                  </div>
+                ) : (
+                  [...openPortfolios.slice(0, 4), ...watchlist.slice(0, 2)].map((item) => {
+                    const key = `${item.type}:${item.symbol}`;
+                    const signal = signals.get(key);
+                    const tc = TYPE_COLORS[item.type];
+                    const strength = signal?.signalStrength ?? 0;
+                    const signalColor = signal ? getSignalColor(strength) : '#666';
+                    const signalLabel = signal ? getSignalLabel(signal.overallSignal, strength) : 'LOADING';
+
+                    return (
+                      <div key={key} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setSelectedAsset(key)}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
+                          <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
+                            {item.type.toUpperCase()}
+                          </Badge>
+                          {!('status' in item) ? (
+                            <Eye className="h-3 w-3 text-white/15" />
+                          ) : null}
+                          {signal && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] text-white/25">RSI</span>
+                              <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
+                                {signal.indicators.rsi.value.toFixed(1)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {signal ? (
+                            <>
+                              <div className="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div className="h-full rounded-full transition-all" style={{ width: `${((strength + 100) / 200) * 100}%`, backgroundColor: signalColor }} />
+                              </div>
+                              <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
+                                {signalLabel}
+                              </Badge>
+                            </>
+                          ) : (
+                            <Skeleton className="h-4 w-14 rounded bg-white/[0.06]" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* News + Social Feed */}
+          <Card className="bg-white/[0.03] border-white/[0.05]">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Newspaper className="h-4 w-4 text-[#FF7043]/60" />
+                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashNewsSocial', 'News & Social')}</span>
+                  {loadingNews && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {newsSentiment && newsSentiment !== 'neutral' && (
+                    <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0" style={{
+                      backgroundColor: newsSentiment === 'bullish' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
+                      color: newsSentiment === 'bullish' ? UP_COLOR : DOWN_COLOR,
+                    }}>
+                      {newsSentiment.toUpperCase()}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[8px]">{mergedFeed.length}</Badge>
+                </div>
+              </div>
+              <div className="max-h-[240px] overflow-y-auto custom-scrollbar">
+                {mergedFeed.length === 0 && !loadingNews && (
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Newspaper className="h-8 w-8 text-white/10 mb-2" />
+                    <p className="text-white/30 text-xs">{tf('inv.dashNoNews', 'No news available')}</p>
+                  </div>
+                )}
+                <AnimatePresence mode="popLayout">
+                  {mergedFeed.map((item, i) => {
+                    const catConfig = CATEGORY_CONFIG[item.category || 'asset'] || CATEGORY_CONFIG.asset;
+                    const isBullish = item.sentiment === 'bullish';
+                    const isBearish = item.sentiment === 'bearish';
+                    const sentimentColor = isBullish ? UP_COLOR : isBearish ? DOWN_COLOR : GOLD_COLOR;
+
+                    const matchedImpact = newsImpacts.find((imp) =>
+                      item.title.toLowerCase().includes(imp.symbol.toLowerCase()),
+                    );
+                    const decisionText = matchedImpact ? matchedImpact.action : (isBullish
+                      ? (i % 2 === 0 ? 'Pertimbangkan Buy' : 'Tingkatkan posisi')
+                      : isBearish
+                        ? (i % 2 === 0 ? 'Pertimbangkan Sell' : 'Kurangi posisi')
+                        : 'Hold & Monitor');
+                    const decisionBg = matchedImpact
+                      ? matchedImpact.action === 'BUY' ? 'rgba(3,218,198,0.2)' : matchedImpact.action === 'SELL' ? 'rgba(207,102,121,0.2)' : 'rgba(255,215,0,0.15)'
+                      : isBullish ? 'rgba(3,218,198,0.15)' : isBearish ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)';
+                    const isPortfolioAsset = portfolioAssetKeys.has(
+                      item.title.split(' ').find((w) => w.length > 2)?.toUpperCase() || '',
+                    );
+
+                    return (
+                      <motion.div
+                        key={item.url || i}
+                        variants={cardVariants}
+                        custom={i}
+                        layout
+                        initial="hidden"
+                        animate="visible"
+                      >
+                        <div className="flex items-start gap-2 px-2 py-2.5 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] group">
+                          <div className="mt-0.5 shrink-0" style={{ color: sentimentColor }}>
+                            {isBullish ? <TrendingUp className="h-3 w-3" /> : isBearish ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                              <Badge className="text-[6px] px-1 py-0 h-2.5 font-medium border-0 shrink-0" style={{ backgroundColor: catConfig.bg, color: catConfig.text }}>
+                                {catConfig.label}
+                              </Badge>
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: decisionBg, color: matchedImpact ? (decisionText === 'BUY' ? UP_COLOR : decisionText === 'SELL' ? DOWN_COLOR : GOLD_COLOR) : sentimentColor }}>
+                                {decisionText}
+                              </Badge>
+                              {matchedImpact && (
+                                <Badge className="text-[6px] px-1 py-0 h-2.5 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(187,134,252,0.15)', color: PURPLE_COLOR }}>
+                                  {matchedImpact.confidence}%
+                                </Badge>
+                              )}
+                            </div>
+                            <h4 className="text-[11px] text-white/60 font-medium leading-snug line-clamp-2">{item.title}</h4>
+                          </div>
+                          {item.url && (
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1 rounded text-white/10 hover:text-white/50 hover:bg-white/[0.06] transition-all opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+                {/* AI News Impact Summary */}
+                {newsImpacts.length > 0 && (
+                  <div className="mt-1.5 px-2 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                    <div className="flex items-center gap-1 mb-1.5">
+                      <Brain className="h-3 w-3 text-[#BB86FC]" />
+                      <span className="text-[9px] text-white/50 font-bold uppercase tracking-wider">AI Impact</span>
+                    </div>
+                    <div className="space-y-1">
+                      {newsImpacts.slice(0, 3).map((imp, idx) => {
+                        const impColor = imp.action === 'BUY' ? UP_COLOR : imp.action === 'SELL' ? DOWN_COLOR : GOLD_COLOR;
+                        return (
+                          <div key={idx} className="flex items-center justify-between text-[9px]">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="font-bold text-white/60 font-mono">{imp.symbol}</span>
+                              <span className="text-white/20 truncate">{imp.reasoning}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 ml-2">
+                              <span className="text-white/25 font-mono">{imp.confidence}%</span>
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0" style={{ backgroundColor: `${impColor}18`, color: impColor }}>
+                                {imp.action}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -1567,6 +1547,141 @@ export default function InvestmentDashboard() {
                     {signalLabel} {strength > 0 ? '+' : ''}{strength}
                   </Badge>
                 </div>
+
+                {/* ── BUY / SELL Signal Card with Confidence ── */}
+                {ai && (
+                  <div className={cn(
+                    'rounded-xl p-4 mb-4 border relative overflow-hidden',
+                    signal.overallSignal === 'buy'
+                      ? 'bg-gradient-to-r from-[#03DAC6]/[0.08] to-transparent border-[#03DAC6]/20'
+                      : signal.overallSignal === 'sell'
+                        ? 'bg-gradient-to-r from-[#CF6679]/[0.08] to-transparent border-[#CF6679]/20'
+                        : 'bg-gradient-to-r from-[#FFD700]/[0.06] to-transparent border-[#FFD700]/15',
+                  )}>
+                    {/* Background glow */}
+                    <div className={cn(
+                      'absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none',
+                      signal.overallSignal === 'buy' ? 'bg-[#03DAC6]/20' : signal.overallSignal === 'sell' ? 'bg-[#CF6679]/20' : 'bg-[#FFD700]/15',
+                    )} />
+
+                    <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
+                      {/* Main Signal */}
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          'grid place-items-center w-14 h-14 rounded-2xl shrink-0 border',
+                          signal.overallSignal === 'buy'
+                            ? 'bg-[#03DAC6]/15 border-[#03DAC6]/25'
+                            : signal.overallSignal === 'sell'
+                              ? 'bg-[#CF6679]/15 border-[#CF6679]/25'
+                              : 'bg-[#FFD700]/15 border-[#FFD700]/20',
+                        )}>
+                          {signal.overallSignal === 'buy' ? (
+                            <TrendingUp className="h-7 w-7 text-[#03DAC6]" />
+                          ) : signal.overallSignal === 'sell' ? (
+                            <TrendingDown className="h-7 w-7 text-[#CF6679]" />
+                          ) : (
+                            <Minus className="h-7 w-7 text-[#FFD700]" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={cn(
+                              'text-lg font-black uppercase tracking-wider',
+                              signal.overallSignal === 'buy' ? 'text-[#03DAC6]' : signal.overallSignal === 'sell' ? 'text-[#CF6679]' : 'text-[#FFD700]',
+                            )}>
+                              {signal.overallSignal === 'buy' ? 'BELI' : signal.overallSignal === 'sell' ? 'JUAL' : 'HOLD'}
+                            </span>
+                            {strength > 50 && (
+                              <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-black border-0" style={{
+                                backgroundColor: signal.overallSignal === 'buy' ? 'rgba(3,218,198,0.25)' : 'rgba(207,102,121,0.25)',
+                                color: signal.overallSignal === 'buy' ? '#03DAC6' : '#CF6679',
+                              }}>
+                                STRONG
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-white/40">{ai.strategy}</p>
+                        </div>
+                      </div>
+
+                      {/* Confidence Meter */}
+                      <div className="flex-1 sm:ml-auto">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Confidence</span>
+                          <span className={cn(
+                            'text-sm font-black font-mono',
+                            ai.confidence >= 70 ? 'text-[#03DAC6]' : ai.confidence >= 40 ? 'text-[#FFD700]' : 'text-[#CF6679]',
+                          )}>
+                            {ai.confidence}%
+                          </span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${ai.confidence}%`,
+                              backgroundColor: ai.confidence >= 70 ? '#03DAC6' : ai.confidence >= 40 ? '#FFD700' : '#CF6679',
+                              boxShadow: `0 0 8px ${ai.confidence >= 70 ? 'rgba(3,218,198,0.5)' : ai.confidence >= 40 ? 'rgba(255,215,0,0.4)' : 'rgba(207,102,121,0.4)'}`,
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[8px] text-white/15">Low</span>
+                          <span className="text-[8px] text-white/15">Medium</span>
+                          <span className="text-[8px] text-white/15">High</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Entry / SL / TP Zones with individual confidence */}
+                    <div className="relative grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.06]">
+                      {/* Entry Zone */}
+                      <div className="rounded-lg bg-white/[0.03] border border-[#03DAC6]/15 p-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <div className="h-2 w-2 rounded-full bg-[#03DAC6]" />
+                          <span className="text-[8px] text-white/30 uppercase tracking-wider font-bold">Entry</span>
+                        </div>
+                        <p className="text-[11px] font-mono font-bold text-white/70 truncate">{ai.entryZone}</p>
+                        <div className="mt-1.5">
+                          <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div className="h-full rounded-full bg-[#03DAC6]/70 transition-all" style={{ width: `${Math.min(ai.confidence + 10, 100)}%` }} />
+                          </div>
+                          <span className="text-[8px] font-mono text-[#03DAC6]/60 mt-0.5 block">{Math.min(ai.confidence + 10, 100)}%</span>
+                        </div>
+                      </div>
+
+                      {/* Stop Loss */}
+                      <div className="rounded-lg bg-white/[0.03] border border-[#CF6679]/15 p-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <div className="h-2 w-2 rounded-full bg-[#CF6679]" />
+                          <span className="text-[8px] text-white/30 uppercase tracking-wider font-bold">Stop Loss</span>
+                        </div>
+                        <p className="text-[11px] font-mono font-bold text-[#CF6679]/70 truncate">{ai.stopLossZone}</p>
+                        <div className="mt-1.5">
+                          <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div className="h-full rounded-full bg-[#CF6679]/70 transition-all" style={{ width: `${Math.max(100 - ai.confidence, 30)}%` }} />
+                          </div>
+                          <span className="text-[8px] font-mono text-[#CF6679]/60 mt-0.5 block">Risk Zone</span>
+                        </div>
+                      </div>
+
+                      {/* Take Profit */}
+                      <div className="rounded-lg bg-white/[0.03] border border-[#FFD700]/15 p-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <div className="h-2 w-2 rounded-full bg-[#FFD700]" />
+                          <span className="text-[8px] text-white/30 uppercase tracking-wider font-bold">Take Profit</span>
+                        </div>
+                        <p className="text-[11px] font-mono font-bold text-[#FFD700]/70 truncate">{ai.takeProfitZone}</p>
+                        <div className="mt-1.5">
+                          <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div className="h-full rounded-full bg-[#FFD700]/70 transition-all" style={{ width: `${Math.min(ai.confidence - 5, 100)}%` }} />
+                          </div>
+                          <span className="text-[8px] font-mono text-[#FFD700]/60 mt-0.5 block">{Math.min(ai.confidence - 5, 95)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* Column 1: AI Analysis */}

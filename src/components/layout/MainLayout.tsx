@@ -45,6 +45,7 @@ import {
   BookOpen,
   Palette,
   CheckCircle2,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
@@ -340,82 +341,126 @@ export function MainLayout() {
   const modeColorClass = (m: string) =>
     m === 'bisnis' ? 'text-[#03DAC6]' : m === 'investasi' ? 'text-[#FFD700]' : 'text-[#BB86FC]';
 
-  /* ── Mode Switch Component ── */
+  /* ── Mode Switch Component (Dropdown) ── */
   const modeList: { key: BusinessMode; icon: LucideIcon; label: string }[] = [
     { key: 'personal', icon: LayoutDashboard, label: t('biz.personal') },
     { key: 'bisnis', icon: Briefcase, label: t('nav.bisnis') },
     { key: 'investasi', icon: Gem, label: t('nav.investasi') },
   ];
 
+  const activeModeItem = modeList.find(m => m.key === mode) || modeList[0];
+  const ActiveModeIcon = activeModeItem.icon;
+
   const ModeSwitch = ({ collapsed }: { collapsed: boolean }) => (
     <div className={cn('pb-3 mb-1', collapsed ? 'px-1.5' : 'px-2')}>
-      <div className={cn(
-        'relative flex items-center gap-1 p-[3px] rounded-xl bg-white/[0.03] border border-white/[0.05]',
-        collapsed && 'flex-col gap-1',
-      )}>
-        {/* Sliding pill indicator (expanded only) */}
-        {!collapsed && (
-          <div
-            className="absolute top-[3px] bottom-[3px] rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-            style={{
-              width: `calc((100% - 6px) / 3)`,
-              left: modeList.findIndex(m => m.key === mode) === 0
-                ? '3px'
-                : `calc(${modeList.findIndex(m => m.key === mode)} * ((100% - 6px) / 3) + 3px)`,
-              background: `${modeColor(mode)}12`,
-              border: `1px solid ${modeColor(mode)}25`,
-              boxShadow: `0 0 16px ${modeColor(mode)}15, inset 0 1px 0 ${modeColor(mode)}10`,
-            }}
-          />
-        )}
-        {modeList.map((m) => {
-          const isRegistered = m.key === 'bisnis' ? hasBisnis : m.key === 'investasi' ? hasInvestasi : true;
-          const isLocked = m.key !== 'personal' && !isUltimate;
-          const isActive = mode === m.key;
-          const Icon = m.icon;
-          return (
+      {collapsed ? (
+        /* Collapsed: icon-only buttons stacked vertically */
+        <div className="flex flex-col gap-1">
+          {modeList.map((m) => {
+            const isActive = mode === m.key;
+            const isLocked = m.key !== 'personal' && !isUltimate;
+            const isRegistered = m.key === 'bisnis' ? hasBisnis : m.key === 'investasi' ? hasInvestasi : true;
+            const Icon = m.icon;
+            return (
+              <button
+                key={m.key}
+                onClick={() => handleModeSwitch(m.key)}
+                className={cn(
+                  'relative w-10 h-10 grid place-items-center mx-auto rounded-lg border transition-all duration-200',
+                  isActive
+                    ? 'border-white/[0.1]'
+                    : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04]',
+                  isActive ? modeColorClass(m.key) : 'text-white/30 hover:text-white/55',
+                  isLocked && 'opacity-25 pointer-events-none',
+                )}
+                title={m.label}
+              >
+                {isLocked && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/50" />}
+                <Icon className={cn('h-4 w-4', isActive && 'drop-shadow-[0_0_4px_currentColor]')} strokeWidth={isActive ? 2.2 : 1.5} />
+                {isRegistered && m.key !== 'personal' && isUltimate && (
+                  <span className="absolute -top-0.5 -right-0.5 h-[7px] w-[7px] rounded-full" style={{ background: '#03DAC6', boxShadow: '0 0 6px rgba(3,218,198,0.6)' }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        /* Expanded: compact dropdown selector */
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button
-              key={m.key}
-              onClick={() => handleModeSwitch(m.key)}
               className={cn(
-                'relative z-10 rounded-lg transition-all duration-200',
-                collapsed
-                  ? 'w-10 h-10 grid place-items-center mx-auto border border-white/[0.05] bg-white/[0.02]'
-                  : isActive
-                    ? 'flex-1 flex items-center justify-center gap-1.5 py-2'
-                    : 'flex-1 grid place-items-center py-2',
-                isActive ? modeColorClass(m.key) : 'text-white/30 hover:text-white/55',
-                isLocked && 'opacity-25 pointer-events-none',
-                !collapsed && !isActive && 'bg-white/[0.02] hover:bg-white/[0.04]',
+                'flex items-center gap-2 w-full px-3 py-2 rounded-xl transition-all duration-200 border',
+                'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.1]',
+                'active:scale-[0.97]',
               )}
-              title={m.label}
             >
-              {isLocked && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/50" />}
-              <Icon className={cn(
-                'shrink-0 transition-all duration-200',
-                collapsed ? 'h-4 w-4' : 'h-3.5 w-3.5',
-                isActive && 'drop-shadow-[0_0_4px_currentColor]',
-              )} strokeWidth={isActive ? 2.2 : 1.5} />
-              {/* Text: only show when expanded AND active */}
-              {!collapsed && isActive && (
-                <span className={cn(
-                  'text-[10px] font-bold uppercase tracking-wide whitespace-nowrap',
-                  'drop-shadow-[0_0_4px_currentColor]',
-                )}>
-                  {m.label}
-                </span>
-              )}
-              {/* Registered indicators */}
-              {!collapsed && isRegistered && m.key !== 'personal' && isUltimate && (
-                <CheckCircle2 className="h-2.5 w-2.5 shrink-0 opacity-70" />
-              )}
-              {collapsed && isRegistered && m.key !== 'personal' && isUltimate && (
-                <span className="absolute -top-0.5 -right-0.5 h-[7px] w-[7px] rounded-full" style={{ background: '#03DAC6', boxShadow: '0 0 6px rgba(3,218,198,0.6)' }} />
-              )}
+              <div className={cn('grid place-items-center w-7 h-7 rounded-lg shrink-0 transition-all duration-200', modeColorClass(mode))}
+                style={{ background: `${modeColor(mode)}15` }}>
+                <ActiveModeIcon className="h-3.5 w-3.5" strokeWidth={2} />
+              </div>
+              <span className={cn('text-[11px] font-bold uppercase tracking-wide flex-1 text-left', modeColorClass(mode))}>
+                {activeModeItem.label}
+              </span>
+              <div className="flex items-center gap-1">
+                {mode !== 'personal' && (
+                  <CheckCircle2 className="h-3 w-3 opacity-60" style={{ color: modeColor(mode) }} />
+                )}
+                <ChevronDown className="h-3 w-3 text-white/25" />
+              </div>
             </button>
-          );
-        })}
-      </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="bottom"
+            align="center"
+            className="w-[200px] bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] rounded-xl p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+          >
+            {modeList.map((m) => {
+              const isActive = mode === m.key;
+              const isLocked = m.key !== 'personal' && !isUltimate;
+              const isRegistered = m.key === 'bisnis' ? hasBisnis : m.key === 'investasi' ? hasInvestasi : true;
+              const Icon = m.icon;
+              return (
+                <DropdownMenuItem
+                  key={m.key}
+                  onClick={() => handleModeSwitch(m.key)}
+                  disabled={isLocked}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors',
+                    isActive
+                      ? 'bg-white/[0.06]'
+                      : 'hover:bg-white/[0.04]',
+                    isLocked ? 'opacity-30 cursor-not-allowed' : '',
+                  )}
+                >
+                  <div className={cn(
+                    'grid place-items-center w-7 h-7 rounded-lg shrink-0 transition-all',
+                    isActive ? modeColorClass(m.key) : 'text-white/30',
+                  )}
+                    style={{ background: isActive ? `${modeColor(m.key)}15` : 'transparent' }}>
+                    <Icon className="h-3.5 w-3.5" strokeWidth={isActive ? 2 : 1.5} />
+                  </div>
+                  <span className={cn(
+                    'text-[12px] font-semibold flex-1',
+                    isActive ? modeColorClass(m.key) : 'text-white/50',
+                  )}>
+                    {m.label}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {isLocked && <Lock className="h-3 w-3 text-[#FFD700]/40" />}
+                    {!isLocked && isRegistered && m.key !== 'personal' && isUltimate && (
+                      <CheckCircle2 className="h-3 w-3" style={{ color: isActive ? modeColor(m.key) : 'rgba(3,218,198,0.4)' }} />
+                    )}
+                    {isActive && (
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: modeColor(mode) }} />
+                    )}
+                  </div>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 
