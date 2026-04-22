@@ -120,7 +120,7 @@ async function fetchCoinGeckoTopMovers(): Promise<{
       if (Array.isArray(allCoinsData) && allCoinsData.length > 0) {
         // Filter out coins with null change and very low volume (< $50k) to avoid noise
         const validCoins = allCoinsData.filter(
-          (c: Record<string, unknown>) => c.price_change_percentage_24h != null && (c.total_volume ?? 0) > 50000
+          (c: Record<string, unknown>) => c.price_change_percentage_24h != null && ((c.total_volume as number) ?? 0) > 50000
         );
 
         // Sort by 24h change descending for gainers

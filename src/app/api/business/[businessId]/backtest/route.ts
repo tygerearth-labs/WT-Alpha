@@ -987,7 +987,7 @@ function simulateTrades(
     let exited = false;
     const trade: SimulatedTradeInternal = {
       id: tradeId,
-      direction: signal.direction,
+      direction: signal.direction as 'LONG' | 'SHORT',
       entryDate: signal.date,
       exitDate: '',
       entryPrice: signal.entryPrice,
