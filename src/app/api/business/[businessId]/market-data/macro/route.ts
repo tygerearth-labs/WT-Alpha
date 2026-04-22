@@ -64,58 +64,102 @@ interface TickerEntry {
   high24h: number;
   low24h: number;
   quoteVolume: number;
+  type: string;
+  label?: string;
 }
 
-/** Fetch all Binance 24hr tickers and extract top movers */
-async function fetchBinanceTopMovers(): Promise<{
+/** Fetch top trending/movers from CoinGecko trending + top gainers/losers */
+async function fetchCoinGeckoTopMovers(): Promise<{
+  trending: TickerEntry[];
   topGainers: TickerEntry[];
   topLosers: TickerEntry[];
 } | null> {
   try {
-    const url = 'https://api.binance.com/api/v3/ticker/24hr';
-    const res = await fetchWithTimeout(url, { next: { revalidate: 120 }, timeoutMs: 8000 });
+    // Fetch trending coins from CoinGecko
+    const trendingRes = await fetchWithTimeout(
+      'https://api.coingecko.com/api/v3/search/trending',
+      { next: { revalidate: 300 }, timeoutMs: 8000 },
+    );
 
-    if (!res.ok) {
-      console.warn(`Binance ticker API returned ${res.status}`);
-      return null;
+    // Fetch top gainers and losers from CoinGecko (biggest movers in 24h)
+    const gainersRes = await fetchWithTimeout(
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=price_change_percentage_24h_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h',
+      { next: { revalidate: 120 }, timeoutMs: 10000 },
+    );
+    const losersRes = await fetchWithTimeout(
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=price_change_percentage_24h_asc&per_page=10&page=1&sparkline=false&price_change_percentage=24h',
+      { next: { revalidate: 120 }, timeoutMs: 10000 },
+    );
+
+    const trending: TickerEntry[] = [];
+    const topGainers: TickerEntry[] = [];
+    const topLosers: TickerEntry[] = [];
+
+    // Parse trending
+    if (trendingRes.ok) {
+      const trendingData = await trendingRes.json();
+      if (Array.isArray(trendingData?.coins)) {
+        for (const item of trendingData.coins.slice(0, 5)) {
+          const coin = item.item;
+          if (!coin) continue;
+          trending.push({
+            symbol: (coin.symbol || '').toUpperCase(),
+            price: coin.data?.price ?? 0,
+            change24h: coin.data?.price_change_percentage_24h?.usd ?? 0,
+            volume: coin.data?.total_volume?.usd ?? 0,
+            high24h: coin.data?.high_24h?.usd ?? 0,
+            low24h: coin.data?.low_24h?.usd ?? 0,
+            quoteVolume: coin.data?.total_volume?.usd ?? 0,
+            type: 'crypto',
+            label: coin.name || undefined,
+          });
+        }
+      }
     }
 
-    const tickers = await res.json();
-    if (!Array.isArray(tickers)) return null;
-
-    // Filter only USDT pairs and valid entries
-    const usdtPairs: TickerEntry[] = [];
-    for (const t of tickers) {
-      if (!t.symbol || !t.symbol.endsWith('USDT')) continue;
-      if (t.symbol === 'USDCUSDT' || t.symbol === 'BUSDUSDT' || t.symbol === 'TUSDUSDT') continue;
-
-      const price = parseFloat(t.lastPrice);
-      const change = parseFloat(t.priceChangePercent);
-      const volume = parseFloat(t.quoteVolume);
-
-      if (isNaN(price) || price <= 0) continue;
-      // Filter out very low volume or price pairs to avoid noise
-      if (volume < 100000) continue;
-
-      usdtPairs.push({
-        symbol: t.symbol,
-        price,
-        change24h: isNaN(change) ? 0 : change,
-        volume: isNaN(volume) ? 0 : volume,
-        high24h: parseFloat(t.highPrice) || 0,
-        low24h: parseFloat(t.lowPrice) || 0,
-        quoteVolume: volume,
-      });
+    // Parse top gainers
+    if (gainersRes.ok) {
+      const gainersData = await gainersRes.json();
+      if (Array.isArray(gainersData)) {
+        for (const coin of gainersData.slice(0, 10)) {
+          topGainers.push({
+            symbol: (coin.symbol || '').toUpperCase(),
+            price: coin.current_price ?? 0,
+            change24h: coin.price_change_percentage_24h ?? 0,
+            volume: coin.total_volume ?? 0,
+            high24h: coin.high_24h ?? 0,
+            low24h: coin.low_24h ?? 0,
+            quoteVolume: coin.total_volume ?? 0,
+            type: 'crypto',
+            label: coin.name || undefined,
+          });
+        }
+      }
     }
 
-    // Sort by change24h descending for gainers, ascending for losers
-    const sorted = [...usdtPairs].sort((a, b) => b.change24h - a.change24h);
-    const topGainers = sorted.slice(0, 5);
-    const topLosers = sorted.slice(-5).reverse();
+    // Parse top losers
+    if (losersRes.ok) {
+      const losersData = await losersRes.json();
+      if (Array.isArray(losersData)) {
+        for (const coin of losersData.slice(0, 10)) {
+          topLosers.push({
+            symbol: (coin.symbol || '').toUpperCase(),
+            price: coin.current_price ?? 0,
+            change24h: coin.price_change_percentage_24h ?? 0,
+            volume: coin.total_volume ?? 0,
+            high24h: coin.high_24h ?? 0,
+            low24h: coin.low_24h ?? 0,
+            quoteVolume: coin.total_volume ?? 0,
+            type: 'crypto',
+            label: coin.name || undefined,
+          });
+        }
+      }
+    }
 
-    return { topGainers, topLosers };
+    return { trending, topGainers, topLosers };
   } catch (error) {
-    console.warn(`Binance top movers fetch failed: ${error instanceof Error ? error.message : error}`);
+    console.warn(`CoinGecko top movers fetch failed: ${error instanceof Error ? error.message : error}`);
     return null;
   }
 }
@@ -170,9 +214,9 @@ export async function GET(
     const { businessId } = await params;
 
     // Fetch all data sources in parallel
-    const [globalData, binanceMovers] = await Promise.all([
+    const [globalData, moversData] = await Promise.all([
       fetchCoinGeckoGlobal(),
-      fetchBinanceTopMovers(),
+      fetchCoinGeckoTopMovers(),
     ]);
 
     // Build response with fallback defaults
@@ -187,25 +231,27 @@ export async function GET(
 
     const fearGreed = calculateFearGreedProxy(global.btcDominance);
 
-    // Build trending from top gainers (most notable movers)
-    const trending = (binanceMovers?.topGainers ?? []).slice(0, 5).map(t => ({
+    // Build trending from CoinGecko trending coins
+    const trending = (moversData?.trending ?? []).slice(0, 5).map(t => ({
       symbol: t.symbol,
       price: t.price,
       change24h: parseFloat(t.change24h.toFixed(2)),
     }));
 
-    const topGainers = (binanceMovers?.topGainers ?? []).map(t => ({
+    const topGainers = (moversData?.topGainers ?? []).slice(0, 10).map(t => ({
       symbol: t.symbol,
       price: t.price,
       change24h: parseFloat(t.change24h.toFixed(2)),
       volume: t.quoteVolume,
+      label: t.label,
     }));
 
-    const topLosers = (binanceMovers?.topLosers ?? []).map(t => ({
+    const topLosers = (moversData?.topLosers ?? []).slice(0, 10).map(t => ({
       symbol: t.symbol,
       price: t.price,
       change24h: parseFloat(t.change24h.toFixed(2)),
       volume: t.quoteVolume,
+      label: t.label,
     }));
 
     return NextResponse.json({

@@ -149,21 +149,6 @@ function seededRandom(seed: string): number {
   return (Math.abs(hash) % 10000) / 10000;
 }
 
-/** Convert a crypto symbol to Binance format (always XXXUSDT) */
-function toBinanceSymbol(symbol: string): string {
-  const upper = symbol.toUpperCase();
-  if (upper.endsWith('USDT')) return upper;
-  return upper + 'USDT';
-}
-
-/** Map days parameter to Binance interval and limit */
-function getBinanceInterval(days: number): { interval: string; limit: number } {
-  if (days <= 1) return { interval: '1m', limit: 200 };
-  if (days <= 7) return { interval: '1h', limit: 200 };
-  if (days <= 30) return { interval: '4h', limit: 200 };
-  return { interval: '1d', limit: 200 };
-}
-
 /** Generate mock crypto price data (used as fallback when CoinGecko is unavailable) */
 function generateMockCryptoPrice(symbol: string): Record<string, unknown> {
   const upper = symbol.toUpperCase();
@@ -242,102 +227,50 @@ function generateMockOHLC(basePrice: number, days: number = 30, seed: string = '
   return ohlc;
 }
 
-// ── Binance API helpers ─────────────────────────────────────────────────────
+// ── CoinMarketCap API helper ──────────────────────────────────────────────────
 
-/** Fetch crypto OHLC data from Binance API (primary) */
-async function fetchBinanceOHLC(symbol: string, days: number): Promise<{ ohlc: number[][]; volumes: number[] } | null> {
+/** Fetch crypto price from CoinMarketCap API (requires CMC_API_KEY) */
+async function fetchCMCPrice(symbol: string): Promise<Record<string, unknown> | null> {
+  const apiKey = process.env.CMC_API_KEY;
+  if (!apiKey) return null;
   try {
-    const binanceSymbol = toBinanceSymbol(symbol);
-    const { interval, limit } = getBinanceInterval(days);
-    const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
-
+    const cmcSymbol = symbol.toUpperCase().replace('USDT', '');
+    const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
     const res = await fetchWithTimeout(url, {
-      next: { revalidate: 300 },
+      next: { revalidate: 30 },
       timeoutMs: 8000,
+      headers: { 'X-CMC_PRO_API_KEY': apiKey },
     });
-
-    if (!res.ok) {
-      console.warn(`Binance klines API returned ${res.status} for ${symbol}`);
-      return null;
-    }
-
-    const klines = await res.json();
-
-    if (!Array.isArray(klines) || klines.length === 0) {
-      console.warn(`Binance returned empty klines for ${symbol}`);
-      return null;
-    }
-
-    const ohlc: number[][] = [];
-    const volumes: number[] = [];
-
-    for (const kline of klines) {
-      // kline: [open_time, open, high, low, close, volume, close_time, quote_volume, trades, taker_buy_volume, taker_buy_quote_volume, ignore]
-      if (!Array.isArray(kline) || kline.length < 12) continue;
-
-      const openTime = typeof kline[0] === 'number' ? kline[0] : Number(kline[0]);
-      const open = typeof kline[1] === 'number' ? kline[1] : parseFloat(kline[1]);
-      const high = typeof kline[2] === 'number' ? kline[2] : parseFloat(kline[2]);
-      const low = typeof kline[3] === 'number' ? kline[3] : parseFloat(kline[3]);
-      const close = typeof kline[4] === 'number' ? kline[4] : parseFloat(kline[4]);
-      const volume = typeof kline[5] === 'number' ? kline[5] : parseFloat(kline[5]);
-
-      if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) continue;
-
-      ohlc.push([openTime, open, high, low, close]);
-      volumes.push(isNaN(volume) ? 0 : volume);
-    }
-
-    if (ohlc.length === 0) return null;
-
-    return { ohlc, volumes };
+    if (!res.ok) return null;
+    const data = await res.json();
+    const entry = data?.data?.[cmcSymbol];
+    if (!entry?.quote?.USD) return null;
+    const price = entry.quote.USD.price;
+    if (typeof price !== 'number' || isNaN(price)) return null;
+    const change24h = entry.quote.USD.percent_change_24h ?? 0;
+    const marketCap = entry.quote.USD.market_cap ?? 0;
+    const volume = entry.quote.USD.volume_24h ?? 0;
+    const changeAbs = Math.abs(price * (change24h / 100));
+    return {
+      symbol: symbol.toUpperCase(),
+      type: 'crypto',
+      price,
+      change24h: parseFloat(change24h.toFixed(2)),
+      volume,
+      marketCap,
+      high24h: parseFloat((price + changeAbs * (0.3 + seededRandom(symbol + 'cmc-hi') * 0.7)).toFixed(2)),
+      low24h: parseFloat((price - changeAbs * (0.3 + seededRandom(symbol + 'cmc-lo') * 0.7)).toFixed(2)),
+      source: 'coinmarketcap',
+    };
   } catch (error) {
-    console.warn(`Binance OHLC fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
+    console.warn(`CMC price fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
     return null;
   }
 }
 
-/** Fetch crypto price from Binance 24hr ticker (fallback for prices) */
-async function fetchBinanceTickerPrice(symbol: string): Promise<Record<string, unknown> | null> {
-  try {
-    const binanceSymbol = toBinanceSymbol(symbol);
-    const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
-
-    const res = await fetchWithTimeout(url, {
-      next: { revalidate: 30 },
-      timeoutMs: 8000,
-    });
-
-    if (!res.ok) {
-      console.warn(`Binance ticker API returned ${res.status} for ${symbol}`);
-      return null;
-    }
-
-    const data = await res.json();
-
-    if (!data || !data.symbol) {
-      console.warn(`Binance ticker returned invalid data for ${symbol}`);
-      return null;
-    }
-
-    const price = parseFloat(data.lastPrice);
-    if (isNaN(price) || price === 0) return null;
-
-    return {
-      symbol: data.symbol,
-      type: 'crypto',
-      price,
-      change24h: parseFloat(parseFloat(data.priceChangePercent).toFixed(2)),
-      volume: parseFloat(data.quoteVolume) || 0,
-      marketCap: 0, // Binance doesn't provide market cap
-      high24h: parseFloat(data.highPrice),
-      low24h: parseFloat(data.lowPrice),
-      source: 'binance',
-    };
-  } catch (error) {
-    console.warn(`Binance ticker fetch failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
-    return null;
-  }
+/** Fetch crypto OHLC from CoinMarketCap (not available in free tier — always returns null) */
+async function fetchCMCOHLC(_symbol: string, _days: number): Promise<{ ohlc: number[][]; volumes: number[] } | null> {
+  return null;
 }
 
 // ── CoinGecko API helpers (fallback) ────────────────────────────────────────
@@ -447,29 +380,25 @@ function generateMockCryptoOHLC(symbol: string, days: number): { ohlc: number[][
   return { ohlc, volumes };
 }
 
-// ── Unified crypto fetchers with Binance primary + CoinGecko fallback ────────
+// ── Unified crypto fetchers: CoinGecko primary, CMC fallback, mock last resort ──
 
-/** Fetch crypto price: CoinGecko primary, Binance ticker fallback, mock last resort */
+/** Fetch crypto price: CoinGecko primary, CMC fallback, mock last resort */
 async function fetchCryptoPriceUnified(symbol: string): Promise<Record<string, unknown>> {
   // Primary: CoinGecko (has market cap, IDR price, etc.)
   const coinGeckoResult = await fetchCryptoPrice(symbol);
   if (!coinGeckoResult.mock) return coinGeckoResult;
 
-  // Fallback: Binance ticker (no API key needed, real volume)
-  const binanceResult = await fetchBinanceTickerPrice(symbol);
-  if (binanceResult) return binanceResult;
+  // Fallback: CoinMarketCap (requires API key)
+  const cmcResult = await fetchCMCPrice(symbol);
+  if (cmcResult) return cmcResult;
 
   // Last resort: mock
   return coinGeckoResult;
 }
 
-/** Fetch crypto OHLC: Binance primary (with volume), CoinGecko fallback, mock last resort */
+/** Fetch crypto OHLC: CoinGecko primary, mock last resort */
 async function fetchCryptoOHLCUnified(symbol: string, days: number): Promise<{ ohlc: number[][]; volumes: number[] }> {
-  // Primary: Binance (real OHLCV data, no API key)
-  const binanceResult = await fetchBinanceOHLC(symbol, days);
-  if (binanceResult) return binanceResult;
-
-  // Fallback: CoinGecko (no volume, but accurate OHLC)
+  // Primary: CoinGecko (real OHLC data)
   try {
     const coinGeckoResult = await fetchCoinGeckoOHLC(symbol, days);
     return coinGeckoResult;
@@ -579,17 +508,52 @@ function generateMockForexPrice(symbol: string, upper: string, decimals: number)
   };
 }
 
-/** Generate mock saham price data */
-function fetchSahamPrice(symbol: string): Record<string, unknown> {
+/** Fetch saham price from Yahoo Finance with mock fallback */
+async function fetchSahamPrice(symbol: string): Promise<Record<string, unknown>> {
   const upper = symbol.toUpperCase();
   const mockInfo = SAHAM_MOCK_DATA[upper];
 
+  // Try Yahoo Finance first
+  try {
+    const yahooSymbol = `${upper}.JK`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=5d`;
+    const res = await fetchWithTimeout(url, {
+      timeoutMs: 5000,
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (meta && typeof meta.regularMarketPrice === 'number') {
+        const price = meta.regularMarketPrice;
+        const prevClose = meta.chartPreviousClose;
+        const change24h = prevClose ? parseFloat((((price - prevClose) / prevClose) * 100).toFixed(2)) : 0;
+        const changeAbs = Math.abs(price * (change24h / 100));
+        return {
+          symbol: upper,
+          type: 'saham',
+          name: mockInfo?.name || upper,
+          sector: mockInfo?.sector,
+          price: parseFloat(price.toFixed(0)),
+          change24h,
+          volume: Math.floor(seededRandom(upper + 'vol') * 80000000),
+          marketCap: Math.floor(price * (seededRandom(upper + 'mcap') * 50000000000)),
+          high24h: parseFloat((price + changeAbs * 1.2).toFixed(0)),
+          low24h: parseFloat((price - changeAbs * 1.2).toFixed(0)),
+          source: 'yahoo',
+        };
+      }
+    }
+  } catch {
+    // Fall through to mock
+  }
+
+  // Mock fallback
   if (!mockInfo) {
     const basePrice = 1000 + seededRandom(symbol) * 9000;
     const change24h = parseFloat(((seededRandom(symbol + 'ch') - 0.45) * 4).toFixed(2));
-
     return {
-      symbol,
+      symbol: upper,
       type: 'saham',
       name: symbol,
       price: parseFloat(basePrice.toFixed(0)),
@@ -598,6 +562,7 @@ function fetchSahamPrice(symbol: string): Record<string, unknown> {
       marketCap: Math.floor(basePrice * (seededRandom(symbol + 'mcap') * 10000000000)),
       high24h: parseFloat((basePrice * (1 + Math.abs(change24h) / 100 * 0.8)).toFixed(0)),
       low24h: parseFloat((basePrice * (1 - Math.abs(change24h) / 100 * 0.8)).toFixed(0)),
+      mock: true,
     };
   }
 
@@ -618,6 +583,7 @@ function fetchSahamPrice(symbol: string): Record<string, unknown> {
     marketCap: Math.floor(price * (seededRandom(upper + 'mcap') * 50000000000)),
     high24h: parseFloat((price + changeAbs * 1.2).toFixed(0)),
     low24h: parseFloat((price - changeAbs * 1.2).toFixed(0)),
+    mock: true,
   };
 }
 
@@ -730,7 +696,7 @@ export async function GET(
         priceData = await fetchForexPrice(symbol);
         break;
       case 'saham':
-        priceData = fetchSahamPrice(symbol);
+        priceData = await fetchSahamPrice(symbol);
         break;
       default:
         return NextResponse.json(

@@ -46,15 +46,22 @@ export async function GET(
       whereClause.date = dateFilter;
     }
 
-    const cashEntries = await db.businessCash.findMany({
-      where: whereClause,
-      orderBy: { date: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
+    const [cashEntries, totalResult] = await Promise.all([
+      db.businessCash.findMany({
+        where: whereClause,
+        orderBy: { date: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.businessCash.aggregate({
+        _sum: { amount: true },
+        where: whereClause,
+      }),
+    ]);
 
     return NextResponse.json({
       cashEntries,
+      total: totalResult._sum.amount || 0,
       pagination: { page, pageSize, hasMore: cashEntries.length === pageSize },
     });
   } catch (error) {

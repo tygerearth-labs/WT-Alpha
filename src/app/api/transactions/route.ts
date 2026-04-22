@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50'), 100);
@@ -21,26 +23,41 @@ export async function GET(request: NextRequest) {
     const whereClause: any = { userId };
     if (type) whereClause.type = type;
     if (categoryId) whereClause.categoryId = categoryId;
-    if (month && year) {
+    if (startDate && endDate) {
+      whereClause.date = {
+        gte: new Date(startDate),
+        lt: new Date(endDate),
+      };
+    } else if (month && year) {
       whereClause.date = {
         gte: new Date(parseInt(year), parseInt(month) - 1, 1),
         lt: new Date(parseInt(year), parseInt(month), 1),
       };
     }
 
-    const transactions = await db.transaction.findMany({
-      where: whereClause,
-      include: {
-        category: true,
-      },
-      orderBy: {
-        date: 'desc',
-      },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
+    const [transactions, totalResult] = await Promise.all([
+      db.transaction.findMany({
+        where: whereClause,
+        include: {
+          category: true,
+        },
+        orderBy: {
+          date: 'desc',
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.transaction.aggregate({
+        _sum: { amount: true },
+        where: whereClause,
+      }),
+    ]);
 
-    return NextResponse.json({ transactions, pagination: { page, pageSize, hasMore: transactions.length === pageSize } });
+    return NextResponse.json({
+      transactions,
+      totalAmount: totalResult._sum.amount || 0,
+      pagination: { page, pageSize, hasMore: transactions.length === pageSize },
+    });
 
   } catch (error) {
     console.error('Transactions GET error:', error);

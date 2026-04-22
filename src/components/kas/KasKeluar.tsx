@@ -157,6 +157,7 @@ export function KasKeluar() {
   ];
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [serverTotalAmount, setServerTotalAmount] = useState<number>(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -173,10 +174,24 @@ export function KasKeluar() {
       const searchParams = new URLSearchParams();
       searchParams.append('type', 'expense');
 
-      if (filter !== 'all') {
+      if (filter === 'month') {
         const now = new Date();
         searchParams.append('year', now.getFullYear().toString());
         searchParams.append('month', (now.getMonth() + 1).toString());
+      } else if (filter === 'today') {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        searchParams.append('startDate', start.toISOString());
+        searchParams.append('endDate', end.toISOString());
+      } else if (filter === 'week') {
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        searchParams.append('startDate', start.toISOString());
+        searchParams.append('endDate', end.toISOString());
       }
 
       const [transRes, catRes] = await Promise.all([
@@ -188,31 +203,9 @@ export function KasKeluar() {
         const transData = await transRes.json();
         const catData = await catRes.json();
 
-        let filteredTransactions: any[] = transData.transactions || [];
-
-        if (filter === 'today') {
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
-          const tomorrow = new Date(now);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          filteredTransactions = filteredTransactions.filter(t => {
-            const transDate = new Date(t.date);
-            return transDate >= now && transDate < tomorrow;
-          });
-        } else if (filter === 'week') {
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
-          const startOfWeek = new Date(now);
-          const dayOfWeek = now.getDay();
-          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-          startOfWeek.setDate(now.getDate() - diff);
-          filteredTransactions = filteredTransactions.filter(t => {
-            const transDate = new Date(t.date);
-            return transDate >= startOfWeek && transDate <= now;
-          });
-        }
-
-        setTransactions(filteredTransactions);
+        const transactions = transData.transactions || [];
+        setTransactions(transactions);
+        setServerTotalAmount(transData.totalAmount || 0);
         setCategories(catData.categories);
       }
     } catch (error) {
@@ -345,7 +338,7 @@ export function KasKeluar() {
     setIsCategoryDialogOpen(true);
   };
 
-  const totalExpense = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = serverTotalAmount;
   const avgExpense = transactions.length > 0 ? totalExpense / transactions.length : 0;
   const maxExpense = transactions.length > 0 ? Math.max(...transactions.map(t => t.amount)) : 0;
 

@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 interface InvestmentChartProps {
   symbol: string;
-  type: 'saham' | 'crypto' | 'forex';
+  type: 'saham' | 'crypto' | 'forex' | 'komoditas' | 'indeks';
   height?: number;
   showHeader?: boolean;
 }

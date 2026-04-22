@@ -26,13 +26,6 @@ function seededRandom(seed: string): number {
   return (Math.abs(hash) % 10000) / 10000;
 }
 
-/** Convert a crypto symbol to Binance format (always XXXUSDT) */
-function toBinanceSymbol(symbol: string): string {
-  const upper = symbol.toUpperCase();
-  if (upper.endsWith('USDT')) return upper;
-  return upper + 'USDT';
-}
-
 /** Symbol → CoinGecko ID mapping */
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', BNB: 'binancecoin', XRP: 'ripple',
@@ -359,35 +352,33 @@ async function fetchCoinGeckoOHLCV(symbol: string): Promise<OHLCVData | null> {
   }
 }
 
-/** Fetch OHLCV from Binance as fallback */
-async function fetchBinanceOHLCV(symbol: string): Promise<OHLCVData | null> {
+/** Fetch price from CoinMarketCap API (requires CMC_API_KEY) */
+async function fetchCMCPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
+  const apiKey = process.env.CMC_API_KEY;
+  if (!apiKey) return null;
   try {
-    const binanceSymbol = toBinanceSymbol(symbol);
-    const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=1d&limit=100`;
-    const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
+    const cmcSymbol = symbol.toUpperCase().replace('USDT', '');
+    const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
+    const res = await fetchWithTimeout(url, {
+      timeoutMs: 8000,
+      headers: { 'X-CMC_PRO_API_KEY': apiKey },
+    });
     if (!res.ok) return null;
-    const klines = await res.json();
-    if (!Array.isArray(klines) || klines.length < 5) return null;
-    const candles: Candle[] = [];
-    const closes: number[] = [];
-    const volumes: number[] = [];
-    for (const kline of klines) {
-      if (!Array.isArray(kline) || kline.length < 12) continue;
-      const open = parseFloat(kline[1]);
-      const high = parseFloat(kline[2]);
-      const low = parseFloat(kline[3]);
-      const close = parseFloat(kline[4]);
-      const vol = parseFloat(kline[5]);
-      if (isNaN(close) || isNaN(open)) continue;
-      candles.push({ open, high, low, close });
-      closes.push(close);
-      volumes.push(isNaN(vol) ? 0 : vol);
-    }
-    if (closes.length < 5) return null;
-    return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
+    const data = await res.json();
+    const entry = data?.data?.[cmcSymbol];
+    if (!entry?.quote?.USD) return null;
+    const price = entry.quote.USD.price;
+    const change24h = entry.quote.USD.percent_change_24h ?? 0;
+    if (typeof price !== 'number' || isNaN(price)) return null;
+    return { price, change24h: parseFloat(change24h.toFixed(2)) };
   } catch {
     return null;
   }
+}
+
+/** Fetch OHLCV from CoinMarketCap (not available in free tier — always returns null) */
+async function fetchCMCOHLCV(_symbol: string): Promise<OHLCVData | null> {
+  return null;
 }
 
 /** Generate mock OHLCV for non-crypto types */
@@ -431,24 +422,6 @@ async function fetchCoinGeckoPrice(symbol: string): Promise<{ price: number; cha
     const info = data[cgId];
     if (!info || typeof info.usd !== 'number') return null;
     return { price: info.usd, change24h: info.usd_24hr_change ?? 0 };
-  } catch {
-    return null;
-  }
-}
-
-/** Fetch Binance 24hr ticker as fallback */
-async function fetchBinanceTicker(symbol: string): Promise<{ price: number; change24h: number } | null> {
-  try {
-    const binanceSymbol = toBinanceSymbol(symbol);
-    const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
-    const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || !data.symbol) return null;
-    const price = parseFloat(data.lastPrice);
-    const change = parseFloat(data.priceChangePercent);
-    if (isNaN(price)) return null;
-    return { price, change24h: isNaN(change) ? 0 : change };
   } catch {
     return null;
   }
@@ -525,10 +498,15 @@ async function fetchStockPrice(symbol: string): Promise<{ price: number; change2
 async function fetchIndexPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
   try {
     const map: Record<string, string> = {
-      SPX: '%5EGSPC', SPY: 'SPY', SP500: '%5EGSPC',
-      NDX: '%5EIXIC', NASDAQ: '%5EIXIC', QQQ: 'QQQ',
-      DJI: '%5EDJI', DIA: 'DIA', IDX: '%5EJKSE', JKI: 'JKI',
-      IHSG: '%5EJKSE', VIX: '%5EVIX',
+      SPX: '%5EGSPC', SPY: 'SPY', SP500: '%5EGSPC', SPX500: '%5EGSPC',
+      NDX: '%5EIXIC', NASDAQ: '%5EIXIC', QQQ: 'QQQ', US100: '%5EIXIC',
+      DJI: '%5EDJI', DIA: 'DIA', US30: '%5EDJI',
+      IDX: '%5EJKSE', JKI: 'JKI', IHSG: '%5EJKSE', IDXCOMPOSITE: '%5EJKSE', LQ45: '%5ELQ45',
+      VIX: '%5EVIX', DXY: 'DX-Y.NYB',
+      US2000: '%5ERUT',
+      FTSE100: '%5EFTSE', DAX40: '%5EGDAXI', STOXX600: '%5ESTOXX',
+      NIKKEI225: '%5EN225', HSI50: '%5EHSI', SHCOMP: '000001.SS',
+      KOSPI200: '%5EKS11', ASX200: '%5EAXJO',
     };
     const yahooSym = map[symbol.toUpperCase()];
     if (!yahooSym) return null;
@@ -549,11 +527,11 @@ async function fetchIndexPrice(symbol: string): Promise<{ price: number; change2
 /** Universal price fetcher — tries multiple sources by asset type */
 async function fetchLivePrice(symbol: string, type: string): Promise<{ price: number; change24h: number; source: string } | null> {
   if (type === 'crypto') {
-    // CoinGecko first, Binance fallback
+    // CoinGecko first, CMC fallback
     const cg = await fetchCoinGeckoPrice(symbol);
     if (cg) return { ...cg, source: 'coingecko' };
-    const bn = await fetchBinanceTicker(symbol);
-    if (bn) return { ...bn, source: 'binance' };
+    const cmc = await fetchCMCPrice(symbol);
+    if (cmc) return { ...cmc, source: 'coinmarketcap' };
     return null;
   }
   if (type === 'forex') {
@@ -1099,14 +1077,11 @@ export async function GET(
     let dataSource: 'live' | 'estimated' = 'estimated';
 
     if (type === 'crypto') {
-      // CoinGecko OHLC first (real 90-day candles), Binance fallback
+      // CoinGecko OHLC (real 90-day candles), CMC doesn't provide OHLC in free tier
       ohlcvData = await fetchCoinGeckoOHLCV(symbol);
       if (ohlcvData) {
         dataSource = 'live';
         priceSource = 'coingecko';
-      } else {
-        ohlcvData = await fetchBinanceOHLCV(symbol);
-        if (ohlcvData) dataSource = 'live';
       }
     }
 

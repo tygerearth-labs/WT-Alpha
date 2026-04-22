@@ -288,12 +288,44 @@ export default function InvestmentDashboard() {
   // ── State ──────────────────────────────────────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [livePrices, setLivePrices] = useState<Record<string, LivePrice>>({});
+  const [livePrices, setLivePrices] = useState<Record<string, LivePrice>>(() => {
+    // Restore cached prices from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(`inv-prices-${businessId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          // Only use if less than 5 minutes old
+          if (parsed.timestamp && Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+            return parsed.prices || {};
+          }
+        }
+      } catch {}
+    }
+    return {};
+  });
   const [expandedChart, setExpandedChart] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(30);
-  const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<string | null>(() => {
+    // Restore selected asset from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem(`inv-selected-${businessId}`) || null;
+      } catch {}
+    }
+    return null;
+  });
   const [closingId, setClosingId] = useState<string | null>(null);
-  const [positionFilter, setPositionFilter] = useState<'open' | 'closed' | 'all'>('open');
+  const [positionFilter, setPositionFilter] = useState<'open' | 'closed' | 'all'>(() => {
+    // Restore position filter from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(`inv-filter-${businessId}`);
+        if (saved && ['open', 'closed', 'all'].includes(saved)) return saved as 'open' | 'closed' | 'all';
+      } catch {}
+    }
+    return 'open';
+  });
 
   // Macro data
   const [macroData, setMacroData] = useState<MacroData | null>(null);
@@ -329,6 +361,27 @@ export default function InvestmentDashboard() {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const loadingRef = useRef(true);
   const portfoliosRef = useRef<PortfolioItem[]>([]);
+
+  // ── Persist state to localStorage ──────────────────────────────────────────
+  useEffect(() => {
+    if (!businessId) return;
+    if (selectedAsset) localStorage.setItem(`inv-selected-${businessId}`, selectedAsset);
+  }, [selectedAsset, businessId]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    localStorage.setItem(`inv-filter-${businessId}`, positionFilter);
+  }, [positionFilter, businessId]);
+
+  useEffect(() => {
+    if (!businessId || Object.keys(livePrices).length === 0) return;
+    try {
+      localStorage.setItem(`inv-prices-${businessId}`, JSON.stringify({
+        prices: livePrices,
+        timestamp: Date.now(),
+      }));
+    } catch {}
+  }, [livePrices, businessId]);
 
   // ── Translation helper ─────────────────────────────────────────────────────
   const tf = useCallback((key: string, fallback: string) => t(key) || fallback, [t]);

@@ -69,8 +69,18 @@ const TYPE_ICONS: Record<string, string> = {
 
 // ── Smart helpers ────────────────────────────────────────────────────────────
 
-/** Limit displayed results per type group */
-const MAX_PER_TYPE = 8;
+/** Limit displayed results per type group when searching */
+const MAX_PER_TYPE = 25;
+
+/** Popular assets shown immediately when search opens (no query needed) */
+const POPULAR_ASSETS = [
+  'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT',
+  'DOGEUSDT', 'PEPEUSDT', 'TONUSDT', 'ADAUSDT', 'AVAXUSDT',
+  'XAUUSD', 'XAGUSD', 'WTIUSD',
+  'EURUSD', 'GBPUSD', 'USDJPY', 'USDIDR',
+  'BBCA', 'BBRI', 'BMRI', 'TLKM', 'GOTO', 'ANTM', 'ASII',
+  'SPX500', 'US100', 'NIKKEI225', 'IDXCOMPOSITE',
+];
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -87,10 +97,28 @@ export default function AssetSearchInput({
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Type filter tab for browsable mode ────────────────────────────────────
+  const [typeTab, setTypeTab] = useState<string>('popular');
+
+  // Reset typeTab + query when popover opens/closes
+  useEffect(() => {
+    if (open) {
+      setTypeTab('popular');
+      setQuery('');
+    }
+  }, [open]);
+
   // ── Smart filtered: always ALL types, prioritized by relevance ─────────────
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) return []; // Don't show 90 items on empty
+    if (!q) {
+      // No query — show all assets (or popular when popular tab)
+      if (typeTab === 'popular') {
+        return ALL_ASSETS.filter((a) => POPULAR_ASSETS.includes(a.symbol));
+      }
+      if (typeTab === 'all') return ALL_ASSETS;
+      return ALL_ASSETS.filter((a) => a.type === typeTab);
+    }
     return ALL_ASSETS.filter((asset) => {
       return (
         asset.label.toLowerCase().includes(q) ||
@@ -99,7 +127,7 @@ export default function AssetSearchInput({
         (asset.sector && asset.sector.toLowerCase().includes(q))
       );
     });
-  }, [query]);
+  }, [query, typeTab]);
 
   // Group & limit results
   const grouped = useMemo(() => {
@@ -116,6 +144,11 @@ export default function AssetSearchInput({
 
   const totalShown = grouped.reduce((s, g) => s + g.assets.length, 0);
   const hasMore = filtered.length > totalShown;
+
+  // Reset typeTab when query changes
+  useEffect(() => {
+    if (query.trim()) setTypeTab('all');
+  }, [query]);
 
   // ── Handle select (declared before auto-select useEffect) ──────────────────
   const handleSelect = useCallback((asset: AssetDef) => {
@@ -134,10 +167,10 @@ export default function AssetSearchInput({
     setQuery('');
   }, [prices, onSelect]);
 
-  // ── Auto-select: if only 1 result and query ≥ 2 chars, auto-pick ──────────
+  // ── Auto-select: disabled in browsable mode, only when typing ──────────────
   const prevFilteredLenRef = useRef(0);
   useEffect(() => {
-    if (query.length >= 2 && filtered.length === 1 && prevFilteredLenRef.current > 1) {
+    if (query.length >= 3 && filtered.length === 1 && prevFilteredLenRef.current > 1) {
       handleSelect(filtered[0]);
     }
     prevFilteredLenRef.current = filtered.length;
@@ -196,7 +229,7 @@ export default function AssetSearchInput({
           className={cn(
             'flex h-12 w-full items-center gap-3 rounded-xl border bg-white/[0.06] px-4 py-3 text-sm text-left transition-all',
             'border-white/[0.12] text-white',
-            'hover:bg-white/[0.09] hover:border-white/[0.18] focus:outline-none focus:ring-2 focus:ring-[#BB86FC]/40 focus:border-[#BB86FC]/40',
+            'hover:bg-white/[0.09] hover:border-white/[0.18] focus:outline-none',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             !displayValue && 'text-white/35'
           )}
@@ -239,17 +272,42 @@ export default function AssetSearchInput({
               Tidak ada aset ditemukan
             </CommandEmpty>
 
-            {/* Empty state hint */}
+            {/* Type filter tabs — shown when no query */}
             {!query && (
-              <div className="py-8 text-center">
-                <Search className="h-8 w-8 text-white/15 mx-auto mb-2" />
-                <p className="text-xs text-white/30">Ketik min. 2 huruf untuk mulai cari</p>
-                <p className="text-[10px] text-white/20 mt-1">{ALL_ASSETS.length} aset tersedia</p>
+              <div className="flex items-center gap-1 px-2 py-2 border-b border-white/[0.06] overflow-x-auto scrollbar-none">
+                {[
+                  { key: 'popular', label: '⭐ Populer' },
+                  { key: 'all', label: 'Semua' },
+                  { key: 'crypto', label: '🪙 Crypto' },
+                  { key: 'saham', label: '📈 Saham' },
+                  { key: 'forex', label: '💱 Forex' },
+                  { key: 'komoditas', label: '🏗️ Komoditas' },
+                  { key: 'indeks', label: '📊 Indeks' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setTypeTab(tab.key)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors',
+                      typeTab === tab.key
+                        ? 'bg-[#BB86FC]/20 text-[#BB86FC]'
+                        : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]'
+                    )}
+                  >
+                    {tab.label}
+                    {tab.key !== 'popular' && tab.key !== 'all' && (
+                      <span className="ml-1 text-white/25">
+                        ({ALL_ASSETS.filter((a) => tab.key === 'all' || a.type === tab.key).length})
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
 
             {/* Auto-select hint */}
-            {query.length >= 2 && filtered.length === 1 && (
+            {query.length >= 3 && filtered.length === 1 && (
               <div className="px-3 py-1.5 bg-[#03DAC6]/8 border-b border-[#03DAC6]/15">
                 <p className="text-[11px] text-[#03DAC6]/70 flex items-center gap-1">
                   <CornerDownLeft className="h-3 w-3" />

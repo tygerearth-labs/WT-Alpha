@@ -157,6 +157,7 @@ export function KasMasuk() {
   ];
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [serverTotalAmount, setServerTotalAmount] = useState<number>(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -174,10 +175,24 @@ export function KasMasuk() {
       const searchParams = new URLSearchParams();
       searchParams.append('type', 'income');
 
-      if (filter !== 'all') {
+      if (filter === 'month') {
         const now = new Date();
         searchParams.append('year', now.getFullYear().toString());
         searchParams.append('month', (now.getMonth() + 1).toString());
+      } else if (filter === 'today') {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        searchParams.append('startDate', start.toISOString());
+        searchParams.append('endDate', end.toISOString());
+      } else if (filter === 'week') {
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        searchParams.append('startDate', start.toISOString());
+        searchParams.append('endDate', end.toISOString());
       }
 
       const [transRes, catRes, savingsRes] = await Promise.all([
@@ -191,31 +206,9 @@ export function KasMasuk() {
         const catData = await catRes.json();
         const savingsData = await savingsRes.json();
 
-        let filteredTransactions: any[] = transData.transactions || [];
-
-        if (filter === 'today') {
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
-          const tomorrow = new Date(now);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          filteredTransactions = filteredTransactions.filter(t => {
-            const transDate = new Date(t.date);
-            return transDate >= now && transDate < tomorrow;
-          });
-        } else if (filter === 'week') {
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
-          const startOfWeek = new Date(now);
-          const dayOfWeek = now.getDay();
-          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-          startOfWeek.setDate(now.getDate() - diff);
-          filteredTransactions = filteredTransactions.filter(t => {
-            const transDate = new Date(t.date);
-            return transDate >= startOfWeek && transDate <= now;
-          });
-        }
-
-        setTransactions(filteredTransactions);
+        const transactions = transData.transactions || [];
+        setTransactions(transactions);
+        setServerTotalAmount(transData.totalAmount || 0);
         setCategories(catData.categories);
         setSavingsTargets(savingsData.savingsTargets);
       }
@@ -349,7 +342,7 @@ export function KasMasuk() {
     setIsCategoryDialogOpen(true);
   };
 
-  const totalIncome = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = serverTotalAmount;
   const avgIncome = transactions.length > 0 ? totalIncome / transactions.length : 0;
   const maxIncome = transactions.length > 0 ? Math.max(...transactions.map(t => t.amount)) : 0;
 

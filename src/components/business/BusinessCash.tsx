@@ -66,6 +66,7 @@ export default function BusinessCash() {
   const { activeBusiness } = useBusinessStore();
   const { formatAmount } = useCurrencyFormat();
   const [entries, setEntries] = useState<CashEntry[]>([]);
+  const [serverTotal, setServerTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('kas_besar');
 
@@ -99,7 +100,10 @@ export default function BusinessCash() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((result) => setEntries(result?.cashEntries || []))
+      .then((result) => {
+        setEntries(result?.cashEntries || []);
+        setServerTotal(result?.total || 0);
+      })
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
   }, [businessId, activeTab]);
@@ -186,7 +190,7 @@ export default function BusinessCash() {
 
   const filtered = entries.filter((e) => e.type === activeTab);
   const typeConfig = CASH_TYPES[activeTab as keyof typeof CASH_TYPES] || CASH_TYPES.kas_besar;
-  const total = filtered.reduce((sum, e) => sum + e.amount, 0);
+  const total = serverTotal;
 
   if (!businessId) {
     return (
