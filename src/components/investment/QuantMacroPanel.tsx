@@ -1455,18 +1455,18 @@ export default function QuantMacroPanel() {
         <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#BB86FC]/10">
           <Layers className="h-3 w-3 text-[#BB86FC]" />
         </div>
-        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Smart Money Concepts</span>
+        <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold">Smart Money Concepts</span>
       </div>
 
       {/* Trend Structure + Premium/Discount */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Trend Structure</span>
+        <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
+          <span className="text-[10px] text-white/30 uppercase tracking-wider">Trend Structure</span>
           <TrendBadge trend={smc.trendStructure} />
         </div>
-        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Premium / Discount</span>
-          <Badge className="text-[9px] px-2 py-0.5 h-5 font-bold border-0"
+        <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
+          <span className="text-[10px] text-white/30 uppercase tracking-wider">Premium / Discount</span>
+          <Badge className="text-[10px] px-2 py-0.5 h-5 font-bold border-0"
             style={{
               backgroundColor: smc.premiumDiscount === 'discount' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
               color: smc.premiumDiscount === 'discount' ? '#03DAC6' : '#CF6679',
@@ -1477,64 +1477,64 @@ export default function QuantMacroPanel() {
       </div>
 
       {/* FVG */}
-      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+      <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Triangle className="h-3 w-3 text-[#03DAC6]" fill="currentColor" />
-            <span className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Fair Value Gap</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wider font-medium">Fair Value Gap</span>
           </div>
           <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0"
             style={{ backgroundColor: !smc.fairValueGaps.filled ? 'rgba(3,218,198,0.15)' : 'rgba(255,255,255,0.06)', color: !smc.fairValueGaps.filled ? '#03DAC6' : '#666' }}>
             {!smc.fairValueGaps.filled ? 'ACTIVE' : 'FILLED'}
           </Badge>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono">
+        <div className="flex items-center gap-2 text-[11px] font-mono">
           <span className="text-white/30">Range:</span>
           <span className="text-[#03DAC6]/80">{smc.fairValueGaps.low.toLocaleString()}</span>
           <ArrowLeftRight className="h-3 w-3 text-white/20" />
           <span className="text-[#CF6679]/80">{smc.fairValueGaps.high.toLocaleString()}</span>
         </div>
-        <p className="text-[9px] text-white/25 leading-relaxed line-clamp-2">{smc.fairValueGaps.description}</p>
+        <p className="text-[10px] text-white/25 leading-relaxed line-clamp-2">{smc.fairValueGaps.description}</p>
       </div>
 
       {/* Order Block */}
-      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+      <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Square className="h-3 w-3" style={{ color: smc.orderBlock.type === 'bullish' ? '#03DAC6' : '#CF6679' }} fill="currentColor" />
-            <span className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Order Block</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wider font-medium">Order Block</span>
           </div>
           <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 capitalize"
             style={{ backgroundColor: smc.orderBlock.type === 'bullish' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: smc.orderBlock.type === 'bullish' ? '#03DAC6' : '#CF6679' }}>
             {smc.orderBlock.type}
           </Badge>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono">
+        <div className="flex items-center gap-2 text-[11px] font-mono">
           <span className="text-white/30">Zone:</span>
           <span className="text-white/50">{smc.orderBlock.zone.low.toLocaleString()}</span>
           <span className="text-white/20">—</span>
           <span className="text-white/50">{smc.orderBlock.zone.high.toLocaleString()}</span>
         </div>
-        <p className="text-[9px] text-white/25 leading-relaxed line-clamp-2">{smc.orderBlock.description}</p>
+        <p className="text-[10px] text-white/25 leading-relaxed line-clamp-2">{smc.orderBlock.description}</p>
       </div>
 
       {/* Liquidity Sweep */}
-      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
+      <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Zap className="h-3 w-3 text-[#FFD700]" />
-            <span className="text-[9px] text-white/50 uppercase tracking-wider font-medium">Liquidity Sweep</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-wider font-medium">Liquidity Sweep</span>
           </div>
           <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0"
             style={{ backgroundColor: smc.liquiditySweep.swept ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.06)', color: smc.liquiditySweep.swept ? '#FFD700' : '#666' }}>
             {smc.liquiditySweep.swept ? 'SWEPT' : 'NO SWEEP'}
           </Badge>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono">
+        <div className="flex items-center gap-2 text-[11px] font-mono">
           <span className="text-white/30">Level:</span>
           <span className="text-[#FFD700]/80">{smc.liquiditySweep.level.toLocaleString()}</span>
         </div>
-        <p className="text-[9px] text-white/25 leading-relaxed line-clamp-2">{smc.liquiditySweep.description}</p>
+        <p className="text-[10px] text-white/25 leading-relaxed line-clamp-2">{smc.liquiditySweep.description}</p>
       </div>
     </div>
   );
@@ -1545,13 +1545,13 @@ export default function QuantMacroPanel() {
         <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#03DAC6]/10">
           <Brain className="h-3 w-3 text-[#03DAC6]" />
         </div>
-        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">AI Analysis</span>
+        <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold">AI Analysis</span>
       </div>
 
       {/* Confidence + Risk */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-white/[0.03] p-2.5 text-center space-y-1">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Confidence</span>
+        <div className="rounded-lg bg-white/[0.03] p-3 text-center space-y-1.5">
+          <span className="text-[10px] text-white/30 uppercase tracking-wider">Confidence</span>
           <div className="flex items-center justify-center gap-1.5">
             <motion.div
               className="h-2 rounded-full"
@@ -1563,8 +1563,8 @@ export default function QuantMacroPanel() {
             <span className="text-sm font-bold font-mono" style={{ color: getSignalColor(ai.signalStrength) }}>{ai.confidence}%</span>
           </div>
         </div>
-        <div className="rounded-lg bg-white/[0.03] p-2.5 text-center space-y-1">
-          <span className="text-[9px] text-white/30 uppercase tracking-wider">Risk Level</span>
+        <div className="rounded-lg bg-white/[0.03] p-3 text-center space-y-1.5">
+          <span className="text-[10px] text-white/30 uppercase tracking-wider">Risk Level</span>
           <div className="flex items-center justify-center gap-1.5">
             {ai.riskLevel === 'LOW' && <ShieldCheck className="h-3.5 w-3.5 text-[#03DAC6]" />}
             {ai.riskLevel === 'MEDIUM' && <ShieldAlert className="h-3.5 w-3.5 text-[#FFD700]" />}
@@ -1576,27 +1576,27 @@ export default function QuantMacroPanel() {
       </div>
 
       {/* Reasoning */}
-      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
-        <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">Reasoning</span>
-        <p className="text-[11px] text-white/60 leading-relaxed">{ai.reasoning}</p>
+      <div className="rounded-lg bg-white/[0.03] p-3 space-y-1.5">
+        <span className="text-[10px] text-white/30 uppercase tracking-wider font-medium">Reasoning</span>
+        <p className="text-[11px] sm:text-xs text-white/60 leading-relaxed">{ai.reasoning}</p>
       </div>
 
       {/* Strategy */}
-      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1.5">
-        <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">Detected Strategy</span>
+      <div className="rounded-lg bg-white/[0.03] p-3 space-y-1.5">
+        <span className="text-[10px] text-white/30 uppercase tracking-wider font-medium">Detected Strategy</span>
         <div className="flex items-center gap-1.5">
           <Crosshair className="h-3 w-3 text-[#BB86FC]" />
-          <span className="text-[11px] text-[#BB86FC] font-medium">{ai.strategy}</span>
+          <span className="text-[11px] sm:text-xs text-[#BB86FC] font-medium">{ai.strategy}</span>
         </div>
       </div>
 
       {/* News Confirmation */}
       {news && (
-        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-2">
+        <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Newspaper className="h-3 w-3 text-[#03DAC6]" />
-              <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">News Confirmation</span>
+              <span className="text-[10px] text-white/30 uppercase tracking-wider font-medium">News Confirmation</span>
             </div>
             <div className="flex items-center gap-1">
               {news.confirmed ? (
@@ -1617,7 +1617,7 @@ export default function QuantMacroPanel() {
           {news.recentEvents && news.recentEvents.length > 0 && (
             <div className="space-y-1">
               {news.recentEvents.map((event, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-[10px] text-white/40">
+                <div key={i} className="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-white/40">
                   <span className="text-white/15 font-mono shrink-0">•</span>
                   <span className="leading-relaxed">{event}</span>
                 </div>
@@ -1638,49 +1638,49 @@ export default function QuantMacroPanel() {
         <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#FFD700]/10">
           <Crosshair className="h-3 w-3 text-[#FFD700]" />
         </div>
-        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Trade Zones & Forecast</span>
+        <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold">Trade Zones & Forecast</span>
       </div>
 
       {/* Entry / SL / TP */}
       <div className="space-y-2">
-        <div className="rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10 p-2.5 space-y-1">
+        <div className="rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10 p-3 space-y-1">
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
-            <span className="text-[9px] text-[#03DAC6]/60 uppercase tracking-wider font-bold">Entry Zone</span>
+            <span className="text-[10px] text-[#03DAC6]/60 uppercase tracking-wider font-bold">Entry Zone</span>
           </div>
-          <p className="text-[11px] text-white/60 font-medium">{ai.entryZone}</p>
+          <p className="text-[11px] sm:text-xs text-white/60 font-medium">{ai.entryZone}</p>
         </div>
 
-        <div className="rounded-lg bg-[#CF6679]/[0.04] border border-[#CF6679]/10 p-2.5 space-y-1">
+        <div className="rounded-lg bg-[#CF6679]/[0.04] border border-[#CF6679]/10 p-3 space-y-1">
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#CF6679]" />
-            <span className="text-[9px] text-[#CF6679]/60 uppercase tracking-wider font-bold">Stop Loss Zone</span>
+            <span className="text-[10px] text-[#CF6679]/60 uppercase tracking-wider font-bold">Stop Loss Zone</span>
           </div>
-          <p className="text-[11px] text-white/60 font-medium">{ai.stopLossZone}</p>
+          <p className="text-[11px] sm:text-xs text-white/60 font-medium">{ai.stopLossZone}</p>
         </div>
 
-        <div className="rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10 p-2.5 space-y-1">
+        <div className="rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10 p-3 space-y-1">
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
-            <span className="text-[9px] text-[#03DAC6]/60 uppercase tracking-wider font-bold">Take Profit Zone</span>
+            <span className="text-[10px] text-[#03DAC6]/60 uppercase tracking-wider font-bold">Take Profit Zone</span>
           </div>
-          <p className="text-[11px] text-white/60 font-medium">{ai.takeProfitZone}</p>
+          <p className="text-[11px] sm:text-xs text-white/60 font-medium">{ai.takeProfitZone}</p>
         </div>
       </div>
 
       {/* Price Forecast Table */}
-      <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-2">
-        <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Price Forecast</span>
+      <div className="rounded-lg bg-white/[0.03] p-3 space-y-2">
+        <span className="text-[10px] text-white/30 uppercase tracking-wider font-bold">Price Forecast</span>
         <div className="space-y-1.5">
           {[
             { label: 'Short Term', data: ai.priceForecast.shortTerm, color: '#03DAC6' },
             { label: 'Mid Term', data: ai.priceForecast.midTerm, color: '#FFD700' },
             { label: 'Long Term', data: ai.priceForecast.longTerm, color: '#BB86FC' },
           ].map(row => (
-            <div key={row.label} className="flex items-center justify-between px-2 py-1.5 rounded-md bg-white/[0.02]">
+            <div key={row.label} className="flex items-center justify-between px-2.5 py-2 rounded-md bg-white/[0.02]">
               <div className="flex items-center gap-2">
                 <div className="h-1 w-4 rounded-full" style={{ backgroundColor: row.color }} />
-                <span className="text-[10px] text-white/40 font-medium">{row.label}</span>
+                <span className="text-[10px] sm:text-[11px] text-white/40 font-medium">{row.label}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-bold font-mono text-white/70">{row.data.target.toLocaleString()}</span>
@@ -1795,14 +1795,16 @@ export default function QuantMacroPanel() {
 
       {/* ── Expanded Analysis Dialog (shared between tabs) ─────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
+        <DialogContent showCloseButton={false} aria-describedby={undefined} className="max-w-5xl w-[calc(100vw-1.5rem)] sm:w-[95vw] max-h-[92vh] bg-[#0D0D0D] border border-white/[0.08] rounded-2xl p-0 gap-0 overflow-hidden">
           {selectedAsset && (
             <>
-              <DialogHeader className="px-5 pt-5 pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <DialogTitle className="text-white text-base font-bold flex items-center gap-2">{selectedAsset.symbol}</DialogTitle>
-                    <Badge className="text-[9px] px-2 py-0 h-4 font-medium border-0"
+              {/* ── Dialog Header ──────────────────────────────────────────────── */}
+              <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-0">
+                {/* Top row: symbol + badges + actions */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <DialogTitle className="text-white text-base sm:text-lg font-bold flex items-center gap-2 shrink-0">{selectedAsset.symbol}</DialogTitle>
+                    <Badge className="text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0 h-4 font-medium border-0 shrink-0"
                       style={{ backgroundColor: TYPE_COLORS[selectedAsset.type]?.bg || 'rgba(255,255,255,0.06)', color: TYPE_COLORS[selectedAsset.type]?.text || '#888' }}>
                       {(selectedAsset.type || 'crypto').toUpperCase()}
                     </Badge>
@@ -1810,7 +1812,7 @@ export default function QuantMacroPanel() {
                       <TrendBadge trend={selectedAsset.smc.trendStructure} />
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button className="p-2 rounded-lg text-white/30 hover:text-[#FFD700] hover:bg-white/[0.06] transition-colors"
                       onClick={() => handleAddToWatchlist(selectedAsset.symbol)}>
                       <Star className="h-4 w-4" />
@@ -1821,46 +1823,54 @@ export default function QuantMacroPanel() {
                     </button>
                   </div>
                 </div>
-                <div className="mt-3 flex items-end gap-3">
-                  <span className="text-3xl font-bold text-white/95 font-mono tracking-tight">{fmtPrice(selectedAsset.type, selectedAsset.price)}</span>
-                  <div className="flex items-center gap-1 mb-1">
-                    {(selectedAsset.change24h ?? 0) >= 0 ? <ArrowUpRight className="h-5 w-5 text-[#03DAC6]" /> : <ArrowDownRight className="h-5 w-5 text-[#CF6679]" />}
-                    <span className={cn('text-lg font-mono font-bold', (selectedAsset.change24h ?? 0) >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                      {(selectedAsset.change24h ?? 0) >= 0 ? '+' : ''}{toF(selectedAsset.change24h)}%
-                    </span>
+                {/* Price row: price + change + signal badge */}
+                <div className="mt-3 sm:mt-4 flex flex-wrap items-end gap-x-4 gap-y-2">
+                  <div className="flex items-end gap-2.5">
+                    <span className="text-2xl sm:text-3xl font-bold text-white/95 font-mono tracking-tight leading-none">{fmtPrice(selectedAsset.type, selectedAsset.price)}</span>
+                    <div className="flex items-center gap-1 mb-0.5">
+                      {(selectedAsset.change24h ?? 0) >= 0 ? <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-[#03DAC6]" /> : <ArrowDownRight className="h-4 w-4 sm:h-5 sm:w-5 text-[#CF6679]" />}
+                      <span className={cn('text-sm sm:text-lg font-mono font-bold', (selectedAsset.change24h ?? 0) >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                        {(selectedAsset.change24h ?? 0) >= 0 ? '+' : ''}{toF(selectedAsset.change24h)}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    <Badge className="text-xs px-3 py-1 h-6 font-bold border-0"
+                  <div className="flex items-center gap-2 mb-0.5 ml-auto">
+                    <Badge className="text-[11px] sm:text-xs px-2.5 sm:px-3 py-1 h-6 font-bold border-0"
                       style={{ backgroundColor: `${getSignalColor(selectedAsset.signalStrength)}20`, color: getSignalColor(selectedAsset.signalStrength), boxShadow: `0 0 16px ${getSignalColor(selectedAsset.signalStrength)}20` }}>
                       {getSignalLabel(selectedAsset.overallSignal, selectedAsset.signalStrength)}
                     </Badge>
                     {selectedAsset.aiAnalysis && (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03]">
-                        <Brain className="h-3.5 w-3.5 text-[#03DAC6]" />
-                        <span className="text-[11px] font-mono font-bold" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.04]">
+                        <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#03DAC6]" />
+                        <span className="text-[10px] sm:text-[11px] font-mono font-bold" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>
                           {selectedAsset.aiAnalysis.confidence}%
                         </span>
                       </div>
                     )}
                   </div>
                 </div>
+                {/* Separator */}
+                <div className="mt-4 h-px bg-white/[0.06]" />
               </DialogHeader>
-              <ScrollArea className="max-h-[calc(90vh-180px)]">
-                <div className="px-5 pb-5 space-y-5">
-                  {/* Bloomberg-style 4-column grid for SMC + AI data */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Column 1: Signal Overview + Indicators */}
+
+              {/* ── Dialog Body ────────────────────────────────────────────────── */}
+              <ScrollArea className="max-h-[calc(92vh-200px)]">
+                <div className="px-4 sm:px-6 py-5 space-y-5">
+                  {/* Two-column grid: desktop side-by-side, mobile stacked */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    {/* Column 1: Signal Overview + Indicators + Breakdown */}
                     <div className="space-y-4">
-                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 space-y-3">
+                      {/* Signal Overview Card */}
+                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 sm:p-5 space-y-4">
                         <div className="flex items-center gap-2">
-                          <div className="flex h-5 w-5 items-center justify-center rounded-md" style={{ backgroundColor: `${getSignalColor(selectedAsset.signalStrength)}15` }}>
-                            <Activity className="h-3 w-3" style={{ color: getSignalColor(selectedAsset.signalStrength) }} />
+                          <div className="flex h-6 w-6 items-center justify-center rounded-lg" style={{ backgroundColor: `${getSignalColor(selectedAsset.signalStrength)}15` }}>
+                            <Activity className="h-3.5 w-3.5" style={{ color: getSignalColor(selectedAsset.signalStrength) }} />
                           </div>
-                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Signal Overview</span>
+                          <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold">Signal Overview</span>
                         </div>
                         <SignalBar strength={selectedAsset.signalStrength} />
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">{tf('quant.signal', 'Signal')}</span>
+                          <span className="text-[11px] text-white/40 uppercase tracking-wider font-medium">{tf('quant.signal', 'Signal')}</span>
                           <div className="flex items-center gap-2">
                             {selectedAsset.overallSignal === 'buy' ? <CheckCircle2 className="h-5 w-5 text-[#03DAC6]" /> : selectedAsset.overallSignal === 'sell' ? <AlertTriangle className="h-5 w-5 text-[#CF6679]" /> : <Minus className="h-5 w-5 text-[#FFD700]" />}
                             <span className="text-lg font-black font-mono" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>
@@ -1870,37 +1880,37 @@ export default function QuantMacroPanel() {
                         </div>
                       </div>
 
-                      {/* Indicators */}
+                      {/* Technical Indicators */}
                       <div>
-                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
+                        <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
                           <BarChart3 className="h-3.5 w-3.5" /> {tf('quant.indicators', 'Indicators')}
                         </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><RSIGauge value={selectedAsset.indicators?.rsi?.value} /></div>
-                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MACDHistogram macd={selectedAsset.indicators?.macd?.value} signal={selectedAsset.indicators?.macd?.signal} histogram={selectedAsset.indicators?.macd?.histogram} /></div>
-                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><BollingerBandsInfo upper={selectedAsset.indicators?.bollingerBands?.upper} middle={selectedAsset.indicators?.bollingerBands?.middle} lower={selectedAsset.indicators?.bollingerBands?.lower} price={selectedAsset.price} /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3 sm:p-4"><RSIGauge value={selectedAsset.indicators?.rsi?.value} /></div>
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3 sm:p-4"><MACDHistogram macd={selectedAsset.indicators?.macd?.value} signal={selectedAsset.indicators?.macd?.signal} histogram={selectedAsset.indicators?.macd?.histogram} /></div>
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3 sm:p-4"><BollingerBandsInfo upper={selectedAsset.indicators?.bollingerBands?.upper} middle={selectedAsset.indicators?.bollingerBands?.middle} lower={selectedAsset.indicators?.bollingerBands?.lower} price={selectedAsset.price} /></div>
                           {selectedAsset.indicators?.sma20 && selectedAsset.indicators?.sma50 && selectedAsset.indicators?.ema12 && selectedAsset.indicators?.ema26 && (
-                            <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MovingAverageSection sma20={selectedAsset.indicators?.sma20} sma50={selectedAsset.indicators?.sma50} ema12={selectedAsset.indicators?.ema12} ema26={selectedAsset.indicators?.ema26} /></div>
+                            <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3 sm:p-4"><MovingAverageSection sma20={selectedAsset.indicators?.sma20} sma50={selectedAsset.indicators?.sma50} ema12={selectedAsset.indicators?.ema12} ema26={selectedAsset.indicators?.ema26} /></div>
                           )}
                         </div>
                       </div>
 
                       {/* Signal Breakdown */}
-                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
-                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
+                      <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 sm:p-5">
+                        <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-3">
                           <Target className="h-3.5 w-3.5" /> Signal Breakdown
                         </span>
-                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar">
+                        <div className="space-y-1.5 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
                           {selectedAsset.signalDetails.map(detail => {
                             const signalColor = detail.signal === 'BUY' || detail.signal === 'BULLISH' ? '#03DAC6' : detail.signal === 'SELL' || detail.signal === 'BEARISH' ? '#CF6679' : '#FFD700';
                             return (
-                              <div key={detail.indicator} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-xs text-white/60 font-medium w-16">{detail.indicator}</span>
-                                  <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold border-0" style={{ backgroundColor: `${signalColor}15`, color: signalColor }}>{detail.signal}</Badge>
+                              <div key={detail.indicator} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <span className="text-xs text-white/60 font-medium shrink-0">{detail.indicator}</span>
+                                  <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold border-0 shrink-0" style={{ backgroundColor: `${signalColor}15`, color: signalColor }}>{detail.signal}</Badge>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="h-1.5 w-16 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <div className="h-1.5 w-14 sm:w-16 rounded-full bg-white/[0.06] overflow-hidden">
                                     <div className="h-full rounded-full transition-all duration-500" style={{ width: `${detail.weight}%`, backgroundColor: signalColor }} />
                                   </div>
                                   <span className="text-[10px] text-white/30 font-mono w-8 text-right">{detail.weight}%</span>
@@ -1916,28 +1926,29 @@ export default function QuantMacroPanel() {
                     <div className="space-y-4">
                       {/* SMC Analysis */}
                       {selectedAsset.smc && (
-                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
+                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 sm:p-5">
                           {renderSMCPanel(selectedAsset.smc)}
                         </div>
                       )}
 
                       {/* AI Analysis */}
                       {selectedAsset.aiAnalysis && (
-                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
+                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 sm:p-5">
                           {renderAIPanel(selectedAsset.aiAnalysis, selectedAsset.newsConfirmation)}
                         </div>
                       )}
 
                       {/* Trade Zones & Forecast */}
                       {selectedAsset.aiAnalysis && (
-                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
+                        <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 sm:p-5">
                           {renderTradeZonesPanel(selectedAsset.aiAnalysis)}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center gap-2 text-white/20">
+                  {/* Last updated timestamp */}
+                  <div className="flex items-center justify-center gap-2 text-white/15 pt-2 border-t border-white/[0.04]">
                     <Eye className="h-3 w-3" />
                     <span className="text-[10px] font-mono">{new Date(selectedAsset.lastUpdated).toLocaleString()}</span>
                   </div>
