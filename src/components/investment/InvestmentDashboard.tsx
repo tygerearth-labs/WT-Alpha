@@ -4,7 +4,9 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
-import { formatAssetPrice, currencyPrefix } from '@/lib/asset-catalogue';
+import { formatAssetPrice, currencyPrefix, getAssetNativeCurrency, type AssetType } from '@/lib/asset-catalogue';
+import { convertCurrency, formatCurrency } from '@/lib/currency';
+import type { CurrencyCode } from '@/lib/currency';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -75,6 +77,7 @@ import {
 } from 'lucide-react';
 import InvestmentChart from '@/components/investment/InvestmentChart';
 import AssetSearchInput, { type SelectedAsset } from '@/components/investment/AssetSearchInput';
+import BacktestingPanel from '@/components/investment/BacktestingPanel';
 import { cn } from '@/lib/utils';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -95,6 +98,10 @@ interface PortfolioItem {
   investedValue: number;
   unrealizedPnl: number;
   unrealizedPnlPercentage: number;
+  convertedCurrentValue?: number;
+  convertedInvestedValue?: number;
+  convertedUnrealizedPnl?: number;
+  nativeCurrency?: string;
 }
 
 interface LivePrice {
@@ -282,7 +289,7 @@ function getSignalLabel(signal: string, strength: number): string {
 export default function InvestmentDashboard() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
-  const { formatAmount } = useCurrencyFormat();
+  const { formatAmount, currency } = useCurrencyFormat();
   const businessId = activeBusiness?.id;
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -715,28 +722,47 @@ export default function InvestmentDashboard() {
     return `${prefix}${formatAssetPrice(val, type as 'saham' | 'crypto' | 'forex')}`;
   };
 
-  // ── Enriched portfolios with live prices ──────────────────────────────────
+  // ── Enriched portfolios with live prices & currency conversion ─────────────
   const enrichedPortfolios = useMemo(() => {
     return portfolios.map((p) => {
       const live = livePrices[`${p.type}:${p.symbol}`];
       const currentPrice = live?.price ?? p.currentPrice;
-      const currentValue = currentPrice * p.quantity;
-      const investedValue = p.entryPrice * p.quantity;
-      const unrealizedPnl = currentValue - investedValue;
+      const currentValue = currentPrice * p.quantity; // native currency
+      const investedValue = p.entryPrice * p.quantity; // native currency
+      const unrealizedPnl = currentValue - investedValue; // native currency
       const unrealizedPnlPercentage = investedValue > 0 ? ((currentValue - investedValue) / investedValue) * 100 : 0;
-      return { ...p, currentPrice, currentValue, investedValue, unrealizedPnl, unrealizedPnlPercentage };
+
+      // Convert to user's display currency
+      const nativeCurrency = getAssetNativeCurrency(p.type as AssetType, p.symbol) as CurrencyCode;
+      const targetCurrency = currency as CurrencyCode;
+      const conversionRate = convertCurrency(1, nativeCurrency, targetCurrency);
+
+      return {
+        ...p,
+        currentPrice,
+        currentValue,
+        investedValue,
+        unrealizedPnl,
+        unrealizedPnlPercentage,
+        // Converted values in user's display currency
+        convertedCurrentValue: currentValue * conversionRate,
+        convertedInvestedValue: investedValue * conversionRate,
+        convertedUnrealizedPnl: unrealizedPnl * conversionRate,
+        nativeCurrency,
+      };
     });
-  }, [portfolios, livePrices]);
+  }, [portfolios, livePrices, currency]);
 
   // ── Computed data (all from enriched) ─────────────────────────────────────
   const openPortfolios = useMemo(() => enrichedPortfolios.filter((p) => p.status === 'open'), [enrichedPortfolios]);
   const closedPortfolios = useMemo(() => enrichedPortfolios.filter((p) => p.status === 'closed'), [enrichedPortfolios]);
 
   const stats = useMemo(() => {
-    const totalValue = openPortfolios.reduce((s, p) => s + p.currentValue, 0);
-    const investedValue = openPortfolios.reduce((s, p) => s + p.investedValue, 0);
-    const unrealizedPnl = openPortfolios.reduce((s, p) => s + p.unrealizedPnl, 0);
-    const realizedPnl = closedPortfolios.reduce((s, p) => s + p.unrealizedPnl, 0);
+    // Use converted values (in user's display currency)
+    const totalValue = openPortfolios.reduce((s, p) => s + p.convertedCurrentValue, 0);
+    const investedValue = openPortfolios.reduce((s, p) => s + p.convertedInvestedValue, 0);
+    const unrealizedPnl = openPortfolios.reduce((s, p) => s + p.convertedUnrealizedPnl, 0);
+    const realizedPnl = closedPortfolios.reduce((s, p) => s + p.convertedUnrealizedPnl, 0);
     const winTrades = closedPortfolios.filter((p) => p.unrealizedPnl > 0).length;
     const totalTrades = closedPortfolios.length;
     const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
@@ -747,7 +773,7 @@ export default function InvestmentDashboard() {
     const byType: Record<string, { value: number; count: number }> = {};
     openPortfolios.forEach((p) => {
       if (!byType[p.type]) byType[p.type] = { value: 0, count: 0 };
-      byType[p.type].value += p.currentValue;
+      byType[p.type].value += p.convertedCurrentValue;
       byType[p.type].count++;
     });
     return Object.entries(byType).map(([type, { value, count }]) => ({
@@ -852,6 +878,24 @@ export default function InvestmentDashboard() {
       : activeChartAsset.key;
     return signals.get(key) || null;
   }, [activeChartAsset, signals]);
+
+  // Build backtesting asset list from portfolio + watchlist (deduplicated)
+  const backtestAssets = useMemo(() => {
+    const list: Array<{ key: string; symbol: string; type: string; name?: string }> = [];
+    openPortfolios.forEach((p) => {
+      list.push({ key: `${p.type}:${p.symbol}`, symbol: p.symbol, type: p.type, name: p.name });
+    });
+    watchlist.forEach((w) => {
+      list.push({ key: `wl:${w.type}:${w.symbol}`, symbol: w.symbol, type: w.type, name: w.name });
+    });
+    const seen = new Set<string>();
+    return list.filter((a) => {
+      const k = `${a.type}:${a.symbol}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [openPortfolios, watchlist]);
 
   const pnlColor = (val: number) => (val >= 0 ? UP_COLOR : DOWN_COLOR);
 
@@ -1108,9 +1152,9 @@ export default function InvestmentDashboard() {
       {portfolios.length > 0 && (
         <motion.div variants={cardVariants} custom={3} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: t('inv.portfolioValue'), value: formatAmount(stats.totalValue), sub: formatAmount(stats.investedValue) + ' invested', icon: Wallet, color: PURPLE_COLOR },
-            { label: t('inv.unrealizedPnL'), value: (stats.unrealizedPnl >= 0 ? '+' : '') + formatAmount(stats.unrealizedPnl), sub: ((stats.investedValue > 0 ? (stats.unrealizedPnl / stats.investedValue) * 100 : 0)).toFixed(2) + '% return', icon: stats.unrealizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.unrealizedPnl) },
-            { label: t('inv.realizedPnL'), value: (stats.realizedPnl >= 0 ? '+' : '') + formatAmount(stats.realizedPnl), sub: stats.totalTrades + ' trades closed', icon: stats.realizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.realizedPnl) },
+            { label: t('inv.portfolioValue'), value: formatCurrency(stats.totalValue, currency as CurrencyCode), sub: formatCurrency(stats.investedValue, currency as CurrencyCode) + ' invested', icon: Wallet, color: PURPLE_COLOR },
+            { label: t('inv.unrealizedPnL'), value: (stats.unrealizedPnl >= 0 ? '+' : '') + formatCurrency(stats.unrealizedPnl, currency as CurrencyCode), sub: ((stats.investedValue > 0 ? (stats.unrealizedPnl / stats.investedValue) * 100 : 0)).toFixed(2) + '% return', icon: stats.unrealizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.unrealizedPnl) },
+            { label: t('inv.realizedPnL'), value: (stats.realizedPnl >= 0 ? '+' : '') + formatCurrency(stats.realizedPnl, currency as CurrencyCode), sub: stats.totalTrades + ' trades closed', icon: stats.realizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.realizedPnl) },
             { label: t('inv.winRate'), value: stats.winRate.toFixed(1) + '%', sub: stats.totalTrades > 0 ? (stats.winRate >= 50 ? 'Profitable' : 'Review strategy') : 'No closed trades', icon: Trophy, color: stats.winRate >= 50 ? UP_COLOR : DOWN_COLOR },
           ].map((card) => (
             <Card key={card.label} className="bg-white/[0.03] border-white/[0.05]">
@@ -1601,63 +1645,67 @@ export default function InvestmentDashboard() {
                   </Badge>
                 </div>
 
-                {/* ── BUY / SELL Signal Card with Confidence ── */}
-                {ai && (
+                {/* ── BUY / SELL Signal Card — always visible ── */}
+                <div className={cn(
+                  'rounded-xl p-4 mb-4 border relative overflow-hidden',
+                  signal.overallSignal === 'buy'
+                    ? 'bg-gradient-to-r from-[#03DAC6]/[0.08] to-transparent border-[#03DAC6]/20'
+                    : signal.overallSignal === 'sell'
+                      ? 'bg-gradient-to-r from-[#CF6679]/[0.08] to-transparent border-[#CF6679]/20'
+                      : 'bg-gradient-to-r from-[#FFD700]/[0.06] to-transparent border-[#FFD700]/15',
+                )}>
+                  {/* Background glow */}
                   <div className={cn(
-                    'rounded-xl p-4 mb-4 border relative overflow-hidden',
-                    signal.overallSignal === 'buy'
-                      ? 'bg-gradient-to-r from-[#03DAC6]/[0.08] to-transparent border-[#03DAC6]/20'
-                      : signal.overallSignal === 'sell'
-                        ? 'bg-gradient-to-r from-[#CF6679]/[0.08] to-transparent border-[#CF6679]/20'
-                        : 'bg-gradient-to-r from-[#FFD700]/[0.06] to-transparent border-[#FFD700]/15',
-                  )}>
-                    {/* Background glow */}
-                    <div className={cn(
-                      'absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none',
-                      signal.overallSignal === 'buy' ? 'bg-[#03DAC6]/20' : signal.overallSignal === 'sell' ? 'bg-[#CF6679]/20' : 'bg-[#FFD700]/15',
-                    )} />
+                    'absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none',
+                    signal.overallSignal === 'buy' ? 'bg-[#03DAC6]/20' : signal.overallSignal === 'sell' ? 'bg-[#CF6679]/20' : 'bg-[#FFD700]/15',
+                  )} />
 
-                    <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
-                      {/* Main Signal */}
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          'grid place-items-center w-14 h-14 rounded-2xl shrink-0 border',
-                          signal.overallSignal === 'buy'
-                            ? 'bg-[#03DAC6]/15 border-[#03DAC6]/25'
-                            : signal.overallSignal === 'sell'
-                              ? 'bg-[#CF6679]/15 border-[#CF6679]/25'
-                              : 'bg-[#FFD700]/15 border-[#FFD700]/20',
-                        )}>
-                          {signal.overallSignal === 'buy' ? (
-                            <TrendingUp className="h-7 w-7 text-[#03DAC6]" />
-                          ) : signal.overallSignal === 'sell' ? (
-                            <TrendingDown className="h-7 w-7 text-[#CF6679]" />
-                          ) : (
-                            <Minus className="h-7 w-7 text-[#FFD700]" />
+                  <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
+                    {/* Main Signal */}
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        'grid place-items-center w-14 h-14 rounded-2xl shrink-0 border',
+                        signal.overallSignal === 'buy'
+                          ? 'bg-[#03DAC6]/15 border-[#03DAC6]/25'
+                          : signal.overallSignal === 'sell'
+                            ? 'bg-[#CF6679]/15 border-[#CF6679]/25'
+                            : 'bg-[#FFD700]/15 border-[#FFD700]/20',
+                      )}>
+                        {signal.overallSignal === 'buy' ? (
+                          <TrendingUp className="h-7 w-7 text-[#03DAC6]" />
+                        ) : signal.overallSignal === 'sell' ? (
+                          <TrendingDown className="h-7 w-7 text-[#CF6679]" />
+                        ) : (
+                          <Minus className="h-7 w-7 text-[#FFD700]" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className={cn(
+                            'text-lg font-black uppercase tracking-wider',
+                            signal.overallSignal === 'buy' ? 'text-[#03DAC6]' : signal.overallSignal === 'sell' ? 'text-[#CF6679]' : 'text-[#FFD700]',
+                          )}>
+                            {signal.overallSignal === 'buy' ? 'BELI' : signal.overallSignal === 'sell' ? 'JUAL' : 'HOLD'}
+                          </span>
+                          {strength > 50 && (
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-black border-0" style={{
+                              backgroundColor: signal.overallSignal === 'buy' ? 'rgba(3,218,198,0.25)' : 'rgba(207,102,121,0.25)',
+                              color: signal.overallSignal === 'buy' ? '#03DAC6' : '#CF6679',
+                            }}>
+                              STRONG
+                            </Badge>
                           )}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className={cn(
-                              'text-lg font-black uppercase tracking-wider',
-                              signal.overallSignal === 'buy' ? 'text-[#03DAC6]' : signal.overallSignal === 'sell' ? 'text-[#CF6679]' : 'text-[#FFD700]',
-                            )}>
-                              {signal.overallSignal === 'buy' ? 'BELI' : signal.overallSignal === 'sell' ? 'JUAL' : 'HOLD'}
-                            </span>
-                            {strength > 50 && (
-                              <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-black border-0" style={{
-                                backgroundColor: signal.overallSignal === 'buy' ? 'rgba(3,218,198,0.25)' : 'rgba(207,102,121,0.25)',
-                                color: signal.overallSignal === 'buy' ? '#03DAC6' : '#CF6679',
-                              }}>
-                                STRONG
-                              </Badge>
-                            )}
-                          </div>
+                        {ai ? (
                           <p className="text-[11px] text-white/40">{ai.strategy}</p>
-                        </div>
+                        ) : (
+                          <p className="text-[11px] text-white/25 italic">AI Analysis loading...</p>
+                        )}
                       </div>
+                    </div>
 
-                      {/* Confidence Meter */}
+                    {/* Confidence Meter — only if AI data available */}
+                    {ai ? (
                       <div className="flex-1 sm:ml-auto">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Confidence</span>
@@ -1684,9 +1732,17 @@ export default function InvestmentDashboard() {
                           <span className="text-[8px] text-white/15">High</span>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex-1 sm:ml-auto space-y-2">
+                        <Skeleton className="h-3 w-20 bg-white/[0.06]" />
+                        <Skeleton className="h-2.5 w-full rounded-full bg-white/[0.06]" />
+                        <Skeleton className="h-2 w-full rounded-full bg-white/[0.06]" />
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Entry / SL / TP Zones with individual confidence */}
+                  {/* Entry / SL / TP Zones — only if AI data available */}
+                  {ai ? (
                     <div className="relative grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.06]">
                       {/* Entry Zone */}
                       <div className="rounded-lg bg-white/[0.03] border border-[#03DAC6]/15 p-2.5 text-center">
@@ -1733,8 +1789,18 @@ export default function InvestmentDashboard() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="relative grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.06]">
+                      {['Entry', 'Stop Loss', 'Take Profit'].map((label) => (
+                        <div key={label} className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-2.5 text-center space-y-1.5">
+                          <Skeleton className="h-2 w-12 mx-auto bg-white/[0.06]" />
+                          <Skeleton className="h-3 w-16 mx-auto bg-white/[0.06]" />
+                          <Skeleton className="h-1 w-full mx-auto rounded-full bg-white/[0.06]" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* Column 1: AI Analysis */}
@@ -1929,6 +1995,14 @@ export default function InvestmentDashboard() {
           </motion.div>
         );
       })()}
+
+      {/* ── BACKTESTING ── */}
+      <motion.div variants={cardVariants} custom={8.5}>
+        <BacktestingPanel
+          businessId={businessId}
+          assets={backtestAssets}
+        />
+      </motion.div>
 
       {/* ── ALLOCATION + POSITIONS ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

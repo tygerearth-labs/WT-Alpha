@@ -121,6 +121,18 @@ export function getCurrencySymbol(code: CurrencyCode): string {
 }
 
 /**
+ * Convert an amount from one currency to another using IDR as pivot.
+ * rate = getIdrToCurrencyRate(to) / getIdrToCurrencyRate(from)
+ */
+export function convertCurrency(amount: number, from: CurrencyCode, to: CurrencyCode): number {
+  if (from === to) return amount;
+  const rateFrom = getIdrToCurrencyRate(from);
+  const rateTo = getIdrToCurrencyRate(to);
+  if (rateFrom === 0) return amount;
+  return amount * (rateTo / rateFrom);
+}
+
+/**
  * Get exchange rate multiplier from IDR.
  * NOTE: In production, fetch from a real API. This is a simplified static mapping.
  * Since amounts in DB are stored as raw numbers (assumed IDR for existing data),

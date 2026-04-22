@@ -46,25 +46,8 @@ export async function GET(
       orderBy: { createdAt: 'desc' },
     });
 
-    // Add calculated fields
-    const enrichedPortfolios = portfolios.map((p) => {
-      const currentValue = p.currentPrice * p.quantity;
-      const investedValue = p.entryPrice * p.quantity;
-      const unrealizedPnl = currentValue - investedValue;
-      const unrealizedPnlPercentage = investedValue > 0
-        ? ((currentValue - investedValue) / investedValue) * 100
-        : 0;
-
-      return {
-        ...p,
-        currentValue,
-        investedValue,
-        unrealizedPnl,
-        unrealizedPnlPercentage,
-      };
-    });
-
-    return NextResponse.json({ portfolios: enrichedPortfolios });
+    // Return raw portfolio data — frontend handles enrichment with live prices
+    return NextResponse.json({ portfolios });
   } catch (error) {
     console.error('Portfolio GET error:', error);
     return NextResponse.json(
@@ -134,6 +117,19 @@ export async function POST(
         stopLoss: stopLoss ? parseFloat(stopLoss) : null,
         status: status || 'open',
         notes,
+      },
+    });
+
+    // Auto-create a TradingJournal entry for the initial buy
+    await db.tradingJournal.create({
+      data: {
+        portfolioId: portfolio.id,
+        type: 'buy',
+        entryPrice: portfolio.entryPrice,
+        quantity: portfolio.quantity,
+        pnl: 0,
+        pnlPercentage: 0,
+        notes: `Initial buy: ${portfolio.quantity} ${portfolio.symbol} @ ${portfolio.entryPrice}`,
       },
     });
 

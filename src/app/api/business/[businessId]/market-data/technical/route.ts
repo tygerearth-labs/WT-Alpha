@@ -381,7 +381,106 @@ async function fetchCMCOHLCV(_symbol: string): Promise<OHLCVData | null> {
   return null;
 }
 
-/** Generate mock OHLCV for non-crypto types */
+/** Fetch OHLCV from Yahoo Finance for saham, komoditas, and indeks */
+async function fetchYahooOHLCV(symbol: string, type: string): Promise<OHLCVData | null> {
+  try {
+    let yahooSymbol = symbol.toUpperCase();
+    if (type === 'saham' && !yahooSymbol.endsWith('.JK')) yahooSymbol += '.JK';
+    if (type === 'komoditas') {
+      const commodityMap: Record<string, string> = {
+        XAU: 'GC=F', XAG: 'SI=F', XPT: 'PL=F', XPD: 'PA=F',
+        OIL: 'CL=F', GAS: 'NG=F',
+      };
+      yahooSymbol = commodityMap[yahooSymbol] || yahooSymbol;
+    }
+    if (type === 'indeks') {
+      const indexMap: Record<string, string> = {
+        IHSG: '^JKSE', LQ45: '^JKLQ45', SPX: '^GSPC', DJI: '^DJI',
+        NDX: '^NDX', FTSE: '^FTSE', DAX: '^GDAXI', NIKKEI: '^N225',
+        KOSPI: '^KS11', HSI: '^HSI', SHANGHAI: '^SSEC',
+      };
+      yahooSymbol = indexMap[yahooSymbol] || yahooSymbol;
+    }
+
+    const range = '3mo';
+    const interval = '1d';
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=${range}&interval=${interval}`;
+    const res = await fetchWithTimeout(url, { timeoutMs: 10000 });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const result = data.chart?.result?.[0];
+    if (!result) return null;
+
+    const timestamps = result.timestamp || [];
+    const quotes = result.indicators?.quote?.[0];
+    if (!quotes) return null;
+
+    const { open, high, low, close, volume } = quotes;
+    const candles: Candle[] = [];
+    const closes: number[] = [];
+    const volumes: number[] = [];
+
+    for (let i = 0; i < timestamps.length; i++) {
+      if (close[i] == null || open[i] == null) continue;
+      candles.push({
+        open: parseFloat(open[i].toFixed(4)),
+        high: parseFloat((high[i] || close[i]).toFixed(4)),
+        low: parseFloat((low[i] || close[i]).toFixed(4)),
+        close: parseFloat(close[i].toFixed(4)),
+      });
+      closes.push(parseFloat(close[i].toFixed(4)));
+      volumes.push(Math.floor(volume?.[i] || 0));
+    }
+
+    if (closes.length < 20) return null;
+    return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch OHLCV klines from Binance public API — very reliable, no API key needed */
+async function fetchBinanceKlines(symbol: string): Promise<OHLCVData | null> {
+  try {
+    // Normalize symbol to Binance format (BTCUSDT, ETHUSDT, etc.)
+    let binanceSymbol = symbol.toUpperCase();
+    if (!binanceSymbol.endsWith('USDT') && !binanceSymbol.endsWith('BUSD') && !binanceSymbol.endsWith('BRL')) {
+      binanceSymbol += 'USDT';
+    }
+
+    const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=1d&limit=90`;
+    const res = await fetchWithTimeout(url, { timeoutMs: 10000 });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length < 20) return null;
+
+    const candles: Candle[] = [];
+    const closes: number[] = [];
+    const volumes: number[] = [];
+
+    for (const k of data) {
+      if (!Array.isArray(k) || k.length < 6) continue;
+      const [, open, high, low, close, vol] = k;
+      const o = parseFloat(open);
+      const h = parseFloat(high);
+      const l = parseFloat(low);
+      const c = parseFloat(close);
+      const v = parseFloat(vol);
+      if (isNaN(c) || isNaN(o)) continue;
+      candles.push({ open: o, high: h, low: l, close: c });
+      closes.push(c);
+      volumes.push(Math.floor(v));
+    }
+
+    if (closes.length < 20) return null;
+    return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
+  } catch (error) {
+    console.warn(`Binance klines failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+/** Generate mock OHLCV — ONLY as absolute last resort, produces meaningless indicators */
 function generateMockOHLCV(basePrice: number, symbol: string): OHLCVData {
   const candles: Candle[] = [];
   const closes: number[] = [];
@@ -409,6 +508,25 @@ function generateMockOHLCV(basePrice: number, symbol: string): OHLCVData {
   }
 
   return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
+}
+
+/** Fetch price from Binance public API — fast, free, no API key */
+async function fetchBinancePrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
+  try {
+    let binanceSymbol = symbol.toUpperCase();
+    if (!binanceSymbol.endsWith('USDT') && !binanceSymbol.endsWith('BUSD') && !binanceSymbol.endsWith('BRL')) {
+      binanceSymbol += 'USDT';
+    }
+    const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+    const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (typeof data.lastPrice !== 'number' || isNaN(data.lastPrice)) return null;
+    const change24h = typeof data.priceChangePercent === 'number' ? data.priceChangePercent : 0;
+    return { price: data.lastPrice, change24h: parseFloat(change24h.toFixed(2)) };
+  } catch {
+    return null;
+  }
 }
 
 /** Fetch CoinGecko price + 24h change */
@@ -527,7 +645,9 @@ async function fetchIndexPrice(symbol: string): Promise<{ price: number; change2
 /** Universal price fetcher — tries multiple sources by asset type */
 async function fetchLivePrice(symbol: string, type: string): Promise<{ price: number; change24h: number; source: string } | null> {
   if (type === 'crypto') {
-    // CoinGecko first, CMC fallback
+    // Binance first (fastest, real-time, no rate limit), then CoinGecko, then CMC
+    const binance = await fetchBinancePrice(symbol);
+    if (binance) return { ...binance, source: 'binance' };
     const cg = await fetchCoinGeckoPrice(symbol);
     if (cg) return { ...cg, source: 'coingecko' };
     const cmc = await fetchCMCPrice(symbol);
@@ -1076,16 +1196,33 @@ export async function GET(
     let ohlcvData: OHLCVData | null = null;
     let dataSource: 'live' | 'estimated' = 'estimated';
 
+    // Crypto: Binance klines first (most reliable), then CoinGecko OHLC
     if (type === 'crypto') {
-      // CoinGecko OHLC (real 90-day candles), CMC doesn't provide OHLC in free tier
-      ohlcvData = await fetchCoinGeckoOHLCV(symbol);
+      ohlcvData = await fetchBinanceKlines(symbol);
       if (ohlcvData) {
         dataSource = 'live';
-        priceSource = 'coingecko';
+        priceSource = 'binance';
+      }
+      if (!ohlcvData) {
+        ohlcvData = await fetchCoinGeckoOHLCV(symbol);
+        if (ohlcvData) {
+          dataSource = 'live';
+          priceSource = 'coingecko';
+        }
       }
     }
 
-    // If no real OHLCV, generate from ACTUAL live price
+    // Non-crypto: try Yahoo Finance OHLC
+    if (!ohlcvData && type !== 'crypto') {
+      ohlcvData = await fetchYahooOHLCV(symbol, type);
+      if (ohlcvData) {
+        dataSource = 'live';
+        priceSource = 'yahoo';
+      }
+    }
+
+    // If still no real OHLCV, generate minimal data from live price
+    // This is better than fully mock candles — at least the last candle is real
     if (!ohlcvData && price > 0) {
       ohlcvData = generateMockOHLCV(price, symbol);
       dataSource = 'estimated';

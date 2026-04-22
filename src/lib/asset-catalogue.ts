@@ -373,6 +373,26 @@ export function searchAssets(query: string, typeFilter?: AssetType | 'all' | str
   });
 }
 
+/** Get the native pricing currency for an asset */
+export function getAssetNativeCurrency(type: AssetType, symbol: string): 'USD' | 'IDR' {
+  if (type === 'crypto') return 'USD';
+  if (type === 'komoditas') return 'USD';
+  if (type === 'forex') return 'USD';
+  if (type === 'indeks') {
+    const idrIndices = ['IDXCOMPOSITE', 'LQ45'];
+    if (idrIndices.includes(symbol.toUpperCase())) return 'IDR';
+    return 'USD';
+  }
+  if (type === 'saham') {
+    const usStocks = new Set([
+      'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'NFLX', 'JPM', 'V',
+    ]);
+    if (usStocks.has(symbol.toUpperCase())) return 'USD';
+    return 'IDR';
+  }
+  return 'USD';
+}
+
 /** Currency prefix for an asset type */
 export function currencyPrefix(type: AssetType): string {
   if (type === 'saham') return 'Rp';
