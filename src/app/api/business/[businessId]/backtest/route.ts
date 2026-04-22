@@ -239,12 +239,12 @@ function generateMockDaily(basePrice: number, symbol: string, days: number): Dai
   const now = Math.floor(Date.now() / 86400000);
   for (let i = days; i >= 0; i--) {
     const seed = symbol + String(now - i);
-    const volatility = basePrice * 0.025;
-    const change = (seededRandom(seed) - 0.45) * volatility;
+    const volatility = basePrice * 0.045;
+    const change = (seededRandom(seed) - 0.48) * volatility;
     const open = price;
     price = price + change;
-    const high = Math.max(open, price) * (1 + seededRandom(seed + 'h') * 0.015);
-    const low = Math.min(open, price) * (1 - seededRandom(seed + 'l') * 0.015);
+    const high = Math.max(open, price) * (1 + seededRandom(seed + 'h') * 0.035);
+    const low = Math.min(open, price) * (1 - seededRandom(seed + 'l') * 0.035);
     const close = parseFloat(price.toFixed(price < 1 ? 6 : 2));
     const date = new Date((now - i) * 86400000).toISOString().slice(0, 10);
     candles.push({
@@ -761,14 +761,15 @@ function generateBreakoutSignals(candles: DailyCandle[]): StrategySignal[] {
 
     const price = candles[i].close;
 
-    // 20-day high
-    const highs20 = slice.slice(-20).map(c => c.high);
-    const high20 = Math.max(...highs20);
-    const lows20 = slice.slice(-20).map(c => c.low);
-    const low20 = Math.min(...lows20);
+    // 20-day high (exclude current day so breakout is possible)
+    const prevSlice = slice.slice(0, -1);
+    const highs20 = prevSlice.slice(-20).map(c => c.high);
+    const high20 = highs20.length > 0 ? Math.max(...highs20) : price;
+    const lows20 = prevSlice.slice(-20).map(c => c.low);
+    const low20 = lows20.length > 0 ? Math.min(...lows20) : price;
 
-    // Price closes above 20-day high AND above Bollinger upper
-    if (price > high20 && price > bb.upper) {
+    // Price closes above 20-day high OR above Bollinger upper
+    if (price > high20 || price > bb.upper) {
       signals.push({
         date: candles[i].date,
         direction: 'LONG',
@@ -777,8 +778,8 @@ function generateBreakoutSignals(candles: DailyCandle[]): StrategySignal[] {
         takeProfit: parseFloat((price + 3 * atr).toFixed(6)),
       });
     }
-    // Price closes below 20-day low AND below Bollinger lower
-    else if (price < low20 && price < bb.lower) {
+    // Price closes below 20-day low OR below Bollinger lower
+    else if (price < low20 || price < bb.lower) {
       signals.push({
         date: candles[i].date,
         direction: 'SHORT',
@@ -809,12 +810,12 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
   if (candles.length < 51) return signals;
 
   // Thresholds: smartmoney is more aggressive, conservative requires more confirmation
-  const entryThreshold = variant === 'smartmoney' ? 55 : 65;
+  const entryThreshold = variant === 'smartmoney' ? 30 : 45;
   const stopMultiplier = variant === 'smartmoney' ? 1.5 : 1.2;
   const tpMultiplier = variant === 'smartmoney' ? 3.0 : 2.0;
 
   // Cooldown: minimum days between signals to avoid overtrading
-  const cooldownDays = variant === 'smartmoney' ? 3 : 7;
+  const cooldownDays = variant === 'smartmoney' ? 5 : 7;
   let lastSignalDate = '';
 
   for (let i = 50; i < candles.length; i++) {
@@ -834,8 +835,8 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
     const price = candles[i].close;
     const today = candles[i].date;
 
-    // Conservative: only trade in trending markets
-    if (variant === 'conservative' && adx < 20) continue;
+    // Conservative: only trade in trending markets (relaxed threshold)
+    if (variant === 'conservative' && adx < 15) continue;
 
     // Cooldown check
     if (lastSignalDate) {
@@ -849,9 +850,9 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
 
     // ── Trend Layer (0-100) ──
     let trendScore = 0;
-    if (adx > 20) {
+    if (adx > 15) {
       // Stronger ADX = stronger trend conviction
-      const adxStrength = Math.min((adx - 20) / 30, 1); // 0–1 normalized
+      const adxStrength = Math.min((adx - 15) / 35, 1); // 0–1 normalized
       if (plusDI > minusDI && sma20 > sma50) {
         trendScore = 50 + adxStrength * 50; // 50-100 bullish
       } else if (minusDI > plusDI && sma20 < sma50) {
@@ -869,18 +870,22 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
 
     // ── Momentum Layer (0-100) ──
     let momentumScore = 0;
-    if (rsi < 30) {
-      momentumScore = 70 + (30 - rsi); // Deeply oversold: 70-100 (bullish reversal)
-    } else if (rsi < 40 && macdData.histogram > 0) {
-      momentumScore = 50; // Oversold + MACD turning bullish
-    } else if (rsi > 70) {
-      momentumScore = -(70 + (rsi - 70)); // Deeply overbought: -70 to -100 (bearish reversal)
-    } else if (rsi > 60 && macdData.histogram < 0) {
-      momentumScore = -50; // Overbought + MACD turning bearish
+    if (rsi < 25) {
+      momentumScore = 80 + (25 - rsi); // Extremely oversold: 80-105 (bullish reversal)
+    } else if (rsi < 35) {
+      momentumScore = 50 + (35 - rsi); // Oversold zone: 50-70 (bullish)
+    } else if (rsi < 45 && macdData.histogram > 0) {
+      momentumScore = 40; // Weak zone + MACD turning bullish
+    } else if (rsi > 75) {
+      momentumScore = -(80 + (rsi - 75)); // Extremely overbought: -80 to -105 (bearish)
+    } else if (rsi > 65) {
+      momentumScore = -(50 + (rsi - 65)); // Overbought zone: -50 to -70 (bearish)
+    } else if (rsi > 55 && macdData.histogram < 0) {
+      momentumScore = -40; // Weak zone + MACD turning bearish
     } else if (macdData.macd > macdData.signal && macdData.histogram > 0) {
-      momentumScore = 40; // MACD bullish crossover
+      momentumScore = 35; // MACD bullish crossover
     } else if (macdData.macd < macdData.signal && macdData.histogram < 0) {
-      momentumScore = -40; // MACD bearish crossover
+      momentumScore = -35; // MACD bearish crossover
     }
 
     // ── Volatility Layer (0-100) ──
@@ -891,6 +896,15 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
     } else if (price < bb.lower) {
       const bbDist = bb.middle > 0 ? ((bb.lower - price) / bb.middle) * 100 : 0;
       volatilityScore = -(50 + Math.min(bbDist * 5, 50)); // -50 to -100: breakout below
+    }
+    // Near BB bands also gets partial score
+    else {
+      const bbRange = bb.upper - bb.lower;
+      if (bbRange > 0) {
+        const upperPct = (bb.upper - price) / bbRange; // 0=at upper, 1=at lower
+        if (upperPct < 0.15) volatilityScore = 20; // Near upper band: slight bullish
+        else if (upperPct > 0.85) volatilityScore = -20; // Near lower band: slight bearish
+      }
     }
 
     // ── SMC Layer (0-100) ──
@@ -909,8 +923,20 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
     if (price > Math.max(...highs20)) smcScore = Math.max(smcScore, 55);
     else if (price < low20) smcScore = Math.min(smcScore, -55);
 
+    // ── Volume Confirmation Layer ──
+    let volumeScore = 0;
+    if (slice.length >= 20) {
+      const recentVol = slice.slice(-5).reduce((s, c) => s + c.volume, 0) / 5;
+      const avgVol = slice.slice(-20).reduce((s, c) => s + c.volume, 0) / 20;
+      if (avgVol > 0 && recentVol > avgVol * 1.3) {
+        volumeScore = 25; // High volume confirms move
+      } else if (avgVol > 0 && recentVol > avgVol * 1.1) {
+        volumeScore = 12; // Slightly above average volume
+      }
+    }
+
     // ── Weighted Composite (-100 to +100) ──
-    const composite = trendScore * 0.30 + momentumScore * 0.30 + volatilityScore * 0.20 + smcScore * 0.20;
+    const composite = trendScore * 0.25 + momentumScore * 0.25 + volatilityScore * 0.15 + smcScore * 0.20 + volumeScore * 0.15;
 
     if (composite >= entryThreshold) {
       signals.push({
@@ -1484,7 +1510,7 @@ export async function GET(
       // Need extra days for indicators (lookback buffer)
       daysNeeded = Math.max(diffDays + 30, 90);
     } else {
-      daysNeeded = Math.max(numWeeks * 8, 60);
+      daysNeeded = Math.max(numWeeks * 15, 120);
     }
 
     if (!symbol) {
@@ -1522,22 +1548,26 @@ export async function GET(
       dailyCandles = dailyCandles.slice(-daysNeeded);
     }
 
-    // Apply date range filter if provided
-    if (startDateParam || endDateParam) {
-      dailyCandles = dailyCandles.filter(c => {
-        if (startDateParam && c.date < startDateParam) return false;
-        if (endDateParam && c.date > endDateParam) return false;
-        return true;
-      });
-    }
+    // IMPORTANT: Do NOT filter candles by date range before running strategies.
+    // Strategies need the full dataset for indicator warmup (SMA50, etc.).
+    // Store date range for display filtering only.
+    const displayStart = startDateParam || '';
+    const displayEnd = endDateParam || '';
 
     // Group into weeks
     const weeklyData = groupIntoWeeks(dailyCandles);
 
-    // Only return requested number of weeks (only if no date range specified)
-    const trimmedWeekly = startDateParam || endDateParam
-      ? weeklyData
-      : weeklyData.slice(-numWeeks);
+    // Apply date range filter ONLY for weekly display data
+    let trimmedWeekly = weeklyData;
+    if (displayStart || displayEnd) {
+      trimmedWeekly = weeklyData.filter(w => {
+        if (displayStart && w.weekEnd < displayStart) return false;
+        if (displayEnd && w.weekStart > displayEnd) return false;
+        return true;
+      });
+    } else {
+      trimmedWeekly = weeklyData.slice(-numWeeks);
+    }
 
     // Compute summary
     const summary = computeSummary(trimmedWeekly);

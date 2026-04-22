@@ -2358,7 +2358,10 @@ export default function InvestmentDashboard() {
                   <thead>
                     <tr className="border-b border-white/[0.06]">
                       <th className="text-left text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashAsset', 'Asset')}</th>
-                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashPrice', 'Price')}</th>
+                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-1">Entry</th>
+                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">Harga</th>
+                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-1 hidden md:table-cell">SL</th>
+                      <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-1 hidden md:table-cell">TP</th>
                       <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2 pr-2">{tf('inv.dashQty', 'Qty')}</th>
                       <th className="text-right text-[10px] text-white/30 uppercase tracking-wider pb-2">{tf('inv.pnl', 'PnL')}</th>
                     </tr>
@@ -2366,7 +2369,7 @@ export default function InvestmentDashboard() {
                   <tbody>
                     {filteredPositions.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-white/20 text-xs">{tf('inv.dashNoPositions', 'No positions')}</td>
+                        <td colSpan={7} className="py-8 text-center text-white/20 text-xs">{tf('inv.dashNoPositions', 'No positions')}</td>
                       </tr>
                     ) : (
                       filteredPositions.map((p) => {
@@ -2402,6 +2405,9 @@ export default function InvestmentDashboard() {
                                 {p.name && <p className="text-[10px] text-white/30 truncate max-w-[100px]">{p.name}</p>}
                               </button>
                             </td>
+                            <td className="text-right py-2.5 pr-1">
+                              <p className="text-white/40 text-[11px] font-mono">{fmtPrice(p.type, p.entryPrice)}</p>
+                            </td>
                             <td className="text-right py-2.5 pr-2">
                               <p className="text-white/70 text-xs font-mono">{fmtPrice(p.type, p.currentPrice)}</p>
                               {live && p.status === 'open' && (
@@ -2409,6 +2415,12 @@ export default function InvestmentDashboard() {
                                   {live.change24h >= 0 ? '+' : ''}{toF(live.change24h)}%
                                 </p>
                               )}
+                            </td>
+                            <td className="text-right py-2.5 pr-1 hidden md:table-cell">
+                              <p className="text-[#CF6679]/60 text-[11px] font-mono">{p.stopLoss ? fmtPrice(p.type, p.stopLoss) : '-'}</p>
+                            </td>
+                            <td className="text-right py-2.5 pr-1 hidden md:table-cell">
+                              <p className="text-[#03DAC6]/60 text-[11px] font-mono">{p.targetPrice ? fmtPrice(p.type, p.targetPrice) : '-'}</p>
                             </td>
                             <td className="text-right text-white/50 text-xs font-mono py-2.5 pr-2">{p.quantity}</td>
                             <td className="text-right py-2.5">
