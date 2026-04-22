@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { SavingsTarget } from '@/types/transaction.types';
 import { TargetMetrics, getBrutalInsight, getSpeedCopy, getETAText, generateMiniChallenge } from '@/lib/targetLogic';
 import { TargetSummaryCard } from '@/components/target/TargetSummaryCard';
+import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { TargetSkeleton } from '@/components/shared/PageSkeleton';

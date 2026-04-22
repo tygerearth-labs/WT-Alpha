@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -35,6 +35,7 @@ export function SpendingTrendChart({ transactions, savingsHistory }: SpendingTre
   const { t } = useTranslation();
   const { formatAmount } = useCurrencyFormat();
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const data = useMemo(() => {
     const now = new Date();

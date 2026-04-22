@@ -118,12 +118,12 @@ export default function BusinessInvoice() {
     ])
       .then(([invoicesData, customersData]) => {
         setInvoices(
-          (invoicesData?.invoices || []).map((inv: Invoice) => ({
+          (invoicesData || []).map((inv: Invoice) => ({
             ...inv,
             items: typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items,
           }))
         );
-        setCustomers(customersData?.customers || []);
+        setCustomers(customersData || []);
       })
       .catch(() => {
         setInvoices([]);

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Loader2, Ticket, Lock, MessageCircle } from 'lucide-react';
+import { Loader2, Ticket, Crown, Sparkles, Lock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 

@@ -13,6 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -71,18 +78,11 @@ export default function BusinessCash() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CashEntry | null>(null);
-  const [formData, setFormData] = useState<{
-    description: string;
-    amount: string;
-    date: string;
-    type: 'kas_besar' | 'kas_kecil' | 'kas_keluar';
-    category: string;
-    notes: string;
-  }>({
+  const [formData, setFormData] = useState({
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    type: 'kas_besar',
+    type: 'kas_besar' as const,
     category: '',
     notes: '',
   });
@@ -99,7 +99,7 @@ export default function BusinessCash() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((result) => setEntries(result?.cashEntries || []))
+      .then((result) => setEntries(result))
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
   }, [businessId, activeTab]);

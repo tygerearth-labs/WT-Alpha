@@ -57,6 +57,8 @@ export function TopCategories({ expenseByCategory }: TopCategoriesProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  const totalAmount = categories.reduce((s, c) => s + c.amount, 0);
+
   return (
     <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
       <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none"

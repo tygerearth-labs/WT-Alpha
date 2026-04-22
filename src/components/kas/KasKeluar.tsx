@@ -398,6 +398,7 @@ export function KasKeluar() {
   }, []);
 
   // Animated values
+  const animatedTotal = useAnimatedValue(Math.round(totalExpense));
   const animatedAvg = useAnimatedValue(Math.round(avgExpense));
   const animatedMax = useAnimatedValue(Math.round(maxExpense));
   const animatedCount = useAnimatedValue(transactions.length, 500);

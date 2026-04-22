@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBusinessStore, type BusinessMode } from '@/store/useBusinessStore';
@@ -43,8 +44,6 @@ import {
   BarChart3,
   Gem,
   BookOpen,
-  Palette,
-  CheckCircle2,
   type LucideIcon,
 } from 'lucide-react';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
@@ -64,12 +63,10 @@ import BusinessCustomers from '@/components/business/BusinessCustomers';
 import BusinessDebts from '@/components/business/BusinessDebts';
 import BusinessAllocation from '@/components/business/BusinessAllocation';
 import BusinessLaporan from '@/components/business/BusinessLaporan';
-import BusinessInvoiceSettings from '@/components/business/BusinessInvoiceSettings';
 import InvestmentDashboard from '@/components/investment/InvestmentDashboard';
 import InvestmentPortfolio from '@/components/investment/InvestmentPortfolio';
 import TradingJournal from '@/components/investment/TradingJournal';
 import InvestmentRegisterDialog from '@/components/investment/InvestmentRegisterDialog';
-import QuantMacroPanel from '@/components/investment/QuantMacroPanel';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -78,8 +75,8 @@ import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 type PageType =
   | 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile'
   | 'biz-dashboard' | 'biz-kas' | 'biz-penjualan' | 'biz-invoice' | 'biz-customer'
-  | 'biz-hutang' | 'biz-allocation' | 'biz-laporan' | 'biz-invoice-settings'
-  | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal' | 'inv-quant' | 'inv-macro';
+  | 'biz-hutang' | 'biz-allocation' | 'biz-laporan'
+  | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal';
 
 interface NavItem {
   id: PageType;
@@ -91,7 +88,8 @@ interface NavItem {
 
 export function MainLayout() {
   const { user, logout } = useAuthStore();
-  const { mode, setMode, businesses, setBusinesses, setActiveBusiness, setLoading: setBizLoading } = useBusinessStore();
+  const router = useRouter();
+  const { mode, setMode, businesses, setBusinesses, activeBusiness, setActiveBusiness, setLoading: setBizLoading } = useBusinessStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
@@ -203,12 +201,12 @@ export function MainLayout() {
     }
     const cat = newMode === 'bisnis' ? 'bisnis' : 'investasi';
     const existingBiz = businesses.find(b => b.category === cat);
-    // Always set mode & page first so sidebar nav updates immediately
-    setMode(newMode);
-    setActiveBusiness(existingBiz || null);
-    setCurrentPage(newMode === 'bisnis' ? 'biz-dashboard' : 'inv-dashboard');
-    setPageKey(prev => prev + 1);
-    if (!existingBiz) {
+    if (existingBiz) {
+      setActiveBusiness(existingBiz);
+      setMode(newMode);
+      setCurrentPage(newMode === 'bisnis' ? 'biz-dashboard' : 'inv-dashboard');
+      setPageKey(prev => prev + 1);
+    } else {
       if (newMode === 'bisnis') setShowBizRegister(true);
       else setShowInvRegister(true);
     }
@@ -233,14 +231,12 @@ export function MainLayout() {
     { id: 'biz-hutang', label: t('biz.hutangPiutang'), icon: CreditCard, desc: 'Hutang & Piutang' },
     { id: 'biz-allocation', label: t('biz.autoAllocation'), icon: ArrowLeftRight, desc: 'Alokasi ke Pribadi' },
     { id: 'biz-laporan', label: t('biz.bizLaporan'), icon: BarChart3, desc: 'Laporan' },
-    { id: 'biz-invoice-settings', label: t('biz.invoiceSettings'), icon: Palette, desc: 'Template & Branding' },
   ], [t]);
 
   const investmentNav: NavItem[] = useMemo(() => [
-    { id: 'inv-dashboard', label: t('inv.invDashboard'), icon: LineChart, desc: t('inv.dashGuideDashboard').split(' — ')[0] },
-    { id: 'inv-portfolio', label: t('inv.portfolios'), icon: Gem, desc: t('inv.dashGuidePortfolio').split(' — ')[0] },
-    { id: 'inv-quant', label: 'Quant & Market', icon: TrendingUp, desc: t('inv.dashGuideQuant').split(' — ')[0] },
-    { id: 'inv-journal', label: t('inv.tradingJournal'), icon: BookOpen, desc: t('inv.dashGuideJournal').split(' — ')[0] },
+    { id: 'inv-dashboard', label: t('inv.invDashboard'), icon: LineChart, desc: 'Dashboard Investasi' },
+    { id: 'inv-portfolio', label: t('inv.portfolios'), icon: Gem, desc: 'Portofolio' },
+    { id: 'inv-journal', label: t('inv.tradingJournal'), icon: BookOpen, desc: 'Trading Journal' },
   ], [t]);
 
   const navigation = useMemo(() => {
@@ -249,21 +245,10 @@ export function MainLayout() {
     return personalNav;
   }, [mode, personalNav, businessNav, investmentNav]);
 
-  // Check registered categories
-  const hasBisnis = businesses.some(b => b.category === 'bisnis');
-  const hasInvestasi = businesses.some(b => b.category === 'investasi');
-
   const renderPage = () => {
     if (mode === 'bisnis') {
-      if (!hasBisnis) {
-        return (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <Briefcase className="h-12 w-12 text-[#03DAC6]/30 mx-auto mb-3" />
-              <p className="text-white/50 text-sm">{t('biz.registerFirst') || 'Silakan daftarkan Bisnis terlebih dahulu'}</p>
-            </div>
-          </div>
-        );
+      if (!businesses.find(b => b.category === 'bisnis')) {
+        return <BusinessRegisterDialog open={showBizRegister} onOpenChange={(o) => { setShowBizRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />;
       }
       switch (currentPage) {
         case 'biz-dashboard': return <BusinessDashboard />;
@@ -274,26 +259,16 @@ export function MainLayout() {
         case 'biz-hutang': return <BusinessDebts />;
         case 'biz-allocation': return <BusinessAllocation />;
         case 'biz-laporan': return <BusinessLaporan />;
-        case 'biz-invoice-settings': return <BusinessInvoiceSettings />;
         default: return <BusinessDashboard />;
       }
     }
     if (mode === 'investasi') {
-      if (!hasInvestasi) {
-        return (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <LineChart className="h-12 w-12 text-[#FFD700]/30 mx-auto mb-3" />
-              <p className="text-white/50 text-sm">{t('inv.registerFirst') || 'Silakan daftarkan Investasi terlebih dahulu'}</p>
-            </div>
-          </div>
-        );
+      if (!businesses.find(b => b.category === 'investasi')) {
+        return <InvestmentRegisterDialog open={showInvRegister} onOpenChange={(o) => { setShowInvRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />;
       }
       switch (currentPage) {
         case 'inv-dashboard': return <InvestmentDashboard />;
         case 'inv-portfolio': return <InvestmentPortfolio />;
-        case 'inv-quant': return <QuantMacroPanel />;
-        case 'inv-macro': return <QuantMacroPanel />;
         case 'inv-journal': return <TradingJournal />;
         default: return <InvestmentDashboard />;
       }
@@ -334,97 +309,43 @@ export function MainLayout() {
     );
   };
 
-  /* ── Mode-aware color helper ── */
-  const modeColor = (m: string) =>
-    m === 'bisnis' ? '#03DAC6' : m === 'investasi' ? '#FFD700' : '#BB86FC';
-  const modeColorClass = (m: string) =>
-    m === 'bisnis' ? 'text-[#03DAC6]' : m === 'investasi' ? 'text-[#FFD700]' : 'text-[#BB86FC]';
-
   /* ── Mode Switch Component ── */
-  const modeList: { key: BusinessMode; icon: LucideIcon; label: string }[] = [
-    { key: 'personal', icon: LayoutDashboard, label: t('biz.personal') },
-    { key: 'bisnis', icon: Briefcase, label: t('nav.bisnis') },
-    { key: 'investasi', icon: Gem, label: t('nav.investasi') },
-  ];
-
   const ModeSwitch = ({ collapsed }: { collapsed: boolean }) => (
-    <div className={cn('pb-3 mb-1', collapsed ? 'px-1.5' : 'px-2')}>
-      <div className={cn(
-        'relative flex items-center gap-1 p-[3px] rounded-xl bg-white/[0.03] border border-white/[0.05]',
-        collapsed && 'flex-col gap-1',
-      )}>
-        {/* Sliding pill indicator (expanded only) */}
-        {!collapsed && (
-          <div
-            className="absolute top-[3px] bottom-[3px] rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-            style={{
-              width: `calc((100% - 6px) / 3)`,
-              left: modeList.findIndex(m => m.key === mode) === 0
-                ? '3px'
-                : `calc(${modeList.findIndex(m => m.key === mode)} * ((100% - 6px) / 3) + 3px)`,
-              background: `${modeColor(mode)}12`,
-              border: `1px solid ${modeColor(mode)}25`,
-              boxShadow: `0 0 16px ${modeColor(mode)}15, inset 0 1px 0 ${modeColor(mode)}10`,
-            }}
-          />
-        )}
-        {modeList.map((m) => {
-          const isRegistered = m.key === 'bisnis' ? hasBisnis : m.key === 'investasi' ? hasInvestasi : true;
-          const isLocked = m.key !== 'personal' && !isUltimate;
-          const isActive = mode === m.key;
-          const Icon = m.icon;
-          return (
-            <button
-              key={m.key}
-              onClick={() => handleModeSwitch(m.key)}
-              className={cn(
-                'relative z-10 rounded-lg transition-all duration-200',
-                collapsed
-                  ? 'w-10 h-10 grid place-items-center mx-auto border border-white/[0.05] bg-white/[0.02]'
-                  : isActive
-                    ? 'flex-1 flex items-center justify-center gap-1.5 py-2'
-                    : 'flex-1 grid place-items-center py-2',
-                isActive ? modeColorClass(m.key) : 'text-white/30 hover:text-white/55',
-                isLocked && 'opacity-25 pointer-events-none',
-                !collapsed && !isActive && 'bg-white/[0.02] hover:bg-white/[0.04]',
-              )}
-              title={m.label}
-            >
-              {isLocked && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/50" />}
-              <Icon className={cn(
-                'shrink-0 transition-all duration-200',
-                collapsed ? 'h-4 w-4' : 'h-3.5 w-3.5',
-                isActive && 'drop-shadow-[0_0_4px_currentColor]',
-              )} strokeWidth={isActive ? 2.2 : 1.5} />
-              {/* Text: only show when expanded AND active */}
-              {!collapsed && isActive && (
-                <span className={cn(
-                  'text-[10px] font-bold uppercase tracking-wide whitespace-nowrap',
-                  'drop-shadow-[0_0_4px_currentColor]',
-                )}>
-                  {m.label}
-                </span>
-              )}
-              {/* Registered indicators */}
-              {!collapsed && isRegistered && m.key !== 'personal' && isUltimate && (
-                <CheckCircle2 className="h-2.5 w-2.5 shrink-0 opacity-70" />
-              )}
-              {collapsed && isRegistered && m.key !== 'personal' && isUltimate && (
-                <span className="absolute -top-0.5 -right-0.5 h-[7px] w-[7px] rounded-full" style={{ background: '#03DAC6', boxShadow: '0 0 6px rgba(3,218,198,0.6)' }} />
-              )}
-            </button>
-          );
-        })}
+    <div className={cn('px-2 pb-3 mb-2', !collapsed && 'px-3')}>
+      <div className={cn('flex items-center gap-0.5 p-0.5 rounded-xl bg-white/[0.03] border border-white/[0.04]', collapsed && 'flex-col')}>
+        {(['personal', 'bisnis', 'investasi'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => handleModeSwitch(m)}
+            className={cn(
+              'relative text-[10px] font-semibold rounded-lg transition-all duration-200',
+              collapsed ? 'p-2 mx-auto' : 'flex-1 py-1.5',
+              mode === m
+                ? m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC] shadow-sm'
+                  : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6] shadow-sm'
+                  : 'bg-[#FFD700]/20 text-[#FFD700] shadow-sm'
+                : 'text-white/35 hover:text-white/60',
+              m !== 'personal' && !isUltimate && 'opacity-30 pointer-events-none',
+            )}
+            title={collapsed ? (m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')) : undefined}
+          >
+            {m !== 'personal' && !isUltimate && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/60" />}
+            {collapsed ? (
+              m === 'personal' ? <LayoutDashboard className="h-3.5 w-3.5" />
+                : m === 'bisnis' ? <Briefcase className="h-3.5 w-3.5" />
+                : <Gem className="h-3.5 w-3.5" />
+            ) : (
+              m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );
 
   /* ── Shared sidebar nav renderer ── */
-  const renderNavItems = (collapsed: boolean, onNavigate?: (page: PageType) => void) => {
-    const activeColor = modeColor(mode);
-    const activeColorRgb = mode === 'bisnis' ? '3,218,198' : mode === 'investasi' ? '255,215,0' : '187,134,252';
-    return (
-    <nav className="relative flex-1 py-4 px-2 space-y-0.5 overflow-y-auto scrollbar-hide">
+  const renderNavItems = (collapsed: boolean, onNavigate?: (page: PageType) => void) => (
+    <nav className="relative flex-1 py-4 px-2 space-y-1 overflow-y-auto scrollbar-hide">
       <ModeSwitch collapsed={collapsed} />
       {navigation.map((item) => {
         const Icon = item.icon;
@@ -433,41 +354,37 @@ export function MainLayout() {
           <div key={item.id} className="relative group/nav">
             {isActive && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-                <div className="w-[3px] h-6 rounded-r-full"
-                  style={{ background: activeColor, boxShadow: `0 0 8px rgba(${activeColorRgb},0.4), 0 0 16px rgba(${activeColorRgb},0.15)` }} />
+                <div className="w-[3px] h-6 rounded-r-full bg-[#BB86FC]"
+                  style={{ boxShadow: '0 0 8px rgba(187,134,252,0.4), 0 0 16px rgba(187,134,252,0.15)' }} />
               </div>
             )}
             <button
               onClick={() => (onNavigate ? onNavigate(item.id) : navigateTo(item.id))}
               className={cn(
                 'flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-200 text-left relative overflow-hidden',
-                isActive ? 'text-[#BB86FC]' : 'text-white/35 hover:text-white/70 hover:bg-white/[0.04]',
-                !isActive && 'group-hover/nav:translate-x-1',
+                isActive ? 'bg-[#BB86FC]/[0.08] text-[#BB86FC]' : 'text-white/35 hover:text-white/70 hover:bg-white/[0.04]',
+                !isActive && 'group-hover/nav:translate-x-1 group-hover/nav:shadow-[0_0_12px_rgba(187,134,252,0.08)]',
                 'active:scale-[0.97]',
               )}
-              style={isActive ? {
-                background: `rgba(${activeColorRgb}, 0.08)`,
-                color: activeColor,
-              } : undefined}
               title={collapsed ? item.label : undefined}
             >
               {isActive && (
                 <div className="absolute inset-0 opacity-100"
-                  style={{ background: `radial-gradient(ellipse at 0% 50%, rgba(${activeColorRgb}, 0.06) 0%, transparent 70%)` }} />
+                  style={{ background: 'radial-gradient(ellipse at 0% 50%, rgba(187,134,252,0.06) 0%, transparent 70%)' }} />
               )}
               {!isActive && (
                 <div className="absolute inset-0 opacity-0 group-hover/nav:opacity-100 transition-opacity duration-300"
-                  style={{ background: `radial-gradient(ellipse at 0% 50%, rgba(${activeColorRgb}, 0.04) 0%, transparent 70%)` }} />
+                  style={{ background: 'radial-gradient(ellipse at 0% 50%, rgba(187,134,252,0.04) 0%, transparent 70%)' }} />
               )}
               <div className="relative flex items-center gap-3 w-full">
                 <Icon className={cn(
                   'h-[18px] w-[18px] shrink-0 transition-all duration-200',
-                  isActive ? 'drop-shadow-[0_0_4px_currentColor]' : 'text-white/25 group-hover/nav:text-white/60',
+                  isActive ? 'text-[#BB86FC] drop-shadow-[0_0_4px_rgba(187,134,252,0.3)]' : 'text-white/25 group-hover/nav:text-white/60',
                 )} strokeWidth={isActive ? 2.2 : 1.5} />
                 {!collapsed && (
                   <span className={cn(
                     'text-[13px] font-medium whitespace-nowrap transition-all duration-200',
-                    isActive ? '' : 'text-white/45 group-hover/nav:text-white/80',
+                    isActive ? 'text-[#BB86FC]' : 'text-white/45 group-hover/nav:text-white/80',
                   )}>{item.label}</span>
                 )}
                 {!collapsed && item.lock && (
@@ -496,8 +413,7 @@ export function MainLayout() {
         );
       })}
     </nav>
-    );
-  };
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-x-hidden w-full"
@@ -710,10 +626,10 @@ export function MainLayout() {
 
           {/* Page Content */}
           <main className={cn('flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out',
-            'pb-[100px] lg:pb-8', sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64')}>
+            'pb-[72px] lg:pb-8', sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64')}>
             {isTransitioning && (
               <div className="fixed left-0 right-0 z-50 h-[2px]" style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
-                <div className="h-full animate-pulse" style={{ background: modeColor(mode), boxShadow: `0 0 12px ${modeColor(mode)}66` }} />
+                <div className="h-full" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #BB86FC)', backgroundSize: '200% 100%', animation: 'progressShimmer 1s ease-in-out infinite', boxShadow: '0 0 12px rgba(187,134,252,0.4), 0 0 4px rgba(3,218,198,0.3)' }} />
               </div>
             )}
             <div className="max-w-6xl mx-auto">
@@ -726,65 +642,37 @@ export function MainLayout() {
       </div>
 
       {/* Bottom Navigation (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
-        style={{ background: 'rgba(13, 13, 13, 0.88)', backdropFilter: 'blur(24px) saturate(180%)', WebkitBackdropFilter: 'blur(24px) saturate(180%)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.06] safe-area-inset-bottom md:hidden"
+        style={{ background: 'rgba(13, 13, 13, 0.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
         {/* Mobile Mode Switch */}
-        <div className="relative flex items-center gap-0.5 px-2 py-1.5 border-b border-white/[0.04]">
-          {/* Sliding pill */}
-          <div
-            className="absolute top-[6px] bottom-[6px] rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-            style={{
-              width: `calc((100% - 20px) / 3)`,
-              left: `calc(${modeList.findIndex(m => m.key === mode)} * ((100% - 20px) / 3) + 10px)`,
-              background: `${modeColor(mode)}15`,
-              border: `1px solid ${modeColor(mode)}20`,
-              boxShadow: `0 0 12px ${modeColor(mode)}10`,
-            }}
-          />
-          {modeList.map((m) => {
-            const isActive = mode === m.key;
-            const isLocked = m.key !== 'personal' && !isUltimate;
-            const isRegistered = m.key === 'bisnis' ? hasBisnis : m.key === 'investasi' ? hasInvestasi : true;
-            const Icon = m.icon;
-            return (
-              <button key={m.key} onClick={() => handleModeSwitch(m.key)}
-                className={cn(
-                  'relative z-10 flex-1 flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200',
-                  isActive ? modeColorClass(m.key) : 'text-white/25',
-                  isLocked && 'opacity-25 pointer-events-none',
-                )}>
-                <Icon className={cn('h-3.5 w-3.5 shrink-0', isActive && 'drop-shadow-[0_0_3px_currentColor]')} strokeWidth={isActive ? 2.2 : 1.5} />
-                <span className="text-[10px] font-bold tracking-wide">{m.label}</span>
-                {isRegistered && m.key !== 'personal' && isUltimate && (
-                  <CheckCircle2 className="h-2.5 w-2.5 shrink-0 opacity-60" />
-                )}
-                {isLocked && <Lock className="absolute -top-0.5 -right-0.5 h-2 w-2 text-[#FFD700]/50" />}
+        {isUltimate && (
+          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-white/[0.04]">
+            {(['personal', 'bisnis', 'investasi'] as const).map((m) => (
+              <button key={m} onClick={() => handleModeSwitch(m)}
+                className={cn('flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all',
+                  mode === m ? (m === 'personal' ? 'bg-[#BB86FC]/20 text-[#BB86FC]' : m === 'bisnis' ? 'bg-[#03DAC6]/20 text-[#03DAC6]' : 'bg-[#FFD700]/20 text-[#FFD700]')
+                    : 'text-white/30')}>
+                {m === 'personal' ? t('biz.personal') : m === 'bisnis' ? t('nav.bisnis') : t('nav.investasi')}
               </button>
-            );
-          })}
-        </div>
-        {/* Mobile page nav items */}
-        <div className="flex items-center justify-around px-1 h-[50px]">
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-around px-2 h-[52px]">
           {navigation.slice(0, 5).map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
-                className="relative flex flex-col items-center justify-center py-1 px-1 rounded-lg min-w-0 flex-1 transition-all duration-200 active:scale-95">
+                className="relative grid place-items-center py-1.5 px-2 rounded-xl min-w-0 flex-1 transition-all duration-200 active:scale-95 [&>*]:block leading-none">
                 {isActive && (
                   <div className="absolute -top-0 left-1/2 -translate-x-1/2">
-                    <div className="w-5 h-[2.5px] rounded-full" style={{ background: modeColor(mode), boxShadow: `0 0 8px ${modeColor(mode)}66` }} />
+                    <div className="w-4 h-[3px] rounded-full bg-[#BB86FC]" style={{ boxShadow: '0 0 8px rgba(187,134,252,0.5), 0 2px 4px rgba(187,134,252,0.3)' }} />
                   </div>
                 )}
-                <Icon className={cn(
-                  'h-[18px] w-[18px] transition-all duration-200',
-                  isActive ? 'drop-shadow-[0_0_4px_currentColor]' : 'text-[#555]',
-                )} strokeWidth={isActive ? 2.2 : 1.5} style={isActive ? { color: modeColor(mode) } : undefined} />
-                <span className={cn(
-                  'text-[9px] mt-0.5 font-medium truncate w-full text-center leading-tight',
-                  isActive ? 'text-white/80' : 'text-white/25',
-                )}>{item.label}</span>
-                {item.lock && <Lock className="absolute top-0 right-1 h-2 w-2 text-[#FFD700]/40" />}
+                <div className="relative">
+                  <Icon className={cn('h-4.5 w-4.5 transition-all duration-200', isActive ? 'text-[#BB86FC] drop-shadow-[0_0_6px_rgba(187,134,252,0.4)]' : 'text-[#555]')} strokeWidth={isActive ? 2.2 : 1.5} />
+                  {item.lock && <Lock className="absolute -top-1 -right-1 h-2 w-2 text-[#FFD700]/50" />}
+                </div>
               </button>
             );
           })}
@@ -792,42 +680,13 @@ export function MainLayout() {
       </nav>
 
       {/* Footer (mobile) */}
-      <footer className="border-t border-white/[0.06] px-2 py-2 bg-[#0D0D0D]/50 pb-[56px] md:hidden">
+      <footer className="border-t border-white/[0.06] px-2 py-2 bg-[#0D0D0D]/50 pb-[60px] md:hidden">
         <div className="text-center text-[11px] text-white/20">Creator: Tyger Earth | Ahtjong Labs</div>
       </footer>
 
       {/* Dialogs */}
-      <BusinessRegisterDialog
-        open={showBizRegister}
-        onOpenChange={(o) => { setShowBizRegister(o); if (!o) {
-          // Only reset to personal if registration was cancelled (no business exists yet)
-          const bizExists = useBusinessStore.getState().businesses.some(b => b.category === 'bisnis');
-          if (!bizExists) { setMode('personal'); setCurrentPage('dashboard'); setPageKey(prev => prev + 1); }
-        }}}
-        onSuccess={() => {
-          // Navigate to biz dashboard — businesses store already updated by dialog handleSubmit
-          const biz = useBusinessStore.getState().businesses.find(b => b.category === 'bisnis');
-          if (biz) setActiveBusiness(biz);
-          setMode('bisnis');
-          setCurrentPage('biz-dashboard');
-          setPageKey(prev => prev + 1);
-        }}
-      />
-      <InvestmentRegisterDialog
-        open={showInvRegister}
-        onOpenChange={(o) => { setShowInvRegister(o); if (!o) {
-          const bizExists = useBusinessStore.getState().businesses.some(b => b.category === 'investasi');
-          if (!bizExists) { setMode('personal'); setCurrentPage('dashboard'); setPageKey(prev => prev + 1); }
-        }}}
-        onSuccess={() => {
-          // Navigate to inv dashboard — businesses store already updated by dialog handleSubmit
-          const biz = useBusinessStore.getState().businesses.find(b => b.category === 'investasi');
-          if (biz) setActiveBusiness(biz);
-          setMode('investasi');
-          setCurrentPage('inv-dashboard');
-          setPageKey(prev => prev + 1);
-        }}
-      />
+      <BusinessRegisterDialog open={showBizRegister} onOpenChange={(o) => { setShowBizRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />
+      <InvestmentRegisterDialog open={showInvRegister} onOpenChange={(o) => { setShowInvRegister(o); if (!o) { setMode('personal'); setCurrentPage('dashboard'); } }} />
       {quickTransactionVisible && mode === 'personal' && <QuickTransaction />}
     </div>
   );

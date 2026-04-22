@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { AssetType } from '@/lib/asset-catalogue';
+import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import {
   Card,
   CardContent,
@@ -22,18 +22,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -45,12 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Package,
-  LineChart, RefreshCw, X, CircleDollarSign, Calculator, Info,
-} from 'lucide-react';
-import InvestmentChart from '@/components/investment/InvestmentChart';
-import AssetSearchInput, { type SelectedAsset } from '@/components/investment/AssetSearchInput';
+import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -76,39 +65,7 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   saham: { bg: 'bg-purple-500/15', text: 'text-purple-400' },
   crypto: { bg: 'bg-teal-500/15', text: 'text-teal-400' },
   forex: { bg: 'bg-pink-500/15', text: 'text-pink-400' },
-  komoditas: { bg: 'bg-yellow-500/15', text: 'text-yellow-400' },
-  indeks: { bg: 'bg-blue-500/15', text: 'text-blue-400' },
 };
-
-// Currency formatting based on asset type
-function getInvCurrencyLabel(type: string): string {
-  if (type === 'saham') return 'IDR';
-  return 'USD';
-}
-
-function getInvCurrencyPrefix(type: string): string {
-  if (type === 'saham') return 'Rp';
-  if (type === 'crypto') return '$';
-  if (type === 'komoditas') return '$';
-  if (type === 'indeks') return '';
-  return '';
-}
-
-function formatInvPrice(type: string, amount: number): string {
-  if (type === 'saham') {
-    return 'Rp' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
-  }
-  if (type === 'crypto' || type === 'komoditas') {
-    return '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
-  }
-  if (type === 'indeks') {
-    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
-  }
-  // forex
-  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 }).format(amount);
-}
-
-const USD_IDR_RATE = 15_500;
 
 const STATUS_VARIANTS: Record<string, string> = {
   open: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
@@ -118,14 +75,15 @@ const STATUS_VARIANTS: Record<string, string> = {
 export default function InvestmentPortfolio() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
+  const { formatAmount } = useCurrencyFormat();
 
   const [portfolios, setPortfolios] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Sheet state (replaces Dialog for add/edit)
-  const [sheetOpen, setSheetOpen] = useState(false);
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PortfolioItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -141,44 +99,10 @@ export default function InvestmentPortfolio() {
     currentPrice: '',
   });
 
-  // Search asset selection
-  const [selectedAsset, setSelectedAsset] = useState<SelectedAsset | null>(null);
-
   // Delete dialog state
   const [deleteTarget, setDeleteTarget] = useState<PortfolioItem | null>(null);
 
-  // Chart dialog state
-  const [chartDialog, setChartDialog] = useState<{ symbol: string; type: string; name?: string } | null>(null);
-
-  // Live prices state
-  const [livePrices, setLivePrices] = useState<Record<string, { price: number; change24h: number }>>({});
-
   const businessId = activeBusiness?.id;
-
-  // ── Computed: nominal (quantity × entryPrice) ────────────────────────────────
-  const computedNominal = useMemo(() => {
-    const q = parseFloat(form.quantity) || 0;
-    const p = parseFloat(form.entryPrice) || 0;
-    return q * p;
-  }, [form.quantity, form.entryPrice]);
-
-  // ── Computed: is entry price matching live price? ────────────────────────────
-  const isLivePrice = useMemo(() => {
-    if (!selectedAsset || !selectedAsset.currentPrice) return false;
-    const entry = parseFloat(form.entryPrice);
-    if (!entry || entry === 0) return false;
-    return Math.abs(entry - selectedAsset.currentPrice) < 0.01;
-  }, [selectedAsset, form.entryPrice]);
-
-  // ── Computed: IDR conversion hint for non-saham assets ──────────────────────
-  const idrConversionHint = useMemo(() => {
-    if (form.type === 'saham') return null;
-    const nominal = computedNominal;
-    if (!nominal || nominal <= 0) return null;
-    const idrAmount = nominal * USD_IDR_RATE;
-    const formatted = 'Rp' + new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(idrAmount);
-    return `≈ ${formatted} (estimasi kurs ~${new Intl.NumberFormat('id-ID').format(USD_IDR_RATE)})`;
-  }, [form.type, computedNominal]);
 
   const fetchPortfolios = useCallback(() => {
     if (!businessId) return;
@@ -196,23 +120,6 @@ export default function InvestmentPortfolio() {
   useEffect(() => {
     fetchPortfolios();
   }, [fetchPortfolios]);
-
-  const fetchLivePrices = useCallback(() => {
-    if (!businessId || portfolios.length === 0) return;
-    const symbols = portfolios.map((p) => ({ type: p.type, symbol: p.symbol }));
-    fetch(`/api/business/${businessId}/market-data/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ symbols }),
-    })
-      .then((r) => (r.ok ? r.json() : { prices: {} }))
-      .then((data: { prices?: Record<string, { price: number; change24h: number }> }) => setLivePrices(data.prices || {}))
-      .catch(() => {});
-  }, [businessId, portfolios]);
-
-  useEffect(() => {
-    fetchLivePrices();
-  }, [fetchLivePrices]);
 
   const filtered = portfolios.filter((p) => {
     if (typeFilter !== 'all' && p.type !== typeFilter) return false;
@@ -235,13 +142,12 @@ export default function InvestmentPortfolio() {
       status: 'open',
       currentPrice: '',
     });
-    setSelectedAsset(null);
     setEditing(null);
   };
 
   const openCreate = () => {
     resetForm();
-    setSheetOpen(true);
+    setDialogOpen(true);
   };
 
   const openEdit = (item: PortfolioItem) => {
@@ -258,18 +164,10 @@ export default function InvestmentPortfolio() {
       status: item.status,
       currentPrice: item.currentPrice.toString(),
     });
-    setSelectedAsset({
-      symbol: item.symbol,
-      name: item.name || '',
-      type: item.type as AssetType,
-      currentPrice: item.currentPrice,
-    });
-    setSheetOpen(true);
+    setDialogOpen(true);
   };
 
-  // ── FIX: preventDefault to stop page redirect ──────────────────────────────
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
     if (!businessId || !form.symbol || !form.entryPrice || !form.quantity) return;
     setSaving(true);
     try {
@@ -290,7 +188,7 @@ export default function InvestmentPortfolio() {
       });
       if (!res.ok) throw new Error();
       toast.success(editing ? t('inv.portfolioUpdated') : t('inv.portfolioCreated'));
-      setSheetOpen(false);
+      setDialogOpen(false);
       fetchPortfolios();
     } catch {
       toast.error(t('common.error'));
@@ -332,12 +230,10 @@ export default function InvestmentPortfolio() {
               <SelectValue placeholder="Tipe" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('inv.dashAllType')}</SelectItem>
-              <SelectItem value="crypto">{t('inv.typeCrypto')}</SelectItem>
-              <SelectItem value="saham">{t('inv.typeSaham')}</SelectItem>
-              <SelectItem value="forex">{t('inv.typeForex')}</SelectItem>
-              <SelectItem value="komoditas">Komoditas</SelectItem>
-              <SelectItem value="indeks">Indeks</SelectItem>
+              <SelectItem value="all">Semua Tipe</SelectItem>
+              <SelectItem value="saham">Saham</SelectItem>
+              <SelectItem value="crypto">Crypto</SelectItem>
+              <SelectItem value="forex">Forex</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -345,23 +241,14 @@ export default function InvestmentPortfolio() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('inv.dashAllStatus')}</SelectItem>
-              <SelectItem value="open">{t('inv.statusOpen')}</SelectItem>
-              <SelectItem value="closed">{t('inv.statusClosed')}</SelectItem>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="open">Terbuka</SelectItem>
+              <SelectItem value="closed">Tertutup</SelectItem>
             </SelectContent>
           </Select>
           <Badge variant="outline" className="border-white/[0.1] text-white/50 text-xs">
             {filtered.length} item
           </Badge>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 px-2 text-white/40 hover:text-white hover:bg-white/10"
-            onClick={fetchLivePrices}
-            title="Refresh prices"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
         </div>
         <Button
           onClick={openCreate}
@@ -413,22 +300,10 @@ export default function InvestmentPortfolio() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <Badge variant="outline" className={cn('text-[10px] border-0 px-2 py-0', STATUS_VARIANTS[item.status] || '')}>
                         {item.status === 'open' ? t('inv.statusOpen') : t('inv.statusClosed')}
                       </Badge>
-                      {(() => {
-                        const livePrice = livePrices[item.symbol];
-                        if (!livePrice) return null;
-                        return (
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-white/40">{t('inv.dashTicker')}</span>
-                            <span className={cn('text-xs font-medium', livePrice.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                              {livePrice.change24h >= 0 ? '+' : ''}{livePrice.change24h.toFixed(2)}%
-                            </span>
-                          </div>
-                        );
-                      })()}
                     </div>
                   </div>
 
@@ -436,11 +311,11 @@ export default function InvestmentPortfolio() {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <p className="text-white/40 mb-0.5">{t('inv.entryPrice')}</p>
-                      <p className="text-white/80 font-medium">{formatInvPrice(item.type, item.entryPrice)}</p>
+                      <p className="text-white/80 font-medium">{formatAmount(item.entryPrice)}</p>
                     </div>
                     <div>
                       <p className="text-white/40 mb-0.5">{t('inv.currentPrice')}</p>
-                      <p className="text-white/80 font-medium">{formatInvPrice(item.type, item.currentPrice)}</p>
+                      <p className="text-white/80 font-medium">{formatAmount(item.currentPrice)}</p>
                     </div>
                     <div>
                       <p className="text-white/40 mb-0.5">{t('inv.quantity')}</p>
@@ -451,7 +326,7 @@ export default function InvestmentPortfolio() {
                       <p className={cn('font-bold flex items-center gap-0.5', pnlColor(item.unrealizedPnl))}>
                         {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                         {isPositive ? '+' : ''}
-                        {formatInvPrice(item.type, item.unrealizedPnl)}
+                        {formatAmount(item.unrealizedPnl)}
                       </p>
                     </div>
                   </div>
@@ -479,25 +354,16 @@ export default function InvestmentPortfolio() {
                   {(item.targetPrice || item.stopLoss) && (
                     <div className="flex gap-3 text-[10px] text-white/30">
                       {item.targetPrice && (
-                        <span>Target: {formatInvPrice(item.type, item.targetPrice)}</span>
+                        <span>Target: {formatAmount(item.targetPrice)}</span>
                       )}
                       {item.stopLoss && (
-                        <span>SL: {formatInvPrice(item.type, item.stopLoss)}</span>
+                        <span>SL: {formatAmount(item.stopLoss)}</span>
                       )}
                     </div>
                   )}
 
                   {/* Actions */}
                   <div className="flex items-center justify-end gap-1 pt-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-white/40 hover:text-[#BB86FC] hover:bg-white/10"
-                      onClick={() => setChartDialog({ symbol: item.symbol, type: item.type, name: item.name })}
-                      title="View Chart"
-                    >
-                      <LineChart className="h-3.5 w-3.5" />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -522,319 +388,164 @@ export default function InvestmentPortfolio() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          Add/Edit Sheet (slides in from right) — replaces old Dialog
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-[480px] bg-[#1A1A2E] border-white/[0.06] text-white overflow-y-auto p-0"
-        >
-          <SheetHeader className="px-6 pt-8 pb-4">
-            <SheetTitle className="text-white text-lg">
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-[#1A1A2E] border-white/[0.06] text-white sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white">
               {editing ? t('common.edit') : t('inv.addPortfolio')}
-            </SheetTitle>
-            <SheetDescription className="text-white/60 text-sm">
-              {editing
-                ? 'Perbarui detail posisi portofolio Anda.'
-                : 'Tambahkan posisi baru ke portofolio Anda.'}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogTitle>
+            <DialogDescription className="text-white/60">
+              {editing ? t('inv.portfolioUpdated') : t('inv.portfolioCreated')}
+            </DialogDescription>
+          </DialogHeader>
 
-          <form onSubmit={handleSave} className="flex flex-col gap-5 px-6 pb-8">
-            {/* ── Asset Search Box ─────────────────────────────────────────── */}
-            <div className="space-y-2">
-              <Label className="text-white/80 text-sm">{t('inv.searchAsset')} *</Label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <AssetSearchInput
-                    businessId={businessId!}
-                    value={selectedAsset}
-                    onSelect={(asset) => {
-                      setSelectedAsset(asset);
-                      setForm({
-                        ...form,
-                        type: asset.type,
-                        symbol: asset.symbol,
-                        name: asset.name,
-                        currentPrice: asset.currentPrice ? asset.currentPrice.toString() : '',
-                        entryPrice: asset.currentPrice ? asset.currentPrice.toString() : form.entryPrice,
-                      });
-                    }}
-                  />
-                </div>
-                {selectedAsset && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-12 w-12 p-0 shrink-0 text-white/40 hover:text-[#CF6679] hover:bg-white/10 rounded-xl"
-                    onClick={() => {
-                      setSelectedAsset(null);
-                      setForm({ ...form, symbol: '', name: '', type: 'saham', entryPrice: '', currentPrice: '' });
-                    }}
-                    title="Reset"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <p className="text-[11px] text-white/25">{t('inv.searchAssetHint')}</p>
-            </div>
-
-            {/* ── Live Price Card (shown when asset is selected) ────────────── */}
-            {selectedAsset && selectedAsset.currentPrice > 0 && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/[0.15]">
-                <div className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-lg shrink-0',
-                  TYPE_COLORS[selectedAsset.type]?.bg || 'bg-purple-500/15'
-                )}>
-                  <span className={cn('text-xs font-bold', TYPE_COLORS[selectedAsset.type]?.text || 'text-purple-400')}>
-                    {selectedAsset.type.slice(0, 2).toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-semibold">{selectedAsset.symbol}</span>
-                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0 h-5 font-semibold">
-                      LIVE
-                    </Badge>
-                  </div>
-                  <p className="text-white/40 text-xs truncate">{selectedAsset.name}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-white text-sm font-bold">
-                    {formatInvPrice(selectedAsset.type, selectedAsset.currentPrice)}
-                  </p>
-                  <p className="text-white/30 text-[10px]">{t('inv.marketPrice')}</p>
-                </div>
-              </div>
-            )}
-
-            {/* ── Status ────────────────────────────────────────────────────── */}
-            <div className="space-y-2">
-              <Label className="text-white/80 text-sm">{t('inv.status')}</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">{t('inv.statusOpen')}</SelectItem>
-                  <SelectItem value="closed">{t('inv.statusClosed')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* ── Manual fallback (no asset selected) ───────────────────────── */}
-            {!selectedAsset && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-white/80 text-sm">{t('inv.portfolioType')}</Label>
-                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                    <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="saham">{t('inv.typeSaham')}</SelectItem>
-                      <SelectItem value="crypto">{t('inv.typeCrypto')}</SelectItem>
-                      <SelectItem value="forex">{t('inv.typeForex')}</SelectItem>
-                      <SelectItem value="komoditas">Komoditas</SelectItem>
-                      <SelectItem value="indeks">Indeks</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-white/80 text-sm">{t('inv.symbol')} *</Label>
-                    <Input
-                      value={form.symbol}
-                      onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
-                      placeholder="BBCA"
-                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-white/80 text-sm">{t('inv.assetName')}</Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="Bank BC"
-                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ── Currency hint ─────────────────────────────────────────────── */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] w-fit">
-              <CircleDollarSign className="h-3.5 w-3.5 text-white/30" />
-              <span className="text-[11px] text-white/40">Mata uang:</span>
-              <span className="text-[11px] font-semibold text-white/60">
-                {getInvCurrencyPrefix(form.type)} {getInvCurrencyLabel(form.type)}
-              </span>
-            </div>
-
-            {/* ── Entry Price ───────────────────────────────────────────────── */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label className="text-white/80 text-sm">{t('inv.entryPrice')} ({getInvCurrencyLabel(form.type)}) *</Label>
-                {isLivePrice && (
-                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] px-1.5 py-0 h-4 font-bold tracking-wide">
-                    LIVE
-                  </Badge>
-                )}
-              </div>
-              <Input
-                type="number"
-                value={form.entryPrice}
-                onChange={(e) => setForm({ ...form, entryPrice: e.target.value })}
-                placeholder={form.type === 'saham' ? '9750' : '65000'}
-                min="0"
-                step="any"
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
-              />
-            </div>
-
-            {/* ── Quantity (Jumlah Aset) ────────────────────────────────────── */}
-            <div className="space-y-2">
-              <Label className="text-white/80 text-sm">Jumlah Aset *</Label>
-              <Input
-                type="number"
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                placeholder="0"
-                min="0"
-                step="any"
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
-              />
-              <div className="flex items-start gap-1.5">
-                <Info className="h-3 w-3 text-white/25 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-white/30 leading-relaxed">
-                  Contoh: 0.5 BTC, 100 lembar BBCA, 1000 EUR
-                </p>
-              </div>
-            </div>
-
-            {/* ── Nominal Posisi (auto-calculated, read-only) ───────────────── */}
-            <div className="space-y-2">
-              <Label className="text-white/80 text-sm flex items-center gap-1.5">
-                <Calculator className="h-3.5 w-3.5 text-white/40" />
-                Nominal Posisi
-                <span className="text-white/25 text-[11px] font-normal">(otomatis)</span>
-              </Label>
-              <div className={cn(
-                'flex items-center gap-3 px-4 py-3.5 rounded-xl border',
-                computedNominal > 0
-                  ? 'bg-[#BB86FC]/[0.07] border-[#BB86FC]/[0.15]'
-                  : 'bg-white/[0.03] border-white/[0.06]'
-              )}>
-                <span className={cn(
-                  'text-lg font-bold',
-                  computedNominal > 0 ? 'text-[#BB86FC]' : 'text-white/30'
-                )}>
-                  {computedNominal > 0
-                    ? formatInvPrice(form.type, computedNominal)
-                    : '—'}
-                </span>
-                <span className="text-white/25 text-[11px]">
-                  {computedNominal > 0 ? `Total Investasi (${getInvCurrencyLabel(form.type)})` : ''}
-                </span>
-              </div>
-              {/* IDR conversion hint for non-saham */}
-              {idrConversionHint && (
-                <div className="flex items-start gap-1.5">
-                  <Info className="h-3 w-3 text-white/20 mt-0.5 shrink-0" />
-                  <p className="text-[11px] text-white/30 leading-relaxed">{idrConversionHint}</p>
-                </div>
-              )}
-            </div>
-
-            {/* ── Target Price & Stop Loss ──────────────────────────────────── */}
+          <form onSubmit={handleSave} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-white/80 text-sm">{t('inv.targetPrice')} ({getInvCurrencyLabel(form.type)})</Label>
+                <Label className="text-white/80">{t('inv.portfolioType')} *</Label>
+                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="saham">{t('inv.typeSaham')}</SelectItem>
+                    <SelectItem value="crypto">{t('inv.typeCrypto')}</SelectItem>
+                    <SelectItem value="forex">{t('inv.typeForex')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/80">{t('inv.status')}</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">{t('inv.statusOpen')}</SelectItem>
+                    <SelectItem value="closed">{t('inv.statusClosed')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-white/80">{t('inv.symbol')} *</Label>
+                <Input
+                  value={form.symbol}
+                  onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
+                  placeholder="BBCA"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/80">{t('inv.assetName')}</Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Bank BC"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-white/80">{t('inv.entryPrice')} *</Label>
+                <Input
+                  type="number"
+                  value={form.entryPrice}
+                  onChange={(e) => setForm({ ...form, entryPrice: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  step="any"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/80">{t('inv.currentPrice')}</Label>
+                <Input
+                  type="number"
+                  value={form.currentPrice}
+                  onChange={(e) => setForm({ ...form, currentPrice: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  step="any"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label className="text-white/80">{t('inv.quantity')} *</Label>
+                <Input
+                  type="number"
+                  value={form.quantity}
+                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  step="any"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/80">{t('inv.targetPrice')}</Label>
                 <Input
                   type="number"
                   value={form.targetPrice}
                   onChange={(e) => setForm({ ...form, targetPrice: e.target.value })}
                   placeholder="0"
                   step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80 text-sm">{t('inv.stopLoss')} ({getInvCurrencyLabel(form.type)})</Label>
+                <Label className="text-white/80">{t('inv.stopLoss')}</Label>
                 <Input
                   type="number"
                   value={form.stopLoss}
                   onChange={(e) => setForm({ ...form, stopLoss: e.target.value })}
                   placeholder="0"
                   step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
                 />
               </div>
             </div>
 
-            {/* ── Notes ─────────────────────────────────────────────────────── */}
             <div className="space-y-2">
-              <Label className="text-white/80 text-sm">{t('inv.journalNotes')}</Label>
+              <Label className="text-white/80">{t('inv.journalNotes')}</Label>
               <Textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 placeholder="Catatan..."
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[80px] resize-none"
+                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[70px]"
               />
             </div>
 
-            {/* ── Footer ────────────────────────────────────────────────────── */}
-            <SheetFooter className="flex-row gap-3 pt-2 px-0">
+            <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setSheetOpen(false)}
-                className="flex-1 border-white/[0.1] text-white hover:bg-white/10 h-10"
+                onClick={() => setDialogOpen(false)}
+                className="border-white/[0.1] text-white hover:bg-white/10"
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !form.symbol || !form.entryPrice || !form.quantity}
-                className="flex-1 bg-[#BB86FC] text-black hover:bg-[#9B6FDB] h-10 font-semibold"
+                className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
               >
-                {saving ? (
-                  <span className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </span>
-                ) : (
-                  t('common.save')
-                )}
+                {t('common.save')}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
-
-      {/* Chart Dialog (kept as Dialog — fine for chart view) */}
-      <Dialog open={!!chartDialog} onOpenChange={() => setChartDialog(null)}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.06] text-white sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-          {chartDialog && (
-            <>
-              <DialogHeader className="px-6 pt-6">
-                <DialogTitle className="text-white flex items-center gap-2">
-                  <LineChart className="h-5 w-5 text-[#BB86FC]" />
-                  {chartDialog.symbol}
-                  {chartDialog.name && <span className="text-white/40 text-sm font-normal">{chartDialog.name}</span>}
-                </DialogTitle>
-              </DialogHeader>
-              <InvestmentChart symbol={chartDialog.symbol} type={chartDialog.type as 'saham' | 'crypto' | 'forex'} height={400} />
-            </>
-          )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation (kept as AlertDialog — fine for confirmation) */}
+      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent className="bg-[#1A1A2E] border-white/[0.06] text-white">
           <AlertDialogHeader>

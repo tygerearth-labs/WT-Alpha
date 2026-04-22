@@ -35,17 +35,13 @@ export async function notifyTransaction(
     }).format(amount);
 
     const title = `${typeLabel} Baru`;
-
-    // Build a structured multi-line message
-    const lines: string[] = [];
+    let message = `${typeLabel} ${formattedAmount}`;
     if (categoryName) {
-      lines.push(`Kategori: ${categoryName}`);
+      message += ` untuk ${categoryName}`;
     }
-    lines.push(`Nominal: ${formattedAmount}`);
     if (description) {
-      lines.push(`Keterangan: ${description}`);
+      message += ` — ${description}`;
     }
-    const message = lines.join('\n');
 
     await db.notification.create({
       data: {

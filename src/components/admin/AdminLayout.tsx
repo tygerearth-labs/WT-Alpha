@@ -29,6 +29,7 @@ import {
   ArrowLeftRight,
   Activity,
   Bell,
+  Search,
   Megaphone,
   HelpCircle,
 } from 'lucide-react';

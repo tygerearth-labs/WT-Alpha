@@ -94,6 +94,7 @@ function Sparkline({ data, color, width = 60, height = 24 }: { data: number[]; c
 function MetricRow({
   label,
   value,
+  formatted,
   change,
   sparkData,
   color,
@@ -101,6 +102,7 @@ function MetricRow({
 }: {
   label: string;
   value: number;
+  formatted: string;
   change: number;
   sparkData: number[];
   color: string;
@@ -241,6 +243,7 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
             <MetricRow
               label={t('dashboard.income')}
               value={mc.currentMonthIncome}
+              formatted={formatAmount(mc.currentMonthIncome)}
               change={mc.incomeChange}
               sparkData={incomeSpark}
               color={THEME.secondary}
@@ -259,6 +262,7 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
             <MetricRow
               label={t('dashboard.expense')}
               value={mc.currentMonthExpense}
+              formatted={formatAmount(mc.currentMonthExpense)}
               change={mc.expenseChange}
               sparkData={expenseSpark}
               color={THEME.destructive}

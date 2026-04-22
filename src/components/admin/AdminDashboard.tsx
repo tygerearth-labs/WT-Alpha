@@ -15,7 +15,7 @@ import {
   Activity, TrendingUp, TrendingDown, UserCheck, UserX, Crown, Sparkles,
   RefreshCw, ArrowUpRight, ArrowDownRight, Zap, Database, Wallet,
   Clock, BarChart3, Star, Target, Bell, FileText, Link,
-  ChevronRight, Loader2, History,
+  ChevronRight, FileDown, Loader2, History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

@@ -164,7 +164,6 @@ export async function GET(
       profitMargin,
       totalKasBesar,
       totalKasKecil,
-      totalKasKeluar: totalExpense,
       netCash: totalKasBesar + totalKasKecil - totalExpense,
       pendingInvoices,
       totalHutang,

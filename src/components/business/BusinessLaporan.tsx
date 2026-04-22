@@ -244,7 +244,7 @@ export default function BusinessLaporan() {
         styles: { fontSize: 9 },
       });
 
-      yPos = (doc as unknown as Record<string, unknown>).lastAutoTable != null ? ((doc as unknown as Record<string, Record<string, number>>).lastAutoTable.finalY + 15) : yPos + 60;
+      yPos = (doc as unknown as Record<string, number>).lastAutoTable?.finalY + 15 || yPos + 60;
 
       // Sales table
       if (data.sales.length > 0) {

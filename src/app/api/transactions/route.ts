@@ -123,22 +123,6 @@ export async function POST(request: NextRequest) {
       });
 
       if (!category) {
-        // Enforce plan limit on categories before auto-creating
-        const user = await db.user.findUnique({
-          where: { id: userId },
-          select: { maxCategories: true },
-        });
-
-        if (user) {
-          const categoryCount = await db.category.count({ where: { userId } });
-          if (categoryCount >= user.maxCategories) {
-            return NextResponse.json(
-              { error: `Category limit (${user.maxCategories}) reached. Please select an existing category or upgrade your plan.`, code: 'LIMIT_REACHED' },
-              { status: 403 },
-            );
-          }
-        }
-
         category = await db.category.create({
           data: {
             name: defaultCategoryName,

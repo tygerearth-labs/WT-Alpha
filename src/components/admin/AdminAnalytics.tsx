@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   TrendingUp, TrendingDown, DollarSign, BarChart3,
-  PieChart as PieChartIcon, Target, Activity,
-  RefreshCw, ArrowUpRight, ArrowDownRight,
+  PieChart as PieChartIcon, Users, Target, Activity,
+  RefreshCw, ArrowUpRight, ArrowDownRight, Wallet,
   Percent, AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
