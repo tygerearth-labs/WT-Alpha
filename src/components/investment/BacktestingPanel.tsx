@@ -213,6 +213,8 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
   const [data, setData] = useState<BacktestData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [weeklyOpen, setWeeklyOpen] = useState(false);
   const weeklyRef = useRef<HTMLDivElement>(null);
 
@@ -242,6 +244,9 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
         initialBalance: initialBalance || '10000',
         riskPerTrade: riskPerTrade || '2',
       });
+      // Add date range if set
+      if (startDate) params.set('startDate', startDate);
+      if (endDate) params.set('endDate', endDate);
       const url = `/api/business/${businessId}/backtest?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -256,13 +261,13 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
     } finally {
       setLoading(false);
     }
-  }, [businessId, selectedAsset, strategy, initialBalance, riskPerTrade]);
+  }, [businessId, selectedAsset, startDate, endDate]); // Remove strategy, initialBalance, riskPerTrade
 
   useEffect(() => {
     if (selectedAsset) {
       fetchBacktest();
     }
-  }, [fetchBacktest, selectedAsset]);
+  }, [selectedAsset?.key]); // Only re-fetch when asset changes
 
   // ── Formatters ──────────────────────────────────────────────────────────
   const fmtPrice = useCallback((type: string, val: number) => {
@@ -442,13 +447,37 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
               </SelectContent>
             </Select>
 
-            {/* Refresh */}
+            {/* Date Range */}
+            <div className="flex items-center gap-1">
+              <CalendarDays className="h-3 w-3 text-white/30" />
+              <Input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="h-8 w-[130px] bg-white/[0.04] border-white/[0.08] text-[10px] text-white/80 font-mono px-2"
+                max={endDate || undefined}
+              />
+              <span className="text-[10px] text-white/25">→</span>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="h-8 w-[130px] bg-white/[0.04] border-white/[0.08] text-[10px] text-white/80 font-mono px-2"
+                min={startDate || undefined}
+              />
+            </div>
+
+            {/* Run Backtest Button */}
             <button
               onClick={fetchBacktest}
               disabled={loading}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-colors disabled:opacity-40"
+              className={cn(
+                "flex h-8 items-center justify-center rounded-lg px-3 gap-1.5 text-[10px] font-bold transition-colors disabled:opacity-40",
+                "bg-[#BB86FC]/15 border border-[#BB86FC]/25 text-[#BB86FC] hover:bg-[#BB86FC]/25"
+              )}
             >
-              <RefreshCw className={cn('h-3.5 w-3.5 text-white/50', loading && 'animate-spin')} />
+              <Zap className="h-3 w-3" />
+              {loading ? 'Running...' : 'Run'}
             </button>
 
             {/* Strategy badge */}

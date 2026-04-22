@@ -1425,6 +1425,10 @@ export async function GET(
     const weeksParam = parseInt(searchParams.get('weeks') || '8', 10);
     const numWeeks = Math.max(1, Math.min(26, isNaN(weeksParam) ? 8 : weeksParam));
 
+    // Date range params
+    const startDateParam = searchParams.get('startDate') || '';
+    const endDateParam = searchParams.get('endDate') || '';
+
     // New strategy params
     const strategyParam = searchParams.get('strategy') || 'smartmoney';
     const initialBalanceParam = parseFloat(searchParams.get('initialBalance') || '10000');
@@ -1436,8 +1440,17 @@ export async function GET(
     const initialBalance = Math.max(100, isNaN(initialBalanceParam) ? 10000 : initialBalanceParam);
     const riskPerTrade = Math.max(1, Math.min(5, isNaN(riskPerTradeParam) ? 2 : riskPerTradeParam));
 
-    // We need more days for strategy indicators (min 60 days recommended)
-    const daysNeeded = Math.max(numWeeks * 8, 60);
+    // Calculate days needed: if date range given, use that; otherwise use weeks
+    let daysNeeded: number;
+    if (startDateParam && endDateParam) {
+      const start = new Date(startDateParam + 'T00:00:00Z');
+      const end = new Date(endDateParam + 'T00:00:00Z');
+      const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      // Need extra days for indicators (lookback buffer)
+      daysNeeded = Math.max(diffDays + 30, 90);
+    } else {
+      daysNeeded = Math.max(numWeeks * 8, 60);
+    }
 
     if (!symbol) {
       return NextResponse.json({ error: 'Missing symbol parameter' }, { status: 400 });
@@ -1474,11 +1487,22 @@ export async function GET(
       dailyCandles = dailyCandles.slice(-daysNeeded);
     }
 
+    // Apply date range filter if provided
+    if (startDateParam || endDateParam) {
+      dailyCandles = dailyCandles.filter(c => {
+        if (startDateParam && c.date < startDateParam) return false;
+        if (endDateParam && c.date > endDateParam) return false;
+        return true;
+      });
+    }
+
     // Group into weeks
     const weeklyData = groupIntoWeeks(dailyCandles);
 
-    // Only return requested number of weeks
-    const trimmedWeekly = weeklyData.slice(-numWeeks);
+    // Only return requested number of weeks (only if no date range specified)
+    const trimmedWeekly = startDateParam || endDateParam
+      ? weeklyData
+      : weeklyData.slice(-numWeeks);
 
     // Compute summary
     const summary = computeSummary(trimmedWeekly);

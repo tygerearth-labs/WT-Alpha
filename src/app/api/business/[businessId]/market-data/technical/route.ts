@@ -1936,6 +1936,22 @@ export async function GET(
     const { candles, closes } = ohlcvData;
     const currentPrice = closes[closes.length - 1] ?? 0;
 
+    // ── Price Reconciliation ──────────────────────────────────────────
+    // Use live price when available and reliable; otherwise fall back to OHLC close.
+    // This ensures AI signals, entry/SL/TP zones, and displayed price all match.
+    let effectivePrice = currentPrice;
+    if (price > 0 && currentPrice > 0) {
+      // If live price exists, use it for signal generation
+      // But check for reasonable divergence (< 5% to avoid API errors)
+      const divergence = Math.abs(price - currentPrice) / currentPrice;
+      if (divergence < 0.05) {
+        effectivePrice = price; // Live price is close enough, use it
+      }
+      // If divergence > 5%, likely a data error — keep OHLC price
+    } else if (price > 0) {
+      effectivePrice = price; // No OHLC data but have live price
+    }
+
     // ── Compute Basic Technical Indicators ──────────────────────────────
     const rsiValue = computeRSI(closes, 14);
     const macdResult = computeMACD(closes);
@@ -1957,7 +1973,7 @@ export async function GET(
       candles,
       closes,
       ohlcvData.volumes,
-      currentPrice,
+      effectivePrice,
       rsiValue,
       macdResult,
       bbResult,
@@ -1981,7 +1997,7 @@ export async function GET(
 
     // Fallback if AI failed
     let finalAI = aiAnalysis || buildFallbackAIAnalysis(
-      currentPrice, rsiValue, trendStructure, signalStrength,
+      effectivePrice, rsiValue, trendStructure, signalStrength,
       premiumDiscount, type, symbol.toUpperCase(), ob, fvg, sweep,
     );
 
@@ -2078,8 +2094,8 @@ export async function GET(
 
     let bbPosition: string;
     let bbSignal: string;
-    if (currentPrice <= bbResult.lower) { bbPosition = 'below_lower'; bbSignal = 'bounce_expected'; }
-    else if (currentPrice >= bbResult.upper) { bbPosition = 'above_upper'; bbSignal = 'pullback_expected'; }
+    if (effectivePrice <= bbResult.lower) { bbPosition = 'below_lower'; bbSignal = 'bounce_expected'; }
+    else if (effectivePrice >= bbResult.upper) { bbPosition = 'above_upper'; bbSignal = 'pullback_expected'; }
     else { bbPosition = 'within_bands'; bbSignal = 'neutral'; }
 
     return NextResponse.json({
@@ -2089,6 +2105,8 @@ export async function GET(
       change24h,
       dataSource,
       priceSource,
+      livePriceUsed: price > 0 && effectivePrice === price,
+      effectivePrice,
       marketDetail,
 
       // Smart Money Concepts
