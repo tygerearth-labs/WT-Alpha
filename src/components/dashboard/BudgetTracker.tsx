@@ -405,7 +405,7 @@ export function BudgetTracker() {
                 </div>
                 <div className="flex items-center justify-between mt-0.5">
                   <span className="text-[9px] font-medium" style={{ color: THEME.muted }}>
-                    {pct.toFixed(0)}%
+                    {(pct || 0).toFixed(0)}%
                   </span>
                   {pct >= 100 && (
                     <span className="text-[9px] font-bold" style={{ color: THEME.destructive }}>

@@ -689,7 +689,7 @@ export function MainLayout() {
                       <span className="text-[9px] text-white/40 uppercase tracking-wider font-medium">{t('dashboard.income')}</span>
                     </div>
                     <span className="text-[11px] font-bold text-[#03DAC6] tabular-nums truncate block">
-                      {monthlyStats.income >= 1000000 ? `${(monthlyStats.income / 1000000).toFixed(1)}M` : monthlyStats.income >= 1000 ? `${(monthlyStats.income / 1000).toFixed(0)}K` : monthlyStats.income}
+                      {monthlyStats.income >= 1000000 ? `${((monthlyStats.income ?? 0) / 1000000).toFixed(1)}M` : monthlyStats.income >= 1000 ? `${((monthlyStats.income ?? 0) / 1000).toFixed(0)}K` : monthlyStats.income}
                     </span>
                   </div>
                   <div className="w-px h-8 bg-white/[0.06]" />
@@ -699,7 +699,7 @@ export function MainLayout() {
                       <span className="text-[9px] text-white/40 uppercase tracking-wider font-medium">{t('dashboard.expense')}</span>
                     </div>
                     <span className="text-[11px] font-bold text-[#CF6679] tabular-nums truncate block">
-                      {monthlyStats.expense >= 1000000 ? `${(monthlyStats.expense / 1000000).toFixed(1)}M` : monthlyStats.expense >= 1000 ? `${(monthlyStats.expense / 1000).toFixed(0)}K` : monthlyStats.expense}
+                      {monthlyStats.expense >= 1000000 ? `${((monthlyStats.expense ?? 0) / 1000000).toFixed(1)}M` : monthlyStats.expense >= 1000 ? `${((monthlyStats.expense ?? 0) / 1000).toFixed(0)}K` : monthlyStats.expense}
                     </span>
                   </div>
                 </div>

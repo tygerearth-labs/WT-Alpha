@@ -387,7 +387,7 @@ export default function AssetSearchInput({
                               'text-[10px] font-medium',
                               isPositive ? 'text-[#03DAC6]' : 'text-[#CF6679]'
                             )}>
-                              {isPositive ? '+' : ''}{change.toFixed(2)}%
+                              {isPositive ? '+' : ''}{(change ?? 0).toFixed(2)}%
                             </span>
                           )}
                         </div>

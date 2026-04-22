@@ -175,7 +175,7 @@ export default function BusinessAllocation() {
             <p className="text-xs text-white/40">{t('biz.allocationPercent')}</p>
             <p className="text-lg font-bold text-white mt-1">
               {allocations.length > 0
-                ? `${(allocations.reduce((s, a) => s + a.percentage, 0) / allocations.length).toFixed(1)}%`
+                ? `${(allocations.reduce((s, a) => s + a.percentage, 0) / allocations.length || 0).toFixed(1)}%`
                 : '-'}
             </p>
           </div>

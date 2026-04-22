@@ -118,20 +118,27 @@ const STRONG_SELL_COLOR = '#CF6679';
 
 // ── Formatting Helpers ───────────────────────────────────────────────────────
 
-function formatLargeNumber(num: number): string {
-  if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
-  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-  return `$${num.toFixed(2)}`;
+function toF(val: number | undefined | null, digits = 2): string {
+  const n = typeof val === 'number' && !isNaN(val) ? val : 0;
+  return n.toFixed(digits);
 }
 
-function formatVolume(num: number): string {
-  if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
-  if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
-  if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
-  if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
-  return num.toFixed(0);
+function formatLargeNumber(num: number | undefined | null): string {
+  const n = typeof num === 'number' && !isNaN(num) ? num : 0;
+  if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `$${(n / 1e3).toFixed(2)}K`;
+  return `$${n.toFixed(2)}`;
+}
+
+function formatVolume(num: number | undefined | null): string {
+  const n = typeof num === 'number' && !isNaN(num) ? num : 0;
+  if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return n.toFixed(0);
 }
 
 function getSignalColor(strength: number): string {
@@ -177,8 +184,9 @@ const slideUp = {
 
 // ── Inline Sub-components ────────────────────────────────────────────────────
 
-function RSIGauge({ value }: { value: number }) {
-  const pct = Math.min(100, Math.max(0, value));
+function RSIGauge({ value }: { value: number | undefined | null }) {
+  const safe = typeof value === 'number' && !isNaN(value) ? value : 50;
+  const pct = Math.min(100, Math.max(0, safe));
   const isOversold = pct < 30;
   const isOverbought = pct > 70;
 
@@ -193,7 +201,7 @@ function RSIGauge({ value }: { value: number }) {
           RSI
         </span>
         <span className="text-xs font-mono font-bold" style={{ color: zoneColor }}>
-          {value.toFixed(1)}
+          {safe.toFixed(1)}
         </span>
       </div>
       <div className="relative h-3 rounded-full overflow-hidden bg-white/[0.06]">
@@ -278,18 +286,21 @@ function SignalBar({ strength }: { strength: number }) {
   );
 }
 
-function MACDHistogram({ macd, signal, histogram }: { macd: number; signal: number; histogram: number }) {
+function MACDHistogram({ macd, signal, histogram }: { macd: number | undefined | null; signal: number | undefined | null; histogram: number | undefined | null }) {
+  const m = typeof macd === 'number' && !isNaN(macd) ? macd : 0;
+  const s = typeof signal === 'number' && !isNaN(signal) ? signal : 0;
+  const h = typeof histogram === 'number' && !isNaN(histogram) ? histogram : 0;
   // Generate a mini histogram with 7 bars
   const bars = useMemo(() => {
     const result: number[] = [];
-    const absMax = Math.max(Math.abs(macd), Math.abs(signal), Math.abs(histogram), 0.01);
+    const absMax = Math.max(Math.abs(m), Math.abs(s), Math.abs(h), 0.01);
     for (let i = 0; i < 7; i++) {
-      const seed = macd * (i + 1) + signal * (i + 2) + histogram * (i + 3);
-      const val = ((Math.sin(seed) + Math.cos(histogram * i)) / 2) * absMax * 0.8;
+      const seed = m * (i + 1) + s * (i + 2) + h * (i + 3);
+      const val = ((Math.sin(seed) + Math.cos(h * i)) / 2) * absMax * 0.8;
       result.push(parseFloat(val.toFixed(6)));
     }
     return result;
-  }, [macd, signal, histogram]);
+  }, [m, s, h]);
 
   const maxAbs = Math.max(...bars.map(Math.abs), 0.01);
 
@@ -303,11 +314,11 @@ function MACDHistogram({ macd, signal, histogram }: { macd: number; signal: numb
         <Badge
           className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
           style={{
-            backgroundColor: histogram >= 0 ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
-            color: histogram >= 0 ? '#03DAC6' : '#CF6679',
+            backgroundColor: h >= 0 ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
+            color: h >= 0 ? '#03DAC6' : '#CF6679',
           }}
         >
-          {histogram >= 0 ? 'Bullish' : 'Bearish'}
+          {h >= 0 ? 'Bullish' : 'Bearish'}
         </Badge>
       </div>
       <div className="flex items-end gap-1 h-12">
@@ -333,24 +344,28 @@ function MACDHistogram({ macd, signal, histogram }: { macd: number; signal: numb
       <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
         <div>
           <span className="text-white/30">MACD </span>
-          <span style={{ color: macd >= 0 ? '#03DAC6' : '#CF6679' }}>{macd.toFixed(4)}</span>
+          <span style={{ color: m >= 0 ? '#03DAC6' : '#CF6679' }}>{m.toFixed(4)}</span>
         </div>
         <div>
           <span className="text-white/30">Signal </span>
-          <span className="text-white/60">{signal.toFixed(4)}</span>
+          <span className="text-white/60">{s.toFixed(4)}</span>
         </div>
         <div>
           <span className="text-white/30">Hist </span>
-          <span style={{ color: histogram >= 0 ? '#03DAC6' : '#CF6679' }}>{histogram.toFixed(4)}</span>
+          <span style={{ color: h >= 0 ? '#03DAC6' : '#CF6679' }}>{h.toFixed(4)}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number; middle: number; lower: number; price: number }) {
-  const range = upper - lower;
-  const position = range > 0 ? ((price - lower) / range) * 100 : 50;
+function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number | undefined | null; middle: number | undefined | null; lower: number | undefined | null; price: number | undefined | null }) {
+  const u = typeof upper === 'number' && !isNaN(upper) ? upper : 0;
+  const md = typeof middle === 'number' && !isNaN(middle) ? middle : 0;
+  const lo = typeof lower === 'number' && !isNaN(lower) ? lower : 0;
+  const pr = typeof price === 'number' && !isNaN(price) ? price : 0;
+  const range = u - lo;
+  const position = range > 0 ? ((pr - lo) / range) * 100 : 50;
 
   return (
     <div className="space-y-2">
@@ -362,11 +377,11 @@ function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number; mi
         <Badge
           className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
           style={{
-            backgroundColor: price <= lower ? 'rgba(3,218,198,0.15)' : price >= upper ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
-            color: price <= lower ? '#03DAC6' : price >= upper ? '#CF6679' : '#FFD700',
+            backgroundColor: pr <= lo ? 'rgba(3,218,198,0.15)' : pr >= u ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+            color: pr <= lo ? '#03DAC6' : pr >= u ? '#CF6679' : '#FFD700',
           }}
         >
-          {price <= lower ? 'Below Lower' : price >= upper ? 'Above Upper' : 'Within'}
+          {pr <= lo ? 'Below Lower' : pr >= u ? 'Above Upper' : 'Within'}
         </Badge>
       </div>
       <div className="relative h-6 rounded bg-white/[0.04] overflow-hidden">
@@ -377,8 +392,8 @@ function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number; mi
           className="absolute top-0 bottom-0 w-0.5"
           style={{
             left: `${Math.min(100, Math.max(0, position))}%`,
-            backgroundColor: price <= lower ? '#03DAC6' : price >= upper ? '#CF6679' : '#FFD700',
-            boxShadow: `0 0 6px ${price <= lower ? '#03DAC680' : price >= upper ? '#CF667980' : '#FFD70080'}`,
+            backgroundColor: pr <= lo ? '#03DAC6' : pr >= u ? '#CF6679' : '#FFD700',
+            boxShadow: `0 0 6px ${pr <= lo ? '#03DAC680' : pr >= u ? '#CF667980' : '#FFD70080'}`,
           }}
           initial={{ left: '50%' }}
           animate={{ left: `${Math.min(100, Math.max(0, position))}%` }}
@@ -388,24 +403,28 @@ function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number; mi
       <div className="grid grid-cols-3 gap-1 text-[10px] font-mono">
         <div className="text-right">
           <span className="text-white/25">Upper </span>
-          <span className="text-[#CF6679]/80">{upper.toLocaleString()}</span>
+          <span className="text-[#CF6679]/80">{u.toLocaleString()}</span>
         </div>
         <div className="text-center">
           <span className="text-white/25">Mid </span>
-          <span className="text-white/50">{middle.toLocaleString()}</span>
+          <span className="text-white/50">{md.toLocaleString()}</span>
         </div>
         <div>
           <span className="text-white/25">Lower </span>
-          <span className="text-[#03DAC6]/80">{lower.toLocaleString()}</span>
+          <span className="text-[#03DAC6]/80">{lo.toLocaleString()}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number; sma50: number; ema12: number; ema26: number }) {
-  const smaGoldenCross = sma20 > sma50;
-  const emaGoldenCross = ema12 > ema26;
+function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number | undefined | null; sma50: number | undefined | null; ema12: number | undefined | null; ema26: number | undefined | null }) {
+  const s20 = typeof sma20 === 'number' && !isNaN(sma20) ? sma20 : 0;
+  const s50 = typeof sma50 === 'number' && !isNaN(sma50) ? sma50 : 0;
+  const e12 = typeof ema12 === 'number' && !isNaN(ema12) ? ema12 : 0;
+  const e26 = typeof ema26 === 'number' && !isNaN(ema26) ? ema26 : 0;
+  const smaGoldenCross = s20 > s50;
+  const emaGoldenCross = e12 > e26;
 
   return (
     <div className="space-y-2">
@@ -417,11 +436,11 @@ function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number; s
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">SMA 20</span>
-            <span className="text-[11px] font-mono text-white/70">{sma20.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{s20.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">SMA 50</span>
-            <span className="text-[11px] font-mono text-white/70">{sma50.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{s50.toLocaleString()}</span>
           </div>
           <Badge
             className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
@@ -436,11 +455,11 @@ function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number; s
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">EMA 12</span>
-            <span className="text-[11px] font-mono text-white/70">{ema12.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{e12.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">EMA 26</span>
-            <span className="text-[11px] font-mono text-white/70">{ema26.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{e26.toLocaleString()}</span>
           </div>
           <Badge
             className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
@@ -692,13 +711,13 @@ export default function QuantTradeMode() {
               },
               {
                 label: 'BTC Dominance',
-                value: `${macroData.global.btcDominance.toFixed(1)}%`,
+                value: `${toF(macroData.global.btcDominance, 1)}%`,
                 change: null,
                 icon: TrendingUp,
               },
               {
                 label: 'ETH Dominance',
-                value: `${macroData.global.ethDominance.toFixed(1)}%`,
+                value: `${toF(macroData.global.ethDominance, 1)}%`,
                 change: null,
                 icon: Layers,
               },
@@ -726,7 +745,7 @@ export default function QuantTradeMode() {
                           <ArrowDownRight className="h-3 w-3 text-[#CF6679]" />
                         )}
                         <span className={cn('text-[11px] font-mono font-medium', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                          {isUp ? '+' : ''}{card.change!.toFixed(2)}%
+                          {isUp ? '+' : ''}{toF(card.change)}%
                         </span>
                       </div>
                     )}
@@ -815,7 +834,7 @@ export default function QuantTradeMode() {
                               className="text-[8px] px-1.5 py-0 h-4 font-medium border-0"
                               style={{ backgroundColor: tc.bg, color: tc.text }}
                             >
-                              {item.type.toUpperCase()}
+                              {(item.type || 'crypto').toUpperCase()}
                             </Badge>
                           </div>
                           <button
@@ -843,7 +862,7 @@ export default function QuantTradeMode() {
                                   <ArrowDownRight className="h-3 w-3 text-[#CF6679]" />
                                 )}
                                 <span className={cn('text-xs font-mono font-medium', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                                  {isUp ? '+' : ''}{signal.change24h.toFixed(2)}%
+                                  {isUp ? '+' : ''}{toF(signal.change24h)}%
                                 </span>
                               </div>
                             </>
@@ -885,18 +904,18 @@ export default function QuantTradeMode() {
                               <span className="text-[9px] text-white/25">RSI</span>
                               <span className={cn(
                                 'text-[10px] font-mono font-bold',
-                                signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]'
+                                (signal.indicators?.rsi?.value ?? 50) < 30 || (signal.indicators?.rsi?.value ?? 50) > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]'
                               )}>
-                                {signal.indicators.rsi.value.toFixed(1)}
+                                {toF(signal.indicators?.rsi?.value, 1)}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="text-[9px] text-white/25">MACD</span>
                               <span className={cn(
                                 'text-[10px] font-mono font-bold',
-                                signal.indicators.macd.histogram >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]'
+                                (signal.indicators?.macd?.histogram ?? 0) >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]'
                               )}>
-                                {signal.indicators.macd.histogram >= 0 ? '▲' : '▼'}
+                                {(signal.indicators?.macd?.histogram ?? 0) >= 0 ? '▲' : '▼'}
                               </span>
                             </div>
                           </div>
@@ -961,13 +980,13 @@ export default function QuantTradeMode() {
                             color: TYPE_COLORS[asset.type]?.text || '#888',
                           }}
                         >
-                          {asset.type.toUpperCase()}
+                          {(asset.type || 'crypto').toUpperCase()}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-white/50">{asset.price}</span>
                         <span className="text-[11px] font-mono font-bold text-[#03DAC6]">
-                          +{asset.change24h.toFixed(2)}%
+                          +{toF(asset.change24h)}%
                         </span>
                       </div>
                     </button>
@@ -1011,13 +1030,13 @@ export default function QuantTradeMode() {
                             color: TYPE_COLORS[asset.type]?.text || '#888',
                           }}
                         >
-                          {asset.type.toUpperCase()}
+                          {(asset.type || 'crypto').toUpperCase()}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-white/50">{asset.price}</span>
                         <span className="text-[11px] font-mono font-bold text-[#CF6679]">
-                          {asset.change24h.toFixed(2)}%
+                          {toF(asset.change24h)}%
                         </span>
                       </div>
                     </button>
@@ -1048,7 +1067,7 @@ export default function QuantTradeMode() {
                         color: TYPE_COLORS[selectedAsset.type]?.text || '#888',
                       }}
                     >
-                      {selectedAsset.type.toUpperCase()}
+                      {(selectedAsset.type || 'crypto').toUpperCase()}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1082,7 +1101,7 @@ export default function QuantTradeMode() {
                       'text-lg font-mono font-bold',
                       selectedAsset.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]'
                     )}>
-                      {selectedAsset.change24h >= 0 ? '+' : ''}{selectedAsset.change24h.toFixed(2)}%
+                      {selectedAsset.change24h >= 0 ? '+' : ''}{toF(selectedAsset.change24h)}%
                     </span>
                   </div>
                 </div>
@@ -1175,24 +1194,24 @@ export default function QuantTradeMode() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* RSI */}
                       <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
-                        <RSIGauge value={selectedAsset.indicators.rsi.value} />
+                        <RSIGauge value={selectedAsset.indicators?.rsi?.value} />
                       </div>
 
                       {/* MACD */}
                       <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
                         <MACDHistogram
-                          macd={selectedAsset.indicators.macd.value}
-                          signal={selectedAsset.indicators.macd.signal}
-                          histogram={selectedAsset.indicators.macd.histogram}
+                          macd={selectedAsset.indicators?.macd?.value}
+                          signal={selectedAsset.indicators?.macd?.signal}
+                          histogram={selectedAsset.indicators?.macd?.histogram}
                         />
                       </div>
 
                       {/* Bollinger Bands */}
                       <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
                         <BollingerBandsInfo
-                          upper={selectedAsset.indicators.bollingerBands.upper}
-                          middle={selectedAsset.indicators.bollingerBands.middle}
-                          lower={selectedAsset.indicators.bollingerBands.lower}
+                          upper={selectedAsset.indicators?.bollingerBands?.upper}
+                          middle={selectedAsset.indicators?.bollingerBands?.middle}
+                          lower={selectedAsset.indicators?.bollingerBands?.lower}
                           price={selectedAsset.price}
                         />
                       </div>
@@ -1200,10 +1219,10 @@ export default function QuantTradeMode() {
                       {/* Moving Averages */}
                       <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4">
                         <MovingAverageSection
-                          sma20={selectedAsset.indicators.sma20}
-                          sma50={selectedAsset.indicators.sma50}
-                          ema12={selectedAsset.indicators.ema12}
-                          ema26={selectedAsset.indicators.ema26}
+                          sma20={selectedAsset.indicators?.sma20}
+                          sma50={selectedAsset.indicators?.sma50}
+                          ema12={selectedAsset.indicators?.ema12}
+                          ema26={selectedAsset.indicators?.ema26}
                         />
                       </div>
                     </div>

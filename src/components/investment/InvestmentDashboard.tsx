@@ -264,8 +264,14 @@ const compactFmt = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
-function formatMarketCap(value: number): string {
-  return `$${compactFmt.format(value)}`;
+function toF(val: number | undefined | null, digits = 2): string {
+  const n = typeof val === 'number' && !isNaN(val) ? val : 0;
+  return n.toFixed(digits);
+}
+
+function formatMarketCap(value: number | undefined | null): string {
+  const n = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return `$${compactFmt.format(n)}`;
 }
 
 // ── Signal Helpers ───────────────────────────────────────────────────────────
@@ -623,7 +629,7 @@ export default function InvestmentDashboard() {
   const handleClosePosition = useCallback(async (p: PortfolioItem) => {
     const live = livePrices[`${p.type}:${p.symbol}`];
     const exitPrice = live?.price ?? p.currentPrice;
-    if (!window.confirm(tf('inv.dashCloseConfirm', `Close position for ${p.symbol} at ${fmtPrice(p.type, exitPrice)}?\nPnL: ${p.unrealizedPnl >= 0 ? '+' : ''}${p.unrealizedPnlPercentage.toFixed(2)}%`))) return;
+    if (!window.confirm(tf('inv.dashCloseConfirm', `Close position for ${p.symbol} at ${fmtPrice(p.type, exitPrice)}?\nPnL: ${p.unrealizedPnl >= 0 ? '+' : ''}${toF(p.unrealizedPnlPercentage)}%`))) return;
     setClosingId(p.id);
     try {
       const res = await fetch(`/api/business/${businessId}/portfolio/${p.id}`, {
@@ -781,7 +787,7 @@ export default function InvestmentDashboard() {
       value,
       count,
       color: TYPE_COLORS[type]?.hex || '#888',
-      pct: stats.totalValue > 0 ? ((value / stats.totalValue) * 100).toFixed(1) : '0',
+      pct: stats.totalValue > 0 ? toF((value / stats.totalValue) * 100, 1) : '0',
     }));
   }, [openPortfolios, stats.totalValue]);
 
@@ -1017,7 +1023,7 @@ export default function InvestmentDashboard() {
                     </div>
                     <span className="text-xs font-mono text-white/80">{fmtPrice(p.type, price)}</span>
                     <span className={cn('text-[11px] font-mono font-medium', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                      {isUp ? '+' : ''}{change.toFixed(2)}%
+                      {isUp ? '+' : ''}{toF(change)}%
                     </span>
                     <div className="h-4 w-px bg-white/[0.06]" />
                   </div>
@@ -1039,7 +1045,7 @@ export default function InvestmentDashboard() {
                     </div>
                     <span className="text-xs font-mono text-white/60">{fmtPrice(w.type, price)}</span>
                     <span className={cn('text-[11px] font-mono font-medium', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                      {isUp ? '+' : ''}{change.toFixed(2)}%
+                      {isUp ? '+' : ''}{toF(change)}%
                     </span>
                     <div className="h-4 w-px bg-white/[0.06]" />
                   </div>
@@ -1061,9 +1067,9 @@ export default function InvestmentDashboard() {
             <div className="flex items-center gap-6 overflow-x-auto scrollbar-none">
               {[
                 { label: tf('inv.dashMarketCap', 'Market Cap'), value: formatMarketCap(macroData.global.totalMarketCap), icon: Globe, change: macroData.global.marketCapChange24h },
-                { label: tf('inv.dashBtcDom', 'BTC Dom'), value: `${macroData.global.btcDominance.toFixed(1)}%`, icon: Zap, change: null },
+                { label: tf('inv.dashBtcDom', 'BTC Dom'), value: `${toF(macroData.global.btcDominance, 1)}%`, icon: Zap, change: null },
                 { label: tf('inv.dashVolume24h', 'Volume 24h'), value: formatMarketCap(macroData.global.totalVolume), icon: BarChart3, change: null },
-                { label: tf('inv.dashChange24h', '24h Change'), value: `${macroData.global.marketCapChange24h >= 0 ? '+' : ''}${macroData.global.marketCapChange24h.toFixed(2)}%`, icon: macroData.global.marketCapChange24h >= 0 ? TrendingUp : TrendingDown, change: macroData.global.marketCapChange24h },
+                { label: tf('inv.dashChange24h', '24h Change'), value: `${macroData.global.marketCapChange24h >= 0 ? '+' : ''}${toF(macroData.global.marketCapChange24h)}%`, icon: macroData.global.marketCapChange24h >= 0 ? TrendingUp : TrendingDown, change: macroData.global.marketCapChange24h },
                 ...(macroData.fearAndGreed ? [{ label: tf('inv.dashFearGreed', 'Fear & Greed'), value: `${macroData.fearAndGreed.value} ${macroData.fearAndGreed.label}`, icon: Gauge, change: null }] : []),
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-2.5 shrink-0">
@@ -1107,9 +1113,9 @@ export default function InvestmentDashboard() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-1.5 w-12 rounded-full bg-[#03DAC6]/20 overflow-hidden">
-                          <div className="h-full rounded-full bg-[#03DAC6]" style={{ width: `${Math.min(100, Math.abs(item.change24h) * 5)}%` }} />
+                          <div className="h-full rounded-full bg-[#03DAC6]" style={{ width: `${Math.min(100, Math.abs(item.change24h ?? 0) * 5)}%` }} />
                         </div>
-                        <span className="text-[11px] font-bold font-mono text-[#03DAC6]">+{item.change24h.toFixed(2)}%</span>
+                        <span className="text-[11px] font-bold font-mono text-[#03DAC6]">+{toF(item.change24h)}%</span>
                       </div>
                     </div>
                   ))}
@@ -1135,9 +1141,9 @@ export default function InvestmentDashboard() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-1.5 w-12 rounded-full bg-[#CF6679]/20 overflow-hidden">
-                          <div className="h-full rounded-full bg-[#CF6679]" style={{ width: `${Math.min(100, Math.abs(item.change24h) * 5)}%` }} />
+                          <div className="h-full rounded-full bg-[#CF6679]" style={{ width: `${Math.min(100, Math.abs(item.change24h ?? 0) * 5)}%` }} />
                         </div>
-                        <span className="text-[11px] font-bold font-mono text-[#CF6679]">{item.change24h.toFixed(2)}%</span>
+                        <span className="text-[11px] font-bold font-mono text-[#CF6679]">{toF(item.change24h)}%</span>
                       </div>
                     </div>
                   ))}
@@ -1153,9 +1159,9 @@ export default function InvestmentDashboard() {
         <motion.div variants={cardVariants} custom={3} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { label: t('inv.portfolioValue'), value: formatCurrency(stats.totalValue, currency as CurrencyCode), sub: formatCurrency(stats.investedValue, currency as CurrencyCode) + ' invested', icon: Wallet, color: PURPLE_COLOR },
-            { label: t('inv.unrealizedPnL'), value: (stats.unrealizedPnl >= 0 ? '+' : '') + formatCurrency(stats.unrealizedPnl, currency as CurrencyCode), sub: ((stats.investedValue > 0 ? (stats.unrealizedPnl / stats.investedValue) * 100 : 0)).toFixed(2) + '% return', icon: stats.unrealizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.unrealizedPnl) },
+            { label: t('inv.unrealizedPnL'), value: (stats.unrealizedPnl >= 0 ? '+' : '') + formatCurrency(stats.unrealizedPnl, currency as CurrencyCode), sub: toF(stats.investedValue > 0 ? (stats.unrealizedPnl / stats.investedValue) * 100 : 0) + '% return', icon: stats.unrealizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.unrealizedPnl) },
             { label: t('inv.realizedPnL'), value: (stats.realizedPnl >= 0 ? '+' : '') + formatCurrency(stats.realizedPnl, currency as CurrencyCode), sub: stats.totalTrades + ' trades closed', icon: stats.realizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.realizedPnl) },
-            { label: t('inv.winRate'), value: stats.winRate.toFixed(1) + '%', sub: stats.totalTrades > 0 ? (stats.winRate >= 50 ? 'Profitable' : 'Review strategy') : 'No closed trades', icon: Trophy, color: stats.winRate >= 50 ? UP_COLOR : DOWN_COLOR },
+            { label: t('inv.winRate'), value: toF(stats.winRate, 1) + '%', sub: stats.totalTrades > 0 ? (stats.winRate >= 50 ? 'Profitable' : 'Review strategy') : 'No closed trades', icon: Trophy, color: stats.winRate >= 50 ? UP_COLOR : DOWN_COLOR },
           ].map((card) => (
             <Card key={card.label} className="bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-4">
@@ -1393,7 +1399,7 @@ export default function InvestmentDashboard() {
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-white/80 font-mono">{w.symbol}</span>
                               <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                                {w.type.toUpperCase()}
+                                {(w.type || 'crypto').toUpperCase()}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -1457,7 +1463,7 @@ export default function InvestmentDashboard() {
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
                           <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                            {item.type.toUpperCase()}
+                            {(item.type || 'crypto').toUpperCase()}
                           </Badge>
                           {!('status' in item) ? (
                             <Eye className="h-3 w-3 text-white/15" />
@@ -1465,8 +1471,8 @@ export default function InvestmentDashboard() {
                           {signal && (
                             <div className="flex items-center gap-1">
                               <span className="text-[9px] text-white/25">RSI</span>
-                              <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
-                                {signal.indicators.rsi.value.toFixed(1)}
+                              <span className={cn('text-[10px] font-mono font-bold', (signal.indicators?.rsi?.value ?? 50) < 30 || (signal.indicators?.rsi?.value ?? 50) > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
+                                {toF(signal.indicators?.rsi?.value, 1)}
                               </span>
                             </div>
                           )}
@@ -2118,7 +2124,7 @@ export default function InvestmentDashboard() {
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-white text-xs font-bold font-mono">{p.symbol}</span>
                                   <Badge className="text-[8px] px-1 py-0 h-3.5 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                                    {p.type.toUpperCase()}
+                                    {(p.type || 'crypto').toUpperCase()}
                                   </Badge>
                                   {p.status === 'closed' && (
                                     <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 bg-white/[0.06] text-white/30">
@@ -2133,7 +2139,7 @@ export default function InvestmentDashboard() {
                               <p className="text-white/70 text-xs font-mono">{fmtPrice(p.type, p.currentPrice)}</p>
                               {live && p.status === 'open' && (
                                 <p className={cn('text-[10px] font-mono', live.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                                  {live.change24h >= 0 ? '+' : ''}{live.change24h.toFixed(2)}%
+                                  {live.change24h >= 0 ? '+' : ''}{toF(live.change24h)}%
                                 </p>
                               )}
                             </td>
@@ -2143,7 +2149,7 @@ export default function InvestmentDashboard() {
                                 <div className="flex items-center gap-0.5">
                                   {isUp ? <ArrowUpRight className="h-3 w-3 text-[#03DAC6] shrink-0" /> : <ArrowDownRight className="h-3 w-3 text-[#CF6679] shrink-0" />}
                                   <span className={cn('text-xs font-bold font-mono', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                                    {isUp ? '+' : ''}{p.unrealizedPnlPercentage.toFixed(2)}%
+                                    {isUp ? '+' : ''}{toF(p.unrealizedPnlPercentage)}%
                                   </span>
                                 </div>
                                 <p className={cn('text-[10px] font-mono', isUp ? 'text-[#03DAC6]/60' : 'text-[#CF6679]/60')}>
@@ -2227,7 +2233,7 @@ export default function InvestmentDashboard() {
                     </DialogTitle>
                     {type && (
                       <Badge className="text-[9px] px-2 py-0 h-4 font-medium border-0" style={{ backgroundColor: TYPE_COLORS[type]?.bg, color: TYPE_COLORS[type]?.text }}>
-                        {type.toUpperCase()}
+                        {(type || 'crypto').toUpperCase()}
                       </Badge>
                     )}
                   </div>

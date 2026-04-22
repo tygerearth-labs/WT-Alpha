@@ -336,7 +336,7 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
           </div>
           {savingsRate !== undefined && savingsRate > 0 && (
             <p className="text-[10px] mt-1" style={{ color: THEME.textSecondary }}>
-              {t('dashboard.savingsRateLabel')} <span className="font-semibold" style={{ color: THEME.secondary }}>{savingsRate.toFixed(0)}%</span>
+              {t('dashboard.savingsRateLabel')} <span className="font-semibold" style={{ color: THEME.secondary }}>{(savingsRate ?? 0).toFixed(0)}%</span>
             </p>
           )}
         </div>

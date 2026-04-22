@@ -331,7 +331,7 @@ export default function TradingJournal() {
       doc.text('Trading Journal', 14, 20);
       doc.setFontSize(10);
       doc.text(
-        `Diekspor: ${new Date().toLocaleDateString('id-ID')} | Total Trade: ${stats.totalTrades} | Win Rate: ${stats.winRate.toFixed(1)}%`,
+        `Diekspor: ${new Date().toLocaleDateString('id-ID')} | Total Trade: ${stats.totalTrades} | Win Rate: ${(stats.winRate ?? 0).toFixed(1)}%`,
         14,
         30
       );
@@ -343,7 +343,7 @@ export default function TradingJournal() {
         j.exitPrice?.toLocaleString('id-ID') || '-',
         j.quantity,
         j.pnl.toLocaleString('id-ID'),
-        `${j.pnlPercentage.toFixed(2)}%`,
+        `${(j.pnlPercentage ?? 0).toFixed(2)}%`,
         j.riskReward?.toString() || '-',
         j.fees.toLocaleString('id-ID'),
         new Date(j.date).toLocaleDateString('id-ID'),
@@ -386,7 +386,7 @@ export default function TradingJournal() {
         <Card className="bg-[#1A1A2E] border-white/[0.06]">
           <CardContent className="p-3">
             <p className="text-xs text-white/40">{t('inv.winRate')}</p>
-            <p className="text-lg font-bold text-[#BB86FC]">{stats.winRate.toFixed(1)}%</p>
+            <p className="text-lg font-bold text-[#BB86FC]">{(stats.winRate ?? 0).toFixed(1)}%</p>
           </CardContent>
         </Card>
         <Card className="bg-[#1A1A2E] border-white/[0.06]">
@@ -551,7 +551,7 @@ export default function TradingJournal() {
                           {isBuy ? '-' : `${isPositive ? '+' : ''}${formatInvPrice(item.portfolio?.type || 'crypto', item.pnl)}`}
                         </TableCell>
                         <TableCell className={cn('text-xs text-right font-medium py-3', isBuy ? 'text-white/50' : pnlColor(item.pnl))}>
-                          {isBuy ? '-' : `${isPositive ? '+' : ''}${item.pnlPercentage.toFixed(2)}%`}
+                          {isBuy ? '-' : `${isPositive ? '+' : ''}${(item.pnlPercentage ?? 0).toFixed(2)}%`}
                         </TableCell>
                         <TableCell className="text-white/50 text-xs text-right py-3">
                           {item.riskReward?.toString() || '-'}

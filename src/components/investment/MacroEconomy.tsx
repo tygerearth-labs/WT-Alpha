@@ -69,15 +69,19 @@ const compactFmt = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
-function formatMarketCap(value: number): string {
-  if (value >= 1_000_000_000_000) {
-    return `$${compactFmt.format(value)}`;
-  }
-  return `$${compactFmt.format(value)}`;
+function toF(val: number | undefined | null, digits = 2): string {
+  const n = typeof val === 'number' && !isNaN(val) ? val : 0;
+  return n.toFixed(digits);
 }
 
-function formatCompact(value: number): string {
-  return compactFmt.format(value);
+function formatMarketCap(value: number | undefined | null): string {
+  const n = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return `$${compactFmt.format(n)}`;
+}
+
+function formatCompact(value: number | undefined | null): string {
+  const n = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return compactFmt.format(n);
 }
 
 // ── Sentiment Helper ─────────────────────────────────────────────────────────
@@ -281,27 +285,27 @@ export default function MacroEconomy() {
     {
       label: t('macro.totalMarketCap'),
       value: formatMarketCap(g.totalMarketCap),
-      sub: `${g.marketCapChange24h >= 0 ? '+' : ''}${g.marketCapChange24h.toFixed(1)}%`,
+      sub: `${g.marketCapChange24h >= 0 ? '+' : ''}${toF(g.marketCapChange24h, 1)}%`,
       icon: Globe,
       color: g.marketCapChange24h >= 0 ? UP_COLOR : DOWN_COLOR,
     },
     {
       label: t('macro.totalVolume'),
       value: formatMarketCap(g.totalVolume),
-      sub: `${((g.totalVolume / g.totalMarketCap) * 100).toFixed(2)}% of mcap`,
+      sub: `${toF(g.totalMarketCap > 0 ? (g.totalVolume / g.totalMarketCap) * 100 : 0)}% of mcap`,
       icon: BarChart3,
       color: '#BB86FC',
     },
     {
       label: t('macro.btcDominance'),
-      value: `${g.btcDominance.toFixed(1)}%`,
+      value: `${toF(g.btcDominance, 1)}%`,
       sub: <DominanceBar value={g.btcDominance} color="#F7931A" />,
       icon: Coins,
       color: '#F7931A',
     },
     {
       label: t('macro.ethDominance'),
-      value: `${g.ethDominance.toFixed(1)}%`,
+      value: `${toF(g.ethDominance, 1)}%`,
       sub: <DominanceBar value={g.ethDominance} color="#627EEA" />,
       icon: Layers,
       color: '#627EEA',
@@ -315,7 +319,7 @@ export default function MacroEconomy() {
     },
     {
       label: t('macro.marketChange24h'),
-      value: `${g.marketCapChange24h >= 0 ? '+' : ''}${g.marketCapChange24h.toFixed(1)}%`,
+      value: `${g.marketCapChange24h >= 0 ? '+' : ''}${toF(g.marketCapChange24h, 1)}%`,
       sub: '24 hours',
       icon: g.marketCapChange24h >= 0 ? TrendingUp : TrendingDown,
       color: g.marketCapChange24h >= 0 ? UP_COLOR : DOWN_COLOR,
@@ -484,7 +488,7 @@ export default function MacroEconomy() {
                     {sentiment.label}
                   </Badge>
                   <p className="text-[11px] text-white/25 font-mono mt-1">
-                    {g.marketCapChange24h >= 0 ? '+' : ''}{g.marketCapChange24h.toFixed(2)}% 24h
+                    {g.marketCapChange24h >= 0 ? '+' : ''}{toF(g.marketCapChange24h)}% 24h
                   </p>
                 </div>
               </CardContent>
@@ -514,13 +518,13 @@ export default function MacroEconomy() {
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
-                        width: `${Math.min((altcoinMarketCap / g.totalMarketCap) * 100, 100).toFixed(1)}%`,
+                        width: `${toF(g.totalMarketCap > 0 ? Math.min((altcoinMarketCap / g.totalMarketCap) * 100, 100) : 0, 1)}%`,
                         backgroundColor: '#BB86FC',
                       }}
                     />
                   </div>
                   <p className="text-[10px] text-white/25 mt-1 font-mono">
-                    {((altcoinMarketCap / g.totalMarketCap) * 100).toFixed(1)}% of total
+                    {toF(g.totalMarketCap > 0 ? (altcoinMarketCap / g.totalMarketCap) * 100 : 0, 1)}% of total
                   </p>
                 </div>
 
@@ -530,13 +534,13 @@ export default function MacroEconomy() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] text-white/50 font-medium">{t('macro.turnoverRate')}</span>
-                    <span className="text-sm font-bold text-white/80 font-mono">{turnoverRate.toFixed(2)}%</span>
+                    <span className="text-sm font-bold text-white/80 font-mono">{toF(turnoverRate)}%</span>
                   </div>
                   <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
-                        width: `${Math.min(turnoverRate * 4, 100).toFixed(1)}%`,
+                        width: `${toF(Math.min(turnoverRate * 4, 100), 1)}%`,
                         backgroundColor: turnoverRate > 5 ? UP_COLOR : turnoverRate > 3 ? GOLD_COLOR : DOWN_COLOR,
                       }}
                     />
@@ -553,7 +557,7 @@ export default function MacroEconomy() {
                   <div>
                     <p className="text-[10px] text-white/25 uppercase mb-0.5">BTC + ETH</p>
                     <p className="text-base font-bold text-white/80 font-mono">
-                      {(g.btcDominance + g.ethDominance).toFixed(1)}%
+                      {toF(g.btcDominance + g.ethDominance, 1)}%
                     </p>
                   </div>
                   <div>
@@ -602,7 +606,7 @@ export default function MacroEconomy() {
                       <div className="flex items-center gap-1.5">
                         <ArrowUpRight className="h-3.5 w-3.5 text-[#03DAC6]" />
                         <span className="text-xs font-bold font-mono text-[#03DAC6]">
-                          +{item.change24h.toFixed(2)}%
+                          +{toF(item.change24h)}%
                         </span>
                       </div>
                     </div>
@@ -644,7 +648,7 @@ export default function MacroEconomy() {
                       <div className="flex items-center gap-1.5">
                         <ArrowDownRight className="h-3.5 w-3.5 text-[#CF6679]" />
                         <span className="text-xs font-bold font-mono text-[#CF6679]">
-                          {item.change24h.toFixed(2)}%
+                          {toF(item.change24h)}%
                         </span>
                       </div>
                     </div>
@@ -700,7 +704,7 @@ export default function MacroEconomy() {
                             <ArrowDownRight className="h-3 w-3" style={{ color }} />
                           )}
                           <span className="text-[11px] font-bold font-mono" style={{ color }}>
-                            {isUp ? '+' : ''}{item.change24h.toFixed(2)}%
+                            {isUp ? '+' : ''}{toF(item.change24h)}%
                           </span>
                         </div>
                       </div>
@@ -736,17 +740,18 @@ export default function MacroEconomy() {
 // ── Sub-components ───────────────────────────────────────────────────────────
 
 /** Small dominance bar for BTC/ETH cards */
-function DominanceBar({ value, color }: { value: number; color: string }) {
+function DominanceBar({ value, color }: { value: number | undefined | null; color: string }) {
+  const safeVal = typeof value === 'number' && !isNaN(value) ? value : 0;
   return (
     <div className="flex items-center gap-2 mt-1">
       <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${Math.min(value, 100).toFixed(1)}%`, backgroundColor: color }}
+          style={{ width: `${Math.min(safeVal, 100).toFixed(1)}%`, backgroundColor: color }}
         />
       </div>
       <span className="text-[10px] text-white/25 font-mono shrink-0 w-9 text-right">
-        {value.toFixed(1)}%
+        {toF(safeVal, 1)}%
       </span>
     </div>
   );

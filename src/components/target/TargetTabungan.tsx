@@ -285,7 +285,7 @@ function TargetCard({
         <div className="relative shrink-0">
           <ProgressRing pct={pct} size={48} stroke={3.5} color={ringColor} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[11px] font-bold" style={{ color: ringColor }}>{pct.toFixed(0)}</span>
+            <span className="text-[11px] font-bold" style={{ color: ringColor }}>{(pct || 0).toFixed(0)}</span>
           </div>
         </div>
 

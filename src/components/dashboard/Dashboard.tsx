@@ -285,7 +285,7 @@ function SavingsRateGauge({ rate }: { rate: number }) {
       </svg>
       <div className="absolute -bottom-0.5 text-center">
         <span className="text-sm font-bold" style={{ color: gaugeColor }}>
-          {clampedRate.toFixed(0)}%
+          {(clampedRate || 0).toFixed(0)}%
         </span>
       </div>
     </div>
@@ -399,7 +399,7 @@ function AnalyticsCarousel({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={cashFlowData} barGap={4} barCategoryGap="20%">
                   <XAxis dataKey="name" tick={{ fontSize: 10, fill: THEME.muted }} axisLine={false} tickLine={false} width={35} />
-                  <YAxis tick={{ fontSize: 9, fill: THEME.muted }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}rb` : String(v)} width={38} />
+                  <YAxis tick={{ fontSize: 9, fill: THEME.muted }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000 || 0).toFixed(0)}jt` : v >= 1000 ? `${(v / 1000 || 0).toFixed(0)}rb` : String(v)} width={38} />
                   <Tooltip content={<ChartTooltip formatter={(v: number) => formatAmount(v)} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                   <Bar dataKey="income" name={t('dashboard.income')} fill={THEME.secondary} radius={[4, 4, 0, 0]} maxBarSize={28} />
                   <Bar dataKey="expense" name={t('dashboard.expense')} fill={THEME.destructive} radius={[4, 4, 0, 0]} maxBarSize={28} />
@@ -462,7 +462,7 @@ function AnalyticsCarousel({
                             {cat.icon && <DynamicIcon name={cat.icon} className="h-2.5 w-2.5" style={{ color: cat.color }} />}
                           </div>
                           <span className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{cat.name}</span>
-                          <span className="text-[10px] font-semibold shrink-0 tabular-nums ml-auto" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                          <span className="text-[10px] font-semibold shrink-0 tabular-nums ml-auto" style={{ color: cat.color }}>{(pct || 0).toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
@@ -559,7 +559,7 @@ function AnalyticsCarousel({
                         tick={{ fontSize: 9, fill: THEME.muted }}
                         axisLine={false}
                         tickLine={false}
-                        tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}rb` : String(v)}
+                        tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000 || 0).toFixed(0)}jt` : v >= 1000 ? `${(v / 1000 || 0).toFixed(0)}rb` : String(v)}
                         width={38}
                       />
                       <Tooltip
@@ -650,7 +650,7 @@ function AnalyticsCarousel({
                                 {cat.name}
                               </span>
                               <span className="text-[9px] shrink-0 tabular-nums ml-auto" style={{ color: cat.color }}>
-                                {pct.toFixed(0)}%
+                                {(pct || 0).toFixed(0)}%
                               </span>
                             </div>
                             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
@@ -1104,10 +1104,10 @@ export function Dashboard() {
           type: 'warning',
           priority: 'high',
           title: t('dashboard.budgetAlmostFull'),
-          analysis: t('dashboard.budgetAlmostAnalysis', { percent: burnRatio.toFixed(0) }),
+          analysis: t('dashboard.budgetAlmostAnalysis', { percent: (burnRatio || 0).toFixed(0) }),
           recommendation: t('dashboard.budgetAlmostRecommendation'),
           impact: t('dashboard.budgetAlmostImpact', { amount: formatAmount(remaining), days: daysLeft }),
-          metric: `${burnRatio.toFixed(0)}%`,
+          metric: `${(burnRatio || 0).toFixed(0)}%`,
           icon: <Timer className="h-4 w-4" />,
           accent: PRIORITY_COLORS.high,
         });
@@ -1123,12 +1123,12 @@ export function Dashboard() {
         type: 'warning',
         priority: 'high',
         title: t('dashboard.lowSavingsTitle'),
-        analysis: t('dashboard.lowRateAnalysis', { rate: data.savingsRate.toFixed(1) }),
+        analysis: t('dashboard.lowRateAnalysis', { rate: (data.savingsRate ?? 0).toFixed(1) }),
         recommendation: hasTargets
           ? t('dashboard.lowRateRecHasTarget')
           : t('dashboard.lowRateRecommendation'),
         impact: t('dashboard.lowRateImpact', { amount: formatAmount(extraSavings) }),
-        metric: `${data.savingsRate.toFixed(1)}%`,
+        metric: `${(data.savingsRate ?? 0).toFixed(1)}%`,
         icon: <AlertTriangle className="h-4 w-4" />,
         accent: PRIORITY_COLORS.high,
       });
@@ -1142,10 +1142,10 @@ export function Dashboard() {
         type: 'warning',
         priority: 'high',
         title: t('dashboard.expenseSurge'),
-        analysis: t('dashboard.expenseSurgeAnalysis', { percent: mc.expenseChange.toFixed(0) }),
+        analysis: t('dashboard.expenseSurgeAnalysis', { percent: (mc.expenseChange ?? 0).toFixed(0) }),
         recommendation: t('dashboard.expenseSurgeRecommendation'),
         impact: t('dashboard.expenseSurgeImpact', { amount: formatAmount(extraSpending) }),
-        metric: `+${mc.expenseChange.toFixed(0)}%`,
+        metric: `+${(mc.expenseChange ?? 0).toFixed(0)}%`,
         icon: <Radar className="h-4 w-4" />,
         accent: PRIORITY_COLORS.high,
       });
@@ -1160,10 +1160,10 @@ export function Dashboard() {
           type: 'warning',
           priority: 'high',
           title: t('dashboard.categorySurgeTitle', { name: surged.name }),
-          analysis: t('dashboard.categorySurgeAnalysis', { name: surged.name, percent: surged.trendPercentage.toFixed(0) }),
+          analysis: t('dashboard.categorySurgeAnalysis', { name: surged.name, percent: (surged.trendPercentage ?? 0).toFixed(0) }),
           recommendation: t('dashboard.categorySurgeRecommendation'),
           impact: t('dashboard.categorySurgeImpact', { amount: formatAmount(surged.amount) }),
-          metric: `+${surged.trendPercentage.toFixed(0)}%`,
+          metric: `+${(surged.trendPercentage ?? 0).toFixed(0)}%`,
           icon: <Eye className="h-4 w-4" />,
           accent: PRIORITY_COLORS.high,
         });
@@ -1184,7 +1184,7 @@ export function Dashboard() {
         recommendation: hasRoomToIncrease
           ? t('dashboard.targetBehindRecRoom')
           : t('dashboard.targetBehindRecReview'),
-        impact: t('dashboard.targetBehindImpact', { averageProgress: targetAnalytics.averageProgress.toFixed(0) }),
+        impact: t('dashboard.targetBehindImpact', { averageProgress: (targetAnalytics.averageProgress ?? 0).toFixed(0) }),
         metric: `${targetAnalytics.behind}`,
         icon: <Target className="h-4 w-4" />,
         accent: PRIORITY_COLORS.high,
@@ -1240,7 +1240,7 @@ export function Dashboard() {
         (tx: any) => tx.type === 'expense' && tx.amount > averages.transactionSize * 3
       );
       if (bigTx) {
-        const timesBigger = (bigTx.amount / averages.transactionSize).toFixed(0);
+        const timesBigger = ((bigTx.amount || 0) / (averages.transactionSize || 1)).toFixed(0);
         const daysEquiv = averages.dailyExpense > 0 ? Math.floor(bigTx.amount / averages.dailyExpense) : 0;
         items.push({
           id: 'big-transaction',
@@ -1265,10 +1265,10 @@ export function Dashboard() {
         type: 'warning',
         priority: 'medium',
         title: t('dashboard.fundResilience'),
-        analysis: t('dashboard.runwayLowAnalysis', { months: forecast.runwayMonths.toFixed(1) }),
+        analysis: t('dashboard.runwayLowAnalysis', { months: (forecast.runwayMonths ?? 0).toFixed(1) }),
         recommendation: t('dashboard.runwayLowRecommendation'),
         impact: t('dashboard.runwayLowImpact', { amount: formatAmount(emergencyFundTarget) }),
-        metric: `${forecast.runwayMonths.toFixed(1)} ${t('dashboard.monthsUnit')}`,
+        metric: `${(forecast.runwayMonths ?? 0).toFixed(1)} ${t('dashboard.monthsUnit')}`,
         icon: <Shield className="h-4 w-4" />,
         accent: PRIORITY_COLORS.medium,
       });
@@ -1301,10 +1301,10 @@ export function Dashboard() {
         type: 'achievement',
         priority: 'low',
         title: t('dashboard.strongSavingsTitle'),
-        analysis: t('dashboard.highRateAnalysis', { rate: data.savingsRate.toFixed(0) }),
+        analysis: t('dashboard.highRateAnalysis', { rate: (data.savingsRate ?? 0).toFixed(0) }),
         recommendation: t('dashboard.highRateRecommendation'),
         impact: t('dashboard.highRateImpact', { topPercent: topPercent }),
-        metric: `${data.savingsRate.toFixed(0)}%`,
+        metric: `${(data.savingsRate ?? 0).toFixed(0)}%`,
         icon: <Trophy className="h-4 w-4" />,
         accent: PRIORITY_COLORS.low,
       });
@@ -1325,10 +1325,10 @@ export function Dashboard() {
         type: 'achievement',
         priority: 'low',
         title: t('dashboard.targetAlmostDone'),
-        analysis: t('dashboard.targetDoneAnalysis', { name: nearComplete.name, percent: pct.toFixed(0) }),
+        analysis: t('dashboard.targetDoneAnalysis', { name: nearComplete.name, percent: (pct || 0).toFixed(0) }),
         recommendation: t('dashboard.targetDoneRecommendation'),
         impact: t('dashboard.targetDoneImpact', { amount: formatAmount(remaining) }),
-        metric: `${pct.toFixed(0)}%`,
+        metric: `${(pct || 0).toFixed(0)}%`,
         icon: <CheckCircle2 className="h-4 w-4" />,
         accent: PRIORITY_COLORS.low,
       });
@@ -1343,7 +1343,7 @@ export function Dashboard() {
         title: t('dashboard.allOnTrackTitle'),
         analysis: t('dashboard.onTrackAnalysis', { count: targetAnalytics.onTrack }),
         recommendation: t('dashboard.onTrackRecommendation'),
-        impact: t('dashboard.onTrackImpact', { averageProgress: targetAnalytics.averageProgress.toFixed(0) }),
+        impact: t('dashboard.onTrackImpact', { averageProgress: (targetAnalytics.averageProgress ?? 0).toFixed(0) }),
         icon: <Trophy className="h-4 w-4" />,
         accent: PRIORITY_COLORS.low,
       });
@@ -1411,7 +1411,7 @@ export function Dashboard() {
       name: c.category,
       value: c.amount,
       color: c.color || CATEGORY_COLORS[i % CATEGORY_COLORS.length],
-      percentage: data.totalExpense > 0 ? ((c.amount / data.totalExpense) * 100).toFixed(1) : '0',
+      percentage: data.totalExpense > 0 ? ((c.amount / data.totalExpense) * 100 || 0).toFixed(1) : '0',
       icon: c.icon,
     }));
   }, [topCats, data]);
@@ -1611,7 +1611,7 @@ export function Dashboard() {
               </span>
               {nextStage && (
                 <span className="text-[10px] truncate" style={{ color: THEME.muted }}>
-                  {progressToNext.toFixed(0)}% {t('dashboard.toNext')} {nextStage.name}
+                  {(progressToNext || 0).toFixed(0)}% {t('dashboard.toNext')} {nextStage.name}
                 </span>
               )}
             </div>
@@ -1641,7 +1641,7 @@ export function Dashboard() {
             </p>
             {mc && mc.incomeChange !== 0 && (
               <p className="text-[10px] sm:text-[11px] mt-1 truncate" style={{ color: getTrendColor(mc.incomeChange) }}>
-                {mc.incomeChange > 0 ? '+' : ''}{mc.incomeChange.toFixed(1)}% {t('dashboard.vsLastMonth')}
+                {mc.incomeChange > 0 ? '+' : ''}{(mc.incomeChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
           </CardContent>
@@ -1670,7 +1670,7 @@ export function Dashboard() {
             </p>
             {mc && mc.expenseChange !== 0 && (
               <p className="text-[10px] sm:text-[11px] mt-1 truncate" style={{ color: getTrendColor(mc.expenseChange, true) }}>
-                {mc.expenseChange > 0 ? '+' : ''}{mc.expenseChange.toFixed(1)}% {t('dashboard.vsLastMonth')}
+                {mc.expenseChange > 0 ? '+' : ''}{(mc.expenseChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
           </CardContent>
@@ -1879,7 +1879,7 @@ export function Dashboard() {
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-[8px] font-bold" style={{ color: progressColor }}>
-                          {progress.toFixed(0)}%
+                          {(progress || 0).toFixed(0)}%
                         </span>
                       </div>
                     </div>
@@ -1942,7 +1942,7 @@ export function Dashboard() {
                         <circle stroke={progressColor} fill="transparent" strokeWidth={ringStroke} strokeLinecap="round" strokeDasharray={ringCirc + ' ' + ringCirc} style={{ strokeDashoffset: ringOffset, transition: 'stroke-dashoffset 0.8s ease-out' }} r={ringNorm} cx={ringRadius} cy={ringRadius} />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[8px] font-bold" style={{ color: progressColor }}>{progress.toFixed(0)}%</span>
+                        <span className="text-[8px] font-bold" style={{ color: progressColor }}>{(progress || 0).toFixed(0)}%</span>
                       </div>
                     </div>
                     <div className="flex-1 min-w-0 space-y-1.5">

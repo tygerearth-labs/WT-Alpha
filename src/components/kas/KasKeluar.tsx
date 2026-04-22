@@ -672,7 +672,7 @@ export function KasKeluar() {
                       className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{ background: `${cat.color}18`, color: cat.color }}
                     >
-                      {totalExpense > 0 ? ((cat.amount / totalExpense) * 100).toFixed(0) : 0}%
+                      {totalExpense > 0 ? ((cat.amount / totalExpense) * 100 || 0).toFixed(0) : 0}%
                     </span>
                   </motion.div>
                 ))}
@@ -727,7 +727,7 @@ export function KasKeluar() {
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.5 + i * 0.08 }}
                           >
-                            {pct.toFixed(0)}%
+                            {(pct || 0).toFixed(0)}%
                           </motion.span>
                         </div>
                       </div>
@@ -783,7 +783,7 @@ export function KasKeluar() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1 min-w-0 gap-2">
                           <span className="text-xs font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
-                          <span className="text-xs font-semibold shrink-0 max-w-[120px] truncate" style={{ color: cat.color }}>{pct.toFixed(0)}% · {formatAmount(cat.amount)}</span>
+                          <span className="text-xs font-semibold shrink-0 max-w-[120px] truncate" style={{ color: cat.color }}>{(pct || 0).toFixed(0)}% · {formatAmount(cat.amount)}</span>
                         </div>
                         <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                           <div className="h-full rounded-full transition-all duration-500"
@@ -1018,7 +1018,7 @@ export function KasKeluar() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5 min-w-0 gap-1">
                           <span className="text-[10px] font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
-                          <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                          <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{(pct || 0).toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
                           <div className="h-full rounded-full transition-all duration-500"
@@ -1109,7 +1109,7 @@ export function KasKeluar() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5 min-w-0 gap-2">
                         <span className="text-[11px] font-medium truncate min-w-0" style={{ color: T.textSub }}>{cat.name}</span>
-                        <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{pct.toFixed(0)}%</span>
+                        <span className="text-[10px] font-semibold shrink-0" style={{ color: cat.color }}>{(pct || 0).toFixed(0)}%</span>
                       </div>
                       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: `${T.border}` }}>
                         <div className="h-full rounded-full transition-all duration-500"

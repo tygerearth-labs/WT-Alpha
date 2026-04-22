@@ -116,13 +116,13 @@ export function FinancialHealthScore() {
     if (savingsRate < 20) {
       tips.push({
         title: t('dashboard.healthTipSavingsRateLowTitle') || 'Savings Rate Low',
-        description: t('dashboard.healthTipSavingsRateLow', { rate: savingsRate.toFixed(1) }),
+        description: t('dashboard.healthTipSavingsRateLow', { rate: (savingsRate ?? 0).toFixed(1) }),
         severity: 'warning',
       });
     } else {
       tips.push({
         title: t('dashboard.healthTipSavingsRateGoodTitle') || 'Good Savings Rate',
-        description: t('dashboard.healthTipSavingsRateGood', { rate: savingsRate.toFixed(1) }),
+        description: t('dashboard.healthTipSavingsRateGood', { rate: (savingsRate ?? 0).toFixed(1) }),
         severity: 'good',
       });
     }

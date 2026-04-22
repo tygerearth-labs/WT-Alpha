@@ -164,10 +164,10 @@ export default function BusinessDashboard() {
           value: data.profit,
           icon: DollarSign,
           accentColor: data.profit >= 0 ? '#03DAC6' : '#CF6679',
-          subText: data.profitMargin > 0
-            ? `${t('biz.bizNetIncome')}: ${data.profitMargin.toFixed(1)}%`
+          subText: (data.profitMargin ?? 0) > 0
+            ? `${t('biz.bizNetIncome')}: ${(data.profitMargin ?? 0).toFixed(1)}%`
             : t('biz.noBizData'),
-          badge: data.profitMargin > 0 ? `+${data.profitMargin.toFixed(1)}%` : null,
+          badge: (data.profitMargin ?? 0) > 0 ? `+${(data.profitMargin ?? 0).toFixed(1)}%` : null,
         },
         {
           label: 'Cash Flow',
@@ -382,7 +382,7 @@ export default function BusinessDashboard() {
                             backgroundColor: data.profitMargin >= 0 ? 'rgba(3,218,198,0.1)' : 'rgba(207,102,121,0.1)',
                           }}
                         >
-                          {data.profitMargin.toFixed(1)}%
+                          {(data.profitMargin ?? 0).toFixed(1)}%
                         </span>
                       </div>
                     </div>

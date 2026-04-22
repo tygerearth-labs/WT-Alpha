@@ -98,7 +98,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                         }}
                       />
                     </div>
-                    <span className="text-[8px] text-white/30 mt-0.5 block">{pct.toFixed(0)}%</span>
+                    <span className="text-[8px] text-white/30 mt-0.5 block">{(pct || 0).toFixed(0)}%</span>
                   </div>
                 )}
                 <span className="text-[9px] text-white/40">
@@ -149,7 +149,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                     {totalAmount > 0 && (
                       <div className="flex items-center gap-2">
                         <ColorPill color={category.color} label={formatAmount(totalAmount)} />
-                        <span className="text-[9px] text-white/30">{pct.toFixed(0)}%</span>
+                        <span className="text-[9px] text-white/30">{(pct || 0).toFixed(0)}%</span>
                       </div>
                     )}
                     {/* Progress bar */}
@@ -225,7 +225,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm truncate">{category.name}</p>
-                      <ColorPill color={category.color} label={`${pct.toFixed(0)}%`} />
+                      <ColorPill color={category.color} label={`${(pct || 0).toFixed(0)}%`} />
                     </div>
                     <p className="text-[10px] text-muted-foreground">
                       {t('category.transactionCount', { count: transactionCount })}

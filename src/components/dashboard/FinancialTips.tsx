@@ -93,7 +93,7 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
       result.push({
         id: 'savings-good',
         icon: <PiggyBank className="h-4 w-4" />,
-        title: t('dashboard.aiTip.savingsGood', { rate: savingsRate.toFixed(1) }),
+        title: t('dashboard.aiTip.savingsGood', { rate: (savingsRate ?? 0).toFixed(1) }),
         description: t('dashboard.aiTip.savingsGoodDesc'),
         severity: 'good',
         ...SEVERITY_COLORS.good,
@@ -102,7 +102,7 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
       result.push({
         id: 'savings-ok',
         icon: <Info className="h-4 w-4" />,
-        title: t('dashboard.aiTip.savingsOk', { rate: savingsRate.toFixed(1) }),
+        title: t('dashboard.aiTip.savingsOk', { rate: (savingsRate ?? 0).toFixed(1) }),
         description: t('dashboard.aiTip.savingsOkDesc'),
         severity: 'warning',
         ...SEVERITY_COLORS.warning,
@@ -111,7 +111,7 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
       result.push({
         id: 'savings-low',
         icon: <AlertTriangle className="h-4 w-4" />,
-        title: t('dashboard.aiTip.savingsLow', { rate: savingsRate.toFixed(1) }),
+        title: t('dashboard.aiTip.savingsLow', { rate: (savingsRate ?? 0).toFixed(1) }),
         description: t('dashboard.aiTip.savingsLowDesc'),
         severity: 'concern',
         ...SEVERITY_COLORS.concern,
@@ -134,7 +134,7 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
         result.push({
           id: 'expense-up',
           icon: <TrendingUp className="h-4 w-4" />,
-          title: t('dashboard.aiTip.expenseUp', { percent: expenseChange.toFixed(0) }),
+          title: t('dashboard.aiTip.expenseUp', { percent: (expenseChange ?? 0).toFixed(0) }),
           description: t('dashboard.aiTip.expenseUpDesc', { prevAmount: formatAmount(monthlyComparison.previousMonthExpense), currentAmount: formatAmount(monthlyComparison.currentMonthExpense) }),
           severity: 'concern',
           ...SEVERITY_COLORS.concern,
@@ -143,7 +143,7 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
         result.push({
           id: 'expense-slight-up',
           icon: <TrendingUp className="h-4 w-4" />,
-          title: t('dashboard.aiTip.expenseSlightUp', { percent: expenseChange.toFixed(0) }),
+          title: t('dashboard.aiTip.expenseSlightUp', { percent: (expenseChange ?? 0).toFixed(0) }),
           description: t('dashboard.aiTip.expenseSlightUpDesc', { prevAmount: formatAmount(monthlyComparison.previousMonthExpense), currentAmount: formatAmount(monthlyComparison.currentMonthExpense) }),
           severity: 'warning',
           ...SEVERITY_COLORS.warning,
@@ -152,7 +152,7 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
         result.push({
           id: 'expense-down',
           icon: <TrendingDown className="h-4 w-4" />,
-          title: t('dashboard.aiTip.expenseDown', { percent: Math.abs(expenseChange).toFixed(0) }),
+          title: t('dashboard.aiTip.expenseDown', { percent: Math.abs(expenseChange ?? 0).toFixed(0) }),
           description: t('dashboard.aiTip.expenseDownDesc', { prevAmount: formatAmount(monthlyComparison.previousMonthExpense), currentAmount: formatAmount(monthlyComparison.currentMonthExpense) }),
           severity: 'good',
           ...SEVERITY_COLORS.good,

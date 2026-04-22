@@ -180,7 +180,7 @@ export function SavingsOverview() {
               </div>
               <div className="flex items-center justify-between mt-1.5">
                 <span className="text-[10px]" style={{ color: THEME.muted }}>
-                  {t('target.percentOverall', { percent: overallProgress.toFixed(0) })}
+                  {t('target.percentOverall', { percent: (overallProgress || 0).toFixed(0) })}
                 </span>
                 <div className="flex items-center gap-2">
                   {onTrackCount > 0 && (
@@ -256,7 +256,7 @@ export function SavingsOverview() {
                             {formatAmount(target.currentAmount)} / {formatAmount(target.targetAmount)}
                           </span>
                           <span className="text-[10px] font-bold" style={{ color: statusConfig.color }}>
-                            {progress.toFixed(0)}%
+                            {(progress || 0).toFixed(0)}%
                           </span>
                         </div>
                       </div>

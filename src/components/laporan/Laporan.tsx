@@ -98,7 +98,7 @@ export function Laporan() {
     }))), t('laporan.transactionSheetName'));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(savingsTargets.map(s => ({
       [t('laporan.targetName')]: s.name, [t('laporan.targetAmount')]: s.targetAmount, [t('laporan.collected')]: s.currentAmount,
-      [t('laporan.progress')]: `${((s.currentAmount / s.targetAmount) * 100).toFixed(1)}%`,
+      [t('laporan.progress')]: `${((s.currentAmount / s.targetAmount) * 100 || 0).toFixed(1)}%`,
       [t('laporan.deadline')]: format(new Date(s.targetDate), 'dd/MM/yyyy', { locale: id }),
     }))), t('laporan.targetSheetName'));
     XLSX.writeFile(wb, `${t('laporan.excelFilename')}_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
@@ -203,7 +203,7 @@ export function Laporan() {
       <div className="p-3 sm:p-4 lg:p-5 rounded-xl grid grid-cols-3 gap-3 lg:gap-6" style={{ background: T.bg, border: `1px solid ${T.border}` }}>
         <div className="text-center">
           <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.savingsRate')}</p>
-          <p className="text-base lg:text-xl font-bold" style={{ color: savingsRate >= 20 ? T.secondary : T.warning }}>{savingsRate.toFixed(1)}%</p>
+          <p className="text-base lg:text-xl font-bold" style={{ color: savingsRate >= 20 ? T.secondary : T.warning }}>{(savingsRate ?? 0).toFixed(1)}%</p>
         </div>
         <div className="text-center">
           <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.dailyAvg')}</p>
@@ -322,7 +322,7 @@ export function Laporan() {
                 <div key={target.id} className="rounded-xl p-4" style={{ background: `${T.border}30` }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold truncate" style={{ color: T.text }}>{target.name}</span>
-                    <span className="text-xs font-semibold shrink-0 ml-2" style={{ color: barColor }}>{pct.toFixed(0)}%</span>
+                    <span className="text-xs font-semibold shrink-0 ml-2" style={{ color: barColor }}>{(pct || 0).toFixed(0)}%</span>
                   </div>
                   <div className="w-full h-2 rounded-full overflow-hidden mb-2" style={{ background: T.border }}>
                     <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />
@@ -345,7 +345,7 @@ export function Laporan() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium truncate" style={{ color: T.text }}>{target.name}</span>
-                      <span className="text-[10px] font-semibold shrink-0 ml-2" style={{ color: barColor }}>{pct.toFixed(0)}%</span>
+                      <span className="text-[10px] font-semibold shrink-0 ml-2" style={{ color: barColor }}>{(pct || 0).toFixed(0)}%</span>
                     </div>
                     <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: T.border }}>
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%`, background: barColor }} />

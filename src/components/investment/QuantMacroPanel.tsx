@@ -322,8 +322,9 @@ const slideUp = {
 
 // ── Inline Sub-components ────────────────────────────────────────────────────
 
-function RSIGauge({ value }: { value: number }) {
-  const pct = Math.min(100, Math.max(0, value));
+function RSIGauge({ value }: { value: number | undefined | null }) {
+  const safe = typeof value === 'number' && !isNaN(value) ? value : 50;
+  const pct = Math.min(100, Math.max(0, safe));
   const isOversold = pct < 30;
   const isOverbought = pct > 70;
   const zoneColor = isOversold ? '#CF6679' : isOverbought ? '#CF6679' : '#03DAC6';
@@ -336,7 +337,7 @@ function RSIGauge({ value }: { value: number }) {
           <Gauge className="h-3 w-3" />
           RSI
         </span>
-        <span className="text-xs font-mono font-bold" style={{ color: zoneColor }}>{value.toFixed(1)}</span>
+        <span className="text-xs font-mono font-bold" style={{ color: zoneColor }}>{safe.toFixed(1)}</span>
       </div>
       <div className="relative h-3 rounded-full overflow-hidden bg-white/[0.06]">
         <div className="absolute inset-0 flex">
@@ -394,17 +395,20 @@ function SignalBar({ strength }: { strength: number }) {
   );
 }
 
-function MACDHistogram({ macd, signal, histogram }: { macd: number; signal: number; histogram: number }) {
+function MACDHistogram({ macd, signal, histogram }: { macd: number | undefined | null; signal: number | undefined | null; histogram: number | undefined | null }) {
+  const m = typeof macd === 'number' && !isNaN(macd) ? macd : 0;
+  const s = typeof signal === 'number' && !isNaN(signal) ? signal : 0;
+  const h = typeof histogram === 'number' && !isNaN(histogram) ? histogram : 0;
   const bars = useMemo(() => {
     const result: number[] = [];
-    const absMax = Math.max(Math.abs(macd), Math.abs(signal), Math.abs(histogram), 0.01);
+    const absMax = Math.max(Math.abs(m), Math.abs(s), Math.abs(h), 0.01);
     for (let i = 0; i < 7; i++) {
-      const seed = macd * (i + 1) + signal * (i + 2) + histogram * (i + 3);
-      const val = ((Math.sin(seed) + Math.cos(histogram * i)) / 2) * absMax * 0.8;
+      const seed = m * (i + 1) + s * (i + 2) + h * (i + 3);
+      const val = ((Math.sin(seed) + Math.cos(h * i)) / 2) * absMax * 0.8;
       result.push(parseFloat(val.toFixed(6)));
     }
     return result;
-  }, [macd, signal, histogram]);
+  }, [m, s, h]);
   const maxAbs = Math.max(...bars.map(Math.abs), 0.01);
 
   return (
@@ -414,8 +418,8 @@ function MACDHistogram({ macd, signal, histogram }: { macd: number; signal: numb
           <Waves className="h-3 w-3" /> MACD
         </span>
         <Badge className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
-          style={{ backgroundColor: histogram >= 0 ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: histogram >= 0 ? '#03DAC6' : '#CF6679' }}>
-          {histogram >= 0 ? 'Bullish' : 'Bearish'}
+          style={{ backgroundColor: h >= 0 ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: h >= 0 ? '#03DAC6' : '#CF6679' }}>
+          {h >= 0 ? 'Bullish' : 'Bearish'}
         </Badge>
       </div>
       <div className="flex items-end gap-1 h-12">
@@ -429,17 +433,21 @@ function MACDHistogram({ macd, signal, histogram }: { macd: number; signal: numb
         })}
       </div>
       <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
-        <div><span className="text-white/30">MACD </span><span style={{ color: macd >= 0 ? '#03DAC6' : '#CF6679' }}>{macd.toFixed(4)}</span></div>
-        <div><span className="text-white/30">Signal </span><span className="text-white/60">{signal.toFixed(4)}</span></div>
-        <div><span className="text-white/30">Hist </span><span style={{ color: histogram >= 0 ? '#03DAC6' : '#CF6679' }}>{histogram.toFixed(4)}</span></div>
+        <div><span className="text-white/30">MACD </span><span style={{ color: m >= 0 ? '#03DAC6' : '#CF6679' }}>{m.toFixed(4)}</span></div>
+        <div><span className="text-white/30">Signal </span><span className="text-white/60">{s.toFixed(4)}</span></div>
+        <div><span className="text-white/30">Hist </span><span style={{ color: h >= 0 ? '#03DAC6' : '#CF6679' }}>{h.toFixed(4)}</span></div>
       </div>
     </div>
   );
 }
 
-function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number; middle: number; lower: number; price: number }) {
-  const range = upper - lower;
-  const position = range > 0 ? ((price - lower) / range) * 100 : 50;
+function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number | undefined | null; middle: number | undefined | null; lower: number | undefined | null; price: number | undefined | null }) {
+  const u = typeof upper === 'number' && !isNaN(upper) ? upper : 0;
+  const md = typeof middle === 'number' && !isNaN(middle) ? middle : 0;
+  const lo = typeof lower === 'number' && !isNaN(lower) ? lower : 0;
+  const pr = typeof price === 'number' && !isNaN(price) ? price : 0;
+  const range = u - lo;
+  const position = range > 0 ? ((pr - lo) / range) * 100 : 50;
 
   return (
     <div className="space-y-2">
@@ -448,28 +456,32 @@ function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number; mi
           <Layers className="h-3 w-3" /> Bollinger Bands
         </span>
         <Badge className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
-          style={{ backgroundColor: price <= lower ? 'rgba(3,218,198,0.15)' : price >= upper ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)', color: price <= lower ? '#03DAC6' : price >= upper ? '#CF6679' : '#FFD700' }}>
-          {price <= lower ? 'Below Lower' : price >= upper ? 'Above Upper' : 'Within'}
+          style={{ backgroundColor: pr <= lo ? 'rgba(3,218,198,0.15)' : pr >= u ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)', color: pr <= lo ? '#03DAC6' : pr >= u ? '#CF6679' : '#FFD700' }}>
+          {pr <= lo ? 'Below Lower' : pr >= u ? 'Above Upper' : 'Within'}
         </Badge>
       </div>
       <div className="relative h-6 rounded bg-white/[0.04] overflow-hidden">
         <div className="absolute inset-x-0 top-0 bottom-0 bg-[#03DAC6]/5" />
         <motion.div className="absolute top-0 bottom-0 w-0.5"
-          style={{ left: `${Math.min(100, Math.max(0, position))}%`, backgroundColor: price <= lower ? '#03DAC6' : price >= upper ? '#CF6679' : '#FFD700', boxShadow: `0 0 6px ${price <= lower ? '#03DAC680' : price >= upper ? '#CF667980' : '#FFD70080'}` }}
+          style={{ left: `${Math.min(100, Math.max(0, position))}%`, backgroundColor: pr <= lo ? '#03DAC6' : pr >= u ? '#CF6679' : '#FFD700', boxShadow: `0 0 6px ${pr <= lo ? '#03DAC680' : pr >= u ? '#CF667980' : '#FFD70080'}` }}
           initial={{ left: '50%' }} animate={{ left: `${Math.min(100, Math.max(0, position))}%` }} transition={{ duration: 0.6 }} />
       </div>
       <div className="grid grid-cols-3 gap-1 text-[10px] font-mono">
-        <div className="text-right"><span className="text-white/25">Upper </span><span className="text-[#CF6679]/80">{upper.toLocaleString()}</span></div>
-        <div className="text-center"><span className="text-white/25">Mid </span><span className="text-white/50">{middle.toLocaleString()}</span></div>
-        <div><span className="text-white/25">Lower </span><span className="text-[#03DAC6]/80">{lower.toLocaleString()}</span></div>
+        <div className="text-right"><span className="text-white/25">Upper </span><span className="text-[#CF6679]/80">{u.toLocaleString()}</span></div>
+        <div className="text-center"><span className="text-white/25">Mid </span><span className="text-white/50">{md.toLocaleString()}</span></div>
+        <div><span className="text-white/25">Lower </span><span className="text-[#03DAC6]/80">{lo.toLocaleString()}</span></div>
       </div>
     </div>
   );
 }
 
-function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number; sma50: number; ema12: number; ema26: number }) {
-  const smaGoldenCross = sma20 > sma50;
-  const emaGoldenCross = ema12 > ema26;
+function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number | undefined | null; sma50: number | undefined | null; ema12: number | undefined | null; ema26: number | undefined | null }) {
+  const s20 = typeof sma20 === 'number' && !isNaN(sma20) ? sma20 : 0;
+  const s50 = typeof sma50 === 'number' && !isNaN(sma50) ? sma50 : 0;
+  const e12 = typeof ema12 === 'number' && !isNaN(ema12) ? ema12 : 0;
+  const e26 = typeof ema26 === 'number' && !isNaN(ema26) ? ema26 : 0;
+  const smaGoldenCross = s20 > s50;
+  const emaGoldenCross = e12 > e26;
 
   return (
     <div className="space-y-2">
@@ -478,16 +490,16 @@ function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number; s
       </span>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 20</span><span className="text-[11px] font-mono text-white/70">{sma20.toLocaleString()}</span></div>
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 50</span><span className="text-[11px] font-mono text-white/70">{sma50.toLocaleString()}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 20</span><span className="text-[11px] font-mono text-white/70">{s20.toLocaleString()}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 50</span><span className="text-[11px] font-mono text-white/70">{s50.toLocaleString()}</span></div>
           <Badge className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
             style={{ backgroundColor: smaGoldenCross ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: smaGoldenCross ? '#03DAC6' : '#CF6679' }}>
             {smaGoldenCross ? 'Golden Cross ↑' : 'Death Cross ↓'}
           </Badge>
         </div>
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 12</span><span className="text-[11px] font-mono text-white/70">{ema12.toLocaleString()}</span></div>
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 26</span><span className="text-[11px] font-mono text-white/70">{ema26.toLocaleString()}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 12</span><span className="text-[11px] font-mono text-white/70">{e12.toLocaleString()}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 26</span><span className="text-[11px] font-mono text-white/70">{e26.toLocaleString()}</span></div>
           <Badge className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
             style={{ backgroundColor: emaGoldenCross ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: emaGoldenCross ? '#03DAC6' : '#CF6679' }}>
             {emaGoldenCross ? 'Bullish EMA ↑' : 'Bearish EMA ↓'}
@@ -663,7 +675,7 @@ function SignalCard({
               )}
               <span className="text-sm font-bold text-white/90 font-mono">{item.symbol}</span>
               <Badge className="text-[8px] px-1.5 py-0 h-4 font-medium border-0" style={{ backgroundColor: tc.bg, color: tc.text }}>
-                {item.type.toUpperCase()}
+                {(item.type || 'crypto').toUpperCase()}
               </Badge>
             </div>
             <div className="flex items-center gap-1.5">
@@ -714,14 +726,14 @@ function SignalCard({
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] text-white/25">RSI</span>
-                  <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
+                  <span className={cn('text-[10px] font-mono font-bold', (signal.indicators?.rsi?.value ?? 50) < 30 || (signal.indicators?.rsi?.value ?? 50) > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
                     {toF(signal.indicators?.rsi?.value, 1)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] text-white/25">MACD</span>
-                  <span className={cn('text-[10px] font-mono font-bold', signal.indicators.macd.histogram >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                    {signal.indicators.macd.histogram >= 0 ? '▲' : '▼'}
+                  <span className={cn('text-[10px] font-mono font-bold', (signal.indicators?.macd?.histogram ?? 0) >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                    {(signal.indicators?.macd?.histogram ?? 0) >= 0 ? '▲' : '▼'}
                   </span>
                 </div>
               </div>
@@ -1291,7 +1303,7 @@ export default function QuantMacroPanel() {
               { label: '24h Volume', value: formatLargeNumber(macroData.global.totalVolume), change: null, icon: Activity },
               { label: 'BTC Dominance', value: `${toF(macroData.global.btcDominance, 1)}%`, change: null, icon: TrendingUp },
               { label: 'ETH Dominance', value: `${toF(macroData.global.ethDominance, 1)}%`, change: null, icon: Layers },
-              { label: 'Active Cryptos', value: macroData.global.activeCryptos.toLocaleString(), change: null, icon: Zap },
+              { label: 'Active Cryptos', value: (macroData.global.activeCryptos ?? 0).toLocaleString(), change: null, icon: Zap },
             ].map(card => {
               const isUp = card.change !== null && card.change >= 0;
               return (
@@ -1792,7 +1804,7 @@ export default function QuantMacroPanel() {
                     <DialogTitle className="text-white text-base font-bold flex items-center gap-2">{selectedAsset.symbol}</DialogTitle>
                     <Badge className="text-[9px] px-2 py-0 h-4 font-medium border-0"
                       style={{ backgroundColor: TYPE_COLORS[selectedAsset.type]?.bg || 'rgba(255,255,255,0.06)', color: TYPE_COLORS[selectedAsset.type]?.text || '#888' }}>
-                      {selectedAsset.type.toUpperCase()}
+                      {(selectedAsset.type || 'crypto').toUpperCase()}
                     </Badge>
                     {selectedAsset.smc && (
                       <TrendBadge trend={selectedAsset.smc.trendStructure} />
@@ -1812,9 +1824,9 @@ export default function QuantMacroPanel() {
                 <div className="mt-3 flex items-end gap-3">
                   <span className="text-3xl font-bold text-white/95 font-mono tracking-tight">{fmtPrice(selectedAsset.type, selectedAsset.price)}</span>
                   <div className="flex items-center gap-1 mb-1">
-                    {selectedAsset.change24h >= 0 ? <ArrowUpRight className="h-5 w-5 text-[#03DAC6]" /> : <ArrowDownRight className="h-5 w-5 text-[#CF6679]" />}
-                    <span className={cn('text-lg font-mono font-bold', selectedAsset.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                      {selectedAsset.change24h >= 0 ? '+' : ''}{toF(selectedAsset.change24h)}%
+                    {(selectedAsset.change24h ?? 0) >= 0 ? <ArrowUpRight className="h-5 w-5 text-[#03DAC6]" /> : <ArrowDownRight className="h-5 w-5 text-[#CF6679]" />}
+                    <span className={cn('text-lg font-mono font-bold', (selectedAsset.change24h ?? 0) >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                      {(selectedAsset.change24h ?? 0) >= 0 ? '+' : ''}{toF(selectedAsset.change24h)}%
                     </span>
                   </div>
                   <div className="ml-auto flex items-center gap-2">
@@ -1864,11 +1876,11 @@ export default function QuantMacroPanel() {
                           <BarChart3 className="h-3.5 w-3.5" /> {tf('quant.indicators', 'Indicators')}
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><RSIGauge value={selectedAsset.indicators.rsi.value} /></div>
-                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MACDHistogram macd={selectedAsset.indicators.macd.value} signal={selectedAsset.indicators.macd.signal} histogram={selectedAsset.indicators.macd.histogram} /></div>
-                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><BollingerBandsInfo upper={selectedAsset.indicators.bollingerBands.upper} middle={selectedAsset.indicators.bollingerBands.middle} lower={selectedAsset.indicators.bollingerBands.lower} price={selectedAsset.price} /></div>
-                          {selectedAsset.indicators.sma20 && selectedAsset.indicators.sma50 && selectedAsset.indicators.ema12 && selectedAsset.indicators.ema26 && (
-                            <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MovingAverageSection sma20={selectedAsset.indicators.sma20} sma50={selectedAsset.indicators.sma50} ema12={selectedAsset.indicators.ema12} ema26={selectedAsset.indicators.ema26} /></div>
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><RSIGauge value={selectedAsset.indicators?.rsi?.value} /></div>
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MACDHistogram macd={selectedAsset.indicators?.macd?.value} signal={selectedAsset.indicators?.macd?.signal} histogram={selectedAsset.indicators?.macd?.histogram} /></div>
+                          <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><BollingerBandsInfo upper={selectedAsset.indicators?.bollingerBands?.upper} middle={selectedAsset.indicators?.bollingerBands?.middle} lower={selectedAsset.indicators?.bollingerBands?.lower} price={selectedAsset.price} /></div>
+                          {selectedAsset.indicators?.sma20 && selectedAsset.indicators?.sma50 && selectedAsset.indicators?.ema12 && selectedAsset.indicators?.ema26 && (
+                            <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-3"><MovingAverageSection sma20={selectedAsset.indicators?.sma20} sma50={selectedAsset.indicators?.sma50} ema12={selectedAsset.indicators?.ema12} ema26={selectedAsset.indicators?.ema26} /></div>
                           )}
                         </div>
                       </div>

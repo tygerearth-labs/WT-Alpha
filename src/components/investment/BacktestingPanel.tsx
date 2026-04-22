@@ -158,36 +158,41 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
   // ── Chart calculations ──────────────────────────────────────────────────
   const chartMax = useMemo(() => {
     if (!data?.weeklyData.length) return 1;
-    const maxAbs = Math.max(...data.weeklyData.map(w => Math.abs(w.change)));
+    const maxAbs = Math.max(...data.weeklyData.map(w => Math.abs(w.change ?? 0)));
     return Math.max(maxAbs * 1.3, 0.5);
   }, [data]);
 
-  // ── Summary cards config ────────────────────────────────────────────────
+function toF(val: number | undefined | null, digits = 2): string {
+  const n = typeof val === 'number' && !isNaN(val) ? val : 0;
+  return n.toFixed(digits);
+}
+
+// ── Summary cards config ────────────────────────────────────────────────
   const summaryCards = useMemo(() => {
     if (!data) return [];
     const s = data.summary;
     return [
       {
         label: 'Avg Weekly',
-        value: `${s.avgWeeklyChange >= 0 ? '+' : ''}${s.avgWeeklyChange.toFixed(2)}%`,
+        value: `${s.avgWeeklyChange >= 0 ? '+' : ''}${toF(s.avgWeeklyChange)}%`,
         color: s.avgWeeklyChange >= 0 ? UP_COLOR : DOWN_COLOR,
         icon: Activity,
       },
       {
         label: 'Total Change',
-        value: `${s.totalChange >= 0 ? '+' : ''}${s.totalChange.toFixed(2)}%`,
+        value: `${s.totalChange >= 0 ? '+' : ''}${toF(s.totalChange)}%`,
         color: s.totalChange >= 0 ? UP_COLOR : DOWN_COLOR,
         icon: s.totalChange >= 0 ? TrendingUp : TrendingDown,
       },
       {
         label: 'Win Rate',
-        value: `${s.winRate.toFixed(0)}%`,
+        value: `${toF(s.winRate, 0)}%`,
         color: s.winRate >= 60 ? UP_COLOR : s.winRate >= 40 ? GOLD_COLOR : DOWN_COLOR,
         icon: Trophy,
       },
       {
         label: 'Volatility',
-        value: `${s.volatility.toFixed(2)}%`,
+        value: `${toF(s.volatility)}%`,
         color: s.volatility > 5 ? DOWN_COLOR : s.volatility > 3 ? GOLD_COLOR : UP_COLOR,
         icon: Zap,
       },
@@ -318,7 +323,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                   <div className="min-w-0">
                     <span className="text-[9px] text-[#03DAC6]/50 uppercase tracking-wider font-bold block">Best Week</span>
                     <span className="text-xs font-mono font-bold text-[#03DAC6]">
-                      +{data.summary.bestWeek.change.toFixed(2)}%
+                      +{toF(data.summary.bestWeek.change)}%
                     </span>
                     <span className="text-[10px] text-white/30 ml-1.5">{fmtDate(data.summary.bestWeek.week)}</span>
                   </div>
@@ -330,7 +335,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                   <div className="min-w-0">
                     <span className="text-[9px] text-[#CF6679]/50 uppercase tracking-wider font-bold block">Worst Week</span>
                     <span className="text-xs font-mono font-bold text-[#CF6679]">
-                      {data.summary.worstWeek.change.toFixed(2)}%
+                      {toF(data.summary.worstWeek.change)}%
                     </span>
                     <span className="text-[10px] text-white/30 ml-1.5">{fmtDate(data.summary.worstWeek.week)}</span>
                   </div>
@@ -347,15 +352,15 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                 </div>
                 <div className="flex items-end gap-1.5 h-32">
                   {data.weeklyData.map((week, idx) => {
-                    const isPositive = week.change >= 0;
-                    const barHeight = Math.max(Math.abs(week.change) / chartMax * 100, 2);
+                    const isPositive = (week.change ?? 0) >= 0;
+                    const barHeight = Math.max(Math.abs(week.change ?? 0) / chartMax * 100, 2);
                     return (
                       <div key={week.weekStart} className="flex-1 flex flex-col items-center gap-1 group relative">
                         {/* Tooltip */}
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
                           <div className="bg-[#0D0D0D] border border-white/10 rounded px-2 py-1 shadow-lg">
                             <span className="text-[9px] font-mono" style={{ color: isPositive ? UP_COLOR : DOWN_COLOR }}>
-                              {isPositive ? '+' : ''}{week.change.toFixed(2)}%
+                              {isPositive ? '+' : ''}{toF(week.change)}%
                             </span>
                           </div>
                         </div>
@@ -408,7 +413,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                     </thead>
                     <tbody>
                       {data.weeklyData.map((week, idx) => {
-                        const isPositive = week.change >= 0;
+                        const isPositive = (week.change ?? 0) >= 0;
                         const changeColor = isPositive ? UP_COLOR : DOWN_COLOR;
                         return (
                           <motion.tr
@@ -451,7 +456,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                                   <TrendingDown className="h-3 w-3" style={{ color: changeColor }} />
                                 )}
                                 <span className="text-[10px] font-mono font-bold" style={{ color: changeColor }}>
-                                  {isPositive ? '+' : ''}{week.change.toFixed(2)}%
+                                  {isPositive ? '+' : ''}{toF(week.change)}%
                                 </span>
                               </div>
                             </td>

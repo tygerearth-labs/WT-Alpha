@@ -77,7 +77,7 @@ export function TargetSummaryCard({ savingsTargets }: Props) {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-lg sm:text-xl font-bold" style={{ color: ringColor }}>
-              {overallPct.toFixed(0)}%
+              {(overallPct || 0).toFixed(0)}%
             </span>
             <span className="text-[8px] uppercase tracking-wider" style={{ color: T.muted }}>{t('target.overall')}</span>
           </div>
@@ -103,7 +103,7 @@ export function TargetSummaryCard({ savingsTargets }: Props) {
           <div className="min-w-0">
             <p className="text-[9px] uppercase tracking-wider truncate" style={{ color: T.muted }}>{t('target.monthly')}</p>
             <p className="text-sm sm:text-base font-bold truncate" style={{ color: T.text }}>
-              {monthlyPct.toFixed(0)}%
+              {(monthlyPct || 0).toFixed(0)}%
             </p>
           </div>
         </div>

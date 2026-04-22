@@ -401,7 +401,7 @@ export default function InvestmentPortfolio() {
                     <div className="flex items-center gap-2.5">
                       <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', typeColor.bg)}>
                         <span className={cn('text-xs font-bold', typeColor.text)}>
-                          {item.type.slice(0, 2).toUpperCase()}
+                          {(item.type || 'crypto').slice(0, 2).toUpperCase()}
                         </span>
                       </div>
                       <div>
@@ -424,7 +424,7 @@ export default function InvestmentPortfolio() {
                           <div className="flex items-center gap-1">
                             <span className="text-[10px] text-white/40">{t('inv.dashTicker')}</span>
                             <span className={cn('text-xs font-medium', livePrice.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                              {livePrice.change24h >= 0 ? '+' : ''}{livePrice.change24h.toFixed(2)}%
+                              {livePrice.change24h >= 0 ? '+' : ''}{(livePrice.change24h ?? 0).toFixed(2)}%
                             </span>
                           </div>
                         );
@@ -461,7 +461,7 @@ export default function InvestmentPortfolio() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-white/40">PnL %</span>
                       <span className={cn('font-semibold', pnlColor(item.unrealizedPnl))}>
-                        {isPositive ? '+' : ''}{item.unrealizedPnlPercentage.toFixed(2)}%
+                        {isPositive ? '+' : ''}{(item.unrealizedPnlPercentage ?? 0).toFixed(2)}%
                       </span>
                     </div>
                     <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
@@ -590,7 +590,7 @@ export default function InvestmentPortfolio() {
                   TYPE_COLORS[selectedAsset.type]?.bg || 'bg-purple-500/15'
                 )}>
                   <span className={cn('text-xs font-bold', TYPE_COLORS[selectedAsset.type]?.text || 'text-purple-400')}>
-                    {selectedAsset.type.slice(0, 2).toUpperCase()}
+                    {(selectedAsset.type || 'crypto').slice(0, 2).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
