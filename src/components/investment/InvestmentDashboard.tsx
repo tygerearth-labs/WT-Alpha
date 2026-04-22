@@ -130,6 +130,7 @@ interface MacroData {
   topGainers: MacroAsset[];
   topLosers: MacroAsset[];
   fearAndGreed?: { value: number; label: string };
+  fearGreedSource?: 'alternative.me' | 'proxy';
   timestamp: string;
 }
 
@@ -171,6 +172,11 @@ interface TechnicalAnalysis {
     entryZone: string;
     stopLossZone: string;
     takeProfitZone: string;
+    tradeDirection?: string;
+    entryPrice?: number;
+    stopLossPrice?: number;
+    takeProfitPrice?: number;
+    riskRewardRatio?: number;
   };
   newsConfirmation?: {
     confirmed: boolean;
@@ -195,6 +201,13 @@ interface TechnicalAnalysis {
     sparkline7d: number[] | null;
     source: string;
   } | null;
+  dataQuality?: {
+    isMock: boolean;
+    ohlcvSource: string;
+    indicatorsComputed: boolean;
+  };
+  layerScores?: Record<string, { score: number; signal: string; description: string }>;
+  confluenceCount?: number;
 }
 
 interface WatchlistItem {
@@ -1095,7 +1108,7 @@ export default function InvestmentDashboard() {
                 { label: tf('inv.dashBtcDom', 'BTC Dom'), value: `${toF(macroData.global.btcDominance, 1)}%`, icon: Zap, change: null },
                 { label: tf('inv.dashVolume24h', 'Volume 24h'), value: formatMarketCap(macroData.global.totalVolume), icon: BarChart3, change: null },
                 { label: tf('inv.dashChange24h', '24h Change'), value: `${macroData.global.marketCapChange24h >= 0 ? '+' : ''}${toF(macroData.global.marketCapChange24h)}%`, icon: macroData.global.marketCapChange24h >= 0 ? TrendingUp : TrendingDown, change: macroData.global.marketCapChange24h },
-                ...(macroData.fearAndGreed ? [{ label: tf('inv.dashFearGreed', 'Fear & Greed'), value: `${macroData.fearAndGreed.value} ${macroData.fearAndGreed.label}`, icon: Gauge, change: null }] : []),
+                ...(macroData.fearAndGreed ? [{ label: macroData.fearGreedSource === 'alternative.me' ? 'Fear & Greed Index (Alternative.me)' : 'Market Sentiment (estimated)', value: `${macroData.fearAndGreed.value} ${macroData.fearAndGreed.label}`, icon: Gauge, change: null }] : []),
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-2.5 shrink-0">
                   <item.icon className="h-3.5 w-3.5 text-white/25" />
@@ -1422,8 +1435,8 @@ export default function InvestmentDashboard() {
                         <div className="border-t border-white/[0.04] pt-2.5 mt-1 space-y-1.5">
                           <span className="text-[8px] text-white/25 uppercase tracking-wider block">Trade Zones</span>
                           <div className="flex items-center gap-1.5">
-                            <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
-                            <span className="text-[9px] text-white/25 w-14">Entry</span>
+                            <div className={cn('h-1.5 w-1.5 rounded-full', activeChartSignal.aiAnalysis.tradeDirection === 'SHORT' ? 'bg-[#CF6679]' : 'bg-[#03DAC6]')} />
+                            <span className="text-[9px] text-white/25 w-14">{activeChartSignal.aiAnalysis.tradeDirection === 'SHORT' ? 'Entry (SELL)' : activeChartSignal.aiAnalysis.tradeDirection === 'LONG' ? 'Entry (BUY)' : 'Entry'}</span>
                             <span className="text-[10px] text-white/50 font-mono text-xs">{activeChartSignal.aiAnalysis.entryZone}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
@@ -1638,9 +1651,9 @@ export default function InvestmentDashboard() {
                       item.title.toLowerCase().includes(imp.symbol.toLowerCase()),
                     );
                     const decisionText = matchedImpact ? matchedImpact.action : (isBullish
-                      ? (i % 2 === 0 ? 'Pertimbangkan Buy' : 'Tingkatkan posisi')
+                      ? 'Consider Buy'
                       : isBearish
-                        ? (i % 2 === 0 ? 'Pertimbangkan Sell' : 'Kurangi posisi')
+                        ? 'Consider Sell'
                         : 'Hold & Monitor');
                     const decisionBg = matchedImpact
                       ? matchedImpact.action === 'BUY' ? 'rgba(3,218,198,0.2)' : matchedImpact.action === 'SELL' ? 'rgba(207,102,121,0.2)' : 'rgba(255,215,0,0.15)'
@@ -1744,6 +1757,14 @@ export default function InvestmentDashboard() {
                     <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
                       Smart Money Signals — {activeChartAsset.symbol}
                     </span>
+                    {activeChartSignal.dataQuality?.isMock && (
+                      <Badge className="text-[8px] px-1.5 py-0 h-3 border-0" style={{
+                        backgroundColor: 'rgba(255,215,0,0.15)',
+                        color: '#FFD700',
+                      }}>
+                        ⚠ Limited Data
+                      </Badge>
+                    )}
                     {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
                   </div>
                   <Badge className="text-[10px] px-2.5 py-0 h-5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
@@ -1852,12 +1873,29 @@ export default function InvestmentDashboard() {
                           )}>
                             {signal.overallSignal === 'buy' ? 'BELI' : signal.overallSignal === 'sell' ? 'JUAL' : 'HOLD'}
                           </span>
+                          {/* Trade Direction Badge — always visible */}
+                          {ai?.tradeDirection && ai.tradeDirection !== 'NONE' && (
+                            <Badge className="text-[9px] px-2 py-0 h-4 font-black border-0" style={{
+                              backgroundColor: ai.tradeDirection === 'SHORT' ? 'rgba(207,102,121,0.25)' : 'rgba(3,218,198,0.25)',
+                              color: ai.tradeDirection === 'SHORT' ? '#CF6679' : '#03DAC6',
+                            }}>
+                              {ai.tradeDirection === 'SHORT' ? '⬇ SHORT' : '⬆ LONG'}
+                            </Badge>
+                          )}
                           {strength > 50 && (
                             <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-black border-0" style={{
                               backgroundColor: signal.overallSignal === 'buy' ? 'rgba(3,218,198,0.25)' : 'rgba(207,102,121,0.25)',
                               color: signal.overallSignal === 'buy' ? '#03DAC6' : '#CF6679',
                             }}>
                               STRONG
+                            </Badge>
+                          )}
+                          {ai?.riskRewardRatio && ai.riskRewardRatio > 0 && (
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-black border-0" style={{
+                              backgroundColor: 'rgba(255,215,0,0.15)',
+                              color: '#FFD700',
+                            }}>
+                              R:R {ai.riskRewardRatio}
                             </Badge>
                           )}
                         </div>
@@ -1906,14 +1944,44 @@ export default function InvestmentDashboard() {
                     )}
                   </div>
 
+                  {/* Trade Direction Banner — clear BUY/SELL indicator */}
+                  {ai?.tradeDirection && ai.tradeDirection !== 'NONE' && (
+                    <div className={cn(
+                      'flex items-center justify-center gap-2 rounded-lg py-2 px-3 mb-3 border',
+                      ai.tradeDirection === 'SHORT'
+                        ? 'bg-[#CF6679]/[0.08] border-[#CF6679]/15'
+                        : 'bg-[#03DAC6]/[0.08] border-[#03DAC6]/15',
+                    )}>
+                      {ai.tradeDirection === 'SHORT' ? (
+                        <ArrowDownRight className="h-4 w-4 text-[#CF6679]" />
+                      ) : (
+                        <ArrowUpRight className="h-4 w-4 text-[#03DAC6]" />
+                      )}
+                      <span className={cn(
+                        'text-xs font-black uppercase tracking-widest',
+                        ai.tradeDirection === 'SHORT' ? 'text-[#CF6679]' : 'text-[#03DAC6]',
+                      )}>
+                        {ai.tradeDirection === 'SHORT' ? 'SELL / SHORT' : 'BUY / LONG'}
+                      </span>
+                      <span className="text-[10px] text-white/25 ml-2">
+                        SL {ai.tradeDirection === 'SHORT' ? '↑' : '↓'}  •  TP {ai.tradeDirection === 'SHORT' ? '↓' : '↑'}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Entry / SL / TP Zones — only if AI data available */}
                   {ai ? (
                     <div className="relative grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.06]">
                       {/* Entry Zone */}
-                      <div className="rounded-lg bg-white/[0.03] border border-[#03DAC6]/15 p-2.5 text-center">
+                      <div className={cn(
+                        "rounded-lg bg-white/[0.03] border p-2.5 text-center",
+                        ai?.tradeDirection === 'SHORT' ? 'border-[#CF6679]/15' : ai?.tradeDirection === 'LONG' ? 'border-[#03DAC6]/15' : 'border-white/[0.06]',
+                      )}>
                         <div className="flex items-center justify-center gap-1 mb-1">
-                          <div className="h-2 w-2 rounded-full bg-[#03DAC6]" />
-                          <span className="text-[8px] text-white/30 uppercase tracking-wider font-bold">Entry</span>
+                          <div className={cn('h-2 w-2 rounded-full', ai?.tradeDirection === 'SHORT' ? 'bg-[#CF6679]' : ai?.tradeDirection === 'LONG' ? 'bg-[#03DAC6]' : 'bg-white/20')} />
+                          <span className="text-[8px] text-white/30 uppercase tracking-wider font-bold">
+                            {ai?.tradeDirection === 'SHORT' ? 'Entry (SELL)' : ai?.tradeDirection === 'LONG' ? 'Entry (BUY)' : 'Entry'}
+                          </span>
                         </div>
                         <p className="text-[11px] font-mono font-bold text-white/70 truncate">{ai.entryZone}</p>
                         <div className="mt-1.5">
@@ -2107,8 +2175,8 @@ export default function InvestmentDashboard() {
                         </div>
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-[#03DAC6] shrink-0" />
-                            <span className="text-[9px] text-white/25 w-14 shrink-0">Entry</span>
+                            <div className={cn('h-2 w-2 rounded-full shrink-0', ai.tradeDirection === 'SHORT' ? 'bg-[#CF6679]' : 'bg-[#03DAC6]')} />
+                            <span className="text-[9px] text-white/25 w-14 shrink-0">{ai.tradeDirection === 'SHORT' ? 'Entry (SELL)' : ai.tradeDirection === 'LONG' ? 'Entry (BUY)' : 'Entry'}</span>
                             <span className="text-[10px] text-white/50 font-mono truncate">{ai.entryZone}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -2155,6 +2223,46 @@ export default function InvestmentDashboard() {
                     )}
                   </div>
                 </div>
+                {/* Multi-Layer Confluence Breakdown */}
+                {signal.layerScores && Object.keys(signal.layerScores).length > 0 && (() => {
+                  const layers = Object.entries(signal.layerScores!);
+                  const bullishCount = layers.filter(([, l]) => l.signal.toLowerCase() === 'buy' || l.signal.toLowerCase() === 'bullish').length;
+                  const totalLayers = layers.length;
+                  return (
+                    <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Layers className="h-3 w-3 text-white/25" />
+                        <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Layer Confluence</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                        {layers.map(([name, layer]) => {
+                          const isBullish = layer.signal.toLowerCase() === 'buy' || layer.signal.toLowerCase() === 'bullish';
+                          const isBearish = layer.signal.toLowerCase() === 'sell' || layer.signal.toLowerCase() === 'bearish';
+                          const dotColor = isBullish ? '#03DAC6' : isBearish ? '#CF6679' : '#FFD700';
+                          return (
+                            <div key={name} className="flex items-center gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${dotColor}12` }}>
+                              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                              <span className="text-[8px] font-bold capitalize" style={{ color: dotColor }}>{name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[9px] text-white/25 font-mono">
+                        <span style={{ color: bullishCount > totalLayers / 2 ? '#03DAC6' : bullishCount < totalLayers / 2 ? '#CF6679' : '#FFD700' }}>
+                          {bullishCount}/{totalLayers}
+                        </span>
+                        {' '}layers {bullishCount > totalLayers / 2 ? 'bullish' : bullishCount < totalLayers / 2 ? 'bearish' : 'neutral'}
+                        {signal.confluenceCount != null && (
+                          <span className="ml-2 text-white/15">({signal.confluenceCount} confluence)</span>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })()}
+                {/* Financial Disclaimer */}
+                <p className="text-[9px] text-white/15 italic mt-2 text-center">
+                  ⚠️ Sinyal ini bersifat informatif dan bukan rekomendasi investasi. Selalu lakukan riset mandiri.
+                </p>
               </CardContent>
             </Card>
           </motion.div>

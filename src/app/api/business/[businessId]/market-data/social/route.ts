@@ -122,58 +122,19 @@ export async function GET(
     return NextResponse.json({
       social: uniqueResults.slice(0, 15),
       total: allResults.length,
+      isPartial: uniqueResults.length < 3,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Social API error:', error);
 
-    // Return fallback data
+    // Return empty data with isPartial flag instead of fake fallback
     return NextResponse.json({
-      social: [
-        {
-          title: 'Federal Reserve holds rates steady, signals potential cuts ahead',
-          source: 'Reuters',
-          snippet: 'The Federal Reserve kept interest rates unchanged but indicated a willingness to lower rates if economic conditions warrant.',
-          sentiment: 'bullish',
-          url: '#',
-          category: 'policy',
-        },
-        {
-          title: 'Bitcoin holds above key support as crypto sentiment improves',
-          source: 'CoinDesk',
-          snippet: 'Bitcoin maintained its position above critical support levels as broader market sentiment turned positive.',
-          sentiment: 'bullish',
-          url: '#',
-          category: 'asset',
-        },
-        {
-          title: 'Global trade tensions ease as negotiations resume',
-          source: 'Bloomberg',
-          snippet: 'Major economies returned to the negotiating table, easing concerns about escalating trade wars.',
-          sentiment: 'neutral',
-          url: '#',
-          category: 'macro',
-        },
-        {
-          title: 'OPEC maintains production targets amid steady demand',
-          source: 'Oil Price',
-          snippet: 'OPEC+ agreed to keep current production levels unchanged, citing stable global demand outlook.',
-          sentiment: 'neutral',
-          url: '#',
-          category: 'policy',
-        },
-        {
-          title: 'US Dollar weakens as rate cut expectations grow',
-          source: 'FX Street',
-          snippet: 'The DXY index declined as markets increasingly expect the Fed to cut rates in the coming months.',
-          sentiment: 'neutral',
-          url: '#',
-          category: 'macro',
-        },
-      ],
-      total: 5,
+      social: [],
+      total: 0,
+      isPartial: true,
       timestamp: new Date().toISOString(),
-      fallback: true,
+      error: 'Failed to fetch social data',
     });
   }
 }

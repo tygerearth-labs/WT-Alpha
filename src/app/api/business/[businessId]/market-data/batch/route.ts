@@ -460,83 +460,13 @@ async function batchFetchCryptoPricesCMC(symbols: string[]): Promise<Map<string,
   }
 }
 
-/** Batch fetch crypto prices from Binance API (fast, free, reliable) */
-async function batchFetchCryptoPricesBinance(symbols: string[]): Promise<Map<string, PriceResult>> {
-  const results = new Map<string, PriceResult>();
-  // Binance uses SYMBOLS like BTCUSDT - filter only valid ones
-  const validSymbols = symbols.filter(s => {
-    const upper = s.toUpperCase();
-    return upper.endsWith('USDT') || upper.endsWith('BUSD') || upper.endsWith('BTC') || upper.endsWith('ETH') || upper.endsWith('BNB');
-  });
+// Binance API removed — using CoinGecko as primary source for all crypto data
 
-  if (validSymbols.length === 0) return results;
-
-  try {
-    // Binance batch ticker API - returns all symbols at once
-    const url = 'https://api.binance.com/api/v3/ticker/24hr';
-    const res = await fetchWithTimeout(url, { next: { revalidate: 15 }, timeoutMs: 8000 });
-    if (!res.ok) {
-      console.warn(`Binance API returned ${res.status}`);
-      return results;
-    }
-
-    const data = await res.json();
-    if (!Array.isArray(data)) return results;
-
-    // Build a map from Binance symbol to price data
-    const binanceMap = new Map<string, { price: number; change24h: number; volume: number; high: number; low: number }>();
-    for (const item of data) {
-      if (item.symbol && item.lastPrice && parseFloat(item.lastPrice) > 0) {
-        binanceMap.set(item.symbol, {
-          price: parseFloat(item.lastPrice),
-          change24h: parseFloat(item.priceChangePercent || '0'),
-          volume: parseFloat(item.quoteVolume || '0'),
-          high: parseFloat(item.highPrice || '0'),
-          low: parseFloat(item.lowPrice || '0'),
-        });
-      }
-    }
-
-    for (const symbol of validSymbols) {
-      const upper = symbol.toUpperCase();
-      const binanceData = binanceMap.get(upper);
-      if (binanceData && binanceData.price > 0) {
-        results.set(upper, {
-          symbol: upper,
-          type: 'crypto',
-          price: binanceData.price,
-          change24h: parseFloat(binanceData.change24h.toFixed(2)),
-          volume: Math.floor(binanceData.volume),
-          marketCap: 0, // Binance doesn't provide marketCap in this endpoint
-          high24h: binanceData.high,
-          low24h: binanceData.low,
-        });
-      }
-    }
-  } catch (error) {
-    console.warn(`Binance batch fetch failed: ${error instanceof Error ? error.message : error}`);
-  }
-
-  return results;
-}
-
-/** Unified batch crypto fetch: Binance primary, CoinGecko fallback, CMC fallback, mock last resort */
+/** Unified batch crypto fetch: CoinGecko primary, CMC fallback, mock last resort (no Binance — API restricted) */
 async function batchFetchCryptoPrices(symbols: string[]): Promise<Map<string, PriceResult>> {
   if (symbols.length === 0) return new Map();
 
-  // Try Binance first (fastest, most reliable for USDT pairs)
-  const binanceResults = await batchFetchCryptoPricesBinance(symbols);
-  if (binanceResults.size > 0) {
-    // For any symbols Binance didn't cover, try CoinGecko
-    const remaining = symbols.filter(s => !binanceResults.has(s.toUpperCase()));
-    if (remaining.length > 0) {
-      const cgResults = await batchFetchCryptoPricesCoinGecko(remaining);
-      for (const [key, val] of cgResults) binanceResults.set(key, val);
-    }
-    return binanceResults;
-  }
-
-  // Fallback: CoinGecko
+  // Primary: CoinGecko (free, reliable)
   const cgResults = await batchFetchCryptoPricesCoinGecko(symbols);
   if (cgResults.size > 0) return cgResults;
 

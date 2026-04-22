@@ -81,14 +81,11 @@ async function fetchCoinGeckoTopMovers(): Promise<{
       { next: { revalidate: 300 }, timeoutMs: 8000 },
     );
 
-    // Fetch top gainers and losers from CoinGecko (biggest movers in 24h)
-    const gainersRes = await fetchWithTimeout(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=price_change_percentage_24h_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h',
-      { next: { revalidate: 120 }, timeoutMs: 10000 },
-    );
-    const losersRes = await fetchWithTimeout(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=price_change_percentage_24h_asc&per_page=10&page=1&sparkline=false&price_change_percentage=24h',
-      { next: { revalidate: 120 }, timeoutMs: 10000 },
+    // Fetch 250 coins from CoinGecko (max free tier) then sort client-side for REAL top gainers/losers
+    // Using market_cap order to get the broadest set, then we find real movers across all 250
+    const allCoinsRes = await fetchWithTimeout(
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=24h',
+      { next: { revalidate: 120 }, timeoutMs: 12000 },
     );
 
     const trending: TickerEntry[] = [];
@@ -117,11 +114,23 @@ async function fetchCoinGeckoTopMovers(): Promise<{
       }
     }
 
-    // Parse top gainers
-    if (gainersRes.ok) {
-      const gainersData = await gainersRes.json();
-      if (Array.isArray(gainersData)) {
-        for (const coin of gainersData.slice(0, 10)) {
+    // Parse all 250 coins, sort by 24h change, extract real top 5 gainers & top 5 losers
+    if (allCoinsRes.ok) {
+      const allCoinsData = await allCoinsRes.json();
+      if (Array.isArray(allCoinsData) && allCoinsData.length > 0) {
+        // Filter out coins with null change and very low volume (< $50k) to avoid noise
+        const validCoins = allCoinsData.filter(
+          (c: Record<string, unknown>) => c.price_change_percentage_24h != null && (c.total_volume ?? 0) > 50000
+        );
+
+        // Sort by 24h change descending for gainers
+        const sortedByChangeDesc = [...validCoins].sort(
+          (a: Record<string, unknown>, b: Record<string, unknown>) =>
+            (b.price_change_percentage_24h as number) - (a.price_change_percentage_24h as number)
+        );
+
+        // Top 5 gainers (highest positive 24h change)
+        for (const coin of sortedByChangeDesc.slice(0, 5)) {
           topGainers.push({
             symbol: (coin.symbol || '').toUpperCase(),
             price: coin.current_price ?? 0,
@@ -134,20 +143,15 @@ async function fetchCoinGeckoTopMovers(): Promise<{
             label: coin.name || undefined,
           });
         }
-      }
-    }
 
-    // Parse top losers
-    if (losersRes.ok) {
-      const losersData = await losersRes.json();
-      if (Array.isArray(losersData)) {
-        for (const coin of losersData.slice(0, 10)) {
+        // Top 5 losers (most negative 24h change)
+        for (const coin of sortedByChangeDesc.slice(-5).reverse()) {
           topLosers.push({
             symbol: (coin.symbol || '').toUpperCase(),
             price: coin.current_price ?? 0,
             change24h: coin.price_change_percentage_24h != null ? coin.price_change_percentage_24h : 0,
             volume: coin.total_volume ?? 0,
-            high24h: coin.high_24h ?? 0,
+            high24h: coin.low_24h ?? 0,
             low24h: coin.low_24h ?? 0,
             quoteVolume: coin.total_volume ?? 0,
             type: 'crypto',
@@ -160,6 +164,28 @@ async function fetchCoinGeckoTopMovers(): Promise<{
     return { trending, topGainers, topLosers };
   } catch (error) {
     console.warn(`CoinGecko top movers fetch failed: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+/** Fetch real Fear & Greed Index from Alternative.me (free, no API key) */
+async function fetchRealFearGreed(): Promise<{ value: number; label: string } | null> {
+  try {
+    const url = 'https://api.alternative.me/fng/?limit=1';
+    const res = await fetchWithTimeout(url, { timeoutMs: 5000 });
+    if (!res.ok) {
+      console.warn(`Alternative.me FNG API returned ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    const entry = data?.data?.[0];
+    if (!entry) return null;
+    const value = parseInt(entry.value, 10);
+    const label = entry.value_classification as string;
+    if (isNaN(value)) return null;
+    return { value, label: label || 'Unknown' };
+  } catch (error) {
+    console.warn(`Alternative.me FNG fetch failed: ${error instanceof Error ? error.message : error}`);
     return null;
   }
 }
@@ -229,7 +255,10 @@ export async function GET(
       marketCapChange24h: 0,
     };
 
-    const fearGreed = calculateFearGreedProxy(global.btcDominance);
+    // Try real Fear & Greed API first, fallback to proxy
+    const realFearGreed = await fetchRealFearGreed();
+    const fearGreed = realFearGreed ?? calculateFearGreedProxy(global.btcDominance);
+    const fearGreedSource: 'alternative.me' | 'proxy' = realFearGreed ? 'alternative.me' : 'proxy';
 
     // Build trending from CoinGecko trending coins
     const trending = (moversData?.trending ?? []).slice(0, 5).map(t => ({
@@ -239,7 +268,7 @@ export async function GET(
       type: 'crypto',
     }));
 
-    const topGainers = (moversData?.topGainers ?? []).slice(0, 10).map(t => ({
+    const topGainers = (moversData?.topGainers ?? []).slice(0, 5).map(t => ({
       symbol: t.symbol,
       price: t.price,
       change24h: parseFloat((t.change24h ?? 0).toFixed(2)),
@@ -248,7 +277,7 @@ export async function GET(
       type: 'crypto',
     }));
 
-    const topLosers = (moversData?.topLosers ?? []).slice(0, 10).map(t => ({
+    const topLosers = (moversData?.topLosers ?? []).slice(0, 5).map(t => ({
       symbol: t.symbol,
       price: t.price,
       change24h: parseFloat((t.change24h ?? 0).toFixed(2)),
@@ -267,6 +296,7 @@ export async function GET(
         marketCapChange24h: parseFloat((global.marketCapChange24h ?? 0).toFixed(2)),
       },
       fearAndGreed: fearGreed,
+      fearGreedSource,
       trending,
       topGainers,
       topLosers,

@@ -362,6 +362,1051 @@ function computeSummary(weeks: WeeklyBucket[]) {
   };
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Strategy Backtesting Engine ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Inline Technical Indicator Functions ──────────────────────────────────────
+
+/** Simple Moving Average */
+function sma(data: number[], period: number): number {
+  if (data.length < period) return data[data.length - 1] ?? 0;
+  const slice = data.slice(data.length - period);
+  return slice.reduce((sum, val) => sum + val, 0) / period;
+}
+
+/** Exponential Moving Average */
+function ema(data: number[], period: number): number {
+  if (data.length === 0) return 0;
+  const multiplier = 2 / (period + 1);
+  let result = data[0];
+  for (let i = 1; i < data.length; i++) {
+    result = (data[i] - result) * multiplier + result;
+  }
+  return result;
+}
+
+/** Relative Strength Index (14-period) */
+function computeRSI(closes: number[], period: number = 14): number {
+  if (closes.length < period + 1) return 50;
+
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const change = closes[i] - closes[i - 1];
+    if (change > 0) {
+      gains += change;
+    } else {
+      losses += Math.abs(change);
+    }
+  }
+
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+/** MACD (12/26/9) */
+function computeMACD(closes: number[]): { macd: number; signal: number; histogram: number } {
+  if (closes.length < 26) {
+    return { macd: 0, signal: 0, histogram: 0 };
+  }
+
+  const ema12 = ema(closes, 12);
+  const ema26 = ema(closes, 26);
+  const macdLine = ema12 - ema26;
+
+  const macdValues: number[] = [];
+  for (let i = 9; i <= closes.length; i++) {
+    const slice = closes.slice(0, i);
+    if (slice.length < 26) continue;
+    const e12 = ema(slice, 12);
+    const e26 = ema(slice, 26);
+    macdValues.push(e12 - e26);
+  }
+
+  const signalLine = macdValues.length >= 9 ? ema(macdValues, 9) : macdLine;
+  const histogram = macdLine - signalLine;
+
+  return { macd: macdLine, signal: signalLine, histogram };
+}
+
+/** Bollinger Bands (20-period, 2 standard deviations) */
+function computeBollingerBands(closes: number[], period: number = 20, stdDev: number = 2): {
+  upper: number;
+  middle: number;
+  lower: number;
+} {
+  if (closes.length < period) {
+    const last = closes[closes.length - 1] ?? 0;
+    return { upper: last, middle: last, lower: last };
+  }
+
+  const slice = closes.slice(closes.length - period);
+  const mean = slice.reduce((sum, val) => sum + val, 0) / period;
+
+  const squaredDiffs = slice.map(val => Math.pow(val - mean, 2));
+  const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / period;
+  const sd = Math.sqrt(variance);
+
+  return {
+    upper: mean + stdDev * sd,
+    middle: mean,
+    lower: mean - stdDev * sd,
+  };
+}
+
+/** Average True Range (ATR) */
+function computeATR(candles: { high: number; low: number; close: number }[], period: number = 14): number {
+  if (candles.length < 2) return 0;
+
+  const trueRanges: number[] = [];
+  for (let i = 1; i < candles.length; i++) {
+    const high = candles[i].high;
+    const low = candles[i].low;
+    const prevClose = candles[i - 1].close;
+    trueRanges.push(Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose)));
+  }
+
+  const recentTR = trueRanges.slice(-period);
+  return recentTR.length > 0 ? recentTR.reduce((s, v) => s + v, 0) / recentTR.length : 0;
+}
+
+/** Average Directional Index (ADX) — simplified */
+function computeADX(candles: { high: number; low: number; close: number }[], period: number = 14): {
+  adx: number; plusDI: number; minusDI: number;
+} {
+  if (candles.length < period + 1) return { adx: 0, plusDI: 0, minusDI: 0 };
+
+  const trueRanges: number[] = [];
+  const plusDMs: number[] = [];
+  const minusDMs: number[] = [];
+
+  for (let i = 1; i < candles.length; i++) {
+    const high = candles[i].high;
+    const low = candles[i].low;
+    const prevHigh = candles[i - 1].high;
+    const prevLow = candles[i - 1].low;
+    const prevClose = candles[i - 1].close;
+
+    const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+    trueRanges.push(tr);
+
+    const upMove = high - prevHigh;
+    const downMove = prevLow - low;
+    plusDMs.push(upMove > downMove && upMove > 0 ? upMove : 0);
+    minusDMs.push(downMove > upMove && downMove > 0 ? downMove : 0);
+  }
+
+  if (trueRanges.length < period) return { adx: 0, plusDI: 0, minusDI: 0 };
+
+  const smoothedTR = trueRanges.slice(-period).reduce((s, v) => s + v, 0);
+  const smoothedPlusDM = plusDMs.slice(-period).reduce((s, v) => s + v, 0);
+  const smoothedMinusDM = minusDMs.slice(-period).reduce((s, v) => s + v, 0);
+
+  const plusDI = smoothedTR > 0 ? (smoothedPlusDM / smoothedTR) * 100 : 0;
+  const minusDI = smoothedTR > 0 ? (smoothedMinusDM / smoothedTR) * 100 : 0;
+
+  const diSum = plusDI + minusDI;
+  const dx = diSum > 0 ? (Math.abs(plusDI - minusDI) / diSum) * 100 : 0;
+
+  let adx = dx;
+  for (let i = 1; i < period && i < trueRanges.length - period; i++) {
+    adx = (adx * (period - 1) + dx) / period;
+  }
+
+  return { adx, plusDI, minusDI };
+}
+
+// ── Strategy Types ───────────────────────────────────────────────────────────
+
+type StrategyName = 'trend' | 'rsi' | 'breakout' | 'smartmoney' | 'conservative';
+type SignalDirection = 'LONG' | 'SHORT' | 'NEUTRAL';
+type ExitReason = 'TAKE_PROFIT' | 'STOP_LOSS' | 'SIGNAL_REVERSAL' | 'TIME_EXIT';
+
+interface StrategySignal {
+  date: string;
+  direction: SignalDirection;
+  entryPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+}
+
+interface SimulatedTrade {
+  id: number;
+  direction: 'LONG' | 'SHORT';
+  entryDate: string;
+  exitDate: string;
+  entryPrice: number;
+  exitPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+  pnlPct: number;
+  pnlUsd: number;
+  balanceAfter: number;
+  isWin: boolean;
+  exitReason: ExitReason;
+}
+
+interface StrategyMetrics {
+  finalBalance: number;
+  totalReturnPct: number;
+  totalReturnUsd: number;
+  winRate: number;
+  totalTrades: number;
+  winTrades: number;
+  lossTrades: number;
+  longTrades: number;
+  shortTrades: number;
+  avgWinPct: number;
+  avgLossPct: number;
+  profitFactor: number;
+  maxDrawdownPct: number;
+  maxDrawdownUsd: number;
+  sharpeRatio: number;
+  avgTradeDuration: number;
+  consecutiveWins: number;
+  consecutiveLosses: number;
+  bestTradePct: number;
+  worstTradePct: number;
+}
+
+interface EquityPoint {
+  date: string;
+  balance: number;
+  drawdownPct: number;
+}
+
+interface MarketRegime {
+  trending: { pct: number; avgReturnPct: number; trades: number; winRate: number };
+  ranging: { pct: number; avgReturnPct: number; trades: number; winRate: number };
+  volatile: { pct: number; avgReturnPct: number; trades: number; winRate: number };
+  recommendedStrategy: string;
+  currentRegime: 'trending' | 'ranging' | 'volatile';
+  regimeDescription: string;
+}
+
+// ── Market Regime Detection ──────────────────────────────────────────────────
+
+type Regime = 'trending' | 'ranging' | 'volatile';
+
+interface DayRegimeData {
+  regime: Regime;
+  adx: number;
+  atr: number;
+  atr50Avg: number;
+}
+
+/** Classify each day's market regime */
+function classifyRegimes(candles: DailyCandle[]): DayRegimeData[] {
+  const result: DayRegimeData[] = [];
+
+  for (let i = 0; i < candles.length; i++) {
+    // Need at least 15 candles for meaningful indicators
+    if (i < 14) {
+      result.push({ regime: 'ranging', adx: 0, atr: 0, atr50Avg: 0 });
+      continue;
+    }
+
+    const slice = candles.slice(0, i + 1);
+    const { adx } = computeADX(slice, 14);
+    const atr = computeATR(slice, 14);
+
+    // Compute 50-day ATR average if possible
+    let atr50Avg = atr;
+    if (slice.length >= 50) {
+      const tr50: number[] = [];
+      for (let j = 1; j < slice.length; j++) {
+        tr50.push(Math.max(
+          slice[j].high - slice[j].low,
+          Math.abs(slice[j].high - slice[j - 1].close),
+          Math.abs(slice[j].low - slice[j - 1].close)
+        ));
+      }
+      const last50 = tr50.slice(-50);
+      atr50Avg = last50.reduce((s, v) => s + v, 0) / last50.length;
+    }
+
+    let regime: Regime;
+    if (atr > 0 && atr50Avg > 0 && atr > 1.5 * atr50Avg) {
+      regime = 'volatile';
+    } else if (adx >= 25) {
+      regime = 'trending';
+    } else if (adx < 20) {
+      regime = 'ranging';
+    } else {
+      // ADX between 20-25 without volatility spike → trending
+      regime = 'trending';
+    }
+
+    result.push({ regime, adx, atr, atr50Avg });
+  }
+
+  return result;
+}
+
+// ── Strategy Signal Generators ───────────────────────────────────────────────
+
+/** Generate signals for the Trend Following strategy */
+function generateTrendSignals(candles: DailyCandle[]): StrategySignal[] {
+  const signals: StrategySignal[] = [];
+
+  if (candles.length < 51) return signals;
+
+  for (let i = 50; i < candles.length; i++) {
+    const slice = candles.slice(0, i + 1);
+    const closes = slice.map(c => c.close);
+
+    const sma20 = sma(closes, 20);
+    const sma50 = sma(closes, 50);
+    const { adx } = computeADX(slice, 14);
+    const atr = computeATR(slice, 14);
+
+    if (atr <= 0) continue;
+
+    // Check for SMA crossover
+    const prevCloses = closes.slice(0, -1);
+    const prevSma20 = sma(prevCloses, 20);
+    const prevSma50 = sma(prevCloses, 50);
+
+    const price = candles[i].close;
+
+    // SMA20 crosses above SMA50 AND ADX > 20
+    if (prevSma20 <= prevSma50 && sma20 > sma50 && adx > 20) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'LONG',
+        entryPrice: price,
+        stopLoss: parseFloat((price - 2 * atr).toFixed(6)),
+        takeProfit: parseFloat((price + 3 * atr).toFixed(6)),
+      });
+    }
+    // SMA20 crosses below SMA50 AND ADX > 20
+    else if (prevSma20 >= prevSma50 && sma20 < sma50 && adx > 20) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'SHORT',
+        entryPrice: price,
+        stopLoss: parseFloat((price + 2 * atr).toFixed(6)),
+        takeProfit: parseFloat((price - 3 * atr).toFixed(6)),
+      });
+    }
+  }
+
+  return signals;
+}
+
+/** Generate signals for the RSI Mean Reversion strategy */
+function generateRSISignals(candles: DailyCandle[]): StrategySignal[] {
+  const signals: StrategySignal[] = [];
+
+  if (candles.length < 30) return signals;
+
+  for (let i = 15; i < candles.length; i++) {
+    const slice = candles.slice(0, i + 1);
+    const closes = slice.map(c => c.close);
+    const atr = computeATR(slice, 14);
+
+    if (atr <= 0) continue;
+
+    const rsi = computeRSI(closes, 14);
+    const prevCloses = closes.slice(0, -1);
+    const prevRsi = computeRSI(prevCloses, 14);
+
+    const price = candles[i].close;
+
+    // RSI drops below 30 (oversold)
+    if (prevRsi >= 30 && rsi < 30) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'LONG',
+        entryPrice: price,
+        stopLoss: parseFloat((price - 2 * atr).toFixed(6)),
+        takeProfit: parseFloat((price + 2.5 * atr).toFixed(6)),
+      });
+    }
+    // RSI rises above 70 (overbought)
+    else if (prevRsi <= 70 && rsi > 70) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'SHORT',
+        entryPrice: price,
+        stopLoss: parseFloat((price + 2 * atr).toFixed(6)),
+        takeProfit: parseFloat((price - 2.5 * atr).toFixed(6)),
+      });
+    }
+  }
+
+  return signals;
+}
+
+/** Generate signals for the Breakout strategy */
+function generateBreakoutSignals(candles: DailyCandle[]): StrategySignal[] {
+  const signals: StrategySignal[] = [];
+
+  if (candles.length < 30) return signals;
+
+  for (let i = 20; i < candles.length; i++) {
+    const slice = candles.slice(0, i + 1);
+    const closes = slice.map(c => c.close);
+
+    const atr = computeATR(slice, 14);
+    const bb = computeBollingerBands(closes, 20, 2);
+
+    if (atr <= 0) continue;
+
+    const price = candles[i].close;
+
+    // 20-day high
+    const highs20 = slice.slice(-20).map(c => c.high);
+    const high20 = Math.max(...highs20);
+    const lows20 = slice.slice(-20).map(c => c.low);
+    const low20 = Math.min(...lows20);
+
+    // Price closes above 20-day high AND above Bollinger upper
+    if (price > high20 && price > bb.upper) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'LONG',
+        entryPrice: price,
+        stopLoss: parseFloat(bb.middle.toFixed(6)),
+        takeProfit: parseFloat((price + 3 * atr).toFixed(6)),
+      });
+    }
+    // Price closes below 20-day low AND below Bollinger lower
+    else if (price < low20 && price < bb.lower) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'SHORT',
+        entryPrice: price,
+        stopLoss: parseFloat(bb.middle.toFixed(6)),
+        takeProfit: parseFloat((price - 3 * atr).toFixed(6)),
+      });
+    }
+  }
+
+  return signals;
+}
+
+/** Generate signals for the Smart Money Composite strategy */
+function generateSmartMoneySignals(candles: DailyCandle[]): StrategySignal[] {
+  return generateCompositeSignals(candles, 'smartmoney');
+}
+
+/** Generate signals for the Conservative strategy */
+function generateConservativeSignals(candles: DailyCandle[]): StrategySignal[] {
+  return generateCompositeSignals(candles, 'conservative');
+}
+
+/** Composite scoring engine for smartmoney and conservative strategies */
+function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' | 'conservative'): StrategySignal[] {
+  const signals: StrategySignal[] = [];
+
+  if (candles.length < 51) return signals;
+
+  const entryThreshold = variant === 'smartmoney' ? 2.5 : 3.5;
+  const stopMultiplier = variant === 'smartmoney' ? 2.5 : 1.5;
+  const tpMultiplier = variant === 'smartmoney' ? 3.5 : 2.0;
+
+  for (let i = 50; i < candles.length; i++) {
+    const slice = candles.slice(0, i + 1);
+    const closes = slice.map(c => c.close);
+
+    const atr = computeATR(slice, 14);
+    const { adx, plusDI, minusDI } = computeADX(slice, 14);
+    const rsi = computeRSI(closes, 14);
+    const macdData = computeMACD(closes);
+    const bb = computeBollingerBands(closes, 20, 2);
+    const sma50 = sma(closes, 50);
+
+    if (atr <= 0) continue;
+
+    const price = candles[i].close;
+
+    // Conservative: only trade in trending markets
+    if (variant === 'conservative' && adx < 20) continue;
+
+    // ── Trend Layer (30%) ──
+    let trendScore = 0;
+    if (adx > 20 && plusDI > minusDI) {
+      trendScore = 1; // Bullish trend
+    } else if (adx > 20 && minusDI > plusDI) {
+      trendScore = -1; // Bearish trend
+    }
+
+    // SMA alignment: SMA20 vs SMA50
+    const sma20 = sma(closes, 20);
+    if (sma20 > sma50) {
+      trendScore = Math.max(trendScore, 1);
+    } else if (sma20 < sma50) {
+      trendScore = Math.min(trendScore, -1);
+    }
+
+    // ── Momentum Layer (30%) ──
+    let momentumScore = 0;
+    if (rsi < 40 && macdData.histogram > 0) {
+      momentumScore = 1; // Oversold but MACD turning bullish
+    } else if (rsi > 60 && macdData.histogram < 0) {
+      momentumScore = -1; // Overbought but MACD turning bearish
+    } else if (rsi < 30) {
+      momentumScore = 1; // Deeply oversold
+    } else if (rsi > 70) {
+      momentumScore = -1; // Deeply overbought
+    } else if (macdData.macd > macdData.signal && macdData.histogram > 0) {
+      momentumScore = 1; // MACD bullish crossover
+    } else if (macdData.macd < macdData.signal && macdData.histogram < 0) {
+      momentumScore = -1; // MACD bearish crossover
+    }
+
+    // ── Volatility Layer (20%) ──
+    let volatilityScore = 0;
+    const bbWidth = bb.middle > 0 ? (bb.upper - bb.lower) / bb.middle : 0;
+    if (price > bb.upper && bbWidth < 0.1) {
+      volatilityScore = -1; // Squeeze breakout upward but tight — wait
+    } else if (price < bb.lower && bbWidth < 0.1) {
+      volatilityScore = 1; // Squeeze breakout downward but tight — wait
+    } else if (price > bb.upper) {
+      volatilityScore = 1; // Above upper band
+    } else if (price < bb.lower) {
+      volatilityScore = -1; // Below lower band
+    }
+
+    // ── SMC Layer (20%) ──
+    let smcScore = 0;
+    // Price vs SMA50 (premium/discount)
+    if (sma50 > 0) {
+      const distFromSMA50 = (price - sma50) / sma50;
+      if (distFromSMA50 < -0.02) smcScore = 1; // Discount zone
+      else if (distFromSMA50 > 0.02) smcScore = -1; // Premium zone
+    }
+    // 20-day high/low breakout
+    const highs20 = slice.slice(-20).map(c => c.high);
+    const low20 = Math.min(...slice.slice(-20).map(c => c.low));
+    if (price > Math.max(...highs20)) smcScore = 1;
+    else if (price < low20) smcScore = -1;
+
+    // ── Composite Score ──
+    const composite = trendScore * 0.3 + momentumScore * 0.3 + volatilityScore * 0.2 + smcScore * 0.2;
+
+    if (composite >= entryThreshold) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'LONG',
+        entryPrice: price,
+        stopLoss: parseFloat((price - stopMultiplier * atr).toFixed(6)),
+        takeProfit: parseFloat((price + tpMultiplier * atr).toFixed(6)),
+      });
+    } else if (composite <= -entryThreshold) {
+      signals.push({
+        date: candles[i].date,
+        direction: 'SHORT',
+        entryPrice: price,
+        stopLoss: parseFloat((price + stopMultiplier * atr).toFixed(6)),
+        takeProfit: parseFloat((price - tpMultiplier * atr).toFixed(6)),
+      });
+    }
+  }
+
+  return signals;
+}
+
+// ── Signal to Candle Map ─────────────────────────────────────────────────────
+
+/** Build a lookup map from date string to candle index */
+function buildCandleMap(candles: DailyCandle[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (let i = 0; i < candles.length; i++) {
+    map.set(candles[i].date, i);
+  }
+  return map;
+}
+
+// ── Trade Simulation Engine ──────────────────────────────────────────────────
+
+interface SimulatedTradeInternal extends SimulatedTrade {
+  _signalIndex: number; // track which signal this came from
+}
+
+/**
+ * Run the simulation loop for a given strategy's signals against daily candles.
+ */
+function simulateTrades(
+  candles: DailyCandle[],
+  signals: StrategySignal[],
+  initialBalance: number,
+  riskPerTrade: number,
+  strategyName: StrategyName,
+): { trades: SimulatedTrade[]; equityCurve: EquityPoint[] } {
+  if (candles.length < 30 || signals.length === 0) {
+    return { trades: [], equityCurve: [] };
+  }
+
+  const candleMap = buildCandleMap(candles);
+  const trades: SimulatedTradeInternal[] = [];
+  const equityCurve: EquityPoint[] = [];
+
+  let balance = initialBalance;
+  let peakBalance = initialBalance;
+  let tradeId = 1;
+
+  // Track equity at every day
+  let currentOpenTrade: SimulatedTradeInternal | null = null;
+  let signalIdx = 0;
+
+  // Process signals in order; only take next signal if no trade is open
+  while (signalIdx < signals.length) {
+    const signal = signals[signalIdx];
+    const candleIdx = candleMap.get(signal.date);
+
+    if (candleIdx === undefined) {
+      signalIdx++;
+      continue;
+    }
+
+    // Skip if there's already an open trade
+    if (currentOpenTrade) {
+      signalIdx++;
+      continue;
+    }
+
+    // Calculate position size
+    const stopDistance = Math.abs(signal.entryPrice - signal.stopLoss);
+    if (stopDistance <= 0) {
+      signalIdx++;
+      continue;
+    }
+
+    const riskAmount = balance * (riskPerTrade / 100);
+    const positionSize = riskAmount / stopDistance;
+
+    // Simulate from entry day forward
+    let exited = false;
+    const trade: SimulatedTradeInternal = {
+      id: tradeId,
+      direction: signal.direction,
+      entryDate: signal.date,
+      exitDate: '',
+      entryPrice: signal.entryPrice,
+      exitPrice: signal.entryPrice,
+      stopLoss: signal.stopLoss,
+      takeProfit: signal.takeProfit,
+      pnlPct: 0,
+      pnlUsd: 0,
+      balanceAfter: balance,
+      isWin: false,
+      exitReason: 'TIME_EXIT',
+      _signalIndex: signalIdx,
+    };
+
+    for (let dayIdx = candleIdx; dayIdx < candles.length; dayIdx++) {
+      const day = candles[dayIdx];
+
+      if (dayIdx === candleIdx) {
+        // Entry day — use close as entry
+        trade.entryPrice = day.close;
+        // Recalculate stops based on actual entry
+        if (trade.direction === 'LONG') {
+          trade.stopLoss = parseFloat((day.close - stopDistance).toFixed(6));
+          trade.takeProfit = parseFloat((day.close + stopDistance * 1.5).toFixed(6));
+        } else {
+          trade.stopLoss = parseFloat((day.close + stopDistance).toFixed(6));
+          trade.takeProfit = parseFloat((day.close - stopDistance * 1.5).toFixed(6));
+        }
+        continue;
+      }
+
+      // Check exit conditions using high/low of the day
+      const high = day.high;
+      const low = day.low;
+
+      if (trade.direction === 'LONG') {
+        // Check stop loss
+        if (low <= trade.stopLoss) {
+          trade.exitPrice = trade.stopLoss;
+          trade.exitDate = day.date;
+          trade.exitReason = 'STOP_LOSS';
+          exited = true;
+          break;
+        }
+        // Check take profit
+        if (high >= trade.takeProfit) {
+          trade.exitPrice = trade.takeProfit;
+          trade.exitDate = day.date;
+          trade.exitReason = 'TAKE_PROFIT';
+          exited = true;
+          break;
+        }
+      } else {
+        // SHORT
+        // Check stop loss
+        if (high >= trade.stopLoss) {
+          trade.exitPrice = trade.stopLoss;
+          trade.exitDate = day.date;
+          trade.exitReason = 'STOP_LOSS';
+          exited = true;
+          break;
+        }
+        // Check take profit
+        if (low <= trade.takeProfit) {
+          trade.exitPrice = trade.takeProfit;
+          trade.exitDate = day.date;
+          trade.exitReason = 'TAKE_PROFIT';
+          exited = true;
+          break;
+        }
+      }
+    }
+
+    // If not exited, close at last day's close
+    if (!exited) {
+      const lastCandle = candles[candles.length - 1];
+      trade.exitPrice = lastCandle.close;
+      trade.exitDate = lastCandle.date;
+      trade.exitReason = 'TIME_EXIT';
+    }
+
+    // Calculate PnL
+    let pnlUsd: number;
+    if (trade.direction === 'LONG') {
+      pnlUsd = (trade.exitPrice - trade.entryPrice) * positionSize;
+    } else {
+      pnlUsd = (trade.entryPrice - trade.exitPrice) * positionSize;
+    }
+
+    const pnlPct = trade.entryPrice > 0 ? (pnlUsd / (trade.entryPrice * positionSize)) * 100 : 0;
+    balance += pnlUsd;
+
+    trade.pnlPct = parseFloat(pnlPct.toFixed(4));
+    trade.pnlUsd = parseFloat(pnlUsd.toFixed(2));
+    trade.balanceAfter = parseFloat(balance.toFixed(2));
+    trade.isWin = pnlUsd > 0;
+    trade.exitPrice = parseFloat(trade.exitPrice.toFixed(6));
+
+    trades.push(trade);
+    tradeId++;
+    signalIdx++;
+
+    currentOpenTrade = null;
+  }
+
+  // Build equity curve
+  // Include an initial point
+  equityCurve.push({
+    date: candles[0].date,
+    balance: parseFloat(initialBalance.toFixed(2)),
+    drawdownPct: 0,
+  });
+
+  // Map trades to equity curve points
+  let tradeCursor = 0;
+  let runningBalance = initialBalance;
+  peakBalance = initialBalance;
+
+  for (let i = 1; i < candles.length; i++) {
+    const day = candles[i].date;
+
+    // Check if any trade closed on this day
+    while (tradeCursor < trades.length && trades[tradeCursor].exitDate === day) {
+      runningBalance = trades[tradeCursor].balanceAfter;
+      tradeCursor++;
+    }
+
+    // Also check entry day P&L effect (already reflected in balanceAfter of previous trades)
+
+    if (runningBalance > peakBalance) {
+      peakBalance = runningBalance;
+    }
+
+    const drawdownPct = peakBalance > 0
+      ? ((peakBalance - runningBalance) / peakBalance) * 100
+      : 0;
+
+    equityCurve.push({
+      date: day,
+      balance: parseFloat(runningBalance.toFixed(2)),
+      drawdownPct: parseFloat(drawdownPct.toFixed(4)),
+    });
+  }
+
+  // Return without internal fields
+  return {
+    trades: trades.map(t => {
+      const { _signalIndex, ...rest } = t;
+      return rest;
+    }),
+    equityCurve,
+  };
+}
+
+// ── Metrics Calculator ───────────────────────────────────────────────────────
+
+function calculateMetrics(
+  trades: SimulatedTrade[],
+  equityCurve: EquityPoint[],
+  initialBalance: number,
+): StrategyMetrics {
+  const emptyMetrics: StrategyMetrics = {
+    finalBalance: initialBalance,
+    totalReturnPct: 0,
+    totalReturnUsd: 0,
+    winRate: 0,
+    totalTrades: 0,
+    winTrades: 0,
+    lossTrades: 0,
+    longTrades: 0,
+    shortTrades: 0,
+    avgWinPct: 0,
+    avgLossPct: 0,
+    profitFactor: 0,
+    maxDrawdownPct: 0,
+    maxDrawdownUsd: 0,
+    sharpeRatio: 0,
+    avgTradeDuration: 0,
+    consecutiveWins: 0,
+    consecutiveLosses: 0,
+    bestTradePct: 0,
+    worstTradePct: 0,
+  };
+
+  if (trades.length === 0) return emptyMetrics;
+
+  const finalBalance = trades[trades.length - 1].balanceAfter;
+  const totalReturnUsd = finalBalance - initialBalance;
+  const totalReturnPct = initialBalance > 0 ? (totalReturnUsd / initialBalance) * 100 : 0;
+
+  const winTrades = trades.filter(t => t.isWin);
+  const lossTrades = trades.filter(t => !t.isWin);
+  const longTrades = trades.filter(t => t.direction === 'LONG');
+  const shortTrades = trades.filter(t => t.direction === 'SHORT');
+
+  const winRate = (winTrades.length / trades.length) * 100;
+
+  const avgWinPct = winTrades.length > 0
+    ? winTrades.reduce((s, t) => s + t.pnlPct, 0) / winTrades.length
+    : 0;
+
+  const avgLossPct = lossTrades.length > 0
+    ? lossTrades.reduce((s, t) => s + t.pnlPct, 0) / lossTrades.length
+    : 0;
+
+  const totalWins = winTrades.reduce((s, t) => s + t.pnlUsd, 0);
+  const totalLosses = Math.abs(lossTrades.reduce((s, t) => s + t.pnlUsd, 0));
+  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
+
+  // Max drawdown
+  let maxDrawdownPct = 0;
+  let maxDrawdownUsd = 0;
+  let peak = initialBalance;
+  for (const point of equityCurve) {
+    if (point.balance > peak) peak = point.balance;
+    const dd = peak > 0 ? ((peak - point.balance) / peak) * 100 : 0;
+    const ddUsd = peak - point.balance;
+    if (dd > maxDrawdownPct) maxDrawdownPct = dd;
+    if (ddUsd > maxDrawdownUsd) maxDrawdownUsd = ddUsd;
+  }
+
+  // Sharpe ratio (simplified)
+  const dailyReturns: number[] = [];
+  for (let i = 1; i < equityCurve.length; i++) {
+    const prev = equityCurve[i - 1].balance;
+    const curr = equityCurve[i].balance;
+    if (prev > 0) {
+      dailyReturns.push((curr - prev) / prev);
+    }
+  }
+
+  let sharpeRatio = 0;
+  if (dailyReturns.length > 1) {
+    const avgReturn = dailyReturns.reduce((s, r) => s + r, 0) / dailyReturns.length;
+    const variance = dailyReturns.reduce((s, r) => s + Math.pow(r - avgReturn, 2), 0) / dailyReturns.length;
+    const stdDev = Math.sqrt(variance);
+    sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
+  }
+
+  // Average trade duration
+  const durations = trades.map(t => {
+    const entry = new Date(t.entryDate).getTime();
+    const exit = new Date(t.exitDate).getTime();
+    return (exit - entry) / (1000 * 60 * 60 * 24);
+  });
+  const avgTradeDuration = durations.reduce((s, d) => s + d, 0) / durations.length;
+
+  // Consecutive wins / losses
+  let consecutiveWins = 0;
+  let consecutiveLosses = 0;
+  let currentWins = 0;
+  let currentLosses = 0;
+  for (const t of trades) {
+    if (t.isWin) {
+      currentWins++;
+      currentLosses = 0;
+      if (currentWins > consecutiveWins) consecutiveWins = currentWins;
+    } else {
+      currentLosses++;
+      currentWins = 0;
+      if (currentLosses > consecutiveLosses) consecutiveLosses = currentLosses;
+    }
+  }
+
+  const bestTradePct = trades.length > 0 ? Math.max(...trades.map(t => t.pnlPct)) : 0;
+  const worstTradePct = trades.length > 0 ? Math.min(...trades.map(t => t.pnlPct)) : 0;
+
+  return {
+    finalBalance: parseFloat(finalBalance.toFixed(2)),
+    totalReturnPct: parseFloat(totalReturnPct.toFixed(4)),
+    totalReturnUsd: parseFloat(totalReturnUsd.toFixed(2)),
+    winRate: parseFloat(winRate.toFixed(4)),
+    totalTrades: trades.length,
+    winTrades: winTrades.length,
+    lossTrades: lossTrades.length,
+    longTrades: longTrades.length,
+    shortTrades: shortTrades.length,
+    avgWinPct: parseFloat(avgWinPct.toFixed(4)),
+    avgLossPct: parseFloat(avgLossPct.toFixed(4)),
+    profitFactor: profitFactor === Infinity ? 999.99 : parseFloat(profitFactor.toFixed(4)),
+    maxDrawdownPct: parseFloat(maxDrawdownPct.toFixed(4)),
+    maxDrawdownUsd: parseFloat(maxDrawdownUsd.toFixed(2)),
+    sharpeRatio: parseFloat(sharpeRatio.toFixed(4)),
+    avgTradeDuration: parseFloat(avgTradeDuration.toFixed(2)),
+    consecutiveWins,
+    consecutiveLosses,
+    bestTradePct: parseFloat(bestTradePct.toFixed(4)),
+    worstTradePct: parseFloat(worstTradePct.toFixed(4)),
+  };
+}
+
+// ── Regime Analysis Calculator ───────────────────────────────────────────────
+
+function calculateRegimeAnalysis(
+  trades: SimulatedTrade[],
+  regimeData: DayRegimeData[],
+  candles: DailyCandle[],
+): MarketRegime {
+  const candleMap = buildCandleMap(candles);
+
+  const regimeTrades: Record<Regime, SimulatedTrade[]> = {
+    trending: [],
+    ranging: [],
+    volatile: [],
+  };
+
+  for (const trade of trades) {
+    const idx = candleMap.get(trade.entryDate);
+    if (idx !== undefined && idx < regimeData.length) {
+      regimeTrades[regimeData[idx].regime].push(trade);
+    }
+  }
+
+  // Count regime days
+  let trendingDays = 0;
+  let rangingDays = 0;
+  let volatileDays = 0;
+  for (const rd of regimeData) {
+    if (rd.regime === 'trending') trendingDays++;
+    else if (rd.regime === 'ranging') rangingDays++;
+    else volatileDays++;
+  }
+  const totalDays = trendingDays + rangingDays + volatileDays || 1;
+
+  const calcRegimeStats = (regimeTradesList: SimulatedTrade[]) => {
+    if (regimeTradesList.length === 0) {
+      return { pct: 0, avgReturnPct: 0, trades: 0, winRate: 0 };
+    }
+    const wins = regimeTradesList.filter(t => t.isWin).length;
+    const avgReturn = regimeTradesList.reduce((s, t) => s + t.pnlPct, 0) / regimeTradesList.length;
+    return {
+      pct: 0, // will be set below
+      avgReturnPct: parseFloat(avgReturn.toFixed(4)),
+      trades: regimeTradesList.length,
+      winRate: parseFloat(((wins / regimeTradesList.length) * 100).toFixed(4)),
+    };
+  };
+
+  const trendingStats = calcRegimeStats(regimeTrades.trending);
+  const rangingStats = calcRegimeStats(regimeTrades.ranging);
+  const volatileStats = calcRegimeStats(regimeTrades.volatile);
+
+  trendingStats.pct = parseFloat(((trendingDays / totalDays) * 100).toFixed(4));
+  rangingStats.pct = parseFloat(((rangingDays / totalDays) * 100).toFixed(4));
+  volatileStats.pct = parseFloat(((volatileDays / totalDays) * 100).toFixed(4));
+
+  // Current regime (last day)
+  const currentRegime = regimeData.length > 0 ? regimeData[regimeData.length - 1].regime : 'ranging';
+
+  // Recommended strategy
+  let recommendedStrategy: string;
+  let regimeDescription: string;
+  switch (currentRegime) {
+    case 'trending':
+      recommendedStrategy = 'trend';
+      regimeDescription = 'Market is trending with clear directional momentum. Trend-following strategies tend to perform well.';
+      break;
+    case 'ranging':
+      recommendedStrategy = 'conservative';
+      regimeDescription = 'Market is in a range-bound state with low directional movement. Conservative strategies with fewer trades work best.';
+      break;
+    case 'volatile':
+      recommendedStrategy = 'breakout';
+      regimeDescription = 'Market volatility is elevated above normal levels. Breakout strategies can capture large directional moves.';
+      break;
+  }
+
+  return {
+    trending: trendingStats,
+    ranging: rangingStats,
+    volatile: volatileStats,
+    recommendedStrategy,
+    currentRegime,
+    regimeDescription,
+  };
+}
+
+// ── Strategy Runner ──────────────────────────────────────────────────────────
+
+const STRATEGY_LABELS: Record<StrategyName, string> = {
+  trend: 'Trend Following',
+  rsi: 'RSI Mean Reversion',
+  breakout: 'Breakout',
+  smartmoney: 'Smart Money Composite',
+  conservative: 'Conservative',
+};
+
+function runStrategy(
+  strategy: StrategyName,
+  candles: DailyCandle[],
+  initialBalance: number,
+  riskPerTrade: number,
+): { signals: StrategySignal[]; trades: SimulatedTrade[]; equityCurve: EquityPoint[]; metrics: StrategyMetrics } {
+  let signals: StrategySignal[] = [];
+
+  switch (strategy) {
+    case 'trend':
+      signals = generateTrendSignals(candles);
+      break;
+    case 'rsi':
+      signals = generateRSISignals(candles);
+      break;
+    case 'breakout':
+      signals = generateBreakoutSignals(candles);
+      break;
+    case 'smartmoney':
+      signals = generateSmartMoneySignals(candles);
+      break;
+    case 'conservative':
+      signals = generateConservativeSignals(candles);
+      break;
+  }
+
+  const { trades, equityCurve } = simulateTrades(candles, signals, initialBalance, riskPerTrade, strategy);
+  const metrics = calculateMetrics(trades, equityCurve, initialBalance);
+
+  return { signals, trades, equityCurve, metrics };
+}
+
 // ── Main GET handler ────────────────────────────────────────────────────────
 
 export async function GET(
@@ -379,7 +1424,20 @@ export async function GET(
     const type = searchParams.get('type') || 'crypto';
     const weeksParam = parseInt(searchParams.get('weeks') || '8', 10);
     const numWeeks = Math.max(1, Math.min(26, isNaN(weeksParam) ? 8 : weeksParam));
-    const daysNeeded = numWeeks * 8; // ~2 extra days per week for buffer
+
+    // New strategy params
+    const strategyParam = searchParams.get('strategy') || 'smartmoney';
+    const initialBalanceParam = parseFloat(searchParams.get('initialBalance') || '10000');
+    const riskPerTradeParam = parseFloat(searchParams.get('riskPerTrade') || '2');
+
+    const validStrategies = ['trend', 'rsi', 'breakout', 'smartmoney', 'conservative', 'all'];
+    const strategy = validStrategies.includes(strategyParam) ? strategyParam : 'smartmoney';
+
+    const initialBalance = Math.max(100, isNaN(initialBalanceParam) ? 10000 : initialBalanceParam);
+    const riskPerTrade = Math.max(1, Math.min(5, isNaN(riskPerTradeParam) ? 2 : riskPerTradeParam));
+
+    // We need more days for strategy indicators (min 60 days recommended)
+    const daysNeeded = Math.max(numWeeks * 8, 60);
 
     if (!symbol) {
       return NextResponse.json({ error: 'Missing symbol parameter' }, { status: 400 });
@@ -411,7 +1469,7 @@ export async function GET(
       dailyCandles = generateMockDaily(mockBasePrice, symbol, daysNeeded);
     }
 
-    // Filter to last N weeks of data
+    // Filter to last N days of data
     if (dailyCandles.length > daysNeeded) {
       dailyCandles = dailyCandles.slice(-daysNeeded);
     }
@@ -425,11 +1483,96 @@ export async function GET(
     // Compute summary
     const summary = computeSummary(trimmedWeekly);
 
+    // ── Strategy Backtesting ──
+    const enoughData = dailyCandles.length >= 30;
+
+    let metrics: StrategyMetrics;
+    let trades: SimulatedTrade[] = [];
+    let equityCurve: EquityPoint[] = [];
+    let regimeAnalysis: MarketRegime;
+    let strategyComparison: Array<{ name: string; label: string; metrics: StrategyMetrics }> | undefined;
+    const activeStrategy = strategy as 'all' | StrategyName;
+
+    const emptyMetrics: StrategyMetrics = {
+      finalBalance: initialBalance,
+      totalReturnPct: 0,
+      totalReturnUsd: 0,
+      winRate: 0,
+      totalTrades: 0,
+      winTrades: 0,
+      lossTrades: 0,
+      longTrades: 0,
+      shortTrades: 0,
+      avgWinPct: 0,
+      avgLossPct: 0,
+      profitFactor: 0,
+      maxDrawdownPct: 0,
+      maxDrawdownUsd: 0,
+      sharpeRatio: 0,
+      avgTradeDuration: 0,
+      consecutiveWins: 0,
+      consecutiveLosses: 0,
+      bestTradePct: 0,
+      worstTradePct: 0,
+    };
+
+    const emptyRegime: MarketRegime = {
+      trending: { pct: 0, avgReturnPct: 0, trades: 0, winRate: 0 },
+      ranging: { pct: 0, avgReturnPct: 0, trades: 0, winRate: 0 },
+      volatile: { pct: 0, avgReturnPct: 0, trades: 0, winRate: 0 },
+      recommendedStrategy: 'conservative',
+      currentRegime: 'ranging',
+      regimeDescription: 'Insufficient data for regime analysis.',
+    };
+
+    if (!enoughData) {
+      metrics = emptyMetrics;
+      regimeAnalysis = emptyRegime;
+    } else if (activeStrategy === 'all') {
+      // Run all strategies for comparison
+      const strategies: StrategyName[] = ['trend', 'rsi', 'breakout', 'smartmoney', 'conservative'];
+      const results = strategies.map(s => runStrategy(s, dailyCandles, initialBalance, riskPerTrade));
+
+      strategyComparison = results.map((r, i) => ({
+        name: strategies[i],
+        label: STRATEGY_LABELS[strategies[i]],
+        metrics: r.metrics,
+      }));
+
+      // Use smartmoney as the primary display
+      const primary = results.find(r => {
+        // Match by index (smartmoney is index 3)
+        return strategies[3] === 'smartmoney';
+      }) || results[3];
+      metrics = primary.metrics;
+      trades = primary.trades;
+      equityCurve = primary.equityCurve;
+
+      // Regime analysis uses smartmoney trades
+      const regimeData = classifyRegimes(dailyCandles);
+      regimeAnalysis = calculateRegimeAnalysis(primary.trades, regimeData, dailyCandles);
+    } else {
+      const result = runStrategy(activeStrategy, dailyCandles, initialBalance, riskPerTrade);
+      metrics = result.metrics;
+      trades = result.trades;
+      equityCurve = result.equityCurve;
+
+      const regimeData = classifyRegimes(dailyCandles);
+      regimeAnalysis = calculateRegimeAnalysis(trades, regimeData, dailyCandles);
+    }
+
     return NextResponse.json({
       symbol: symbol.toUpperCase(),
       type,
       weeklyData: trimmedWeekly,
       summary,
+      strategy: activeStrategy === 'all' ? 'smartmoney' : activeStrategy,
+      initialBalance,
+      metrics,
+      equityCurve,
+      trades,
+      regimeAnalysis,
+      ...(strategyComparison ? { strategyComparison } : {}),
     });
   } catch (error) {
     console.error('Backtest API error:', error);

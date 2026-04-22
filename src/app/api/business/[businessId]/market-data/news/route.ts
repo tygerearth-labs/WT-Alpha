@@ -136,76 +136,8 @@ export async function GET(
       return true;
     });
 
-    // If less than 5 news found, add fallback news
-    if (uniqueNews.length < 5) {
-      const fallbacks: NewsItem[] = [
-        {
-          title: 'Bitcoin (BTC) consolidates near key support as market awaits next catalyst',
-          snippet: 'BTC continues to range between critical levels. Traders watching for breakout direction amid mixed macro signals.',
-          url: '#',
-          source: 'Crypto Analysis',
-          publishedAt: new Date().toISOString(),
-          sentiment: 'neutral',
-        },
-        {
-          title: 'US Dollar Index (DXY) weakens as Fed rate expectations shift',
-          snippet: 'The DXY pulled back from recent highs as markets recalibrate Federal Reserve rate cut expectations for the remainder of 2025.',
-          url: '#',
-          source: 'Forex Live',
-          publishedAt: new Date().toISOString(),
-          sentiment: 'neutral',
-        },
-        {
-          title: 'Gold (XAU) holds above $3,200 amid geopolitical uncertainty',
-          snippet: 'Gold prices remain elevated as safe-haven demand persists. Technical analysis shows bullish structure with key support at $3,150.',
-          url: '#',
-          source: 'Commodity Watch',
-          publishedAt: new Date().toISOString(),
-          sentiment: 'bullish',
-        },
-        {
-          title: 'IHSG (IDX Composite) moves higher on foreign inflows',
-          snippet: 'Indonesian stock index gained as foreign investors returned to emerging market equities. Banking and commodity sectors led the advance.',
-          url: '#',
-          source: 'IDX Market',
-          publishedAt: new Date().toISOString(),
-          sentiment: 'bullish',
-        },
-        {
-          title: 'Crude oil prices stabilize near $62 as OPEC monitors supply-demand balance',
-          snippet: 'WTI crude held steady around the $62 level. OPEC+ maintaining production discipline while demand outlook remains cautiously optimistic.',
-          url: '#',
-          source: 'Energy Markets',
-          publishedAt: new Date().toISOString(),
-          sentiment: 'neutral',
-        },
-        {
-          title: 'Ethereum (ETH) network upgrade drives institutional interest',
-          snippet: 'Recent protocol improvements have renewed confidence in Ethereum\'s long-term value proposition. DeFi activity shows signs of recovery.',
-          url: '#',
-          source: 'DeFi Daily',
-          publishedAt: new Date().toISOString(),
-          sentiment: 'bullish',
-        },
-        {
-          title: 'Asia-Pacific currencies gain as USD weakness broadens',
-          snippet: 'Most Asian currencies strengthened against the US dollar. IDR/USD and other regional pairs benefited from improved risk sentiment.',
-          url: '#',
-          source: 'FX Pulse',
-          publishedAt: new Date().toISOString(),
-          sentiment: 'neutral',
-        },
-      ];
-
-      for (const fb of fallbacks) {
-        if (uniqueNews.length >= 8) break;
-        const key = fb.title.slice(0, 50).toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (!seen.has(key)) {
-          seen.add(key);
-          uniqueNews.push(fb);
-        }
-      }
-    }
+    // No fake fallback news — return only real data
+    const isPartial = uniqueNews.length < 5;
 
     // 4. Use LLM to analyze news impact on portfolio
     let assetImpacts: AssetImpact[] = [];
@@ -300,6 +232,7 @@ Respond ONLY with valid JSON:
       sentiment: overallSentiment,
       impacts: assetImpacts,
       totalNewsSearched: allNews.length,
+      isPartial,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

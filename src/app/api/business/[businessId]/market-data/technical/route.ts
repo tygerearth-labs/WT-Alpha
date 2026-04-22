@@ -150,7 +150,7 @@ function computeBollingerBands(closes: number[], period: number = 20, stdDev: nu
   };
 }
 
-// ── Smart Money Concepts (SMC) ───────────────────────────────────────────────
+// ── Advanced Technical Indicators ─────────────────────────────────────────────
 
 interface Candle {
   open: number;
@@ -158,6 +158,258 @@ interface Candle {
   low: number;
   close: number;
 }
+
+/** Stochastic RSI */
+function computeStochasticRSI(closes: number[], period: number = 14, smoothK: number = 3, smoothD: number = 3): { k: number; d: number } {
+  if (closes.length < period + 1) return { k: 50, d: 50 };
+
+  const rsiValues: number[] = [];
+  for (let i = period; i <= closes.length; i++) {
+    rsiValues.push(computeRSI(closes.slice(0, i), period));
+  }
+  if (rsiValues.length < period) return { k: 50, d: 50 };
+
+  const rawKValues: number[] = [];
+  for (let i = period - 1; i < rsiValues.length; i++) {
+    const slice = rsiValues.slice(i - period + 1, i + 1);
+    const minRSI = Math.min(...slice);
+    const maxRSI = Math.max(...slice);
+    const range = maxRSI - minRSI;
+    rawKValues.push(range === 0 ? 50 : ((rsiValues[i] - minRSI) / range) * 100);
+  }
+
+  const smoothKValues: number[] = [];
+  for (let i = smoothK - 1; i < rawKValues.length; i++) {
+    const slice = rawKValues.slice(i - smoothK + 1, i + 1);
+    smoothKValues.push(slice.reduce((s, v) => s + v, 0) / smoothK);
+  }
+  const k = smoothKValues.length > 0 ? smoothKValues[smoothKValues.length - 1] : 50;
+
+  const dValues: number[] = [];
+  for (let i = smoothD - 1; i < smoothKValues.length; i++) {
+    const slice = smoothKValues.slice(i - smoothD + 1, i + 1);
+    dValues.push(slice.reduce((s, v) => s + v, 0) / smoothD);
+  }
+  const d = dValues.length > 0 ? dValues[dValues.length - 1] : 50;
+
+  return { k, d };
+}
+
+/** Average Directional Index (ADX) — trend strength */
+function computeADX(candles: Candle[], period: number = 14): { adx: number; plusDI: number; minusDI: number; trendStrength: 'strong' | 'moderate' | 'weak' | 'none' } {
+  if (candles.length < period + 1) return { adx: 0, plusDI: 0, minusDI: 0, trendStrength: 'none' };
+
+  const trueRanges: number[] = [];
+  const plusDMs: number[] = [];
+  const minusDMs: number[] = [];
+
+  for (let i = 1; i < candles.length; i++) {
+    const high = candles[i].high;
+    const low = candles[i].low;
+    const prevHigh = candles[i - 1].high;
+    const prevLow = candles[i - 1].low;
+    const prevClose = candles[i - 1].close;
+
+    const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+    trueRanges.push(tr);
+
+    const upMove = high - prevHigh;
+    const downMove = prevLow - low;
+    plusDMs.push(upMove > downMove && upMove > 0 ? upMove : 0);
+    minusDMs.push(downMove > upMove && downMove > 0 ? downMove : 0);
+  }
+
+  if (trueRanges.length < period) return { adx: 0, plusDI: 0, minusDI: 0, trendStrength: 'none' };
+
+  const smoothedTR = trueRanges.slice(-period).reduce((s, v) => s + v, 0);
+  const smoothedPlusDM = plusDMs.slice(-period).reduce((s, v) => s + v, 0);
+  const smoothedMinusDM = minusDMs.slice(-period).reduce((s, v) => s + v, 0);
+
+  const plusDI = smoothedTR > 0 ? (smoothedPlusDM / smoothedTR) * 100 : 0;
+  const minusDI = smoothedTR > 0 ? (smoothedMinusDM / smoothedTR) * 100 : 0;
+
+  const diSum = plusDI + minusDI;
+  const dx = diSum > 0 ? (Math.abs(plusDI - minusDI) / diSum) * 100 : 0;
+
+  let adx = dx;
+  for (let i = 1; i < period && i < trueRanges.length - period; i++) {
+    adx = (adx * (period - 1) + dx) / period;
+  }
+
+  let trendStrength: 'strong' | 'moderate' | 'weak' | 'none';
+  if (adx >= 25) trendStrength = 'strong';
+  else if (adx >= 20) trendStrength = 'moderate';
+  else if (adx >= 10) trendStrength = 'weak';
+  else trendStrength = 'none';
+
+  return { adx: parseFloat(adx.toFixed(1)), plusDI: parseFloat(plusDI.toFixed(1)), minusDI: parseFloat(minusDI.toFixed(1)), trendStrength };
+}
+
+/** Average True Range (ATR) — volatility */
+function computeATR(candles: Candle[], period: number = 14): number {
+  if (candles.length < 2) return 0;
+
+  const trueRanges: number[] = [];
+  for (let i = 1; i < candles.length; i++) {
+    const high = candles[i].high;
+    const low = candles[i].low;
+    const prevClose = candles[i - 1].close;
+    trueRanges.push(Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose)));
+  }
+
+  const recentTR = trueRanges.slice(-period);
+  return recentTR.length > 0 ? recentTR.reduce((s, v) => s + v, 0) / recentTR.length : 0;
+}
+
+/** On Balance Volume (OBV) — volume flow direction */
+function computeOBV(candles: Candle[], volumes: number[]): { obv: number; trend: 'accumulating' | 'distributing' | 'neutral'; divergence: boolean } {
+  if (candles.length < 2 || !volumes || volumes.length < 2) {
+    return { obv: 0, trend: 'neutral', divergence: false };
+  }
+
+  let obvValue = 0;
+  const obvHistory: number[] = [];
+  for (let i = 0; i < candles.length && i < volumes.length; i++) {
+    if (i === 0) {
+      obvValue = volumes[0] || 0;
+    } else {
+      if (candles[i].close > candles[i - 1].close) {
+        obvValue += (volumes[i] || 0);
+      } else if (candles[i].close < candles[i - 1].close) {
+        obvValue -= (volumes[i] || 0);
+      }
+    }
+    obvHistory.push(obvValue);
+  }
+
+  // Determine trend from OBV slope
+  const recentOBV = obvHistory.slice(-10);
+  let trend: 'accumulating' | 'distributing' | 'neutral' = 'neutral';
+  if (recentOBV.length >= 5) {
+    const firstHalf = recentOBV.slice(0, Math.floor(recentOBV.length / 2));
+    const secondHalf = recentOBV.slice(Math.floor(recentOBV.length / 2));
+    const avgFirst = firstHalf.reduce((s, v) => s + v, 0) / firstHalf.length;
+    const avgSecond = secondHalf.reduce((s, v) => s + v, 0) / secondHalf.length;
+    const diff = Math.abs(avgSecond - avgFirst);
+    const threshold = Math.max(Math.abs(avgFirst) * 0.005, 1);
+    if (diff > threshold) {
+      trend = avgSecond > avgFirst ? 'accumulating' : 'distributing';
+    }
+  }
+
+  // Detect divergence: OBV trend vs price trend
+  const recentPrices = candles.slice(-10).map(c => c.close);
+  let priceUp = false;
+  let obvUp = false;
+  if (recentPrices.length >= 5) {
+    const firstHalfPrice = recentPrices.slice(0, Math.floor(recentPrices.length / 2));
+    const secondHalfPrice = recentPrices.slice(Math.floor(recentPrices.length / 2));
+    priceUp = secondHalfPrice[secondHalfPrice.length - 1] > firstHalfPrice[0];
+    obvUp = recentOBV[recentOBV.length - 1] > recentOBV[0];
+  }
+  const divergence = priceUp !== obvUp;
+
+  return { obv: obvValue, trend, divergence };
+}
+
+/** Commodity Channel Index (CCI) */
+function computeCCI(candles: Candle[], period: number = 20): number {
+  if (candles.length < period) return 0;
+
+  const typicalPrices: number[] = candles.slice(-period).map(c => (c.high + c.low + c.close) / 3);
+  const mean = typicalPrices.reduce((s, v) => s + v, 0) / period;
+  const meanDeviation = typicalPrices.reduce((s, v) => s + Math.abs(v - mean), 0) / period;
+
+  if (meanDeviation === 0) return 0;
+  return (typicalPrices[typicalPrices.length - 1] - mean) / (0.015 * meanDeviation);
+}
+
+/** Money Flow Index (MFI) */
+function computeMFI(candles: Candle[], volumes: number[], period: number = 14): number {
+  if (candles.length < period + 1 || !volumes || volumes.length < period + 1) return 50;
+
+  let positiveFlow = 0;
+  let negativeFlow = 0;
+
+  for (let i = candles.length - period; i < candles.length; i++) {
+    const tp = (candles[i].high + candles[i].low + candles[i].close) / 3;
+    const prevTP = (candles[i - 1].high + candles[i - 1].low + candles[i - 1].close) / 3;
+    const rawMoneyFlow = tp * (volumes[i] || 0);
+
+    if (tp > prevTP) {
+      positiveFlow += rawMoneyFlow;
+    } else {
+      negativeFlow += rawMoneyFlow;
+    }
+  }
+
+  if (negativeFlow === 0) return 100;
+  const moneyRatio = positiveFlow / negativeFlow;
+  return 100 - (100 / (1 + moneyRatio));
+}
+
+/** Williams %R */
+function computeWilliamsR(candles: Candle[], period: number = 14): number {
+  if (candles.length < period) return -50;
+
+  const recent = candles.slice(-period);
+  const highestHigh = Math.max(...recent.map(c => c.high));
+  const lowestLow = Math.min(...recent.map(c => c.low));
+  const currentClose = candles[candles.length - 1].close;
+  const range = highestHigh - lowestLow;
+
+  if (range === 0) return -50;
+  return ((highestHigh - currentClose) / range) * -100;
+}
+
+/** Rate of Change (ROC) */
+function computeROC(closes: number[], period: number = 14): number {
+  if (closes.length < period + 1) return 0;
+  const currentPrice = closes[closes.length - 1];
+  const pastPrice = closes[closes.length - 1 - period];
+  if (pastPrice === 0) return 0;
+  return ((currentPrice - pastPrice) / pastPrice) * 100;
+}
+
+/** Bollinger Band Width & Squeeze detection */
+function computeBBWidth(bb: { upper: number; middle: number; lower: number }): { width: number; percentRank: number; squeeze: boolean } {
+  const width = bb.middle > 0 ? ((bb.upper - bb.lower) / bb.middle) * 100 : 0;
+  // Squeeze = width below 10% of middle (very tight bands)
+  const squeeze = width < 10;
+  // Percent rank approximation — low width = low percentile
+  const percentRank = Math.min(100, Math.max(0, width * 2));
+  return { width: parseFloat(width.toFixed(2)), percentRank: parseFloat(percentRank.toFixed(0)), squeeze };
+}
+
+/** Volume Profile Analysis */
+function computeVolumeProfile(candles: Candle[], volumes: number[]): { volumeTrend: 'increasing' | 'decreasing' | 'stable'; volumeRatio: number; unusualVolume: boolean } {
+  if (!volumes || volumes.length < 10) {
+    return { volumeTrend: 'stable', volumeRatio: 1, unusualVolume: false };
+  }
+
+  // Check if all volumes are 0 (e.g., CoinGecko data without volume)
+  const nonZeroVolumes = volumes.filter(v => v > 0);
+  if (nonZeroVolumes.length < 5) {
+    return { volumeTrend: 'stable', volumeRatio: 1, unusualVolume: false };
+  }
+
+  const recentVol = volumes.slice(-5);
+  const olderVol = volumes.slice(-15, -5);
+  const avgRecent = recentVol.reduce((s, v) => s + v, 0) / recentVol.length;
+  const avgOlder = olderVol.length > 0 ? olderVol.reduce((s, v) => s + v, 0) / olderVol.length : avgRecent;
+  const volumeRatio = avgOlder > 0 ? avgRecent / avgOlder : 1;
+
+  let volumeTrend: 'increasing' | 'decreasing' | 'stable';
+  if (volumeRatio > 1.2) volumeTrend = 'increasing';
+  else if (volumeRatio < 0.8) volumeTrend = 'decreasing';
+  else volumeTrend = 'stable';
+
+  const unusualVolume = volumeRatio > 2.0 || volumeRatio < 0.3;
+
+  return { volumeTrend, volumeRatio: parseFloat(volumeRatio.toFixed(2)), unusualVolume };
+}
+
+// ── Smart Money Concepts (SMC) ───────────────────────────────────────────────
 
 /** Detect Fair Value Gap (FVG) from recent candles */
 function detectFVG(candles: Candle[]): { high: number; low: number; filled: boolean; description: string } | null {
@@ -439,46 +691,7 @@ async function fetchYahooOHLCV(symbol: string, type: string): Promise<OHLCVData 
   }
 }
 
-/** Fetch OHLCV klines from Binance public API — very reliable, no API key needed */
-async function fetchBinanceKlines(symbol: string): Promise<OHLCVData | null> {
-  try {
-    // Normalize symbol to Binance format (BTCUSDT, ETHUSDT, etc.)
-    let binanceSymbol = symbol.toUpperCase();
-    if (!binanceSymbol.endsWith('USDT') && !binanceSymbol.endsWith('BUSD') && !binanceSymbol.endsWith('BRL')) {
-      binanceSymbol += 'USDT';
-    }
-
-    const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=1d&limit=90`;
-    const res = await fetchWithTimeout(url, { timeoutMs: 10000 });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length < 20) return null;
-
-    const candles: Candle[] = [];
-    const closes: number[] = [];
-    const volumes: number[] = [];
-
-    for (const k of data) {
-      if (!Array.isArray(k) || k.length < 6) continue;
-      const [, open, high, low, close, vol] = k;
-      const o = parseFloat(open);
-      const h = parseFloat(high);
-      const l = parseFloat(low);
-      const c = parseFloat(close);
-      const v = parseFloat(vol);
-      if (isNaN(c) || isNaN(o)) continue;
-      candles.push({ open: o, high: h, low: l, close: c });
-      closes.push(c);
-      volumes.push(Math.floor(v));
-    }
-
-    if (closes.length < 20) return null;
-    return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
-  } catch (error) {
-    console.warn(`Binance klines failed for ${symbol}: ${error instanceof Error ? error.message : error}`);
-    return null;
-  }
-}
+// Binance API removed — using CoinGecko as primary source for all crypto data
 
 /** Generate mock OHLCV — ONLY as absolute last resort, produces meaningless indicators */
 function generateMockOHLCV(basePrice: number, symbol: string): OHLCVData {
@@ -510,24 +723,7 @@ function generateMockOHLCV(basePrice: number, symbol: string): OHLCVData {
   return { candles, closes, volumes, lastPrice: closes[closes.length - 1] };
 }
 
-/** Fetch price from Binance public API — fast, free, no API key */
-async function fetchBinancePrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
-  try {
-    let binanceSymbol = symbol.toUpperCase();
-    if (!binanceSymbol.endsWith('USDT') && !binanceSymbol.endsWith('BUSD') && !binanceSymbol.endsWith('BRL')) {
-      binanceSymbol += 'USDT';
-    }
-    const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
-    const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (typeof data.lastPrice !== 'number' || isNaN(data.lastPrice)) return null;
-    const change24h = typeof data.priceChangePercent === 'number' ? data.priceChangePercent : 0;
-    return { price: data.lastPrice, change24h: parseFloat(change24h.toFixed(2)) };
-  } catch {
-    return null;
-  }
-}
+// Binance API removed — using CoinGecko as primary source for all crypto data
 
 /** Fetch CoinGecko price + 24h change */
 async function fetchCoinGeckoPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
@@ -590,34 +786,34 @@ async function fetchCoinGeckoMarketDetail(symbol: string): Promise<{
   }
 }
 
-/** Fetch 24h ticker detail from Binance — fast, no API key */
-async function fetchBinance24hDetail(symbol: string): Promise<{
-  high24h: number | null;
-  low24h: number | null;
-  totalVolume: number | null;
-  quoteVolume: number | null;
-} | null> {
+// Binance API removed — using CoinGecko as primary source for all crypto data
+
+/** Fetch real 24h change from Yahoo Finance for a given symbol */
+async function fetchYahooChange24h(yahooSymbol: string): Promise<number | null> {
   try {
-    let binanceSymbol = symbol.toUpperCase();
-    if (!binanceSymbol.endsWith('USDT') && !binanceSymbol.endsWith('BUSD')) {
-      binanceSymbol += 'USDT';
-    }
-    const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
-    const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=5d`;
+    const res = await fetchWithTimeout(url, { timeoutMs: 8000, headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (!res.ok) return null;
     const data = await res.json();
-    return {
-      high24h: typeof data.highPrice === 'string' ? parseFloat(data.highPrice) : (data.highPrice ?? null),
-      low24h: typeof data.lowPrice === 'string' ? parseFloat(data.lowPrice) : (data.lowPrice ?? null),
-      totalVolume: typeof data.volume === 'string' ? parseFloat(data.volume) : (data.volume ?? null),
-      quoteVolume: typeof data.quoteVolume === 'string' ? parseFloat(data.quoteVolume) : (data.quoteVolume ?? null),
-    };
+    const meta = data.chart?.result?.[0]?.meta;
+    if (!meta || typeof meta.regularMarketPrice !== 'number') return null;
+    const prev = meta.chartPreviousClose ?? meta.previousClose;
+    if (!prev || prev <= 0) return null;
+    return parseFloat((((meta.regularMarketPrice - prev) / prev) * 100).toFixed(2));
   } catch {
     return null;
   }
 }
 
-/** Fetch forex rate from frankfurter.app */
+/** Forex symbol → Yahoo Finance symbol mapping */
+const FOREX_YAHOO_MAP: Record<string, string> = {
+  EURUSD: 'EURUSD=X', GBPUSD: 'GBPUSD=X', USDJPY: 'JPY=X',
+  AUDUSD: 'AUDUSD=X', NZDUSD: 'NZDUSD=X', USDCAD: 'USDCAD=X',
+  USDCHF: 'USDCHF=X', EURJPY: 'EURJPY=X', GBPJPY: 'GBPJPY=X',
+  EURGBP: 'EURGBP=X', EURAUD: 'EURAUD=X',
+};
+
+/** Fetch forex rate from frankfurter.app with real change24h from Yahoo */
 async function fetchForexPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
   try {
     const upper = symbol.toUpperCase();
@@ -635,32 +831,70 @@ async function fetchForexPrice(symbol: string): Promise<{ price: number; change2
     const data = await res.json();
     const rate = data.rates?.[pair[1]];
     if (typeof rate !== 'number') return null;
-    return { price: rate, change24h: parseFloat(((seededRandom(symbol + new Date().toISOString().slice(0, 10)) - 0.45) * 1.5).toFixed(2)) };
+
+    // Get real change24h from Yahoo Finance
+    const yahooSym = FOREX_YAHOO_MAP[upper];
+    let change24h: number | null = null;
+    if (yahooSym) {
+      change24h = await fetchYahooChange24h(yahooSym);
+    }
+
+    return { price: rate, change24h: change24h ?? 0 };
   } catch {
     return null;
   }
 }
 
-/** Fetch commodity price from metals.live */
+/** Commodity symbol → Yahoo Finance symbol mapping */
+const COMMODITY_YAHOO_MAP: Record<string, string> = {
+  XAU: 'GC=F', XAG: 'SI=F', XPT: 'PL=F', XPD: 'PA=F',
+  OIL: 'CL=F', CL: 'CL=F', CRUDE: 'CL=F', WTI: 'CL=F', BRENT: 'BZ=F', NG: 'NG=F',
+};
+
+/** Fetch commodity price from metals.live with real change24h from Yahoo */
 async function fetchCommodityPrice(symbol: string): Promise<{ price: number; change24h: number } | null> {
   try {
     const upper = symbol.toUpperCase();
     const map: Record<string, string> = { XAU: 'gold', XAG: 'silver', XPT: 'platinum', XPD: 'palladium' };
     const metal = map[upper];
-    if (!metal) {
-      // Oil / other commodities — use approximate 2025 values
-      const oilPrices: Record<string, number> = { CL: 62, CRUDE: 62, BRENT: 65, NG: 3.2, WTI: 62 };
-      const p = oilPrices[upper];
-      if (p) return { price: p, change24h: parseFloat(((seededRandom(symbol + new Date().toISOString().slice(0, 10)) - 0.45) * 3).toFixed(2)) };
+    let price: number | null = null;
+
+    if (metal) {
+      const url = 'https://api.metals.live/v1/spot';
+      const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const item = Array.isArray(data) ? data.find((m: { name: string }) => m.name.toLowerCase() === metal) : null;
+      if (!item || typeof item.price !== 'number') return null;
+      price = item.price;
+    } else {
+      // Oil / other commodities — use Yahoo Finance directly for both price and change
+      const yahooSym = COMMODITY_YAHOO_MAP[upper];
+      if (!yahooSym) return null;
+      const change24h = await fetchYahooChange24h(yahooSym);
+      // Also get the current price from Yahoo
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d`;
+        const res = await fetchWithTimeout(url, { timeoutMs: 8000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (res.ok) {
+          const data = await res.json();
+          const meta = data.chart?.result?.[0]?.meta;
+          if (meta && typeof meta.regularMarketPrice === 'number') {
+            return { price: meta.regularMarketPrice, change24h: change24h ?? 0 };
+          }
+        }
+      } catch { /* fallthrough */ }
       return null;
     }
-    const url = 'https://api.metals.live/v1/spot';
-    const res = await fetchWithTimeout(url, { timeoutMs: 8000 });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const item = Array.isArray(data) ? data.find((m: { name: string }) => m.name.toLowerCase() === metal) : null;
-    if (!item || typeof item.price !== 'number') return null;
-    return { price: item.price, change24h: parseFloat(((seededRandom(symbol + new Date().toISOString().slice(0, 10)) - 0.45) * 2).toFixed(2)) };
+
+    // Get real change24h from Yahoo Finance
+    const yahooSym = COMMODITY_YAHOO_MAP[upper];
+    let change24h: number | null = null;
+    if (yahooSym) {
+      change24h = await fetchYahooChange24h(yahooSym);
+    }
+
+    return { price: price!, change24h: change24h ?? 0 };
   } catch {
     return null;
   }
@@ -717,9 +951,7 @@ async function fetchIndexPrice(symbol: string): Promise<{ price: number; change2
 /** Universal price fetcher — tries multiple sources by asset type */
 async function fetchLivePrice(symbol: string, type: string): Promise<{ price: number; change24h: number; source: string } | null> {
   if (type === 'crypto') {
-    // Binance first (fastest, real-time, no rate limit), then CoinGecko, then CMC
-    const binance = await fetchBinancePrice(symbol);
-    if (binance) return { ...binance, source: 'binance' };
+    // CoinGecko primary, then CMC (no Binance — API access restricted)
     const cg = await fetchCoinGeckoPrice(symbol);
     if (cg) return { ...cg, source: 'coingecko' };
     const cmc = await fetchCMCPrice(symbol);
@@ -757,6 +989,7 @@ interface AIAnalysisResult {
   confidence: number;
   reasoning: string;
   strategy: string;
+  tradeDirection: 'LONG' | 'SHORT' | 'NONE';
   priceForecast: {
     shortTerm: { target: number; timeframe: string };
     midTerm: { target: number; timeframe: string };
@@ -766,6 +999,10 @@ interface AIAnalysisResult {
   entryZone: string;
   stopLossZone: string;
   takeProfitZone: string;
+  entryPrice: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
+  riskRewardRatio: number;
 }
 
 function buildFallbackAIAnalysis(
@@ -790,33 +1027,105 @@ function buildFallbackAIAnalysis(
   else if (signalStrength <= -20) overallSignal = 'SELL';
 
   const confidence = Math.min(95, Math.max(30, Math.abs(signalStrength) + 25));
-  const isBullish = trendStructure === 'bullish';
+
+  // ── CRITICAL FIX: Determine direction from overallSignal, NOT trendStructure ──
+  const isLong = overallSignal === 'STRONG_BUY' || overallSignal === 'BUY';
+  const isShort = overallSignal === 'STRONG_SELL' || overallSignal === 'SELL';
+  const tradeDirection: AIAnalysisResult['tradeDirection'] = isLong ? 'LONG' : isShort ? 'SHORT' : 'NONE';
+
+  // Dynamic multiplier based on signal strength
+  const strengthFactor = Math.abs(signalStrength) / 100; // 0 to 1
+  const baseMovePct = 0.02 + strengthFactor * 0.06; // 2% to 8%
 
   const reasoningParts: string[] = [];
-  if (trendStructure === 'bullish') reasoningParts.push(`Struktur tren ${symbol} menunjukkan pola higher-high dan higher-low yang mengindikasikan tekanan beli kuat.`);
-  else if (trendStructure === 'bearish') reasoningParts.push(`Struktur tren ${symbol} menunjukkan pola lower-high dan lower-low yang mengindikasikan tekanan jual dominan.`);
-  else reasoningParts.push(`Struktur tren ${symbol} bergerak sideways (ranging), menunggu breakout arah yang jelas.`);
+  if (isLong) {
+    reasoningParts.push(`Struktur tren ${symbol} menunjukkan sinyal BELI dengan tekanan beli kuat (strength: ${signalStrength}).`);
+    if (premiumDiscount === 'discount') reasoningParts.push('Harga berada di zona diskon, area akumulasi smart money.');
+    if (ob && ob.type === 'bullish') reasoningParts.push('Bullish order block terdeteksi sebagai area support utama.');
+  } else if (isShort) {
+    reasoningParts.push(`Struktur tren ${symbol} menunjukkan sinyal JUAL dengan tekanan jual dominan (strength: ${signalStrength}).`);
+    if (premiumDiscount === 'premium') reasoningParts.push('Harga berada di zona premium, potensi distribusi dari institusi.');
+    if (ob && ob.type === 'bearish') reasoningParts.push('Bearish order block terdeteksi sebagai area resistance utama.');
+  } else {
+    if (trendStructure === 'bullish') reasoningParts.push(`Struktur tren ${symbol} bullish namun sinyal belum cukup kuat untuk entry.`);
+    else if (trendStructure === 'bearish') reasoningParts.push(`Struktur tren ${symbol} bearish namun sinyal belum cukup kuat untuk entry.`);
+    else reasoningParts.push(`Struktur tren ${symbol} sideways (ranging), menunggu breakout arah yang jelas.`);
+  }
+  if (fvg && !fvg.filled) reasoningParts.push('Fair value gap yang belum terisi menandakan ketidakseimbangan harga.');
+  if (sweep) reasoningParts.push('Liquidity sweep terdeteksi, potensi reversal.');
 
-  if (premiumDiscount === 'discount' && isBullish) reasoningParts.push('Harga berada di zona diskon (di bawah equilibrium), area ini menarik untuk akumulasi bagi smart money.');
-  else if (premiumDiscount === 'premium' && !isBullish) reasoningParts.push('Harga berada di zona premium (di atas equilibrium), potensi profit-taking atau distribusi dari institusi besar.');
-
-  if (ob) reasoningParts.push(`${ob.type === 'bullish' ? 'Bullish' : 'Bearish'} order block terdeteksi sebagai area ${ob.type === 'bullish' ? 'support' : 'resistance'} utama.`);
-  if (fvg && !fvg.filled) reasoningParts.push('Fair value gap yang belum terisi menandakan ketidakseimbangan harga yang cenderung akan ditutup.');
-
-  const shortTarget = currentPrice * (isBullish ? 1.02 : isBullish === false ? 0.98 : 1.005);
-  const midTarget = currentPrice * (isBullish ? 1.05 : isBullish === false ? 0.95 : 1.01);
-  const longTarget = currentPrice * (isBullish ? 1.10 : isBullish === false ? 0.90 : 1.02);
+  // ── Price Forecast (direction-aware) ──
+  const shortTarget = isLong
+    ? currentPrice * (1 + baseMovePct * 0.4)
+    : isShort
+      ? currentPrice * (1 - baseMovePct * 0.4)
+      : currentPrice;
+  const midTarget = isLong
+    ? currentPrice * (1 + baseMovePct * 0.8)
+    : isShort
+      ? currentPrice * (1 - baseMovePct * 0.8)
+      : currentPrice;
+  const longTarget = isLong
+    ? currentPrice * (1 + baseMovePct * 1.5)
+    : isShort
+      ? currentPrice * (1 - baseMovePct * 1.5)
+      : currentPrice;
 
   const strategies: string[] = [];
+  if (isLong) strategies.push('BUY');
+  if (isShort) strategies.push('SELL');
   if (ob) strategies.push('Order Block');
   if (fvg && !fvg.filled) strategies.push('FVG Fill');
   if (sweep) strategies.push('Liquidity Sweep');
-  if (strategies.length === 0) strategies.push('Trend Structure');
+  if (!isLong && !isShort) strategies.push('Wait');
+
+  // ── Trade Zones (LOGICALLY CONSISTENT with direction) ──
+  let entryPrice: number;
+  let stopLossPrice: number;
+  let takeProfitPrice: number;
+  let entryZone: string;
+  let stopLossZone: string;
+  let takeProfitZone: string;
+
+  if (isLong) {
+    // LONG: Entry ≈ current, SL below current, TP above current
+    const slDistance = currentPrice * (0.015 + strengthFactor * 0.025); // 1.5% - 4%
+    const tpDistance = slDistance * (2 + strengthFactor); // R:R ratio 2:1 to 3:1
+    entryPrice = currentPrice;
+    stopLossPrice = currentPrice - slDistance;
+    takeProfitPrice = currentPrice + tpDistance;
+    entryZone = `BUY di ${fmtP(currentPrice * 0.998)} - ${fmtP(currentPrice * 1.002)}`;
+    stopLossZone = `SL di ${fmtP(stopLossPrice)} (di bawah entry)`;
+    takeProfitZone = `TP di ${fmtP(takeProfitPrice)} (di atas entry)`;
+  } else if (isShort) {
+    // SHORT: Entry ≈ current, SL above current, TP below current
+    const slDistance = currentPrice * (0.015 + strengthFactor * 0.025); // 1.5% - 4%
+    const tpDistance = slDistance * (2 + strengthFactor); // R:R ratio 2:1 to 3:1
+    entryPrice = currentPrice;
+    stopLossPrice = currentPrice + slDistance;
+    takeProfitPrice = currentPrice - tpDistance;
+    entryZone = `SELL di ${fmtP(currentPrice * 0.998)} - ${fmtP(currentPrice * 1.002)}`;
+    stopLossZone = `SL di ${fmtP(stopLossPrice)} (di atas entry)`;
+    takeProfitZone = `TP di ${fmtP(takeProfitPrice)} (di bawah entry)`;
+  } else {
+    // NEUTRAL: no trade
+    entryPrice = currentPrice;
+    stopLossPrice = 0;
+    takeProfitPrice = 0;
+    entryZone = `Tunggu konfirmasi di area ${fmtP(currentPrice * 0.99)} - ${fmtP(currentPrice * 1.01)}`;
+    stopLossZone = 'Belum ada rekomendasi';
+    takeProfitZone = 'Belum ada rekomendasi';
+  }
+
+  const riskRewardRatio = stopLossPrice > 0 && takeProfitPrice > 0 && entryPrice > 0
+    ? parseFloat((Math.abs(takeProfitPrice - entryPrice) / Math.abs(stopLossPrice - entryPrice)).toFixed(1))
+    : 0;
 
   return {
     overallSignal,
     signalStrength,
     confidence,
+    tradeDirection,
     reasoning: reasoningParts.join(' '),
     strategy: strategies.join(' + '),
     priceForecast: {
@@ -825,15 +1134,13 @@ function buildFallbackAIAnalysis(
       longTerm: { target: parseFloat(longTarget.toFixed(2)), timeframe: '1-3 bulan' },
     },
     riskLevel: Math.abs(signalStrength) > 50 ? 'HIGH' : Math.abs(signalStrength) > 25 ? 'MEDIUM' : 'LOW',
-    entryZone: isBullish
-      ? `Masuk di area ${fmtP(currentPrice * 0.995)} - ${fmtP(currentPrice * 1.002)}`
-      : `Tunggu konfirmasi di area ${fmtP(currentPrice * 0.998)} - ${fmtP(currentPrice * 1.005)}`,
-    stopLossZone: isBullish
-      ? `Stop loss di bawah ${fmtP(ob ? ob.zone.low * 0.995 : currentPrice * 0.97)}`
-      : `Stop loss di atas ${fmtP(ob ? ob.zone.high * 1.005 : currentPrice * 1.03)}`,
-    takeProfitZone: isBullish
-      ? `Take profit di area ${fmtP(midTarget)} - ${fmtP(longTarget)}`
-      : `Take profit di area ${fmtP(midTarget)} - ${fmtP(longTarget)}`,
+    entryZone,
+    stopLossZone,
+    takeProfitZone,
+    entryPrice: parseFloat(entryPrice.toFixed(2)),
+    stopLossPrice: parseFloat(stopLossPrice.toFixed(2)),
+    takeProfitPrice: parseFloat(takeProfitPrice.toFixed(2)),
+    riskRewardRatio,
   };
 }
 
@@ -878,25 +1185,46 @@ Technical Indicators:
 
 Skor sinyal agregat: ${signalStrength} (-100 to 100)
 
-Berikan analisis dalam bahasa Indonesia yang mudah dipahami investor awam. Response format JSON:
+⚠️ ATURAN KRITIS UNTUK TRADE ZONES — HARUS LOGIS DAN KONSISTEN:
+
+Jika signal BUY/STRONG_BUY (LONG):
+- entryPrice ≈ harga sekarang (${price})
+- stopLossPrice HARUS DI BAWAH entryPrice (misal ${price} → SL ${((price * 0.97).toFixed(2))})
+- takeProfitPrice HARUS DI ATAS entryPrice (misal ${price} → TP ${((price * 1.05).toFixed(2))})
+- Risk:Reward minimal 1:2
+
+Jika signal SELL/STRONG_SELL (SHORT):
+- entryPrice ≈ harga sekarang (${price})
+- stopLossPrice HARUS DI ATAS entryPrice (misal ${price} → SL ${((price * 1.03).toFixed(2))})
+- takeProfitPrice HARUS DI BAWAH entryPrice (misal ${price} → TP ${((price * 0.95).toFixed(2))})
+- Risk:Reward minimal 1:2
+
+Jika signal NEUTRAL: entry/SL/TP semua = 0
+
+Berikan analisis dalam bahasa Indonesia. Response format JSON:
 {
   "overallSignal": "STRONG_BUY" | "BUY" | "NEUTRAL" | "SELL" | "STRONG_SELL",
   "signalStrength": <number -100 to 100>,
   "confidence": <number 0-100>,
-  "reasoning": "<3-4 kalimat dalam bahasa Indonesia menjelaskan kenapa signal ini BUY/SELL/NEUTRAL, sertakan analisis SMC dan indikator teknikal>",
-  "strategy": "<nama strategi yang terdeteksi, misal 'FVG Reversal + Liquidity Sweep'>",
+  "reasoning": "<3-4 kalimat dalam bahasa Indonesia menjelaskan kenapa signal ini BUY/SELL/NEUTRAL>",
+  "strategy": "<nama strategi, misal 'BUY + FVG Reversal'>",
+  "tradeDirection": "LONG" | "SHORT" | "NONE",
   "priceForecast": {
     "shortTerm": { "target": <number>, "timeframe": "1-3 hari" },
     "midTerm": { "target": <number>, "timeframe": "1-2 minggu" },
     "longTerm": { "target": <number>, "timeframe": "1-3 bulan" }
   },
   "riskLevel": "LOW" | "MEDIUM" | "HIGH",
-  "entryZone": "<zona entry dalam format harga dengan simbol mata uang>",
-  "stopLossZone": "<zona stop loss>",
-  "takeProfitZone": "<zona take profit>"
+  "entryZone": "<text: BUY/SELL di $X - $Y>",
+  "stopLossZone": "<text: SL di $X (di bawah/atas entry)>",
+  "takeProfitZone": "<text: TP di $X (di atas/bawah entry)>",
+  "entryPrice": <number harga entry>,
+  "stopLossPrice": <number harga stop loss, 0 jika NEUTRAL>,
+  "takeProfitPrice": <number harga take profit, 0 jika NEUTRAL>,
+  "riskRewardRatio": <number R:R ratio, 0 jika NEUTRAL>
 }
 
-Hanya response JSON saja, tanpa penjelasan tambahan.`;
+Hanya response JSON saja.`;
 
     const result = await zaiClient.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
@@ -919,6 +1247,63 @@ Hanya response JSON saja, tanpa penjelasan tambahan.`;
     if (!['LOW', 'MEDIUM', 'HIGH'].includes(parsed.riskLevel)) parsed.riskLevel = 'MEDIUM';
     if (!parsed.reasoning) parsed.reasoning = `Analisis teknikal ${symbol} menunjukkan sinyal ${parsed.overallSignal} berdasarkan indikator SMC dan teknikal.`;
     if (!parsed.strategy) parsed.strategy = 'Technical + SMC Analysis';
+
+    // ── CRITICAL: Enforce logical consistency of trade zones ──
+    const isBuy = parsed.overallSignal === 'STRONG_BUY' || parsed.overallSignal === 'BUY';
+    const isSell = parsed.overallSignal === 'STRONG_SELL' || parsed.overallSignal === 'SELL';
+
+    if (isBuy) {
+      parsed.tradeDirection = 'LONG';
+      // Force SL below entry, TP above entry
+      if (parsed.entryPrice == null || parsed.entryPrice <= 0) parsed.entryPrice = price;
+      if (parsed.stopLossPrice == null || parsed.stopLossPrice <= 0 || parsed.stopLossPrice >= parsed.entryPrice) {
+        parsed.stopLossPrice = parseFloat((parsed.entryPrice * 0.97).toFixed(2)); // 3% below
+      }
+      if (parsed.takeProfitPrice == null || parsed.takeProfitPrice <= 0 || parsed.takeProfitPrice <= parsed.entryPrice) {
+        parsed.takeProfitPrice = parseFloat((parsed.entryPrice * 1.05).toFixed(2)); // 5% above
+      }
+    } else if (isSell) {
+      parsed.tradeDirection = 'SHORT';
+      // Force SL above entry, TP below entry
+      if (parsed.entryPrice == null || parsed.entryPrice <= 0) parsed.entryPrice = price;
+      if (parsed.stopLossPrice == null || parsed.stopLossPrice <= 0 || parsed.stopLossPrice <= parsed.entryPrice) {
+        parsed.stopLossPrice = parseFloat((parsed.entryPrice * 1.03).toFixed(2)); // 3% above
+      }
+      if (parsed.takeProfitPrice == null || parsed.takeProfitPrice <= 0 || parsed.takeProfitPrice >= parsed.entryPrice) {
+        parsed.takeProfitPrice = parseFloat((parsed.entryPrice * 0.95).toFixed(2)); // 5% below
+      }
+    } else {
+      parsed.tradeDirection = 'NONE';
+      parsed.entryPrice = price;
+      parsed.stopLossPrice = 0;
+      parsed.takeProfitPrice = 0;
+    }
+
+    // Compute R:R ratio
+    if (parsed.entryPrice > 0 && parsed.stopLossPrice > 0 && parsed.takeProfitPrice > 0) {
+      const risk = Math.abs(parsed.entryPrice - parsed.stopLossPrice);
+      const reward = Math.abs(parsed.takeProfitPrice - parsed.entryPrice);
+      parsed.riskRewardRatio = risk > 0 ? parseFloat((reward / risk).toFixed(1)) : 0;
+    } else {
+      parsed.riskRewardRatio = 0;
+    }
+
+    // Update zone text to be clear
+    const prefix = type === 'saham' ? 'Rp' : '$';
+    const fp = (v: number) => `${prefix}${v.toLocaleString(undefined, { maximumFractionDigits: v < 1 ? 6 : 2 })}`;
+    if (isBuy) {
+      parsed.entryZone = `BUY di ${fp(parsed.entryPrice)}`;
+      parsed.stopLossZone = `SL di ${fp(parsed.stopLossPrice)} (di bawah entry)`;
+      parsed.takeProfitZone = `TP di ${fp(parsed.takeProfitPrice)} (di atas entry)`;
+    } else if (isSell) {
+      parsed.entryZone = `SELL di ${fp(parsed.entryPrice)}`;
+      parsed.stopLossZone = `SL di ${fp(parsed.stopLossPrice)} (di atas entry)`;
+      parsed.takeProfitZone = `TP di ${fp(parsed.takeProfitPrice)} (di bawah entry)`;
+    } else {
+      parsed.entryZone = `Tunggu konfirmasi di ${fp(price)}`;
+      parsed.stopLossZone = 'Belum ada rekomendasi';
+      parsed.takeProfitZone = 'Belum ada rekomendasi';
+    }
 
     return parsed;
   } catch (error) {
@@ -985,7 +1370,7 @@ async function fetchNewsConfirmation(
   }
 }
 
-// ── Signal Aggregation ───────────────────────────────────────────────────────
+// ── Multi-Layer Signal Aggregation ───────────────────────────────────────────
 
 interface SignalDetail {
   indicator: string;
@@ -994,238 +1379,486 @@ interface SignalDetail {
   description: string;
 }
 
-/** Aggregate all indicator signals including SMC */
-function aggregateSignals(
-  rsi: number,
-  macdHist: number,
+interface LayerResult {
+  score: number;       // -100 to +100
+  signal: string;      // 'bullish' | 'bearish' | 'neutral'
+  description: string;
+}
+
+// ── Layer 1: TREND (25% weight) ──
+function computeTrendLayer(
+  candles: Candle[],
+  closes: number[],
   currentPrice: number,
-  bb: { upper: number; middle: number; lower: number },
-  sma20: number,
-  sma50: number,
+  _sma20: number,
+  _sma50: number,
+  _ema12: number,
+  _ema26: number,
+): LayerResult {
+  const details: SignalDetail[] = [];
+  let score = 0;
+
+  // ADX trend strength (directional)
+  const adxResult = computeADX(candles);
+  const adxBullish = adxResult.plusDI > adxResult.minusDI;
+  if (adxResult.trendStrength === 'strong') {
+    score += adxBullish ? 30 : -30;
+    details.push({ indicator: 'ADX', signal: adxBullish ? 'BULLISH' : 'BEARISH', weight: 30, description: `ADX ${adxResult.adx} (strong), +DI ${adxResult.plusDI} vs -DI ${adxResult.minusDI}` });
+  } else if (adxResult.trendStrength === 'moderate') {
+    score += adxBullish ? 15 : -15;
+    details.push({ indicator: 'ADX', signal: adxBullish ? 'BULLISH' : 'BEARISH', weight: 15, description: `ADX ${adxResult.adx} (moderate), tren ${adxBullish ? 'bullish' : 'bearish'}` });
+  } else {
+    details.push({ indicator: 'ADX', signal: 'NEUTRAL', weight: 5, description: `ADX ${adxResult.adx} (weak), tidak ada tren jelas` });
+  }
+
+  // MA alignment
+  if (closes.length >= 50) {
+    const s20 = sma(closes, 20);
+    const s50 = sma(closes, 50);
+    const s200 = closes.length >= 200 ? sma(closes, 200) : s50;
+    if (s20 > s50 && s50 > s200) {
+      score += 25;
+      details.push({ indicator: 'MA Alignment', signal: 'BULLISH', weight: 25, description: 'SMA20 > SMA50 > SMA200, bullish alignment kuat' });
+    } else if (s20 < s50 && s50 < s200) {
+      score -= 25;
+      details.push({ indicator: 'MA Alignment', signal: 'BEARISH', weight: 25, description: 'SMA20 < SMA50 < SMA200, bearish alignment kuat' });
+    } else if (s20 > s50) {
+      score += 10;
+      details.push({ indicator: 'MA Alignment', signal: 'BULLISH', weight: 10, description: 'SMA20 > SMA50, partial bullish' });
+    } else if (s20 < s50) {
+      score -= 10;
+      details.push({ indicator: 'MA Alignment', signal: 'BEARISH', weight: 10, description: 'SMA20 < SMA50, partial bearish' });
+    } else {
+      details.push({ indicator: 'MA Alignment', signal: 'NEUTRAL', weight: 0, description: 'MA berdekatan, menunggu arah' });
+    }
+  } else {
+    // Short data: use SMA20 vs SMA50
+    const s20 = sma(closes, Math.min(20, closes.length));
+    const s50 = sma(closes, Math.min(50, closes.length));
+    if (s20 > s50) { score += 10; details.push({ indicator: 'MA Cross', signal: 'BULLISH', weight: 10, description: 'SMA20 > SMA50' }); }
+    else if (s20 < s50) { score -= 10; details.push({ indicator: 'MA Cross', signal: 'BEARISH', weight: 10, description: 'SMA20 < SMA50' }); }
+    else { details.push({ indicator: 'MA Cross', signal: 'NEUTRAL', weight: 0, description: 'MA netral' }); }
+  }
+
+  // Price position relative to key MAs
+  const mainMA = sma(closes, Math.min(50, closes.length));
+  const priceVsMA = ((currentPrice - mainMA) / mainMA) * 100;
+  if (priceVsMA > 2) { score += 15; details.push({ indicator: 'Price vs MA', signal: 'BULLISH', weight: 15, description: `Harga ${(priceVsMA).toFixed(1)}% di atas MA50` }); }
+  else if (priceVsMA < -2) { score -= 15; details.push({ indicator: 'Price vs MA', signal: 'BEARISH', weight: 15, description: `Harga ${Math.abs(priceVsMA).toFixed(1)}% di bawah MA50` }); }
+  else { details.push({ indicator: 'Price vs MA', signal: 'NEUTRAL', weight: 5, description: 'Harga dekat MA50' }); }
+
+  // Higher Highs / Lower Lows pattern
+  if (closes.length >= 10) {
+    const recent5 = closes.slice(-5);
+    const prev5 = closes.slice(-10, -5);
+    const recentMax = Math.max(...recent5);
+    const prevMax = Math.max(...prev5);
+    const recentMin = Math.min(...recent5);
+    const prevMin = Math.min(...prev5);
+    if (recentMax > prevMax && recentMin > prevMin) {
+      score += 15;
+      details.push({ indicator: 'HH/HL Pattern', signal: 'BULLISH', weight: 15, description: 'Higher highs & higher lows terdeteksi' });
+    } else if (recentMax < prevMax && recentMin < prevMin) {
+      score -= 15;
+      details.push({ indicator: 'HH/HL Pattern', signal: 'BEARISH', weight: 15, description: 'Lower highs & lower lows terdeteksi' });
+    } else {
+      details.push({ indicator: 'HH/HL Pattern', signal: 'NEUTRAL', weight: 0, description: 'Pola mixed, tidak ada struktur jelas' });
+    }
+  }
+
+  // Normalize to -100 to 100
+  score = Math.max(-100, Math.min(100, Math.round(score)));
+  const signal = score > 10 ? 'bullish' : score < -10 ? 'bearish' : 'neutral';
+  return { score, signal, description: details.map(d => d.description).join('; ') };
+}
+
+// ── Layer 2: MOMENTUM (20% weight) ──
+function computeMomentumLayer(
+  closes: number[],
+  currentPrice: number,
+  rsiValue: number,
+  macdResult: { macd: number; signal: number; histogram: number },
+  bbResult: { upper: number; middle: number; lower: number },
+): LayerResult {
+  let score = 0;
+  const details: SignalDetail[] = [];
+
+  // RSI
+  if (rsiValue < 30) { score += 20; details.push({ indicator: 'RSI', signal: 'BULLISH', weight: 20, description: `RSI ${rsiValue.toFixed(1)} oversold, potensi rebound` }); }
+  else if (rsiValue < 40) { score += 10; details.push({ indicator: 'RSI', signal: 'BULLISH', weight: 10, description: `RSI ${rsiValue.toFixed(1)} mendekati oversold` }); }
+  else if (rsiValue > 70) { score -= 20; details.push({ indicator: 'RSI', signal: 'BEARISH', weight: 20, description: `RSI ${rsiValue.toFixed(1)} overbought, potensi koreksi` }); }
+  else if (rsiValue > 60) { score -= 10; details.push({ indicator: 'RSI', signal: 'BEARISH', weight: 10, description: `RSI ${rsiValue.toFixed(1)} mendekati overbought` }); }
+  else { details.push({ indicator: 'RSI', signal: 'NEUTRAL', weight: 5, description: `RSI ${rsiValue.toFixed(1)}, zona netral` }); }
+
+  // RSI divergence check
+  if (closes.length >= 30) {
+    const rsiNow = rsiValue;
+    const rsiPrev = computeRSI(closes.slice(0, -14), 14);
+    const priceNow = closes[closes.length - 1];
+    const pricePrev = closes[closes.length - 15];
+    const rsiDiverging = (priceNow > pricePrev && rsiNow < rsiPrev) || (priceNow < pricePrev && rsiNow > rsiPrev);
+    if (rsiDiverging) {
+      if (priceNow < pricePrev && rsiNow > rsiPrev) { score += 15; details.push({ indicator: 'RSI Divergence', signal: 'BULLISH', weight: 15, description: 'Bullish divergence — harga turun tapi RSI naik' }); }
+      else { score -= 15; details.push({ indicator: 'RSI Divergence', signal: 'BEARISH', weight: 15, description: 'Bearish divergence — harga naik tapi RSI turun' }); }
+    }
+  }
+
+  // MACD
+  const { histogram, macd, signal: macdSignal } = macdResult;
+  if (histogram > 0 && macd > macdSignal) { score += 15; details.push({ indicator: 'MACD', signal: 'BULLISH', weight: 15, description: `MACD bullish crossover, histogram ${histogram.toFixed(2)}` }); }
+  else if (histogram < 0 && macd < macdSignal) { score -= 15; details.push({ indicator: 'MACD', signal: 'BEARISH', weight: 15, description: `MACD bearish crossover, histogram ${histogram.toFixed(2)}` }); }
+  else if (histogram > 0) { score += 5; details.push({ indicator: 'MACD', signal: 'BULLISH', weight: 5, description: `Histogram positif ${histogram.toFixed(2)}` }); }
+  else if (histogram < 0) { score -= 5; details.push({ indicator: 'MACD', signal: 'BEARISH', weight: 5, description: `Histogram negatif ${histogram.toFixed(2)}` }); }
+  else { details.push({ indicator: 'MACD', signal: 'NEUTRAL', weight: 0, description: 'MACD netral' }); }
+
+  // Stochastic RSI
+  const stochRSI = computeStochasticRSI(closes);
+  if (stochRSI.k < 20 && stochRSI.d < 20) { score += 10; details.push({ indicator: 'StochRSI', signal: 'BULLISH', weight: 10, description: `StochRSI K(${stochRSI.k.toFixed(0)}) & D(${stochRSI.d.toFixed(0)}) oversold` }); }
+  else if (stochRSI.k > 80 && stochRSI.d > 80) { score -= 10; details.push({ indicator: 'StochRSI', signal: 'BEARISH', weight: 10, description: `StochRSI K(${stochRSI.k.toFixed(0)}) & D(${stochRSI.d.toFixed(0)}) overbought` }); }
+  else if (stochRSI.k > stochRSI.d) { score += 5; details.push({ indicator: 'StochRSI', signal: 'BULLISH', weight: 5, description: `K(${stochRSI.k.toFixed(0)}) > D(${stochRSI.d.toFixed(0)})` }); }
+  else if (stochRSI.k < stochRSI.d) { score -= 5; details.push({ indicator: 'StochRSI', signal: 'BEARISH', weight: 5, description: `K(${stochRSI.k.toFixed(0)}) < D(${stochRSI.d.toFixed(0)})` }); }
+
+  // ROC
+  const roc = computeROC(closes);
+  if (roc > 3) { score += 10; details.push({ indicator: 'ROC', signal: 'BULLISH', weight: 10, description: `ROC ${roc.toFixed(1)}%, momentum naik kuat` }); }
+  else if (roc > 0) { score += 5; details.push({ indicator: 'ROC', signal: 'BULLISH', weight: 5, description: `ROC ${roc.toFixed(1)}%, momentum positif` }); }
+  else if (roc < -3) { score -= 10; details.push({ indicator: 'ROC', signal: 'BEARISH', weight: 10, description: `ROC ${roc.toFixed(1)}%, momentum turun kuat` }); }
+  else if (roc < 0) { score -= 5; details.push({ indicator: 'ROC', signal: 'BEARISH', weight: 5, description: `ROC ${roc.toFixed(1)}%, momentum negatif` }); }
+  else { details.push({ indicator: 'ROC', signal: 'NEUTRAL', weight: 0, description: 'ROC netral' }); }
+
+  score = Math.max(-100, Math.min(100, Math.round(score)));
+  const signal = score > 10 ? 'bullish' : score < -10 ? 'bearish' : 'neutral';
+  return { score, signal, description: details.map(d => d.description).join('; ') };
+}
+
+// ── Layer 3: VOLUME (15% weight) ──
+function computeVolumeLayer(
+  candles: Candle[],
+  volumes: number[],
+): LayerResult {
+  let score = 0;
+  const details: SignalDetail[] = [];
+
+  // OBV
+  const obvResult = computeOBV(candles, volumes);
+  if (obvResult.trend === 'accumulating') {
+    score += obvResult.divergence ? 25 : 15;
+    details.push({ indicator: 'OBV', signal: 'BULLISH', weight: 15, description: `OBV akumulasi${obvResult.divergence ? ' (divergence bullish)' : ''}` });
+  } else if (obvResult.trend === 'distributing') {
+    score -= obvResult.divergence ? 25 : 15;
+    details.push({ indicator: 'OBV', signal: 'BEARISH', weight: 15, description: `OBV distribusi${obvResult.divergence ? ' (divergence bearish)' : ''}` });
+  } else {
+    details.push({ indicator: 'OBV', signal: 'NEUTRAL', weight: 0, description: 'OBV netral' });
+  }
+
+  // Volume Profile
+  const volProfile = computeVolumeProfile(candles, volumes);
+  if (volProfile.volumeTrend === 'increasing') {
+    score += 10;
+    details.push({ indicator: 'Volume', signal: 'BULLISH', weight: 10, description: `Volume meningkat (ratio ${volProfile.volumeRatio}x)${volProfile.unusualVolume ? ', UNUSUAL' : ''}` });
+  } else if (volProfile.volumeTrend === 'decreasing') {
+    score -= 10;
+    details.push({ indicator: 'Volume', signal: 'BEARISH', weight: 10, description: `Volume menurun (ratio ${volProfile.volumeRatio}x)${volProfile.unusualVolume ? ', UNUSUAL' : ''}` });
+  } else {
+    details.push({ indicator: 'Volume', signal: 'NEUTRAL', weight: 5, description: 'Volume stabil' });
+  }
+
+  // MFI
+  const mfi = computeMFI(candles, volumes);
+  if (mfi < 20) { score += 20; details.push({ indicator: 'MFI', signal: 'BULLISH', weight: 20, description: `MFI ${mfi.toFixed(0)} oversold, akumulasi kuat` }); }
+  else if (mfi < 30) { score += 10; details.push({ indicator: 'MFI', signal: 'BULLISH', weight: 10, description: `MFI ${mfi.toFixed(0)} mendekati oversold` }); }
+  else if (mfi > 80) { score -= 20; details.push({ indicator: 'MFI', signal: 'BEARISH', weight: 20, description: `MFI ${mfi.toFixed(0)} overbought, distribusi kuat` }); }
+  else if (mfi > 70) { score -= 10; details.push({ indicator: 'MFI', signal: 'BEARISH', weight: 10, description: `MFI ${mfi.toFixed(0)} mendekati overbought` }); }
+  else { details.push({ indicator: 'MFI', signal: 'NEUTRAL', weight: 5, description: `MFI ${mfi.toFixed(0)}, zona netral` }); }
+
+  score = Math.max(-100, Math.min(100, Math.round(score)));
+  const signal = score > 10 ? 'bullish' : score < -10 ? 'bearish' : 'neutral';
+  return { score, signal, description: details.map(d => d.description).join('; ') };
+}
+
+// ── Layer 4: VOLATILITY (10% weight) ──
+function computeVolatilityLayer(
+  candles: Candle[],
+  closes: number[],
+  currentPrice: number,
+  bbResult: { upper: number; middle: number; lower: number },
+): LayerResult {
+  let score = 0;
+  const details: SignalDetail[] = [];
+
+  // BB Width & Squeeze
+  const bbWidth = computeBBWidth(bbResult);
+  if (bbWidth.squeeze) {
+    score += 20;
+    details.push({ indicator: 'BB Squeeze', signal: 'BULLISH', weight: 20, description: `BB squeeze terdeteksi (width ${bbWidth.width.toFixed(1)}%), potensi breakout besar` });
+  } else if (bbWidth.width > 20) {
+    details.push({ indicator: 'BB Width', signal: 'NEUTRAL', weight: 0, description: `BB lebar (width ${bbWidth.width.toFixed(1)}%), volatilitas tinggi` });
+  } else {
+    details.push({ indicator: 'BB Width', signal: 'NEUTRAL', weight: 5, description: `BB width ${bbWidth.width.toFixed(1)}%, volatilitas normal` });
+  }
+
+  // ATR
+  const atr = computeATR(candles);
+  const atrPct = currentPrice > 0 ? (atr / currentPrice) * 100 : 0;
+  if (atrPct > 5) { details.push({ indicator: 'ATR', signal: 'NEUTRAL', weight: 0, description: `ATR ${atr.toFixed(2)} (${atrPct.toFixed(1)}%), volatilitas sangat tinggi` }); }
+  else if (atrPct > 2) { details.push({ indicator: 'ATR', signal: 'NEUTRAL', weight: 0, description: `ATR ${atr.toFixed(2)} (${atrPct.toFixed(1)}%), volatilitas moderat` }); }
+  else { details.push({ indicator: 'ATR', signal: 'NEUTRAL', weight: 0, description: `ATR ${atr.toFixed(2)} (${atrPct.toFixed(1)}%), volatilitas rendah` }); }
+
+  // CCI
+  const cci = computeCCI(candles);
+  if (cci > 200) { score -= 15; details.push({ indicator: 'CCI', signal: 'BEARISH', weight: 15, description: `CCI ${cci.toFixed(0)} extreme overbought` }); }
+  else if (cci > 100) { score -= 8; details.push({ indicator: 'CCI', signal: 'BEARISH', weight: 8, description: `CCI ${cci.toFixed(0)} overbought` }); }
+  else if (cci < -200) { score += 15; details.push({ indicator: 'CCI', signal: 'BULLISH', weight: 15, description: `CCI ${cci.toFixed(0)} extreme oversold` }); }
+  else if (cci < -100) { score += 8; details.push({ indicator: 'CCI', signal: 'BULLISH', weight: 8, description: `CCI ${cci.toFixed(0)} oversold` }); }
+  else { details.push({ indicator: 'CCI', signal: 'NEUTRAL', weight: 5, description: `CCI ${cci.toFixed(0)}, zona netral` }); }
+
+  // BB price position
+  if (currentPrice <= bbResult.lower) { score += 10; details.push({ indicator: 'BB Position', signal: 'BULLISH', weight: 10, description: 'Harga di bawah lower band' }); }
+  else if (currentPrice >= bbResult.upper) { score -= 10; details.push({ indicator: 'BB Position', signal: 'BEARISH', weight: 10, description: 'Harga di atas upper band' }); }
+
+  score = Math.max(-100, Math.min(100, Math.round(score)));
+  const sig = score > 10 ? 'bullish' : score < -10 ? 'bearish' : 'neutral';
+  return { score, signal: sig, description: details.map(d => d.description).join('; ') };
+}
+
+// ── Layer 5: SMART MONEY (15% weight) ──
+function computeSmartMoneyLayer(
   fvg: { high: number; low: number; filled: boolean; description: string } | null,
   ob: { zone: { high: number; low: number }; type: string; description: string } | null,
-  sweep: { level: number; swept: boolean; type: 'high' | 'low'; description: string } | null,
+  sweep: { level: number; swept: boolean; description: string } | null,
+  trendStructure: 'bullish' | 'bearish' | 'ranging',
+  premiumDiscount: 'premium' | 'discount' | 'equilibrium',
+  currentPrice: number,
+): LayerResult {
+  let score = 0;
+  const details: SignalDetail[] = [];
+
+  // FVG
+  if (fvg && !fvg.filled) {
+    const isBullish = fvg.low > currentPrice * 0.99;
+    if (isBullish) { score += 20; details.push({ indicator: 'FVG', signal: 'BULLISH', weight: 20, description: fvg.description }); }
+    else { score -= 20; details.push({ indicator: 'FVG', signal: 'BEARISH', weight: 20, description: fvg.description }); }
+  } else if (fvg?.filled) {
+    details.push({ indicator: 'FVG', signal: 'NEUTRAL', weight: 3, description: fvg.description });
+  }
+
+  // Order Block
+  if (ob) {
+    const isBullish = ob.type === 'bullish';
+    if (isBullish) { score += 20; details.push({ indicator: 'Order Block', signal: 'BULLISH', weight: 20, description: ob.description }); }
+    else { score -= 20; details.push({ indicator: 'Order Block', signal: 'BEARISH', weight: 20, description: ob.description }); }
+  }
+
+  // Liquidity Sweep
+  if (sweep && sweep.swept) {
+    const isBullish = sweep.description.toLowerCase().includes('bullish') || sweep.level < currentPrice;
+    if (isBullish) { score += 15; details.push({ indicator: 'Liq. Sweep', signal: 'BULLISH', weight: 15, description: sweep.description }); }
+    else { score -= 15; details.push({ indicator: 'Liq. Sweep', signal: 'BEARISH', weight: 15, description: sweep.description }); }
+  }
+
+  // Trend Structure
+  if (trendStructure === 'bullish') { score += 15; details.push({ indicator: 'Structure', signal: 'BULLISH', weight: 15, description: 'Struktur tren bullish (HH/HL)' }); }
+  else if (trendStructure === 'bearish') { score -= 15; details.push({ indicator: 'Structure', signal: 'BEARISH', weight: 15, description: 'Struktur tren bearish (LH/LL)' }); }
+  else { details.push({ indicator: 'Structure', signal: 'NEUTRAL', weight: 0, description: 'Struktur ranging' }); }
+
+  // Premium/Discount
+  if (premiumDiscount === 'discount') { score += 10; details.push({ indicator: 'P/D Zone', signal: 'BULLISH', weight: 10, description: 'Harga di zona diskon — area value' }); }
+  else if (premiumDiscount === 'premium') { score -= 10; details.push({ indicator: 'P/D Zone', signal: 'BEARISH', weight: 10, description: 'Harga di zona premium — waspada distribusi' }); }
+  else { details.push({ indicator: 'P/D Zone', signal: 'NEUTRAL', weight: 0, description: 'Harga di equilibrium' }); }
+
+  score = Math.max(-100, Math.min(100, Math.round(score)));
+  const signal = score > 10 ? 'bullish' : score < -10 ? 'bearish' : 'neutral';
+  return { score, signal, description: details.map(d => d.description).join('; ') };
+}
+
+// ── Layer 6: MARKET CONTEXT (10% weight) ──
+function computeMarketContextLayer(
+  candles: Candle[],
+  closes: number[],
+): LayerResult {
+  let score = 0;
+  const details: SignalDetail[] = [];
+
+  // Multi-period RSI agreement
+  const rsi7 = computeRSI(closes, 7);
+  const rsi14 = computeRSI(closes, 14);
+  const rsi21 = computeRSI(closes, 21);
+  const allBullish = rsi7 < 50 && rsi14 < 50 && rsi21 < 50;
+  const allBearish = rsi7 > 50 && rsi14 > 50 && rsi21 > 50;
+  if (allBullish) { score += 20; details.push({ indicator: 'Multi-RSI', signal: 'BULLISH', weight: 20, description: `RSI 7/14/21 semua bearish (reversal potensi): ${rsi7.toFixed(0)}/${rsi14.toFixed(0)}/${rsi21.toFixed(0)}` }); }
+  else if (allBearish) { score -= 20; details.push({ indicator: 'Multi-RSI', signal: 'BEARISH', weight: 20, description: `RSI 7/14/21 semua bullish (reversal potensi): ${rsi7.toFixed(0)}/${rsi14.toFixed(0)}/${rsi21.toFixed(0)}` }); }
+  else {
+    const avgRSI = (rsi7 + rsi14 + rsi21) / 3;
+    details.push({ indicator: 'Multi-RSI', signal: 'NEUTRAL', weight: 5, description: `RSI 7/14/21 mixed: ${rsi7.toFixed(0)}/${rsi14.toFixed(0)}/${rsi21.toFixed(0)} (avg ${avgRSI.toFixed(0)})` });
+  }
+
+  // Williams %R
+  const williamsR = computeWilliamsR(candles);
+  if (williamsR < -80) { score += 15; details.push({ indicator: 'Williams %R', signal: 'BULLISH', weight: 15, description: `Williams %R ${williamsR.toFixed(0)}, oversold` }); }
+  else if (williamsR > -20) { score -= 15; details.push({ indicator: 'Williams %R', signal: 'BEARISH', weight: 15, description: `Williams %R ${williamsR.toFixed(0)}, overbought` }); }
+  else { details.push({ indicator: 'Williams %R', signal: 'NEUTRAL', weight: 5, description: `Williams %R ${williamsR.toFixed(0)}` }); }
+
+  // Stochastic RSI agreement with RSI
+  const stochRSI = computeStochasticRSI(closes);
+  const rsiBullish = rsi14 < 45;
+  const stochBullish = stochRSI.k < 40;
+  if (rsiBullish && stochBullish) { score += 15; details.push({ indicator: 'RSI+Stoch', signal: 'BULLISH', weight: 15, description: 'RSI dan StochRSI setuju: oversold' }); }
+  else if (!rsiBullish && !stochBullish && rsi14 > 55 && stochRSI.k > 60) { score -= 15; details.push({ indicator: 'RSI+Stoch', signal: 'BEARISH', weight: 15, description: 'RSI dan StochRSI setuju: overbought' }); }
+  else { details.push({ indicator: 'RSI+Stoch', signal: 'NEUTRAL', weight: 0, description: 'RSI dan StochRSI tidak setuju' }); }
+
+  score = Math.max(-100, Math.min(100, Math.round(score)));
+  const signal = score > 10 ? 'bullish' : score < -10 ? 'bearish' : 'neutral';
+  return { score, signal, description: details.map(d => d.description).join('; ') };
+}
+
+// ── Layer 7: CONFLUENCE (5% weight) ──
+function computeConfluenceLayer(layerResults: LayerResult[]): LayerResult {
+  const totalLayers = layerResults.length;
+  let bullishCount = 0;
+  let bearishCount = 0;
+  const descriptions: string[] = [];
+
+  for (const lr of layerResults) {
+    if (lr.signal === 'bullish') bullishCount++;
+    else if (lr.signal === 'bearish') bearishCount++;
+  }
+
+  const confluenceCount = Math.max(bullishCount, bearishCount);
+  descriptions.push(`${confluenceCount}/${totalLayers} layer setuju pada arah`);
+
+  // Require 4/6 layers to agree for strong signal
+  const threshold = Math.ceil(totalLayers * 0.67); // ~4/6
+  let score = 0;
+  if (bullishCount >= threshold) {
+    score = Math.min(100, 30 + bullishCount * 12);
+  } else if (bearishCount >= threshold) {
+    score = Math.max(-100, -30 - bearishCount * 12);
+  } else if (bullishCount > bearishCount) {
+    score = Math.min(30, bullishCount * 8);
+  } else if (bearishCount > bullishCount) {
+    score = Math.max(-30, -bearishCount * 8);
+  }
+
+  const signal = score > 10 ? 'bullish' : score < -10 ? 'bearish' : 'neutral';
+  return { score: Math.round(score), signal, description: descriptions.join('; ') };
+}
+
+// ── Main Aggregation Function ──
+/** Multi-layer signal aggregation with confluence scoring */
+function aggregateSignals(
+  candles: Candle[],
+  closes: number[],
+  volumes: number[],
+  currentPrice: number,
+  rsiValue: number,
+  macdResult: { macd: number; signal: number; histogram: number },
+  bbResult: { upper: number; middle: number; lower: number },
+  sma20Value: number,
+  sma50Value: number,
+  ema12Value: number,
+  ema26Value: number,
+  fvg: { high: number; low: number; filled: boolean; description: string } | null,
+  ob: { zone: { high: number; low: number }; type: string; description: string } | null,
+  sweep: { level: number; swept: boolean; description: string } | null,
   trendStructure: 'bullish' | 'bearish' | 'ranging',
   premiumDiscount: 'premium' | 'discount' | 'equilibrium',
 ): {
   overallSignal: 'buy' | 'sell' | 'neutral';
   signalStrength: number;
   signalDetails: SignalDetail[];
+  layerScores: Record<string, { score: number; signal: string; description: string }>;
+  confluenceCount: number;
+  totalLayers: number;
 } {
   const signalDetails: SignalDetail[] = [];
-  let totalScore = 0;
 
-  // 1. RSI Signal (±15)
-  let rsiSignal: string;
-  let rsiWeight = 0;
-  if (rsi < 30) {
-    rsiSignal = 'BULLISH';
-    rsiWeight = 15;
-  } else if (rsi > 70) {
-    rsiSignal = 'BEARISH';
-    rsiWeight = -15;
-  } else if (rsi < 40) {
-    rsiSignal = 'BULLISH';
-    rsiWeight = 5;
-  } else if (rsi > 60) {
-    rsiSignal = 'BEARISH';
-    rsiWeight = -5;
-  } else {
-    rsiSignal = 'NEUTRAL';
-    rsiWeight = 0;
-  }
-  totalScore += rsiWeight;
-  signalDetails.push({
-    indicator: 'RSI',
-    signal: rsiSignal,
-    weight: Math.abs(rsiWeight),
-    description: rsi < 30
-      ? `RSI di ${rsi.toFixed(1)} (oversold), potensi rebound`
-      : rsi > 70
-        ? `RSI di ${rsi.toFixed(1)} (overbought), potensi koreksi`
-        : `RSI di ${rsi.toFixed(1)}, zona netral tanpa tekanan ekstrem`,
-  });
+  // Compute all 6 base layers
+  const trendLayer = computeTrendLayer(candles, closes, currentPrice, sma20Value, sma50Value, ema12Value, ema26Value);
+  const momentumLayer = computeMomentumLayer(closes, currentPrice, rsiValue, macdResult, bbResult);
+  const volumeLayer = computeVolumeLayer(candles, volumes);
+  const volatilityLayer = computeVolatilityLayer(candles, closes, currentPrice, bbResult);
+  const smartMoneyLayer = computeSmartMoneyLayer(fvg, ob, sweep, trendStructure, premiumDiscount, currentPrice);
+  const contextLayer = computeMarketContextLayer(candles, closes);
 
-  // 2. MACD Histogram Signal (±15)
-  let macdSignal: string;
-  let macdWeight = 0;
-  if (macdHist > 0) {
-    macdSignal = 'BULLISH';
-    macdWeight = Math.min(15, 8 + Math.abs(macdHist) * 0.05);
-  } else if (macdHist < 0) {
-    macdSignal = 'BEARISH';
-    macdWeight = Math.max(-15, -8 - Math.abs(macdHist) * 0.05);
-  } else {
-    macdSignal = 'NEUTRAL';
-    macdWeight = 0;
-  }
-  totalScore += macdWeight;
-  signalDetails.push({
-    indicator: 'MACD',
-    signal: macdSignal,
-    weight: Math.abs(macdWeight),
-    description: macdHist > 0
-      ? `Histogram MACD positif (${macdHist.toFixed(2)}), momentum bullish`
-      : macdHist < 0
-        ? `Histogram MACD negatif (${macdHist.toFixed(2)}), momentum bearish`
-        : 'MACD mendekati zero line, momentum netral',
-  });
+  const baseLayers = [trendLayer, momentumLayer, volumeLayer, volatilityLayer, smartMoneyLayer, contextLayer];
 
-  // 3. Bollinger Bands Signal (±10)
-  let bbSignal: string;
-  let bbWeight = 0;
-  if (currentPrice <= bb.lower) {
-    bbSignal = 'BULLISH';
-    bbWeight = 10;
-  } else if (currentPrice >= bb.upper) {
-    bbSignal = 'BEARISH';
-    bbWeight = -10;
-  } else {
-    const range = bb.upper - bb.lower;
-    if (range > 0) {
-      const position = (currentPrice - bb.lower) / range;
-      if (position < 0.2) {
-        bbSignal = 'BULLISH';
-        bbWeight = 5;
-      } else if (position > 0.8) {
-        bbSignal = 'BEARISH';
-        bbWeight = -5;
-      } else {
-        bbSignal = 'NEUTRAL';
-        bbWeight = 0;
-      }
-    } else {
-      bbSignal = 'NEUTRAL';
-      bbWeight = 0;
-    }
-  }
-  totalScore += bbWeight;
-  signalDetails.push({
-    indicator: 'Bollinger Bands',
-    signal: bbSignal,
-    weight: Math.abs(bbWeight),
-    description: currentPrice <= bb.lower
-      ? 'Harga di bawah lower band, potensi bounce dari support dinamis'
-      : currentPrice >= bb.upper
-        ? 'Harga di atas upper band, waspada potensi pullback'
-        : 'Harga berada di dalam bollinger bands, pergerakan normal',
-  });
+  // Layer 7: Confluence (computed from the other 6)
+  const confluenceLayer = computeConfluenceLayer(baseLayers);
 
-  // 4. Moving Average Cross Signal (±10)
-  let maSignal: string;
-  let maWeight = 0;
-  if (sma20 > sma50) {
-    maSignal = 'BULLISH';
-    maWeight = 10;
-  } else if (sma20 < sma50) {
-    maSignal = 'BEARISH';
-    maWeight = -10;
-  } else {
-    maSignal = 'NEUTRAL';
-    maWeight = 0;
-  }
-  totalScore += maWeight;
-  signalDetails.push({
-    indicator: 'MA Cross',
-    signal: maSignal,
-    weight: Math.abs(maWeight),
-    description: sma20 > sma50
-      ? 'SMA20 di atas SMA50 (golden cross), tren naik terkonfirmasi'
-      : sma20 < sma50
-        ? 'SMA20 di bawah SMA50 (death cross), tren turun terkonfirmasi'
-        : 'SMA20 dan SMA50 berdekatan, menunggu cross',
-  });
+  // Build layerScores for frontend
+  const layerScores: Record<string, { score: number; signal: string; description: string }> = {
+    trend: { score: trendLayer.score, signal: trendLayer.signal, description: trendLayer.description },
+    momentum: { score: momentumLayer.score, signal: momentumLayer.signal, description: momentumLayer.description },
+    volume: { score: volumeLayer.score, signal: volumeLayer.signal, description: volumeLayer.description },
+    volatility: { score: volatilityLayer.score, signal: volatilityLayer.signal, description: volatilityLayer.description },
+    smartMoney: { score: smartMoneyLayer.score, signal: smartMoneyLayer.signal, description: smartMoneyLayer.description },
+    context: { score: contextLayer.score, signal: contextLayer.signal, description: contextLayer.description },
+    confluence: { score: confluenceLayer.score, signal: confluenceLayer.signal, description: confluenceLayer.description },
+  };
 
-  // 5. FVG Signal (±15)
-  if (fvg && !fvg.filled) {
-    // Bullish FVG: gap is above, price should fill upward
-    // Bearish FVG: gap is below, price should fill downward
-    const isBullishFVG = fvg.low > currentPrice * 0.99;
-    const fvgSignal = isBullishFVG ? 'BULLISH' : 'BEARISH';
-    const fvgWeight = isBullishFVG ? 15 : -15;
-    totalScore += fvgWeight;
-    signalDetails.push({
-      indicator: 'FVG',
-      signal: fvgSignal,
-      weight: 15,
-      description: fvg.description,
-    });
-  } else if (fvg?.filled) {
-    signalDetails.push({
-      indicator: 'FVG',
-      signal: 'NEUTRAL',
-      weight: 3,
-      description: fvg.description,
-    });
+  // Weights: TREND 25%, MOMENTUM 20%, VOLUME 15%, VOLATILITY 10%, SMART MONEY 15%, CONTEXT 10%, CONFLUENCE 5%
+  const weights = [0.25, 0.20, 0.15, 0.10, 0.15, 0.10, 0.05];
+  const allLayers = [...baseLayers, confluenceLayer];
+
+  let weightedScore = 0;
+  for (let i = 0; i < allLayers.length; i++) {
+    weightedScore += allLayers[i].score * weights[i];
   }
 
-  // 6. Order Block Signal (±15)
-  if (ob) {
-    const isBullishOB = ob.type === 'bullish';
-    const obWeight = isBullishOB ? 15 : -15;
-    totalScore += obWeight;
-    signalDetails.push({
-      indicator: 'Order Block',
-      signal: isBullishOB ? 'BULLISH' : 'BEARISH',
-      weight: 15,
-      description: ob.description + (isBullishOB ? ' — area support kuat' : ' — area resistance kuat'),
-    });
+  // Build signal details from all layers
+  // Trend layer details
+  signalDetails.push(
+    { indicator: 'Trend Score', signal: trendLayer.signal.toUpperCase(), weight: Math.abs(trendLayer.score), description: trendLayer.description },
+  );
+  signalDetails.push(
+    { indicator: 'Momentum Score', signal: momentumLayer.signal.toUpperCase(), weight: Math.abs(momentumLayer.score), description: momentumLayer.description },
+  );
+  signalDetails.push(
+    { indicator: 'Volume Score', signal: volumeLayer.signal.toUpperCase(), weight: Math.abs(volumeLayer.score), description: volumeLayer.description },
+  );
+  signalDetails.push(
+    { indicator: 'Volatility Score', signal: volatilityLayer.signal.toUpperCase(), weight: Math.abs(volatilityLayer.score), description: volatilityLayer.description },
+  );
+  signalDetails.push(
+    { indicator: 'Smart Money Score', signal: smartMoneyLayer.signal.toUpperCase(), weight: Math.abs(smartMoneyLayer.score), description: smartMoneyLayer.description },
+  );
+  signalDetails.push(
+    { indicator: 'Market Context Score', signal: contextLayer.signal.toUpperCase(), weight: Math.abs(contextLayer.score), description: contextLayer.description },
+  );
+  signalDetails.push(
+    { indicator: 'Confluence Score', signal: confluenceLayer.signal.toUpperCase(), weight: Math.abs(confluenceLayer.score), description: confluenceLayer.description },
+  );
+
+  // Confluence count
+  let bullishAgree = 0;
+  let bearishAgree = 0;
+  for (const lr of baseLayers) {
+    if (lr.score > 10) bullishAgree++;
+    else if (lr.score < -10) bearishAgree++;
   }
+  const confluenceCount = Math.max(bullishAgree, bearishAgree);
+  const totalLayers = baseLayers.length;
 
-  // 7. Liquidity Sweep Signal (±10)
-  if (sweep) {
-    const isBullishSweep = sweep.type === 'low';
-    const sweepWeight = isBullishSweep ? 10 : -10;
-    totalScore += sweepWeight;
-    signalDetails.push({
-      indicator: 'Liquidity Sweep',
-      signal: isBullishSweep ? 'BULLISH' : 'BEARISH',
-      weight: 10,
-      description: sweep.description,
-    });
+  // If confluence < 4 out of 6, cap signal strength at 40
+  let finalScore = Math.max(-100, Math.min(100, Math.round(weightedScore)));
+  if (confluenceCount < 4) {
+    if (finalScore > 0) finalScore = Math.min(finalScore, 40);
+    else if (finalScore < 0) finalScore = Math.max(finalScore, -40);
   }
-
-  // 8. Trend Structure Signal (±10)
-  const trendWeight = trendStructure === 'bullish' ? 10 : trendStructure === 'bearish' ? -10 : 0;
-  totalScore += trendWeight;
-  signalDetails.push({
-    indicator: 'Trend Structure',
-    signal: trendStructure.toUpperCase(),
-    weight: Math.abs(trendWeight) || 3,
-    description: trendStructure === 'bullish'
-      ? 'Pola higher-high dan higher-low terdeteksi, tren naik aktif'
-      : trendStructure === 'bearish'
-        ? 'Pola lower-high dan lower-low terdeteksi, tren turun aktif'
-        : 'Harga bergerak sideways, belum ada arah tren yang jelas',
-  });
-
-  // 9. Premium/Discount Signal (±5)
-  const pdWeight = premiumDiscount === 'discount' ? 5 : premiumDiscount === 'premium' ? -5 : 0;
-  totalScore += pdWeight;
-  signalDetails.push({
-    indicator: 'Premium/Discount',
-    signal: premiumDiscount.toUpperCase(),
-    weight: Math.abs(pdWeight) || 2,
-    description: premiumDiscount === 'discount'
-      ? 'Harga di zona diskon, area value untuk pembelian'
-      : premiumDiscount === 'premium'
-        ? 'Harga di zona premium, potensi profit-taking'
-        : 'Harga di equilibrium, zona netral',
-  });
-
-  // Clamp total score to -100 to 100
-  const signalStrength = Math.max(-100, Math.min(100, Math.round(totalScore)));
 
   let overallSignal: 'buy' | 'sell' | 'neutral';
-  if (signalStrength >= 20) {
-    overallSignal = 'buy';
-  } else if (signalStrength <= -20) {
-    overallSignal = 'sell';
-  } else {
-    overallSignal = 'neutral';
-  }
+  if (finalScore >= 20) overallSignal = 'buy';
+  else if (finalScore <= -20) overallSignal = 'sell';
+  else overallSignal = 'neutral';
 
-  return { overallSignal, signalStrength, signalDetails };
+  return {
+    overallSignal,
+    signalStrength: finalScore,
+    signalDetails,
+    layerScores,
+    confluenceCount,
+    totalLayers,
+  };
 }
 
 // ── GET Handler ──────────────────────────────────────────────────────────────
@@ -1268,19 +1901,12 @@ export async function GET(
     let ohlcvData: OHLCVData | null = null;
     let dataSource: 'live' | 'estimated' = 'estimated';
 
-    // Crypto: Binance klines first (most reliable), then CoinGecko OHLC
+    // Crypto: CoinGecko OHLC primary (no Binance — API access restricted)
     if (type === 'crypto') {
-      ohlcvData = await fetchBinanceKlines(symbol);
+      ohlcvData = await fetchCoinGeckoOHLCV(symbol);
       if (ohlcvData) {
         dataSource = 'live';
-        priceSource = 'binance';
-      }
-      if (!ohlcvData) {
-        ohlcvData = await fetchCoinGeckoOHLCV(symbol);
-        if (ohlcvData) {
-          dataSource = 'live';
-          priceSource = 'coingecko';
-        }
+        priceSource = 'coingecko';
       }
     }
 
@@ -1326,14 +1952,19 @@ export async function GET(
     const trendStructure = detectTrendStructure(candles);
     const premiumDiscount = detectPremiumDiscount(candles);
 
-    // ── Aggregate Signals ───────────────────────────────────────────────
-    const { overallSignal, signalStrength, signalDetails } = aggregateSignals(
-      rsiValue,
-      macdResult.histogram,
+    // ── Aggregate Signals (Multi-Layer) ─────────────────────────────────
+    const { overallSignal, signalStrength, signalDetails, layerScores, confluenceCount, totalLayers } = aggregateSignals(
+      candles,
+      closes,
+      ohlcvData.volumes,
       currentPrice,
+      rsiValue,
+      macdResult,
       bbResult,
       sma20Value,
       sma50Value,
+      ema12Value,
+      ema26Value,
       fvg,
       ob,
       sweep,
@@ -1349,15 +1980,64 @@ export async function GET(
     );
 
     // Fallback if AI failed
-    const finalAI = aiAnalysis || buildFallbackAIAnalysis(
+    let finalAI = aiAnalysis || buildFallbackAIAnalysis(
       currentPrice, rsiValue, trendStructure, signalStrength,
       premiumDiscount, type, symbol.toUpperCase(), ob, fvg, sweep,
     );
 
+    // ── Sanitize AI direction consistency ────────────────────────────────
+    // Ensure SL/TP are logically consistent with tradeDirection
+    // If SL above entry AND TP below entry → must be SHORT/SELL
+    // If SL below entry AND TP above entry → must be LONG/BUY
+    if (finalAI.entryPrice > 0 && finalAI.stopLossPrice > 0 && finalAI.takeProfitPrice > 0) {
+      const { entryPrice, stopLossPrice, takeProfitPrice } = finalAI;
+      const slAboveEntry = stopLossPrice > entryPrice;
+      const tpBelowEntry = takeProfitPrice < entryPrice;
+      const slBelowEntry = stopLossPrice < entryPrice;
+      const tpAboveEntry = takeProfitPrice > entryPrice;
+
+      if (slAboveEntry && tpBelowEntry) {
+        // This is clearly a SELL/SHORT signal — fix direction if wrong
+        if (finalAI.tradeDirection !== 'SHORT') {
+          finalAI = {
+            ...finalAI,
+            tradeDirection: 'SHORT',
+            entryZone: `SELL di $${fmtNum(entryPrice * 0.998)} - $${fmtNum(entryPrice * 1.002)}`,
+            stopLossZone: `SL di $${fmtNum(stopLossPrice)} (di atas entry)`,
+            takeProfitZone: `TP di $${fmtNum(takeProfitPrice)} (di bawah entry)`,
+          };
+        }
+        // Also fix overallSignal to be consistent
+        if (finalAI.overallSignal === 'BUY' || finalAI.overallSignal === 'STRONG_BUY') {
+          finalAI = {
+            ...finalAI,
+            overallSignal: finalAI.signalStrength <= -60 ? 'STRONG_SELL' : 'SELL',
+          };
+        }
+      } else if (slBelowEntry && tpAboveEntry) {
+        // This is clearly a BUY/LONG signal — fix direction if wrong
+        if (finalAI.tradeDirection !== 'LONG') {
+          finalAI = {
+            ...finalAI,
+            tradeDirection: 'LONG',
+            entryZone: `BUY di $${fmtNum(entryPrice * 0.998)} - $${fmtNum(entryPrice * 1.002)}`,
+            stopLossZone: `SL di $${fmtNum(stopLossPrice)} (di bawah entry)`,
+            takeProfitZone: `TP di $${fmtNum(takeProfitPrice)} (di atas entry)`,
+          };
+        }
+        if (finalAI.overallSignal === 'SELL' || finalAI.overallSignal === 'STRONG_SELL') {
+          finalAI = {
+            ...finalAI,
+            overallSignal: finalAI.signalStrength >= 60 ? 'STRONG_BUY' : 'BUY',
+          };
+        }
+      }
+    }
+
     // ── News Confirmation ──────────────────────────────────────────────
     const newsConfirmation = await fetchNewsConfirmation(symbol, type);
 
-    // ── Market Detail (CoinGecko / Binance) ──────────────────────────────
+    // ── Market Detail (CoinGecko) ──────────────────────────────────────
     let marketDetail: {
       marketCap: number | null;
       totalVolume: number | null;
@@ -1379,27 +2059,8 @@ export async function GET(
       const cgDetail = await fetchCoinGeckoMarketDetail(symbol);
       if (cgDetail) {
         marketDetail = { ...cgDetail, source: 'coingecko' };
-      } else {
-        const binanceDetail = await fetchBinance24hDetail(symbol);
-        if (binanceDetail) {
-          marketDetail = {
-            marketCap: null,
-            totalVolume: binanceDetail.quoteVolume,
-            high24h: binanceDetail.high24h,
-            low24h: binanceDetail.low24h,
-            ath: null,
-            athChangePercentage: null,
-            atl: null,
-            atlChangePercentage: null,
-            priceChangePercentage7d: null,
-            priceChangePercentage30d: null,
-            circulatingSupply: null,
-            marketCapRank: null,
-            sparkline7d: null,
-            source: 'binance',
-          };
-        }
       }
+      // No Binance fallback — API access restricted
     }
 
     // ── Determine indicator labels ─────────────────────────────────────
@@ -1470,8 +2131,18 @@ export async function GET(
       // News Confirmation
       newsConfirmation,
 
-      // Signal Details
+      // Signal Details (Multi-Layer)
       signalDetails,
+      layerScores,
+      confluenceCount,
+      totalLayers,
+      // Data quality metadata
+      dataQuality: {
+        isMock: dataSource === 'estimated',
+        ohlcvSource: priceSource,
+        indicatorsComputed: ohlcvData !== null,
+      },
+
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {

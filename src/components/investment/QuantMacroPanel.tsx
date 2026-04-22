@@ -124,6 +124,11 @@ interface TechnicalAnalysis {
     entryZone: string;
     stopLossZone: string;
     takeProfitZone: string;
+    tradeDirection?: string;
+    entryPrice?: number;
+    stopLossPrice?: number;
+    takeProfitPrice?: number;
+    riskRewardRatio?: number;
   };
   newsConfirmation?: {
     confirmed: boolean;
@@ -175,6 +180,8 @@ interface MacroData {
   trending: TrendingAsset[];
   topGainers: TrendingAsset[];
   topLosers: TrendingAsset[];
+  fearAndGreed?: { value: number; label: string };
+  fearGreedSource?: 'alternative.me' | 'proxy';
   timestamp: string;
 }
 
@@ -691,7 +698,7 @@ function SignalCard({
   item: SignalGridItem;
   signal: TechnicalAnalysis | undefined;
   onSelect: (signal: TechnicalAnalysis) => void;
-  onAddToWatchlist: (symbol: string) => void;
+  onAddToWatchlist: (item: SignalGridItem) => void;
   index: number;
 }) {
   const tc = TYPE_COLORS[item.type] || TYPE_COLORS.crypto;
@@ -738,7 +745,7 @@ function SignalCard({
               {!item.isWatchlist && (
                 <button
                   className="p-1.5 rounded-md text-white/20 hover:text-[#FFD700] hover:bg-white/[0.06] transition-colors opacity-0 group-hover:opacity-100"
-                  onClick={(e) => { e.stopPropagation(); onAddToWatchlist(item.symbol); }}
+                  onClick={(e) => { e.stopPropagation(); onAddToWatchlist(item); }}
                 >
                   <Star className="h-3.5 w-3.5" />
                 </button>
@@ -1008,9 +1015,29 @@ export default function QuantMacroPanel() {
     toast.success(tf('quant.analyzing', 'Analysis complete!'));
   }, [fetchSignalsForItems, allItems, tf]);
 
-  const handleAddToWatchlist = useCallback((symbol: string) => {
-    toast.success(`${symbol} added to watchlist`);
-  }, []);
+  const handleAddToWatchlist = useCallback(async (item: { symbol: string; type: string; name?: string }) => {
+    if (!businessId) return;
+    try {
+      const res = await fetch(`/api/business/${businessId}/watchlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: item.symbol, type: item.type, name: item.name }),
+      });
+      if (res.ok) {
+        toast.success(`${item.symbol} added to watchlist`);
+        // Refresh watchlist items
+        const wlRes = await fetch(`/api/business/${businessId}/watchlist`);
+        if (wlRes.ok) {
+          const data = await wlRes.json();
+          setWatchlistItems(data.watchlist || []);
+        }
+      } else {
+        toast.error(`Failed to add ${item.symbol} to watchlist`);
+      }
+    } catch {
+      toast.error(`Failed to add ${item.symbol} to watchlist`);
+    }
+  }, [businessId]);
 
   const handleSelectTrending = useCallback((asset: TrendingAsset) => {
     if (!businessId) return;
@@ -1023,7 +1050,23 @@ export default function QuantMacroPanel() {
   // ── Computed ───────────────────────────────────────────────────────────────
   const signalArray = useMemo(() => Array.from(signals.values()), [signals]);
 
-  const sentiment = useMemo(() => (macroData ? getSentiment(macroData.global.marketCapChange24h, t) : null), [macroData, t]);
+  const sentiment = useMemo(() => {
+    if (!macroData) return null;
+    // Prefer real Fear & Greed data if available
+    if (macroData.fearAndGreed && macroData.fearGreedSource === 'alternative.me') {
+      const v = macroData.fearAndGreed.value;
+      const label = macroData.fearAndGreed.label;
+      let color: string, bgColor: string;
+      if (v <= 25) { color = '#FF1744'; bgColor = 'rgba(255,23,68,0.12)'; }
+      else if (v <= 45) { color = '#FF7043'; bgColor = 'rgba(255,112,67,0.12)'; }
+      else if (v <= 55) { color = '#FFD54F'; bgColor = 'rgba(255,213,79,0.12)'; }
+      else if (v <= 75) { color = '#03DAC6'; bgColor = 'rgba(3,218,198,0.12)'; }
+      else { color = '#00E676'; bgColor = 'rgba(0,230,118,0.12)'; }
+      return { label, color, bgColor, percentage: v };
+    }
+    // Fallback to simple heuristic
+    return getSentiment(macroData.global.marketCapChange24h, t);
+  }, [macroData, t]);
 
   const altcoinMarketCap = useMemo(() => {
     if (!macroData) return 0;
@@ -1698,10 +1741,16 @@ export default function QuantMacroPanel() {
 
       {/* Entry / SL / TP */}
       <div className="space-y-2">
-        <div className="rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10 p-3 space-y-1">
+        <div className={cn(
+          "rounded-lg border p-3 space-y-1",
+          ai.tradeDirection === 'SHORT' ? 'bg-[#CF6679]/[0.04] border-[#CF6679]/10' : 'bg-[#03DAC6]/[0.04] border-[#03DAC6]/10',
+        )}>
           <div className="flex items-center gap-1.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
-            <span className="text-[10px] text-[#03DAC6]/60 uppercase tracking-wider font-bold">Entry Zone</span>
+            <div className={cn('h-1.5 w-1.5 rounded-full', ai.tradeDirection === 'SHORT' ? 'bg-[#CF6679]' : 'bg-[#03DAC6]')} />
+            <span className={cn(
+              "text-[10px] uppercase tracking-wider font-bold",
+              ai.tradeDirection === 'SHORT' ? 'text-[#CF6679]/60' : 'text-[#03DAC6]/60',
+            )}>{ai.tradeDirection === 'SHORT' ? 'Entry Zone (SELL)' : ai.tradeDirection === 'LONG' ? 'Entry Zone (BUY)' : 'Entry Zone'}</span>
           </div>
           <p className="text-[11px] sm:text-xs text-white/60 font-medium">{ai.entryZone}</p>
         </div>
@@ -1869,7 +1918,7 @@ export default function QuantMacroPanel() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button className="p-2 rounded-lg text-white/30 hover:text-[#FFD700] hover:bg-white/[0.06] transition-colors"
-                      onClick={() => handleAddToWatchlist(selectedAsset.symbol)}>
+                      onClick={() => handleAddToWatchlist({ symbol: selectedAsset.symbol, type: selectedAsset.type, name: selectedAsset.symbol })}>
                       <Star className="h-4 w-4" />
                     </button>
                     <button className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
@@ -1911,7 +1960,7 @@ export default function QuantMacroPanel() {
               {/* ── Dialog Body ────────────────────────────────────────────────── */}
               <ScrollArea className="max-h-[calc(92vh-200px)]">
                 <div className="px-4 sm:px-6 py-5 space-y-5">
-                  {/* ── Live Market Data (from CoinGecko / Binance) ── */}
+                  {/* ── Live Market Data (from CoinGecko) ── */}
                   {selectedAsset.marketDetail && (() => {
                     const md = selectedAsset.marketDetail;
                     return (
@@ -2053,6 +2102,14 @@ export default function QuantMacroPanel() {
                             <span className="text-lg font-black font-mono" style={{ color: getSignalColor(selectedAsset.signalStrength) }}>
                               {selectedAsset.overallSignal === 'buy' ? 'BUY' : selectedAsset.overallSignal === 'sell' ? 'SELL' : 'NEUTRAL'}
                             </span>
+                            {selectedAsset.aiAnalysis?.riskRewardRatio && selectedAsset.aiAnalysis.riskRewardRatio > 0 && (
+                              <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-black border-0" style={{
+                                backgroundColor: 'rgba(255,215,0,0.15)',
+                                color: '#FFD700',
+                              }}>
+                                R:R {selectedAsset.aiAnalysis.riskRewardRatio}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
