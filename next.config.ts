@@ -25,7 +25,6 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",
   allowedDevOrigins: [
     "preview-chat-cbfcbd9b-5c49-4c8f-a37a-c6809d64ae6a.space.z.ai",
   ],
