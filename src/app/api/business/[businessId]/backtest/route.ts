@@ -808,9 +808,14 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
 
   if (candles.length < 51) return signals;
 
-  const entryThreshold = variant === 'smartmoney' ? 2.5 : 3.5;
-  const stopMultiplier = variant === 'smartmoney' ? 2.5 : 1.5;
-  const tpMultiplier = variant === 'smartmoney' ? 3.5 : 2.0;
+  // Thresholds: smartmoney is more aggressive, conservative requires more confirmation
+  const entryThreshold = variant === 'smartmoney' ? 55 : 65;
+  const stopMultiplier = variant === 'smartmoney' ? 1.5 : 1.2;
+  const tpMultiplier = variant === 'smartmoney' ? 3.0 : 2.0;
+
+  // Cooldown: minimum days between signals to avoid overtrading
+  const cooldownDays = variant === 'smartmoney' ? 3 : 7;
+  let lastSignalDate = '';
 
   for (let i = 50; i < candles.length; i++) {
     const slice = candles.slice(0, i + 1);
@@ -822,92 +827,109 @@ function generateCompositeSignals(candles: DailyCandle[], variant: 'smartmoney' 
     const macdData = computeMACD(closes);
     const bb = computeBollingerBands(closes, 20, 2);
     const sma50 = sma(closes, 50);
+    const sma20 = sma(closes, 20);
 
     if (atr <= 0) continue;
 
     const price = candles[i].close;
+    const today = candles[i].date;
 
     // Conservative: only trade in trending markets
     if (variant === 'conservative' && adx < 20) continue;
 
-    // ── Trend Layer (30%) ──
+    // Cooldown check
+    if (lastSignalDate) {
+      const lastDate = new Date(lastSignalDate + 'T00:00:00Z');
+      const curDate = new Date(today + 'T00:00:00Z');
+      const diffMs = curDate.getTime() - lastDate.getTime();
+      if (diffMs < cooldownDays * 24 * 60 * 60 * 1000) continue;
+    }
+
+    // ── Scoring: each layer returns 0–100, direction encoded by sign ──
+
+    // ── Trend Layer (0-100) ──
     let trendScore = 0;
-    if (adx > 20 && plusDI > minusDI) {
-      trendScore = 1; // Bullish trend
-    } else if (adx > 20 && minusDI > plusDI) {
-      trendScore = -1; // Bearish trend
-    }
-
-    // SMA alignment: SMA20 vs SMA50
-    const sma20 = sma(closes, 20);
-    if (sma20 > sma50) {
-      trendScore = Math.max(trendScore, 1);
+    if (adx > 20) {
+      // Stronger ADX = stronger trend conviction
+      const adxStrength = Math.min((adx - 20) / 30, 1); // 0–1 normalized
+      if (plusDI > minusDI && sma20 > sma50) {
+        trendScore = 50 + adxStrength * 50; // 50-100 bullish
+      } else if (minusDI > plusDI && sma20 < sma50) {
+        trendScore = -(50 + adxStrength * 50); // -50 to -100 bearish
+      } else if (plusDI > minusDI) {
+        trendScore = 30 + adxStrength * 30; // 30-60 mild bullish
+      } else if (minusDI > plusDI) {
+        trendScore = -(30 + adxStrength * 30); // -30 to -60 mild bearish
+      }
+    } else if (sma20 > sma50) {
+      trendScore = 25; // Mild bullish without ADX confirmation
     } else if (sma20 < sma50) {
-      trendScore = Math.min(trendScore, -1);
+      trendScore = -25; // Mild bearish without ADX confirmation
     }
 
-    // ── Momentum Layer (30%) ──
+    // ── Momentum Layer (0-100) ──
     let momentumScore = 0;
-    if (rsi < 40 && macdData.histogram > 0) {
-      momentumScore = 1; // Oversold but MACD turning bullish
-    } else if (rsi > 60 && macdData.histogram < 0) {
-      momentumScore = -1; // Overbought but MACD turning bearish
-    } else if (rsi < 30) {
-      momentumScore = 1; // Deeply oversold
+    if (rsi < 30) {
+      momentumScore = 70 + (30 - rsi); // Deeply oversold: 70-100 (bullish reversal)
+    } else if (rsi < 40 && macdData.histogram > 0) {
+      momentumScore = 50; // Oversold + MACD turning bullish
     } else if (rsi > 70) {
-      momentumScore = -1; // Deeply overbought
+      momentumScore = -(70 + (rsi - 70)); // Deeply overbought: -70 to -100 (bearish reversal)
+    } else if (rsi > 60 && macdData.histogram < 0) {
+      momentumScore = -50; // Overbought + MACD turning bearish
     } else if (macdData.macd > macdData.signal && macdData.histogram > 0) {
-      momentumScore = 1; // MACD bullish crossover
+      momentumScore = 40; // MACD bullish crossover
     } else if (macdData.macd < macdData.signal && macdData.histogram < 0) {
-      momentumScore = -1; // MACD bearish crossover
+      momentumScore = -40; // MACD bearish crossover
     }
 
-    // ── Volatility Layer (20%) ──
+    // ── Volatility Layer (0-100) ──
     let volatilityScore = 0;
-    const bbWidth = bb.middle > 0 ? (bb.upper - bb.lower) / bb.middle : 0;
-    if (price > bb.upper && bbWidth < 0.1) {
-      volatilityScore = -1; // Squeeze breakout upward but tight — wait
-    } else if (price < bb.lower && bbWidth < 0.1) {
-      volatilityScore = 1; // Squeeze breakout downward but tight — wait
-    } else if (price > bb.upper) {
-      volatilityScore = 1; // Above upper band
+    if (price > bb.upper) {
+      const bbDist = bb.middle > 0 ? ((price - bb.upper) / bb.middle) * 100 : 0;
+      volatilityScore = 50 + Math.min(bbDist * 5, 50); // 50-100: breakout above
     } else if (price < bb.lower) {
-      volatilityScore = -1; // Below lower band
+      const bbDist = bb.middle > 0 ? ((bb.lower - price) / bb.middle) * 100 : 0;
+      volatilityScore = -(50 + Math.min(bbDist * 5, 50)); // -50 to -100: breakout below
     }
 
-    // ── SMC Layer (20%) ──
+    // ── SMC Layer (0-100) ──
     let smcScore = 0;
-    // Price vs SMA50 (premium/discount)
+    // Price vs SMA50 (premium/discount zone)
     if (sma50 > 0) {
-      const distFromSMA50 = (price - sma50) / sma50;
-      if (distFromSMA50 < -0.02) smcScore = 1; // Discount zone
-      else if (distFromSMA50 > 0.02) smcScore = -1; // Premium zone
+      const distFromSMA50 = ((price - sma50) / sma50) * 100; // percentage
+      if (distFromSMA50 < -3) smcScore = 60 + Math.min(Math.abs(distFromSMA50) * 3, 40); // Deep discount: 60-100
+      else if (distFromSMA50 < -1) smcScore = 40; // Mild discount
+      else if (distFromSMA50 > 3) smcScore = -(60 + Math.min(distFromSMA50 * 3, 40)); // Deep premium: -60 to -100
+      else if (distFromSMA50 > 1) smcScore = -40; // Mild premium
     }
-    // 20-day high/low breakout
+    // 20-day high/low breakout boost
     const highs20 = slice.slice(-20).map(c => c.high);
     const low20 = Math.min(...slice.slice(-20).map(c => c.low));
-    if (price > Math.max(...highs20)) smcScore = 1;
-    else if (price < low20) smcScore = -1;
+    if (price > Math.max(...highs20)) smcScore = Math.max(smcScore, 55);
+    else if (price < low20) smcScore = Math.min(smcScore, -55);
 
-    // ── Composite Score ──
-    const composite = trendScore * 0.3 + momentumScore * 0.3 + volatilityScore * 0.2 + smcScore * 0.2;
+    // ── Weighted Composite (-100 to +100) ──
+    const composite = trendScore * 0.30 + momentumScore * 0.30 + volatilityScore * 0.20 + smcScore * 0.20;
 
     if (composite >= entryThreshold) {
       signals.push({
-        date: candles[i].date,
+        date: today,
         direction: 'LONG',
         entryPrice: price,
         stopLoss: parseFloat((price - stopMultiplier * atr).toFixed(6)),
         takeProfit: parseFloat((price + tpMultiplier * atr).toFixed(6)),
       });
+      lastSignalDate = today;
     } else if (composite <= -entryThreshold) {
       signals.push({
-        date: candles[i].date,
+        date: today,
         direction: 'SHORT',
         entryPrice: price,
         stopLoss: parseFloat((price + stopMultiplier * atr).toFixed(6)),
         takeProfit: parseFloat((price - tpMultiplier * atr).toFixed(6)),
       });
+      lastSignalDate = today;
     }
   }
 
@@ -983,6 +1005,10 @@ function simulateTrades(
     const riskAmount = balance * (riskPerTrade / 100);
     const positionSize = riskAmount / stopDistance;
 
+    // Preserve the strategy's intended R:R ratio
+    const intendedTP = signal.takeProfit;
+    const rrRatio = Math.abs(intendedTP - signal.entryPrice) / stopDistance;
+
     // Simulate from entry day forward
     let exited = false;
     const trade: SimulatedTradeInternal = {
@@ -1006,15 +1032,14 @@ function simulateTrades(
       const day = candles[dayIdx];
 
       if (dayIdx === candleIdx) {
-        // Entry day — use close as entry
+        // Entry day — use close as entry, recalculate SL/TP proportionally
         trade.entryPrice = day.close;
-        // Recalculate stops based on actual entry
         if (trade.direction === 'LONG') {
           trade.stopLoss = parseFloat((day.close - stopDistance).toFixed(6));
-          trade.takeProfit = parseFloat((day.close + stopDistance * 1.5).toFixed(6));
+          trade.takeProfit = parseFloat((day.close + stopDistance * rrRatio).toFixed(6));
         } else {
           trade.stopLoss = parseFloat((day.close + stopDistance).toFixed(6));
-          trade.takeProfit = parseFloat((day.close - stopDistance * 1.5).toFixed(6));
+          trade.takeProfit = parseFloat((day.close - stopDistance * rrRatio).toFixed(6));
         }
         continue;
       }
@@ -1058,6 +1083,16 @@ function simulateTrades(
           exited = true;
           break;
         }
+      }
+
+      // Max hold time: 15 trading days
+      const daysHeld = dayIdx - candleIdx;
+      if (daysHeld >= 15 && !exited) {
+        trade.exitPrice = day.close;
+        trade.exitDate = day.date;
+        trade.exitReason = 'TIME_EXIT';
+        exited = true;
+        break;
       }
     }
 

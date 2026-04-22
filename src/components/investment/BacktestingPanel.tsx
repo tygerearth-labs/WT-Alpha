@@ -524,13 +524,87 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
         {data && !loading && (
           <>
             {/* ════════════════════════════════════════════════════════════
+                NO TRADES FOUND — explain why
+                ════════════════════════════════════════════════════════════ */}
+            {data.metrics.totalTrades === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-lg bg-white/[0.02] border border-[#FFD700]/20 p-5 text-center"
+              >
+                <div className="flex justify-center mb-2">
+                  <div className="h-10 w-10 rounded-full bg-[#FFD700]/10 flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-[#FFD700]" />
+                  </div>
+                </div>
+                <h4 className="text-xs font-bold text-white/70 mb-1">Tidak Ada Trade Terdeteksi</h4>
+                <p className="text-[10px] text-white/35 leading-relaxed max-w-md mx-auto">
+                  Strategi <span className="text-[#BB86FC] font-bold">{STRATEGY_LABELS[data.strategy] || data.strategy}</span> tidak menemukan kondisi entry yang memenuhi syarat pada periode ini.
+                </p>
+                <div className="mt-3 space-y-1.5 text-[9px] text-white/25">
+                  <p>💡 <span className="text-white/40">Tips:</span> Coba strategi lain atau perpanjang range tanggal.</p>
+                  <p>• <span className="text-[#03DAC6]/70">Trend Following</span> — baik di market yang jelas naik/turun</p>
+                  <p>• <span className="text-[#03DAC6]/70">RSI Mean Reversion</span> — baik saat market oversold/overbought</p>
+                  <p>• <span className="text-[#03DAC6]/70">Smart Money</span> — komposit skor dari 4 layer indikator</p>
+                  <p>• <span className="text-[#03DAC6]/70">Breakout</span> — baik saat harga menembus resistance/support</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ════════════════════════════════════════════════════════════
+                1.5 BALANCE PROGRESSION (start → end)
+                ════════════════════════════════════════════════════════════ */}
+            {data.metrics.totalTrades > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+                className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-4"
+              >
+                <div className="flex items-center gap-1.5 mb-3">
+                  <Wallet className="h-3.5 w-3.5 text-white/25" />
+                  <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Balance Progression</span>
+                </div>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="text-center">
+                    <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Starting</span>
+                    <span className="text-sm font-black font-mono text-white/50">
+                      {fmtUsd(data.initialBalance)}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <ArrowUpRight className={cn("h-5 w-5", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679] hidden")} />
+                    <ArrowDownRight className={cn("h-5 w-5", data.metrics.totalReturnPct < 0 ? "text-[#CF6679]" : "text-[#03DAC6] hidden")} />
+                    <span className={cn("text-[10px] font-bold font-mono", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679]")}>
+                      {data.metrics.totalReturnPct >= 0 ? '+' : ''}{toF(data.metrics.totalReturnPct)}%
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Ending</span>
+                    <span className={cn("text-sm font-black font-mono", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679]")}>
+                      {fmtUsd(data.metrics.finalBalance)}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-3 text-[9px] text-white/25">
+                  <span>{data.metrics.totalTrades} trades</span>
+                  <span>•</span>
+                  <span>Best: <span className="text-[#03DAC6] font-mono">+{toF(data.metrics.bestTradePct)}%</span></span>
+                  <span>•</span>
+                  <span>Worst: <span className="text-[#CF6679] font-mono">{toF(data.metrics.worstTradePct)}%</span></span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ════════════════════════════════════════════════════════════
                 1. EQUITY CURVE CHART
                 ════════════════════════════════════════════════════════════ */}
-            {data.equityCurve.length > 2 && <EquityCurveChart equityCurve={data.equityCurve} initialBalance={data.initialBalance} fmtDate={fmtDate} />}
+            {data.equityCurve.length > 2 && data.metrics.totalTrades > 0 && <EquityCurveChart equityCurve={data.equityCurve} initialBalance={data.initialBalance} fmtDate={fmtDate} />}
 
             {/* ════════════════════════════════════════════════════════════
                 2. KEY METRICS DASHBOARD (6 cards in 2x3 grid)
                 ════════════════════════════════════════════════════════════ */}
+            {data.metrics.totalTrades > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {metricCards.map((card, idx) => (
                 <motion.div
@@ -553,6 +627,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                 </motion.div>
               ))}
             </div>
+            )}
 
             {/* ════════════════════════════════════════════════════════════
                 3. STRATEGY COMPARISON BAR (only when strategy=all)
@@ -626,7 +701,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
             {/* ════════════════════════════════════════════════════════════
                 4. MARKET REGIME ANALYSIS
                 ════════════════════════════════════════════════════════════ */}
-            {data.regimeAnalysis && (
+            {data.metrics.totalTrades > 0 && data.regimeAnalysis && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
