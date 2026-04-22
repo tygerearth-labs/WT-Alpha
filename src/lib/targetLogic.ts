@@ -134,7 +134,7 @@ export function getBrutalInsight(
   target: SavingsTarget,
   t?: (key: string, params?: Record<string, string | number>) => string
 ): string {
-  const { progressPercent, speedStatus, etaInMonths, avgMonthlySaving, doNothingETA } = metrics;
+  const { speedStatus, etaInMonths, avgMonthlySaving, doNothingETA } = metrics;
   const monthlyContribution = target.monthlyContribution;
 
   // Critical status insights
@@ -257,7 +257,7 @@ export function getETAText(
  * Generate mini challenge based on target data
  */
 export function generateMiniChallenge(
-  target: SavingsTarget,
+  _target: SavingsTarget,
   metrics: TargetMetrics,
   t?: (key: string, params?: Record<string, string | number>) => string
 ): {

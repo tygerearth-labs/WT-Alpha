@@ -402,7 +402,6 @@ export function KasMasuk() {
   }, []);
 
   // Animated values
-  const animatedTotal = useAnimatedValue(Math.round(totalIncome));
   const animatedAvg = useAnimatedValue(Math.round(avgIncome));
   const animatedMax = useAnimatedValue(Math.round(maxIncome));
   const animatedCount = useAnimatedValue(transactions.length, 500);

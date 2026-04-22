@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
           id: true, email: true, username: true, image: true,
           plan: true, status: true, locale: true, currency: true,
           subscriptionEnd: true, maxCategories: true, maxSavings: true,
+          role: true,
           createdAt: true, updatedAt: true,
           _count: { select: { transactions: true, categories: true, savingsTargets: true } }
         },
@@ -93,8 +94,8 @@ export async function PUT(request: NextRequest) {
     const changes: string[] = [];
 
     if (plan !== undefined) {
-      if (!['basic', 'pro'].includes(plan)) {
-        return NextResponse.json({ error: 'Plan must be "basic" or "pro"' }, { status: 400 });
+      if (!['basic', 'pro', 'ultimate'].includes(plan)) {
+        return NextResponse.json({ error: 'Plan must be "basic", "pro", or "ultimate"' }, { status: 400 });
       }
       updateData.plan = plan;
       changes.push(`Plan: ${plan}`);
@@ -152,6 +153,7 @@ export async function PUT(request: NextRequest) {
       select: {
         id: true, email: true, username: true, plan: true, status: true,
         subscriptionEnd: true, maxCategories: true, maxSavings: true,
+        role: true,
         createdAt: true, updatedAt: true
       }
     });

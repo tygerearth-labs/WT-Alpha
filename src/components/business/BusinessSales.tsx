@@ -46,7 +46,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, TrendingUp, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 interface Customer {
@@ -105,8 +104,8 @@ export default function BusinessSales() {
       fetch(`/api/business/${businessId}/customers`).then((r) => (r.ok ? r.json() : [])),
     ])
       .then(([salesData, customersData]) => {
-        setSales(salesData);
-        setCustomers(customersData);
+        setSales(salesData?.sales || []);
+        setCustomers(customersData?.customers || []);
       })
       .catch(() => {
         setSales([]);

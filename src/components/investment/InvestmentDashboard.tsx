@@ -1076,9 +1076,226 @@ export default function InvestmentDashboard() {
         </motion.div>
       )}
 
-      {/* ── CHART + SIGNALS + NEWS ── */}
+      {/* ── QUANT SIGNALS + NEWS FEED ── */}
+      <motion.div variants={cardVariants} custom={4} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Quant Signals */}
+        <Card className="bg-white/[0.03] border-white/[0.05]">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-[#FFD700]/60" />
+                <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashQuantSignals', 'Quant Signals')}</span>
+                {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
+              </div>
+              <Button
+                size="sm"
+                className="h-7 px-2.5 text-[10px] gap-1 bg-[#03DAC6]/10 text-[#03DAC6] hover:bg-[#03DAC6]/20 border border-[#03DAC6]/20"
+                onClick={handleAnalyzeAll}
+                disabled={analyzingAll}
+              >
+                <RefreshCw className={cn('h-3 w-3', analyzingAll && 'animate-spin')} />
+                Analyze All
+              </Button>
+            </div>
+            <div className="max-h-[320px] overflow-y-auto custom-scrollbar space-y-2">
+              {(openPortfolios.length === 0 && watchlist.length === 0) ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <BarChart3 className="h-10 w-10 text-white/10 mb-2" />
+                  <p className="text-white/30 text-xs">{tf('inv.noSignals', 'Add positions to see signals')}</p>
+                </div>
+              ) : (
+                [...openPortfolios.slice(0, 6), ...watchlist.slice(0, 2)].map((item) => {
+                  const key = `${item.type}:${item.symbol}`;
+                  const signal = signals.get(key);
+                  const tc = TYPE_COLORS[item.type];
+                  const strength = signal?.signalStrength ?? 0;
+                  const signalColor = signal ? getSignalColor(strength) : '#666';
+                  const signalLabel = signal ? getSignalLabel(signal.overallSignal, strength) : 'LOADING';
+
+                  return (
+                    <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setSelectedAsset(key)}>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
+                        <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
+                          {item.type.toUpperCase()}
+                        </Badge>
+                        {!('status' in item) ? (
+                          <Eye className="h-3 w-3 text-white/15" />
+                        ) : null}
+                        {signal && (
+                          <div className="flex items-center gap-1.5 ml-2">
+                            <span className="text-[9px] text-white/25">RSI</span>
+                            <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
+                              {signal.indicators.rsi.value.toFixed(1)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {signal ? (
+                          <>
+                            <div className="w-16 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${((strength + 100) / 200) * 100}%`, backgroundColor: signalColor }} />
+                            </div>
+                            <Badge className="text-[9px] px-2 py-0 h-4 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
+                              {signalLabel}
+                            </Badge>
+                          </>
+                        ) : (
+                          <Skeleton className="h-5 w-16 rounded bg-white/[0.06]" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* News + Social Feed */}
+        <Card className="bg-white/[0.03] border-white/[0.05]">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Newspaper className="h-4 w-4 text-[#FF7043]/60" />
+                <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashNewsSocial', 'News & Social')}</span>
+                {loadingNews && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
+              </div>
+              <div className="flex items-center gap-1.5">
+                {newsSentiment && newsSentiment !== 'neutral' && (
+                  <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                    backgroundColor: newsSentiment === 'bullish' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
+                    color: newsSentiment === 'bullish' ? UP_COLOR : DOWN_COLOR,
+                  }}>
+                    {newsSentiment.toUpperCase()}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{mergedFeed.length} items</Badge>
+              </div>
+            </div>
+            <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
+              {mergedFeed.length === 0 && !loadingNews && (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Newspaper className="h-10 w-10 text-white/10 mb-2" />
+                  <p className="text-white/30 text-xs">{tf('inv.dashNoNews', 'No news available')}</p>
+                </div>
+              )}
+              <AnimatePresence mode="popLayout">
+                {mergedFeed.map((item, i) => {
+                  const catConfig = CATEGORY_CONFIG[item.category || 'asset'] || CATEGORY_CONFIG.asset;
+                  const isBullish = item.sentiment === 'bullish';
+                  const isBearish = item.sentiment === 'bearish';
+                  const sentimentColor = isBullish ? UP_COLOR : isBearish ? DOWN_COLOR : GOLD_COLOR;
+
+                  // Find any matching news impact for this item
+                  const matchedImpact = newsImpacts.find((imp) =>
+                    item.title.toLowerCase().includes(imp.symbol.toLowerCase()),
+                  );
+                  const decisionText = matchedImpact ? matchedImpact.action : (isBullish
+                    ? (i % 2 === 0 ? 'Pertimbangkan Buy' : 'Tingkatkan posisi')
+                    : isBearish
+                      ? (i % 2 === 0 ? 'Pertimbangkan Sell' : 'Kurangi posisi')
+                      : 'Hold & Monitor');
+                  const decisionBg = matchedImpact
+                    ? matchedImpact.action === 'BUY' ? 'rgba(3,218,198,0.2)' : matchedImpact.action === 'SELL' ? 'rgba(207,102,121,0.2)' : 'rgba(255,215,0,0.15)'
+                    : isBullish ? 'rgba(3,218,198,0.15)' : isBearish ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)';
+                  const isPortfolioAsset = portfolioAssetKeys.has(
+                    item.title.split(' ').find((w) => w.length > 2)?.toUpperCase() || '',
+                  );
+
+                  return (
+                    <motion.div
+                      key={item.url || i}
+                      variants={cardVariants}
+                      custom={i}
+                      layout
+                      initial="hidden"
+                      animate="visible"
+                    >
+                      <div className="flex items-start gap-2.5 px-2.5 py-3 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] group">
+                        <div className="mt-1 shrink-0" style={{ color: sentimentColor }}>
+                          {isBullish ? <TrendingUp className="h-3.5 w-3.5" /> : isBearish ? <TrendingDown className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 shrink-0" style={{ backgroundColor: catConfig.bg, color: catConfig.text }}>
+                              {catConfig.label}
+                            </Badge>
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 shrink-0" style={{ backgroundColor: decisionBg, color: matchedImpact ? (decisionText === 'BUY' ? UP_COLOR : decisionText === 'SELL' ? DOWN_COLOR : GOLD_COLOR) : sentimentColor }}>
+                              {decisionText}
+                            </Badge>
+                            {matchedImpact && (
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(187,134,252,0.15)', color: PURPLE_COLOR }}>
+                                {matchedImpact.confidence}%
+                              </Badge>
+                            )}
+                            {isPortfolioAsset && (
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(3,218,198,0.1)', color: UP_COLOR }}>
+                                IN PORTFOLIO
+                              </Badge>
+                            )}
+                          </div>
+                          <h4 className="text-[12px] text-white/70 font-medium leading-snug line-clamp-2 mb-1">{item.title}</h4>
+                          {item.snippet && (
+                            <p className="text-[11px] text-white/30 leading-relaxed line-clamp-2 mb-1.5">{item.snippet}</p>
+                          )}
+                          {matchedImpact && matchedImpact.reasoning && (
+                            <p className="text-[10px] text-white/25 leading-relaxed italic mb-1.5 flex items-start gap-1">
+                              <Brain className="h-3 w-3 shrink-0 mt-0.5" style={{ color: PURPLE_COLOR }} />
+                              {matchedImpact.reasoning}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-white/20 truncate max-w-[120px]">{item.source}</span>
+                          </div>
+                        </div>
+                        {item.url && (
+                          <a href={item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-1.5 rounded text-white/10 hover:text-white/50 hover:bg-white/[0.06] transition-all opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+              {/* AI News Impact Summary */}
+              {newsImpacts.length > 0 && (
+                <div className="mt-2 px-2.5 py-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Brain className="h-3.5 w-3.5 text-[#BB86FC]" />
+                    <span className="text-[10px] text-white/50 font-bold uppercase tracking-wider">AI Impact Analysis</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {newsImpacts.slice(0, 4).map((imp, idx) => {
+                      const impColor = imp.action === 'BUY' ? UP_COLOR : imp.action === 'SELL' ? DOWN_COLOR : GOLD_COLOR;
+                      return (
+                        <div key={idx} className="flex items-center justify-between text-[10px]">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-bold text-white/60 font-mono">{imp.symbol}</span>
+                            <span className="text-white/20 truncate">{imp.reasoning}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-white/25 font-mono">{imp.confidence}%</span>
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: `${impColor}18`, color: impColor }}>
+                              {imp.action}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* ── CHART + WATCHLIST ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left: Chart + AI Insights */}
+        {/* Chart Column */}
         <div className="lg:col-span-2">
           {chartTabs.length > 0 ? (
             <motion.div variants={cardVariants} custom={6}>
@@ -1105,27 +1322,16 @@ export default function InvestmentDashboard() {
                         </button>
                       );
                     })}
-                    <div className="ml-auto flex items-center gap-1 shrink-0">
+                    {activeChartAsset && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-white/30 hover:text-[#FFD700] hover:bg-[#FFD700]/10"
-                        onClick={() => setShowAddAsset(true)}
-                        title={tf('inv.dashAddToWatchlist', 'Add to Watchlist')}
+                        className="ml-auto shrink-0 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-white/30 hover:text-white/70 hover:bg-white/10"
+                        onClick={() => setExpandedChart(activeChartAsset.key)}
                       >
-                        <Plus className="h-3.5 w-3.5" />
+                        <Maximize2 className="h-3.5 w-3.5" />
                       </Button>
-                      {activeChartAsset && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-white/30 hover:text-white/70 hover:bg-white/10"
-                          onClick={() => setExpandedChart(activeChartAsset.key)}
-                        >
-                          <Maximize2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
                   {/* Chart */}
                   {activeChartAsset && (
@@ -1261,175 +1467,75 @@ export default function InvestmentDashboard() {
           )}
         </div>
 
-        {/* Right: Quant Signals + News/Social stacked */}
-        <div className="space-y-4">
-          {/* Compact Quant Signals */}
-          <motion.div variants={cardVariants} custom={5}>
-            <Card className="bg-white/[0.03] border-white/[0.05]">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-[#FFD700]/60" />
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashQuantSignals', 'Quant Signals')}</span>
-                    {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
-                  </div>
-                  <Button
-                    size="sm"
-                    className="h-7 px-2.5 text-[10px] gap-1 bg-[#03DAC6]/10 text-[#03DAC6] hover:bg-[#03DAC6]/20 border border-[#03DAC6]/20"
-                    onClick={handleAnalyzeAll}
-                    disabled={analyzingAll}
-                  >
-                    <RefreshCw className={cn('h-3 w-3', analyzingAll && 'animate-spin')} />
-                    Analyze
-                  </Button>
+        {/* Compact Watchlist Panel */}
+        <div>
+          <Card className="bg-white/[0.03] border-white/[0.05]">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-[#FFD700]/60" />
+                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashWatchlist', 'Watchlist')}</span>
+                  <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{watchlist.length}</Badge>
                 </div>
-                <div className="max-h-[280px] overflow-y-auto custom-scrollbar space-y-1.5">
-                  {(openPortfolios.length === 0 && watchlist.length === 0) ? (
-                    <div className="flex flex-col items-center justify-center py-6">
-                      <BarChart3 className="h-8 w-8 text-white/10 mb-2" />
-                      <p className="text-white/30 text-[11px]">{tf('inv.noSignals', 'Add positions to see signals')}</p>
-                    </div>
-                  ) : (
-                    [...openPortfolios.slice(0, 6), ...watchlist.slice(0, 2)].map((item) => {
-                      const key = `${item.type}:${item.symbol}`;
-                      const signal = signals.get(key);
-                      const tc = TYPE_COLORS[item.type];
-                      const strength = signal?.signalStrength ?? 0;
-                      const signalColor = signal ? getSignalColor(strength) : '#666';
-                      const signalLabel = signal ? getSignalLabel(signal.overallSignal, strength) : 'LOADING';
-
-                      return (
-                        <div key={key} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer" onClick={() => setSelectedAsset(key)}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
-                            <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                              {item.type.toUpperCase()}
-                            </Badge>
-                            {!('status' in item) ? <Eye className="h-3 w-3 text-white/15" /> : null}
-                            {signal && (
-                              <div className="flex items-center gap-1 ml-1">
-                                <span className="text-[9px] text-white/25">RSI</span>
-                                <span className={cn('text-[10px] font-mono font-bold', signal.indicators.rsi.value < 30 || signal.indicators.rsi.value > 70 ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
-                                  {signal.indicators.rsi.value.toFixed(1)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {signal ? (
-                              <>
-                                <div className="w-14 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                                  <div className="h-full rounded-full transition-all" style={{ width: `${((strength + 100) / 200) * 100}%`, backgroundColor: signalColor }} />
-                                </div>
-                                <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
-                                  {signalLabel}
-                                </Badge>
-                              </>
-                            ) : (
-                              <Skeleton className="h-4 w-14 rounded bg-white/[0.06]" />
-                            )}
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 text-[10px] gap-1 bg-[#FFD700]/10 text-[#FFD700] hover:bg-[#FFD700]/20 border border-[#FFD700]/20"
+                  onClick={() => setShowAddAsset(true)}
+                >
+                  <Plus className="h-3 w-3" />
+                  {tf('inv.dashAddAsset', 'Add')}
+                </Button>
+              </div>
+              <div className="max-h-[420px] overflow-y-auto custom-scrollbar space-y-0.5">
+                {watchlist.length === 0 && !loadingWatchlist ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Eye className="h-8 w-8 text-white/10 mb-2" />
+                    <p className="text-white/30 text-xs">{tf('inv.dashWatchlistEmpty', 'Tambahkan aset ke watchlist')}</p>
+                  </div>
+                ) : (
+                  watchlist.map((w) => {
+                    const tc = TYPE_COLORS[w.type];
+                    const isUp = (w.change24h ?? 0) >= 0;
+                    const wlSignal = signals.get(`${w.type}:${w.symbol}`);
+                    const signalColor = wlSignal ? getSignalColor(wlSignal.signalStrength) : null;
+                    return (
+                      <div
+                        key={w.id}
+                        className="group flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer"
+                        onClick={() => setSelectedAsset(`wl:${w.type}:${w.symbol}`)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {signalColor && (
+                            <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: signalColor }} title={wlSignal ? getSignalLabel(wlSignal.overallSignal, wlSignal.signalStrength) : ''} />
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-white/80 font-mono">{w.symbol}</span>
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
+                                {w.type.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-mono text-white/50">{fmtPrice(w.type, w.price ?? 0)}</span>
+                              <span className={cn('text-[10px] font-mono font-bold', isUp ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                                {isUp ? '+' : ''}{(w.change24h ?? 0).toFixed(2)}%
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Compact News + Social Feed */}
-          <motion.div variants={cardVariants} custom={6}>
-            <Card className="bg-white/[0.03] border-white/[0.05]">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Newspaper className="h-4 w-4 text-[#FF7043]/60" />
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashNewsSocial', 'News & Social')}</span>
-                    {loadingNews && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {newsSentiment && newsSentiment !== 'neutral' && (
-                      <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
-                        backgroundColor: newsSentiment === 'bullish' ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)',
-                        color: newsSentiment === 'bullish' ? UP_COLOR : DOWN_COLOR,
-                      }}>
-                        {newsSentiment.toUpperCase()}
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{mergedFeed.length}</Badge>
-                  </div>
-                </div>
-                <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
-                  {mergedFeed.length === 0 && !loadingNews && (
-                    <div className="flex flex-col items-center justify-center py-6">
-                      <Newspaper className="h-8 w-8 text-white/10 mb-2" />
-                      <p className="text-white/30 text-[11px]">{tf('inv.dashNoNews', 'No news available')}</p>
-                    </div>
-                  )}
-                  <AnimatePresence mode="popLayout">
-                    {mergedFeed.map((item, i) => {
-                      const catConfig = CATEGORY_CONFIG[item.category || 'asset'] || CATEGORY_CONFIG.asset;
-                      const isBullish = item.sentiment === 'bullish';
-                      const isBearish = item.sentiment === 'bearish';
-                      const sentimentColor = isBullish ? UP_COLOR : isBearish ? DOWN_COLOR : GOLD_COLOR;
-
-                      const matchedImpact = newsImpacts.find((imp) =>
-                        item.title.toLowerCase().includes(imp.symbol.toLowerCase()),
-                      );
-                      const decisionText = matchedImpact ? matchedImpact.action : (isBullish
-                        ? (i % 2 === 0 ? 'Pertimbangkan Buy' : 'Tingkatkan posisi')
-                        : isBearish
-                          ? (i % 2 === 0 ? 'Pertimbangkan Sell' : 'Kurangi posisi')
-                          : 'Hold & Monitor');
-                      const decisionBg = matchedImpact
-                        ? matchedImpact.action === 'BUY' ? 'rgba(3,218,198,0.2)' : matchedImpact.action === 'SELL' ? 'rgba(207,102,121,0.2)' : 'rgba(255,215,0,0.15)'
-                        : isBullish ? 'rgba(3,218,198,0.15)' : isBearish ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)';
-                      const isPortfolioAsset = portfolioAssetKeys.has(
-                        item.title.split(' ').find((w) => w.length > 2)?.toUpperCase() || '',
-                      );
-
-                      return (
-                        <motion.div
-                          key={item.url || i}
-                          variants={cardVariants}
-                          custom={i}
-                          layout
-                          initial="hidden"
-                          animate="visible"
+                        <button
+                          className="p-1 rounded opacity-0 group-hover:opacity-100 text-white/20 hover:text-[#CF6679] hover:bg-white/[0.06] transition-all shrink-0"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveFromWatchlist(w.symbol, w.type); }}
                         >
-                          <div className="flex items-start gap-2 px-2 py-2.5 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] group">
-                            <div className="mt-1 shrink-0" style={{ color: sentimentColor }}>
-                              {isBullish ? <TrendingUp className="h-3 w-3" /> : isBearish ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1 mb-0.5 flex-wrap">
-                                <Badge className="text-[7px] px-1 py-0 h-3 font-medium border-0 shrink-0" style={{ backgroundColor: catConfig.bg, color: catConfig.text }}>
-                                  {catConfig.label}
-                                </Badge>
-                                <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: decisionBg, color: matchedImpact ? (decisionText === 'BUY' ? UP_COLOR : decisionText === 'SELL' ? DOWN_COLOR : GOLD_COLOR) : sentimentColor }}>
-                                  {decisionText}
-                                </Badge>
-                                {isPortfolioAsset && (
-                                  <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 shrink-0" style={{ backgroundColor: 'rgba(3,218,198,0.1)', color: UP_COLOR }}>
-                                    PORTFOLIO
-                                  </Badge>
-                                )}
-                              </div>
-                              <h4 className="text-[11px] text-white/70 font-medium leading-snug line-clamp-2">{item.title}</h4>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <span className="text-[9px] text-white/20 truncate max-w-[100px]">{item.source}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -1439,53 +1545,17 @@ export default function InvestmentDashboard() {
         const ai = signal.aiAnalysis;
         const smc = signal.smc;
         const newsConf = signal.newsConfirmation;
+        const signalDetails = signal.signalDetails;
+
         const strength = signal.signalStrength ?? 0;
         const signalColor = getSignalColor(strength);
         const signalLabel = getSignalLabel(signal.overallSignal, strength);
-        const overallSignal = signal.overallSignal;
-
-        // Confidence per action card
-        const baseConf = ai?.confidence ?? 50;
-        let buyConf: number, sellConf: number, slConf: number;
-        if (overallSignal === 'buy') {
-          buyConf = baseConf;
-          sellConf = Math.round(baseConf * 0.85);
-          slConf = Math.round(baseConf * 0.9);
-        } else if (overallSignal === 'sell') {
-          sellConf = baseConf;
-          buyConf = Math.round(baseConf * 0.85);
-          slConf = Math.round(baseConf * 0.9);
-        } else {
-          buyConf = baseConf;
-          sellConf = baseConf;
-          slConf = baseConf;
-        }
-
-        // Parse midpoint from price zone string
-        const parseMid = (zone: string | undefined): number => {
-          if (!zone) return 0;
-          const nums = zone.replace(/[^0-9.,]/g, '').split(/[,\-\s]+/).map(Number).filter((n: number) => !isNaN(n) && n > 0);
-          if (nums.length === 0) return 0;
-          return nums.length === 1 ? nums[0] : (nums[0] + nums[nums.length - 1]) / 2;
-        };
-        const entryMid = parseMid(ai?.entryZone);
-        const tpMid = parseMid(ai?.takeProfitZone);
-        const slMid = parseMid(ai?.stopLossZone);
-
-        // Risk-reward ratio
-        let riskReward: string | null = null;
-        if (slMid > 0 && entryMid > 0 && tpMid > 0) {
-          const risk = Math.abs(entryMid - slMid);
-          const reward = Math.abs(tpMid - entryMid);
-          if (risk > 0) riskReward = (reward / risk).toFixed(1);
-        }
 
         return (
-          <motion.div variants={cardVariants} custom={7}>
+          <motion.div variants={cardVariants} custom={8}>
             <Card className="bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-4">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-[#FFD700]/60" />
                     <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
@@ -1498,128 +1568,194 @@ export default function InvestmentDashboard() {
                   </Badge>
                 </div>
 
-                {/* 3 Action Cards: BUY / SELL-TP / STOP LOSS */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                  {/* BELI */}
-                  <div
-                    className="rounded-lg p-3.5 space-y-2"
-                    style={{ border: `1px solid rgba(3,218,198,0.12)`, borderLeftWidth: '3px', borderLeftColor: UP_COLOR, backgroundColor: 'rgba(3,218,198,0.04)' }}
-                  >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Column 1: AI Analysis */}
+                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2.5">
                     <div className="flex items-center gap-1.5">
-                      <TrendingUp className="h-3.5 w-3.5" style={{ color: UP_COLOR }} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: UP_COLOR }}>BELI</span>
-                    </div>
-                    <p className="text-sm font-mono font-bold text-white/80 leading-tight">{ai?.entryZone || '—'}</p>
-                    <div className="flex items-center gap-2 pt-1">
-                      <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${buyConf}%`, backgroundColor: UP_COLOR }} />
-                      </div>
-                      <span className="text-[10px] font-mono font-bold" style={{ color: UP_COLOR }}>{buyConf}%</span>
-                    </div>
-                  </div>
-
-                  {/* JUAL / TAKE PROFIT */}
-                  <div
-                    className="rounded-lg p-3.5 space-y-2"
-                    style={{ border: `1px solid rgba(207,102,121,0.12)`, borderLeftWidth: '3px', borderLeftColor: DOWN_COLOR, backgroundColor: 'rgba(207,102,121,0.04)' }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Target className="h-3.5 w-3.5" style={{ color: DOWN_COLOR }} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: DOWN_COLOR }}>JUAL / TP</span>
-                    </div>
-                    <p className="text-sm font-mono font-bold text-white/80 leading-tight">{ai?.takeProfitZone || '—'}</p>
-                    <div className="flex items-center gap-2 pt-1">
-                      <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${sellConf}%`, backgroundColor: DOWN_COLOR }} />
-                      </div>
-                      <span className="text-[10px] font-mono font-bold" style={{ color: DOWN_COLOR }}>{sellConf}%</span>
-                    </div>
-                  </div>
-
-                  {/* STOP LOSS */}
-                  <div
-                    className="rounded-lg p-3.5 space-y-2"
-                    style={{ border: `1px solid rgba(255,215,0,0.12)`, borderLeftWidth: '3px', borderLeftColor: GOLD_COLOR, backgroundColor: 'rgba(255,215,0,0.04)' }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5" style={{ color: GOLD_COLOR }} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: GOLD_COLOR }}>STOP LOSS</span>
-                    </div>
-                    <p className="text-sm font-mono font-bold text-white/80 leading-tight">{ai?.stopLossZone || '—'}</p>
-                    <div className="flex items-center gap-2 pt-1">
-                      <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${slConf}%`, backgroundColor: GOLD_COLOR }} />
-                      </div>
-                      <span className="text-[10px] font-mono font-bold" style={{ color: GOLD_COLOR }}>{slConf}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Detail Strip */}
-                <div className="flex items-center gap-2 flex-wrap px-3 py-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] mb-3">
-                  {riskReward && (
-                    <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: 'rgba(187,134,252,0.15)', color: PURPLE_COLOR }}>
-                      R:R 1:{riskReward}
-                    </Badge>
-                  )}
-                  {smc && (
-                    <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
-                      backgroundColor: smc.trendStructure === 'bullish' ? 'rgba(3,218,198,0.15)' : smc.trendStructure === 'bearish' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
-                      color: smc.trendStructure === 'bullish' ? UP_COLOR : smc.trendStructure === 'bearish' ? DOWN_COLOR : GOLD_COLOR,
-                    }}>
-                      {smc.trendStructure.charAt(0).toUpperCase() + smc.trendStructure.slice(1)}
-                    </Badge>
-                  )}
-                  {smc && (
-                    <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
-                      backgroundColor: smc.premiumDiscount === 'discount' ? 'rgba(3,218,198,0.12)' : 'rgba(207,102,121,0.12)',
-                      color: smc.premiumDiscount === 'discount' ? UP_COLOR : DOWN_COLOR,
-                    }}>
-                      {smc.premiumDiscount.charAt(0).toUpperCase() + smc.premiumDiscount.slice(1)}
-                    </Badge>
-                  )}
-                  {smc?.fairValueGaps && (
-                    <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
-                      backgroundColor: smc.fairValueGaps.filled ? 'rgba(255,255,255,0.05)' : 'rgba(3,218,198,0.12)',
-                      color: smc.fairValueGaps.filled ? 'rgba(255,255,255,0.3)' : UP_COLOR,
-                    }}>
-                      FVG {smc.fairValueGaps.filled ? 'filled' : 'unfilled'}
-                    </Badge>
-                  )}
-                  {smc?.orderBlock && (
-                    <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: 'rgba(255,215,0,0.1)', color: GOLD_COLOR }}>
-                      OB {smc.orderBlock.type}
-                    </Badge>
-                  )}
-                  {newsConf && (
-                    <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
-                      backgroundColor: newsConf.confirmed ? 'rgba(3,218,198,0.15)' : 'rgba(255,215,0,0.1)',
-                      color: newsConf.confirmed ? UP_COLOR : GOLD_COLOR,
-                    }}>
-                      News {newsConf.confirmed ? '✓' : '?'}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* AI Analysis Summary */}
-                {ai && (
-                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                    <div className="flex items-center gap-1.5 mb-2 flex-wrap">
                       <Brain className="h-3.5 w-3.5 text-[#BB86FC]" />
                       <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">AI Analysis</span>
-                      <span className="text-[9px] text-white/15 mx-0.5">|</span>
-                      <span className="text-[9px] text-white/40">{ai.strategy}</span>
-                      <span className="text-[9px] text-white/15 mx-0.5">|</span>
-                      <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0 ml-auto" style={{
-                        backgroundColor: ai.riskLevel === 'LOW' ? 'rgba(3,218,198,0.15)' : ai.riskLevel === 'HIGH' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
-                        color: ai.riskLevel === 'LOW' ? UP_COLOR : ai.riskLevel === 'HIGH' ? DOWN_COLOR : GOLD_COLOR,
-                      }}>
-                        Risk: {ai.riskLevel}
-                      </Badge>
                     </div>
-                    <p className="text-[11px] text-white/45 leading-relaxed">{ai.reasoning}</p>
+                    {ai ? (
+                      <>
+                        <p className="text-[10px] text-white/45 leading-relaxed">{ai.reasoning}</p>
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-white/25">Strategy</span>
+                            <span className="text-[10px] text-white/60 font-medium">{ai.strategy}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-white/25">Confidence</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div className="h-full rounded-full bg-[#BB86FC]" style={{ width: `${ai.confidence}%` }} />
+                              </div>
+                              <span className="text-[10px] font-mono font-bold text-[#BB86FC]">{ai.confidence}%</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-white/25">Risk</span>
+                            <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                              backgroundColor: ai.riskLevel === 'LOW' ? 'rgba(3,218,198,0.15)' : ai.riskLevel === 'HIGH' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+                              color: ai.riskLevel === 'LOW' ? UP_COLOR : ai.riskLevel === 'HIGH' ? DOWN_COLOR : GOLD_COLOR,
+                            }}>
+                              {ai.riskLevel}
+                            </Badge>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-white/25 italic">AI analysis not available</p>
+                    )}
                   </div>
-                )}
+
+                  {/* Column 2: SMC Concepts */}
+                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-[#03DAC6]" />
+                      <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">SMC Concepts</span>
+                    </div>
+                    {smc ? (
+                      <div className="space-y-1.5">
+                        {/* Trend Structure */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-white/25">Trend</span>
+                          <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                            backgroundColor: smc.trendStructure === 'bullish' ? 'rgba(3,218,198,0.15)' : smc.trendStructure === 'bearish' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+                            color: smc.trendStructure === 'bullish' ? UP_COLOR : smc.trendStructure === 'bearish' ? DOWN_COLOR : GOLD_COLOR,
+                          }}>
+                            {smc.trendStructure.toUpperCase()}
+                          </Badge>
+                        </div>
+                        {/* Premium/Discount */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-white/25">Zone</span>
+                          <span className={cn('text-[10px] font-mono font-bold', smc.premiumDiscount === 'discount' ? 'text-[#03DAC6]' : smc.premiumDiscount === 'premium' ? 'text-[#CF6679]' : 'text-white/50')}>
+                            {smc.premiumDiscount.charAt(0).toUpperCase() + smc.premiumDiscount.slice(1)}
+                          </span>
+                        </div>
+                        {/* FVG */}
+                        {smc.fairValueGaps && (
+                          <div className="flex items-start gap-1.5 pt-1">
+                            <span className="text-[9px] text-white/25 shrink-0 w-8">FVG</span>
+                            <div className="min-w-0">
+                              <p className={cn('text-[9px] leading-relaxed', smc.fairValueGaps.filled ? 'text-white/25' : 'text-white/50')}>
+                                {smc.fairValueGaps.description}
+                              </p>
+                              <Badge className="text-[7px] px-1 py-0 h-3 font-bold border-0 mt-0.5" style={{
+                                backgroundColor: smc.fairValueGaps.filled ? 'rgba(255,255,255,0.05)' : 'rgba(3,218,198,0.12)',
+                                color: smc.fairValueGaps.filled ? 'text-white/25' : UP_COLOR,
+                              }}>
+                                {smc.fairValueGaps.filled ? 'FILLED' : 'UNFILLED'}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                        {/* Order Block */}
+                        {smc.orderBlock && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-[9px] text-white/25 shrink-0 w-8">OB</span>
+                            <div className="min-w-0">
+                              <p className="text-[9px] text-white/45 leading-relaxed">{smc.orderBlock.description}</p>
+                              {smc.orderBlock.zone && (
+                                <span className="text-[8px] text-white/20 font-mono">
+                                  {fmtPrice(activeChartAsset.type, smc.orderBlock.zone.low)} — {fmtPrice(activeChartAsset.type, smc.orderBlock.zone.high)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {/* Liquidity Sweep */}
+                        {smc.liquiditySweep && smc.liquiditySweep.swept && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="text-[9px] text-white/25 shrink-0 w-8">Sweep</span>
+                            <div className="min-w-0">
+                              <p className="text-[9px] text-[#FFD700]/70 leading-relaxed">{smc.liquiditySweep.description}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-white/25 italic">SMC data not available</p>
+                    )}
+
+                    {/* Signal Details */}
+                    {signalDetails && signalDetails.length > 0 && (
+                      <div className="border-t border-white/[0.04] pt-2 mt-1 space-y-1 max-h-[100px] overflow-y-auto custom-scrollbar">
+                        <span className="text-[8px] text-white/25 uppercase tracking-wider">Indicator Breakdown</span>
+                        {signalDetails.slice(0, 5).map((sd, idx) => (
+                          <div key={idx} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <div className="h-1.5 w-1.5 rounded-full" style={{
+                                backgroundColor: sd.signal === 'BULLISH' ? UP_COLOR : sd.signal === 'BEARISH' ? DOWN_COLOR : GOLD_COLOR,
+                              }} />
+                              <span className="text-[9px] text-white/30">{sd.indicator}</span>
+                            </div>
+                            <span className="text-[8px] text-white/20 font-mono">{sd.weight}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Column 3: Trade Zones + News Confirmation */}
+                  <div className="space-y-3">
+                    {/* Trade Zones */}
+                    {ai && (
+                      <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Target className="h-3.5 w-3.5 text-[#FFD700]" />
+                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Trade Zones</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-[#03DAC6] shrink-0" />
+                            <span className="text-[9px] text-white/25 w-14 shrink-0">Entry</span>
+                            <span className="text-[10px] text-white/50 font-mono truncate">{ai.entryZone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-[#CF6679] shrink-0" />
+                            <span className="text-[9px] text-white/25 w-14 shrink-0">Stop Loss</span>
+                            <span className="text-[10px] text-[#CF6679]/70 font-mono truncate">{ai.stopLossZone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-[#FFD700] shrink-0" />
+                            <span className="text-[9px] text-white/25 w-14 shrink-0">TP</span>
+                            <span className="text-[10px] text-[#FFD700]/70 font-mono truncate">{ai.takeProfitZone}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* News Confirmation */}
+                    {newsConf && (
+                      <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <Newspaper className="h-3.5 w-3.5 text-white/30" />
+                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">News Confirmation</span>
+                          {newsConf.confirmed ? (
+                            <CheckCircle2 className="h-3 w-3 text-[#03DAC6] ml-auto" />
+                          ) : (
+                            <AlertTriangle className="h-3 w-3 text-white/20 ml-auto" />
+                          )}
+                        </div>
+                        <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{
+                          backgroundColor: newsConf.sentiment === 'bullish' ? 'rgba(3,218,198,0.15)' : newsConf.sentiment === 'bearish' ? 'rgba(207,102,121,0.15)' : 'rgba(255,215,0,0.15)',
+                          color: newsConf.sentiment === 'bullish' ? UP_COLOR : newsConf.sentiment === 'bearish' ? DOWN_COLOR : GOLD_COLOR,
+                        }}>
+                          {newsConf.sentiment?.toUpperCase() || 'NEUTRAL'}
+                        </Badge>
+                        {newsConf.recentEvents && newsConf.recentEvents.length > 0 && (
+                          <div className="space-y-1 mt-1">
+                            {newsConf.recentEvents.slice(0, 2).map((event, idx) => (
+                              <p key={idx} className="text-[9px] text-white/25 leading-relaxed line-clamp-2">• {event}</p>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-[8px] text-white/15 italic">{newsConf.source}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </motion.div>

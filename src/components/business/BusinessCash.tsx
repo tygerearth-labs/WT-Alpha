@@ -13,13 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -106,7 +99,7 @@ export default function BusinessCash() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((result) => setEntries(result))
+      .then((result) => setEntries(result?.cashEntries || []))
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
   }, [businessId, activeTab]);
@@ -126,7 +119,7 @@ export default function BusinessCash() {
       description: '',
       amount: '',
       date: new Date().toISOString().split('T')[0],
-      type: activeTab as CashEntry['type'],
+      type: activeTab as 'kas_besar' | 'kas_kecil' | 'kas_keluar',
       category: '',
       notes: '',
     });

@@ -114,9 +114,9 @@ export async function POST(
       );
     }
 
-    if (!['saham', 'crypto', 'forex'].includes(type)) {
+    if (!['saham', 'crypto', 'forex', 'komoditas', 'indeks'].includes(type)) {
       return NextResponse.json(
-        { error: 'Type must be saham, crypto, or forex' },
+        { error: 'Type must be saham, crypto, forex, komoditas, or indeks' },
         { status: 400 }
       );
     }

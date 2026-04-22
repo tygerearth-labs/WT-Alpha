@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  User, Lock, Trash2, Loader2, LogOut, Camera, Shield, Globe, Coins, Crown, Sparkles,
-  Calendar, AlertTriangle, CheckCircle2, BadgeCheck, Download, ArrowRight,
+  User, Trash2, Loader2, LogOut, Camera, Shield, Globe, Coins, Crown, Sparkles,
+  Calendar, AlertTriangle, CheckCircle2, BadgeCheck, ArrowRight,
   Activity, Tag, PiggyBank, Clock, FileDown,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';

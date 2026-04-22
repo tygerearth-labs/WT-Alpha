@@ -52,6 +52,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prevent duplicate business registration per category per user
+    const existing = await db.business.findFirst({
+      where: { userId, category },
+    });
+    if (existing) {
+      return NextResponse.json(
+        { error: `${category === 'bisnis' ? 'Bisnis' : 'Investasi'} sudah terdaftar untuk akun ini` },
+        { status: 409 }
+      );
+    }
+
     const business = await db.business.create({
       data: {
         userId,

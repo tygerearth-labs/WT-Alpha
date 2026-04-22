@@ -248,11 +248,10 @@ export async function GET(
     if (type === 'full') {
       const salesData = report.sales as { summary?: Record<string, number> } | undefined;
       const cashData = report.cash as { summary?: Record<string, number> } | undefined;
-      const debtData = report.debts as { summary?: Record<string, number> } | undefined;
-
+      const debtsData = report.debts as { summary?: Record<string, number> } | undefined;
       const salesSummary = salesData?.summary;
       const cashSummary = cashData?.summary;
-      const debtSummary = debtData?.summary;
+      const debtsSummary = debtsData?.summary;
 
       report.overallSummary = {
         totalPendapatan: salesSummary?.totalPenjualan || 0,
@@ -261,8 +260,8 @@ export async function GET(
         totalKasBesar: cashSummary?.totalKasBesar || 0,
         totalKasKecil: cashSummary?.totalKasKecil || 0,
         saldoBersih: cashSummary?.saldoBersih || 0,
-        totalHutang: debtSummary?.totalHutang || 0,
-        totalPiutang: debtSummary?.totalPiutang || 0,
+        totalHutang: debtsSummary?.totalHutang || 0,
+        totalPiutang: debtsSummary?.totalPiutang || 0,
       };
     }
 

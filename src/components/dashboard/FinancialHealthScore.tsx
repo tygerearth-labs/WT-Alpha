@@ -329,7 +329,7 @@ export function FinancialHealthScore() {
       <Dialog open={showTipsDialog} onOpenChange={setShowTipsDialog}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[calc(100vw-2rem)] sm:max-w-md p-0 overflow-hidden rounded-2xl border-0"
+          className="max-w-[calc(100vw-2rem)] sm:max-w-md p-0 overflow-hidden rounded-2xl border-0 max-h-[85dvh] flex flex-col"
           style={{
             background: '#141414',
             border: '1px solid rgba(255,255,255,0.08)',
@@ -350,9 +350,10 @@ export function FinancialHealthScore() {
             <X className="h-4 w-4" />
           </button>
 
-          <div className="p-5">
-            {/* Tip counter */}
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col h-full p-0">
+            {/* Header: Tip counter */}
+            <div className="shrink-0 px-5 pt-5 pb-0">
+              <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg grid place-items-center" style={{ background: `${scoreColor}15` }}>
                   <Lightbulb className="h-3.5 w-3.5" style={{ color: scoreColor }} />
@@ -365,8 +366,10 @@ export function FinancialHealthScore() {
                 {currentTipIndex + 1} / {tips.length}
               </span>
             </div>
+            </div>
 
-            {/* Current Tip Card */}
+            {/* Scrollable Tip Card Content */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
             {tips.length > 0 && (
               <div
                 className="rounded-xl p-4 transition-all duration-300"
@@ -404,10 +407,12 @@ export function FinancialHealthScore() {
                 </div>
               </div>
             )}
+            </div>
 
-            {/* Navigation */}
+            {/* Footer: Navigation + Got it */}
+            <div className="shrink-0 px-5 pb-5 pt-0">
             {tips.length > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center justify-between">
                 <button
                   onClick={handlePrevTip}
                   className="grid place-items-center h-8 w-8 rounded-lg transition-all hover:bg-white/10 active:scale-90"
@@ -452,8 +457,9 @@ export function FinancialHealthScore() {
                 border: `1px solid ${scoreColor}20`,
               }}
             >
-              Got it
+              {t('common.close')}
             </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

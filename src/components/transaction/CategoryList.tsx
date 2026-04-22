@@ -1,6 +1,6 @@
 'use client';
 
-import { Pencil, Trash2, ChevronRight, Tag } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';

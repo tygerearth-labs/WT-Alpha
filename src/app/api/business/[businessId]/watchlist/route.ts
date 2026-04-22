@@ -116,7 +116,7 @@ export async function POST(
     // Upsert: if it already exists, just reactivate it
     const item = await db.watchlistItem.upsert({
       where: {
-        businessId_type_symbol: {
+        businessId_symbol_type: {
           businessId,
           symbol: body.symbol.toUpperCase(),
           type: body.type,

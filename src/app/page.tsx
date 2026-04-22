@@ -25,14 +25,10 @@ function useIsLoading() {
   );
 }
 
-const LOADING_TIMEOUT_MS = 10000; // Force stop loading after 10 seconds
+const LOADING_TIMEOUT_MS = 10000;
 
 /**
  * Home Page (/) — User panel ONLY.
- * 
- * Admin panel is completely separated at /admin route.
- * If an admin user lands here, they are redirected to /admin.
- * Admin components are NEVER imported or bundled here.
  */
 export default function Home() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
@@ -42,11 +38,8 @@ export default function Home() {
   const isAuthenticated = useIsAuthenticated();
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Check auth on mount
   useEffect(() => {
     checkAuth();
-
-    // Fallback timeout — if loading takes more than 10 seconds, force stop
     fallbackTimerRef.current = setTimeout(() => {
       const state = useAuthStore.getState();
       if (state.isLoading) {
@@ -54,22 +47,15 @@ export default function Home() {
         forceStopLoading();
       }
     }, LOADING_TIMEOUT_MS);
-
     return () => {
-      if (fallbackTimerRef.current) {
-        clearTimeout(fallbackTimerRef.current);
-      }
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
     };
   }, [checkAuth, forceStopLoading]);
 
-  // If admin user lands on /, hard redirect to /admin
-  // Use window.location for hard redirect — cannot be intercepted by React
-  // Exception: if ?view=user is present, admin can preview the user view
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('view') !== 'user') {
-        // Small delay to ensure URL params are fully resolved
         const timer = setTimeout(() => {
           const currentParams = new URLSearchParams(window.location.search);
           if (currentParams.get('view') !== 'user') {
@@ -95,8 +81,6 @@ export default function Home() {
     );
   }
 
-  // Admin users should be redirected, show loading while redirect happens
-  // Exception: admin previewing user view (?view=user)
   if (user?.role === 'admin') {
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     if (params?.get('view') !== 'user') {
@@ -106,6 +90,7 @@ export default function Home() {
 
   return (
     <>
+      <AnnouncementBanner />
       <MainLayout />
       <PWAInstallPrompt />
     </>
