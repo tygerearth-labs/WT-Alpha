@@ -549,7 +549,6 @@ function SectionHeader({
 export default function BusinessInvoiceSettings() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
-  const { formatAmount } = useCurrencyFormat();
   const [form, setForm] = useState<InvoiceSettingsForm>(DEFAULT_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

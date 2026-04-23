@@ -46,7 +46,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, Pencil, Trash2, FileText, Download,
-  PlusCircle, MinusCircle, Eye, CheckCircle2, XCircle,
+  PlusCircle, MinusCircle, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -120,7 +120,9 @@ export default function BusinessInvoice() {
         setInvoices(
           (invoicesData?.invoices || []).map((inv: Invoice) => ({
             ...inv,
-            items: typeof inv.items === 'string' ? JSON.parse(inv.items) : inv.items,
+            items: typeof inv.items === 'string'
+              ? (() => { try { return JSON.parse(inv.items); } catch { return []; } })()
+              : inv.items,
           }))
         );
         setCustomers(customersData?.customers || []);
@@ -140,11 +142,12 @@ export default function BusinessInvoice() {
     }
   }, [businessId, fetchInvoices]);
 
-  const openCreateDialog = async () => {
+  const openCreateDialog = () => {
     setEditingInvoice(null);
+    const num = `INV-${Date.now().toString(36).toUpperCase()}`;
     setFormData({
       customerId: '',
-      invoiceNumber: '',
+      invoiceNumber: num,
       dueDate: '',
       notes: '',
       tax: '0',
@@ -152,19 +155,6 @@ export default function BusinessInvoice() {
       items: [{ description: '', qty: 1, price: 0 }],
     });
     setDialogOpen(true);
-    // Generate sequential invoice number
-    try {
-      const res = await fetch(`/api/business/${businessId}/invoices`);
-      if (res.ok) {
-        const data = await res.json();
-        const existingInvoices = data?.invoices || [];
-        const nextNum = existingInvoices.length + 1;
-        const paddedNum = String(nextNum).padStart(4, '0');
-        setFormData(prev => ({ ...prev, invoiceNumber: `INV-${paddedNum}` }));
-      }
-    } catch {
-      setFormData(prev => ({ ...prev, invoiceNumber: `INV-0001` }));
-    }
   };
 
   const openEditDialog = (inv: Invoice) => {
@@ -248,22 +238,6 @@ export default function BusinessInvoice() {
     }
   };
 
-  const handleStatusChange = async (invoiceId: string, newStatus: string) => {
-    if (!businessId) return;
-    try {
-      const res = await fetch(`/api/business/${businessId}/invoices/${invoiceId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error();
-      toast.success(newStatus === 'paid' ? t('biz.invoicePaid') : newStatus === 'cancelled' ? t('biz.invoiceCancelled') : t('biz.businessUpdated'));
-      fetchInvoices();
-    } catch {
-      toast.error(t('common.error'));
-    }
-  };
-
   const handleDownloadPDF = async (invoiceId: string) => {
     if (!businessId) return;
     setDownloading(invoiceId);
@@ -292,12 +266,6 @@ export default function BusinessInvoice() {
     } finally {
       setDownloading(null);
     }
-  };
-
-  const getInvoiceDisplayStatus = (inv: Invoice) => {
-    if (inv.status === 'overdue') return 'overdue';
-    if (inv.status === 'pending' && inv.dueDate && new Date(inv.dueDate) < new Date()) return 'overdue';
-    return inv.status;
   };
 
   const filteredInvoices = invoices.filter(
@@ -336,20 +304,6 @@ export default function BusinessInvoice() {
         className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 max-w-sm"
       />
 
-      {/* Flow Guide */}
-      <div className="bg-[#FFD700]/[0.06] border border-[#FFD700]/[0.12] rounded-xl p-3 flex items-start gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFD700]/10 shrink-0 mt-0.5">
-          <FileText className="h-4 w-4 text-[#FFD700]" />
-        </div>
-        <div className="text-xs text-white/60 leading-relaxed">
-          <p className="text-white/80 font-medium mb-1">{t('biz.invoiceFlowTitle') || 'Flow Invoice'}</p>
-          <p>1. {t('biz.invoiceFlow1') || 'Tambah pelanggan di halaman Pelanggan terlebih dahulu'}</p>
-          <p>2. {t('biz.invoiceFlow2') || 'Buat invoice — nomor otomatis sequential'}</p>
-          <p>3. {t('biz.invoiceFlow3') || 'Status otomatis overdue jika melewati jatuh tempo'}</p>
-          <p>4. {t('biz.invoiceFlow4') || 'Klik tombol ✓ untuk menandai invoice sebagai sudah dibayar'}</p>
-        </div>
-      </div>
-
       {/* Table */}
       <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
         <CardContent className="p-0">
@@ -379,8 +333,7 @@ export default function BusinessInvoice() {
                 </TableHeader>
                 <TableBody>
                   {filteredInvoices.map((inv) => {
-                    const displayStatus = getInvoiceDisplayStatus(inv);
-                    const statusStyle = STATUS_STYLES[displayStatus] || STATUS_STYLES.pending;
+                    const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
                     return (
                       <TableRow key={inv.id} className="border-white/[0.04] hover:bg-white/[0.02]">
                         <TableCell className="text-white text-xs py-3 font-medium">
@@ -401,67 +354,43 @@ export default function BusinessInvoice() {
                           {formatAmount(inv.total)}
                         </TableCell>
                         <TableCell className="py-3 text-right">
-                          <div className="flex items-center justify-end gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
-                              onClick={() => setViewInvoice(inv)}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
-                            {(displayStatus === 'pending' || displayStatus === 'overdue') && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10"
-                                onClick={() => handleStatusChange(inv.id, 'paid')}
-                                title={t('biz.invoicePaid')}
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                              </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
+                            onClick={() => setViewInvoice(inv)}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-white/40 hover:text-[#BB86FC] hover:bg-white/10"
+                            onClick={() => handleDownloadPDF(inv.id)}
+                            disabled={downloading === inv.id}
+                          >
+                            {downloading === inv.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Download className="h-3.5 w-3.5" />
                             )}
-                            {inv.status === 'pending' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-white/40 hover:text-white/60 hover:bg-white/10"
-                                onClick={() => handleStatusChange(inv.id, 'cancelled')}
-                                title={t('biz.invoiceCancelled')}
-                              >
-                                <XCircle className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-white/40 hover:text-[#BB86FC] hover:bg-white/10"
-                              onClick={() => handleDownloadPDF(inv.id)}
-                              disabled={downloading === inv.id}
-                            >
-                              {downloading === inv.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Download className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
-                              onClick={() => openEditDialog(inv)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
-                              onClick={() => setDeleteId(inv.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
+                            onClick={() => openEditDialog(inv)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
+                            onClick={() => setDeleteId(inv.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -565,7 +494,7 @@ export default function BusinessInvoice() {
               {editingInvoice ? t('common.edit') : t('biz.addInvoice')}
             </DialogTitle>
             <DialogDescription className="text-white/60">
-              {t('biz.invoiceFormDesc')}
+              {t('biz.generateInvoice')}
             </DialogDescription>
           </DialogHeader>
 
@@ -597,7 +526,6 @@ export default function BusinessInvoice() {
               </div>
               <div className="space-y-2">
                 <Label className="text-white/80">{t('biz.invoiceDueDate')}</Label>
-                <p className="text-[10px] text-white/30">{t('biz.invoiceDueHint')}</p>
                 <Input
                   type="date"
                   value={formData.dueDate}
@@ -622,7 +550,7 @@ export default function BusinessInvoice() {
                     <Input
                       value={item.description}
                       onChange={(e) => updateItem(idx, 'description', e.target.value)}
-                      placeholder={t('biz.invoiceItemHint')}
+                      placeholder="Item"
                       className="flex-1 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-xs h-9"
                     />
                     <Input
@@ -637,7 +565,7 @@ export default function BusinessInvoice() {
                       type="number"
                       value={item.price || ''}
                       onChange={(e) => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
-                      placeholder={t('biz.invoiceItemHint')}
+                      placeholder="Harga"
                       min="0"
                       className="w-28 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-xs h-9"
                     />

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const requestUrl = new URL(request.url);
     const inviteUrl = `${requestUrl.origin}/?invite=${token}`;
 
-    logAdminActivity(adminId as string, 'create_invite', token, `Plan: ${invitePlan}, MaxUses: ${inviteMaxUses}, Email: ${email || 'public'}`);
+    await logAdminActivity(adminId as string, 'create_invite', token, `Plan: ${invitePlan}, MaxUses: ${inviteMaxUses}, Email: ${email || 'public'}`);
     return NextResponse.json({ invite, inviteUrl }, { status: 201 });
   } catch (error) {
     console.error('Admin create invite error:', error);
@@ -128,7 +128,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
     }
 
-    logAdminActivity(adminId as string, 'revoke_invite', existing.token);
+    await logAdminActivity(adminId as string, 'revoke_invite', existing.token);
     await db.inviteToken.delete({ where: { id: inviteId } });
 
     return NextResponse.json({ message: 'Invite revoked successfully' });

@@ -281,18 +281,17 @@ export default function BusinessCustomers() {
               {editingCustomer ? t('common.edit') : t('biz.addCustomer')}
             </DialogTitle>
             <DialogDescription className="text-white/60">
-              {t('biz.customerFormDesc')}
+              {t('biz.customerName')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.customerName')} *</Label>
-              <p className="text-[10px] text-white/30">{t('biz.customerNameHint')}</p>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={t('biz.customerNameHint')}
+                placeholder={t('biz.customerName')}
                 className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
               />
             </div>
@@ -300,22 +299,20 @@ export default function BusinessCustomers() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-white/80">{t('biz.customerEmail')}</Label>
-                <p className="text-[10px] text-white/30">{t('biz.customerEmailHint')}</p>
                 <Input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder={t('biz.customerEmailHint')}
+                  placeholder="email@example.com"
                   className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-white/80">{t('biz.customerPhone')}</Label>
-                <p className="text-[10px] text-white/30">{t('biz.customerPhoneHint')}</p>
                 <Input
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder={t('biz.customerPhoneHint')}
+                  placeholder="+62"
                   className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
                 />
               </div>
@@ -323,11 +320,10 @@ export default function BusinessCustomers() {
 
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.customerAddress')}</Label>
-              <p className="text-[10px] text-white/30">{t('biz.customerAddressHint')}</p>
               <Input
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder={t('biz.customerAddressHint')}
+                placeholder={t('biz.customerAddress')}
                 className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
               />
             </div>

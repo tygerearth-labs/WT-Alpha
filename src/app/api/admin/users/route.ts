@@ -160,7 +160,7 @@ export async function PUT(request: NextRequest) {
 
     const details = changes.join(', ');
     const actionType = role !== undefined ? 'change_role' : 'update_user';
-    logAdminActivity(adminId as string, actionType, updatedUser.email, details);
+    await logAdminActivity(adminId as string, actionType, updatedUser.email, details);
 
     return NextResponse.json({ user: updatedUser });
   } catch (error) {
@@ -192,7 +192,7 @@ export async function DELETE(request: NextRequest) {
 
     const userEmail = existingUser.email;
     await db.user.delete({ where: { id: userId } });
-    logAdminActivity(adminId as string, 'delete_user', userEmail);
+    await logAdminActivity(adminId as string, 'delete_user', userEmail);
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Admin delete user error:', error);
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
       data: { password: hashedPassword }
     });
 
-    logAdminActivity(adminId as string, 'reset_password', existingUser.email);
+    await logAdminActivity(adminId as string, 'reset_password', existingUser.email);
     return NextResponse.json({ message: 'Password reset successfully' });
   } catch (error) {
     console.error('Admin reset password error:', error);

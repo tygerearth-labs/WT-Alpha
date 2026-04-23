@@ -119,6 +119,12 @@ export async function PUT(request: NextRequest) {
 
     // If updating password, verify current password first
     if (newPassword) {
+      if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+        return NextResponse.json(
+          { error: 'Password must be between 8 and 128 characters' },
+          { status: 400 }
+        );
+      }
       if (!currentPassword) {
         return NextResponse.json(
           { error: 'Current password is required' },

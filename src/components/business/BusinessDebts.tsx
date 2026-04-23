@@ -279,14 +279,6 @@ export default function BusinessDebts() {
   const totalAmount = filtered.reduce((sum, d) => sum + d.amount, 0);
   const totalRemaining = filtered.reduce((sum, d) => sum + d.remaining, 0);
 
-  // Auto-detect overdue debts
-  const filteredWithOverdue = filtered.map(debt => {
-    if (debt.status === 'active' && debt.dueDate && new Date(debt.dueDate) < new Date() && debt.remaining > 0) {
-      return { ...debt, status: 'overdue' as const };
-    }
-    return debt;
-  });
-
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -344,20 +336,6 @@ export default function BusinessDebts() {
           </Card>
         </div>
 
-        {/* Flow Guide */}
-        <div className="bg-[#CF6679]/[0.06] border border-[#CF6679]/[0.12] rounded-xl p-3 flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#CF6679]/10 shrink-0 mt-0.5">
-            <CreditCard className="h-4 w-4 text-[#CF6679]" />
-          </div>
-          <div className="text-xs text-white/60 leading-relaxed">
-            <p className="text-white/80 font-medium mb-1">{t('biz.debtFlowTitle') || 'Flow Hutang & Piutang'}</p>
-            <p>1. {t('biz.debtFlow1') || 'Hutang = uang yang Anda pinjam, Piutang = uang yang orang lain berutang'}</p>
-            <p>2. {t('biz.debtFlow2') || 'Aktifkan cicilan untuk DP + pembayaran bulanan'}</p>
-            <p>3. {t('biz.debtFlow3') || 'Bayar cicilan atau bayar sebagai dengan tombol pembayaran'}</p>
-            <p>4. {t('biz.debtFlow4') || 'Status otomatis berubah menjadi "Lunas" saat sisa = 0'}</p>
-          </div>
-        </div>
-
         <TabsContent value={activeTab} className="mt-0">
           <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
             <CardContent className="p-0">
@@ -367,7 +345,7 @@ export default function BusinessDebts() {
                     <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
                   ))}
                 </div>
-              ) : filteredWithOverdue.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-white/40">
                   <CreditCard className="h-10 w-10 mb-2 opacity-40" />
                   <p className="text-sm">{t('biz.noBizData')}</p>
@@ -386,7 +364,7 @@ export default function BusinessDebts() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredWithOverdue.map((debt) => {
+                      {filtered.map((debt) => {
                         const statusStyle = STATUS_STYLES[debt.status] || STATUS_STYLES.active;
                         const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
                         const paidPercent = debt.amount > 0 ? Math.round(((debt.amount - debt.remaining) / debt.amount) * 100) : 0;
@@ -516,7 +494,7 @@ export default function BusinessDebts() {
               {editingDebt ? t('common.edit') : t('biz.addDebt')}
             </DialogTitle>
             <DialogDescription className="text-white/60">
-              {t('biz.debtFormDesc')}
+              {t('biz.hutangPiutang')}
             </DialogDescription>
           </DialogHeader>
 
@@ -549,59 +527,47 @@ export default function BusinessDebts() {
                   {t('biz.piutang')}
                 </Button>
               </div>
-              <p className="text-[10px] text-white/30 mt-1">
-                {formData.type === 'hutang' ? 'Uang yang Anda pinjam atau hutangkan' : 'Uang yang orang lain berutang ke Anda'}
-              </p>
             </div>
 
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.debtCounterpart')} *</Label>
-              <p className="text-[10px] text-white/30">{t('biz.debtCounterpartHint')}</p>
               <Input
                 value={formData.counterpart}
                 onChange={(e) => setFormData({ ...formData, counterpart: e.target.value })}
-                placeholder={t('biz.debtCounterpartHint')}
+                placeholder={t('biz.debtCounterpart')}
                 className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
               />
             </div>
 
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.debtAmount')} *</Label>
-              <p className="text-[10px] text-white/30">{t('biz.debtAmountHint')}</p>
               <Input
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                placeholder={t('biz.debtAmountHint')}
+                placeholder="0"
                 min="0"
                 className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
               />
             </div>
 
             {/* Installment Toggle */}
-            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-              <div>
-                <Label className="text-white/80 text-sm">{t('biz.isInstallment')}</Label>
-                <p className="text-[10px] text-white/40">DP + cicilan bulanan</p>
-              </div>
-              {editingDebt ? (
-                <Badge className={cn(
-                  'text-xs font-normal border-0',
-                  formData.isInstallment ? 'bg-[#FFD700]/20 text-[#FFD700]' : 'bg-white/10 text-white/40'
-                )}>
-                  {formData.isInstallment ? t('biz.isInstallment') : '-'}
-                </Badge>
-              ) : (
+            {!editingDebt && (
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div>
+                  <Label className="text-white/80 text-sm">{t('biz.isInstallment')}</Label>
+                  <p className="text-[10px] text-white/40">DP + cicilan bulanan</p>
+                </div>
                 <Switch
                   checked={formData.isInstallment}
                   onCheckedChange={(checked) => setFormData({ ...formData, isInstallment: checked })}
                   className="data-[state=checked]:bg-[#FFD700]"
                 />
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Installment Fields */}
-            {formData.isInstallment && (
+            {!editingDebt && formData.isInstallment && (
               <div className="space-y-3 p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/[0.12]">
                 <p className="text-xs font-medium text-[#FFD700]">{t('biz.installmentInfo')}</p>
 
@@ -677,7 +643,6 @@ export default function BusinessDebts() {
 
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.debtDueDate')}</Label>
-              <p className="text-[10px] text-white/30">{t('biz.debtDueHint')}</p>
               <Input
                 type="date"
                 value={formData.dueDate}
@@ -688,11 +653,10 @@ export default function BusinessDebts() {
 
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.debtDescription')}</Label>
-              <p className="text-[10px] text-white/30">{t('biz.debtDescriptionHint')}</p>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t('biz.debtDescriptionHint')}
+                placeholder={t('biz.debtDescription')}
                 className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px]"
               />
             </div>

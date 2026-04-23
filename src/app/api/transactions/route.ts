@@ -43,9 +43,17 @@ export async function GET(request: NextRequest) {
         lt: new Date(endDate),
       };
     } else if (month && year) {
+      const parsedMonth = parseInt(month);
+      const parsedYear = parseInt(year);
+      if (isNaN(parsedMonth) || isNaN(parsedYear) || parsedMonth < 1 || parsedMonth > 12) {
+        return NextResponse.json(
+          { error: 'Invalid month or year parameters' },
+          { status: 400 }
+        );
+      }
       whereClause.date = {
-        gte: new Date(parseInt(year), parseInt(month) - 1, 1),
-        lt: new Date(parseInt(year), parseInt(month), 1),
+        gte: new Date(parsedYear, parsedMonth - 1, 1),
+        lt: new Date(parsedYear, parsedMonth, 1),
       };
     }
 

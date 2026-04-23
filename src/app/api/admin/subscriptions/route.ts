@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, email: true, username: true, plan: true, subscriptionEnd: true, maxCategories: true, maxSavings: true }
     });
 
-    logAdminActivity(adminId as string, 'assign_subscription', updatedUser.email, `Plan: ${plan}, Duration: ${numDurationDays} days, NewEnd: ${newEnd.toISOString()}`);
+    await logAdminActivity(adminId as string, 'assign_subscription', updatedUser.email, `Plan: ${plan}, Duration: ${numDurationDays} days, NewEnd: ${newEnd.toISOString()}`);
     return NextResponse.json({ user: updatedUser });
   } catch (error) {
     console.error('Admin subscription update error:', error);

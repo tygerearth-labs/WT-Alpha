@@ -36,7 +36,8 @@ export async function PUT(
     if (type !== undefined) updateData.type = type;
     if (counterpart !== undefined) updateData.counterpart = counterpart;
     if (amount !== undefined) updateData.amount = parseFloat(amount) || 0;
-    if (remaining !== undefined) {
+    // Handle remaining and payAmount — payAmount takes precedence
+    if (remaining !== undefined && payAmount === undefined) {
       updateData.remaining = parseFloat(remaining) || 0;
       // Auto-update status based on remaining
       const numRemaining = parseFloat(remaining) || 0;
@@ -47,7 +48,7 @@ export async function PUT(
         updateData.status = 'partially_paid';
       }
     }
-    // Handle payAmount (partial payment)
+    // Handle payAmount (partial payment) — takes precedence over remaining
     if (payAmount !== undefined) {
       const numPay = typeof payAmount === 'string' ? parseFloat(payAmount) : payAmount;
       if (!isNaN(numPay) && numPay > 0) {
@@ -67,9 +68,13 @@ export async function PUT(
         }
       }
     }
+    // Only set explicit status if neither remaining nor payAmount is being used
+    // to avoid overriding auto-calculated statuses
+    if (status !== undefined && remaining === undefined && payAmount === undefined) {
+      updateData.status = status;
+    }
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (description !== undefined) updateData.description = description;
-    if (status !== undefined) updateData.status = status;
 
     const updated = await db.businessDebt.update({
       where: { id },

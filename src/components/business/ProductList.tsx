@@ -256,8 +256,6 @@ export default function ProductList() {
     );
   };
 
-  const filteredProducts = products;
-
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -364,7 +362,7 @@ export default function ProductList() {
                 <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
               ))}
             </div>
-          ) : filteredProducts.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-white/40">
               <Package className="h-10 w-10 mb-2 opacity-40" />
               <p className="text-sm">{t('biz.noProducts')}</p>
@@ -384,7 +382,7 @@ export default function ProductList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => (
+                  {products.map((product) => (
                     <TableRow
                       key={product.id}
                       className={`border-white/[0.04] hover:bg-white/[0.02] ${!product.isActive ? 'opacity-50' : ''}`}

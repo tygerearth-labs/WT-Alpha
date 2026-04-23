@@ -17,9 +17,15 @@ export async function GET(request: NextRequest) {
     const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1;
     const year = yearParam ? parseInt(yearParam) : now.getFullYear();
 
-    if (month < 1 || month > 12) {
+    if (isNaN(month) || month < 1 || month > 12) {
       return NextResponse.json(
         { error: 'Month must be between 1 and 12' },
+        { status: 400 },
+      );
+    }
+    if (isNaN(year) || year < 2000 || year > 2100) {
+      return NextResponse.json(
+        { error: 'Year must be a valid number between 2000 and 2100' },
         { status: 400 },
       );
     }
@@ -109,12 +115,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (numMonth < 1 || numMonth > 12) {
+    if (isNaN(numMonth) || numMonth < 1 || numMonth > 12) {
       return NextResponse.json(
         { error: 'Month must be between 1 and 12' },
         { status: 400 },
       );
     }
+    if (isNaN(numYear) || numYear < 2000 || numYear > 2100) { return NextResponse.json({ error: 'Year must be a valid number between 2000 and 2100' }, { status: 400 }); }
 
     // Verify category belongs to user
     const category = await db.category.findFirst({

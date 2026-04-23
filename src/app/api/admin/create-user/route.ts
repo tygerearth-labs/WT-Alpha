@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Log admin activity
-    logAdminActivity(adminId as string, 'create_user', email, 'Created user via admin panel');
+    await logAdminActivity(adminId as string, 'create_user', email, 'Created user via admin panel');
 
     return NextResponse.json(
       { message: 'User created successfully', user: newUser },

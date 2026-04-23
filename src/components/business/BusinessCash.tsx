@@ -38,7 +38,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Wallet, PiggyBank, ArrowDownToLine } from 'lucide-react';
@@ -50,12 +49,6 @@ const CASH_TYPES = {
   kas_besar: { label: 'biz.kasBesar', color: 'text-green-400', bg: 'bg-green-500/20', hoverBg: 'bg-green-500 hover:bg-green-600', icon: Wallet },
   kas_kecil: { label: 'biz.kasKecil', color: 'text-teal-400', bg: 'bg-teal-500/20', hoverBg: 'bg-teal-500 hover:bg-teal-600', icon: PiggyBank },
   kas_keluar: { label: 'biz.kasKeluar', color: 'text-red-400', bg: 'bg-red-500/20', hoverBg: 'bg-red-500 hover:bg-red-600', icon: ArrowDownToLine },
-};
-
-const PRESET_CATEGORIES: Record<string, string[]> = {
-  kas_besar: ['Pendapatan Utama', 'Investasi', 'Pinjaman Masuk', 'Lainnya'],
-  kas_kecil: ['Operasional', 'Bensin', 'Makan', 'Transport', 'ATK', 'Lainnya'],
-  kas_keluar: ['Gaji', 'Sewa', 'Beli Stok', 'Utilitas', 'Listrik', 'Internet', 'Marketing', 'Pajak', 'Maintenance', 'Lainnya'],
 };
 
 interface CashEntry {
@@ -241,19 +234,6 @@ export default function BusinessCash() {
             {t('common.total')}: <span className={typeConfig.color}>{formatAmount(total)}</span>
           </div>
 
-          {/* Flow Guide */}
-          <div className="bg-[#03DAC6]/[0.06] border border-[#03DAC6]/[0.12] rounded-xl p-3 flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#03DAC6]/10 shrink-0 mt-0.5">
-              <Wallet className="h-4 w-4 text-[#03DAC6]" />
-            </div>
-            <div className="text-xs text-white/60 leading-relaxed">
-              <p className="text-white/80 font-medium mb-1">{t('biz.cashFlowTitle') || 'Flow Kas'}</p>
-              <p>• {t('biz.cashFlow1') || 'Kas Besar: pendapatan utama bisnis'}</p>
-              <p>• {t('biz.cashFlow2') || 'Kas Kecil: uang operasional harian'}</p>
-              <p>• {t('biz.cashFlow3') || 'Kas Keluar: pengeluaran dan biaya bisnis'}</p>
-            </div>
-          </div>
-
           <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
             <CardContent className="p-0">
               {loading ? (
@@ -278,7 +258,6 @@ export default function BusinessCash() {
                         <TableHead className="text-white/50 text-xs">{t('biz.cashDate')}</TableHead>
                         <TableHead className="text-white/50 text-xs">{t('biz.cashDescription')}</TableHead>
                         <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.cashCategory')}</TableHead>
-                        <TableHead className="text-white/50 text-xs hidden lg:table-cell">{t('biz.cashNotes')}</TableHead>
                         <TableHead className="text-white/50 text-xs text-right">{t('biz.cashAmount')}</TableHead>
                         <TableHead className="text-white/50 text-xs w-24" />
                       </TableRow>
@@ -300,9 +279,6 @@ export default function BusinessCash() {
                             ) : (
                               <span className="text-white/30 text-xs">-</span>
                             )}
-                          </TableCell>
-                          <TableCell className="py-3 hidden lg:table-cell">
-                            <span className="text-white/40 text-xs">{entry.notes || '-'}</span>
                           </TableCell>
                           <TableCell className={cn('text-xs text-right font-medium py-3', typeConfig.color)}>
                             {activeTab === 'kas_keluar' ? '-' : '+'}{formatAmount(entry.amount)}
@@ -344,14 +320,13 @@ export default function BusinessCash() {
               {editingEntry ? t('common.edit') : t('biz.addCashEntry')}
             </DialogTitle>
             <DialogDescription className="text-white/60">
-              {t('biz.cashFormDesc')}
+              {t(CASH_TYPES[formData.type as keyof typeof CASH_TYPES]?.label || 'biz.kasBesar')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.cashDescription')} *</Label>
-              <p className="text-[10px] text-white/30">{t('biz.cashDescHint')}</p>
               <Input
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -362,7 +337,6 @@ export default function BusinessCash() {
 
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.cashAmount')} *</Label>
-              <p className="text-[10px] text-white/30">{t('biz.cashAmountHint')}</p>
               <Input
                 type="number"
                 value={formData.amount}
@@ -385,36 +359,11 @@ export default function BusinessCash() {
 
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.cashCategory')}</Label>
-              <p className="text-[10px] text-white/30">{t('biz.cashCategoryHint')}</p>
               <Input
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder={t('biz.cashCategory')}
                 className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                list={`category-suggestions-${activeTab}`}
-              />
-              <datalist id={`category-suggestions-${activeTab}`}>
-                {PRESET_CATEGORIES[activeTab]?.map((cat) => (
-                  <option key={cat} value={cat} />
-                ))}
-                {entries
-                  .filter(e => e.category && !PRESET_CATEGORIES[activeTab]?.includes(e.category))
-                  .map((e) => (
-                    <option key={e.category} value={e.category!} />
-                  ))
-                  .filter((v, i, a) => a.findIndex(t => t.key === v.key) === 0)
-                  .slice(0, 5)}
-              </datalist>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.cashNotes')}</Label>
-              <p className="text-[10px] text-white/30">{t('biz.cashNotesHint')}</p>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder={t('biz.cashNotesHint')}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px]"
               />
             </div>
 

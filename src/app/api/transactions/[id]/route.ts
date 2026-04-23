@@ -69,7 +69,7 @@ export async function PUT(
     }
 
     // Build update data - only include fields that are provided
-    const updateData: Record<string, unknown> = {};
+    const updateData: any = {};
     if (type !== undefined) updateData.type = type;
     if (amount !== undefined) {
       const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;

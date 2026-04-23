@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-const startTime = Date.now();
-
 export async function GET() {
   const auth = await requireAdmin();
   if (auth instanceof NextResponse) return auth;
@@ -41,7 +39,7 @@ export async function GET() {
       }
     }
 
-    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    const uptime = Math.floor(process.uptime());
 
     return NextResponse.json({
       status: 'healthy',

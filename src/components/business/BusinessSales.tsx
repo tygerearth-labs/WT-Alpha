@@ -93,7 +93,6 @@ export default function BusinessSales() {
     customerId: '',
     paymentMethod: 'cash',
     notes: '',
-    quantity: '1',
   });
   const [saving, setSaving] = useState(false);
 
@@ -150,7 +149,6 @@ export default function BusinessSales() {
       customerId: '',
       paymentMethod: 'cash',
       notes: '',
-      quantity: '1',
     });
     setDialogOpen(true);
   };
@@ -164,7 +162,6 @@ export default function BusinessSales() {
       customerId: sale.customerId || '',
       paymentMethod: sale.paymentMethod || 'cash',
       notes: sale.notes || '',
-      quantity: '1',
     });
     setDialogOpen(true);
   };
@@ -185,10 +182,6 @@ export default function BusinessSales() {
         notes: formData.notes || undefined,
       };
       if (formData.customerId) body.customerId = formData.customerId;
-      if (selectedProductId) {
-        body.productId = selectedProductId;
-        body.quantity = parseInt(formData.quantity) || 1;
-      }
       const res = await fetch(url, {
         method: editingSale ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -222,7 +215,7 @@ export default function BusinessSales() {
   const filteredSales = sales.filter(
     (s) =>
       s.description.toLowerCase().includes(search.toLowerCase()) ||
-      (s.customer?.name?.toLowerCase().includes(search.toLowerCase()) ?? false)
+      s.customer?.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const total = filteredSales.reduce((sum, s) => sum + s.amount, 0);
@@ -272,19 +265,6 @@ export default function BusinessSales() {
         <ProductList />
       ) : (
         <>
-          {/* Flow Guide */}
-          <div className="bg-[#BB86FC]/[0.06] border border-[#BB86FC]/[0.12] rounded-xl p-3 flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#BB86FC]/10 shrink-0 mt-0.5">
-              <ShoppingBag className="h-4 w-4 text-[#BB86FC]" />
-            </div>
-            <div className="text-xs text-white/60 leading-relaxed">
-              <p className="text-white/80 font-medium mb-1">{t('biz.saleFlowTitle') || 'Flow Penjualan'}</p>
-              <p>1. {t('biz.saleFlow1') || 'Tambah produk katalog di tab Products terlebih dahulu'}</p>
-              <p>2. {t('biz.saleFlow2') || 'Buat penjualan baru — pilih produk untuk auto-fill harga & stok'}</p>
-              <p>3. {t('biz.saleFlow3') || 'Stok akan otomatis berkurang saat penjualan disimpan'}</p>
-            </div>
-          </div>
-
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
@@ -396,7 +376,7 @@ export default function BusinessSales() {
                   {editingSale ? t('common.edit') : t('biz.addSale')}
                 </DialogTitle>
                 <DialogDescription className="text-white/60">
-                  {t('biz.saleFormDesc')}
+                  {t('biz.saleDescription')}
                 </DialogDescription>
               </DialogHeader>
 
@@ -420,23 +400,21 @@ export default function BusinessSales() {
 
                 <div className="space-y-2">
                   <Label className="text-white/80">{t('biz.saleDescription')} *</Label>
-                  <p className="text-[10px] text-white/30">{t('biz.saleDescHint')}</p>
                   <Input
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('biz.saleDescHint')}
+                    placeholder={t('biz.saleDescription')}
                     className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-white/80">{t('biz.saleAmount')} *</Label>
-                  <p className="text-[10px] text-white/30">{t('biz.saleAmountHint')}</p>
                   <Input
                     type="number"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    placeholder={t('biz.saleAmountHint')}
+                    placeholder="0"
                     min="0"
                     className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
                   />
@@ -458,23 +436,9 @@ export default function BusinessSales() {
                   </Select>
                 </div>
 
-                {selectedProductId && (
-                  <div className="space-y-2">
-                    <Label className="text-white/80">{t('biz.saleQuantity')}</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 w-24"
-                    />
-                  </div>
-                )}
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-white/80">{t('biz.saleDate')}</Label>
-                    <p className="text-[10px] text-white/30">{t('biz.saleDateHint')}</p>
                     <Input
                       type="date"
                       value={formData.date}

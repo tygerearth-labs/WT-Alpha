@@ -90,7 +90,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { customerId, invoiceId, description, amount, date, paymentMethod, notes, productId, quantity } = body;
+    const { customerId, invoiceId, description, amount, date, paymentMethod, notes } = body;
 
     if (!description || amount === undefined || amount === null) {
       return NextResponse.json(
@@ -120,6 +120,19 @@ export async function POST(
       }
     }
 
+    // Verify invoice exists and belongs to this business if provided
+    if (invoiceId) {
+      const invoice = await db.businessInvoice.findFirst({
+        where: { id: invoiceId, businessId },
+      });
+      if (!invoice) {
+        return NextResponse.json(
+          { error: 'Invoice not found for this business' },
+          { status: 404 }
+        );
+      }
+    }
+
     const sale = await db.businessSale.create({
       data: {
         businessId,
@@ -137,31 +150,6 @@ export async function POST(
         },
       },
     });
-
-    // Deduct stock if product linked
-    const productIdFinal = productId;
-    if (productIdFinal) {
-      const product = await db.product.findFirst({
-        where: { id: productIdFinal, businessId },
-      });
-      const qtyToDeduct = quantity || 1;
-      if (!product) {
-        return NextResponse.json(
-          { error: 'Product not found' },
-          { status: 404 }
-        );
-      }
-      if (product.stock < qtyToDeduct) {
-        return NextResponse.json(
-          { error: `Stok tidak mencukupi. Stok tersedia: ${product.stock}, diminta: ${qtyToDeduct}` },
-          { status: 400 }
-        );
-      }
-      await db.product.update({
-        where: { id: productIdFinal, businessId },
-        data: { stock: { decrement: qtyToDeduct } },
-      });
-    }
 
     // Create notification for new sale
     try {

@@ -56,19 +56,6 @@ export async function GET(
     for (const debt of dueSoonDebts) {
       try {
         const typeLabel = debt.type === 'hutang' ? 'Hutang' : 'Piutang';
-        const notifTitle = `${typeLabel} Jatuh Tempo!`;
-
-        // Deduplicate: skip if a similar notification was created in the last 24 hours
-        const existingNotif = await db.notification.findFirst({
-          where: {
-            userId,
-            type: 'debt',
-            title: notifTitle,
-            createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-          },
-        });
-        if (existingNotif) continue;
-
         const formattedAmount = new Intl.NumberFormat('id-ID', {
           style: 'currency',
           currency: 'IDR',
@@ -79,7 +66,7 @@ export async function GET(
           data: {
             userId,
             type: 'debt',
-            title: notifTitle,
+            title: `${typeLabel} Jatuh Tempo!`,
             message: `${typeLabel} kepada ${debt.counterpart} sebesar ${formattedAmount} jatuh tempo pada ${new Date(debt.dueDate!).toLocaleDateString('id-ID')}.`,
             amount: debt.remaining,
             actionUrl: '/dashboard',
@@ -188,36 +175,22 @@ export async function POST(
       if (debt.dueDate <= threeDaysFromNow && debt.dueDate >= now) {
         try {
           const typeLabel = debt.type === 'hutang' ? 'Hutang' : 'Piutang';
-          const notifTitle = `${typeLabel} Jatuh Tempo Segera!`;
+          const formattedAmount = new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+          }).format(debt.remaining);
 
-          // Deduplicate: skip if a similar notification was created in the last 24 hours
-          const existingNotif = await db.notification.findFirst({
-            where: {
+          await db.notification.create({
+            data: {
               userId,
               type: 'debt',
-              title: notifTitle,
-              createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+              title: `${typeLabel} Jatuh Tempo Segera!`,
+              message: `${typeLabel} kepada ${debt.counterpart} sebesar ${formattedAmount} jatuh tempo pada ${debt.dueDate.toLocaleDateString('id-ID')}.`,
+              amount: debt.remaining,
+              actionUrl: '/dashboard',
             },
           });
-
-          if (!existingNotif) {
-            const formattedAmount = new Intl.NumberFormat('id-ID', {
-              style: 'currency',
-              currency: 'IDR',
-              minimumFractionDigits: 0,
-            }).format(debt.remaining);
-
-            await db.notification.create({
-              data: {
-                userId,
-                type: 'debt',
-                title: notifTitle,
-                message: `${typeLabel} kepada ${debt.counterpart} sebesar ${formattedAmount} jatuh tempo pada ${debt.dueDate.toLocaleDateString('id-ID')}.`,
-                amount: debt.remaining,
-                actionUrl: '/dashboard',
-              },
-            });
-          }
         } catch (notifError) {
           console.error('Debt due notification error:', notifError);
         }

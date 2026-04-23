@@ -34,17 +34,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Plus, ArrowDownToLine, History, Trash2 } from 'lucide-react';
+import { Plus, ArrowDownToLine, History, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -81,7 +71,6 @@ export default function BusinessAllocation() {
     personalNote: '',
   });
   const [saving, setSaving] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const businessId = activeBusiness?.id;
 
@@ -143,20 +132,6 @@ export default function BusinessAllocation() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!businessId || !deleteId) return;
-    try {
-      const res = await fetch(`/api/business/${businessId}/allocations/${deleteId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      toast.success(t('biz.businessUpdated'));
-      fetchData();
-    } catch {
-      toast.error(t('common.error'));
-    } finally {
-      setDeleteId(null);
-    }
-  };
-
   const totalAllocated = allocations.reduce((sum, a) => sum + a.amount, 0);
 
   if (!businessId) {
@@ -186,39 +161,32 @@ export default function BusinessAllocation() {
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-3">
-          <p className="text-xs text-white/50">{t('biz.totalAllocated')}</p>
-          <p className="text-sm font-bold text-[#BB86FC]">{formatAmount(totalAllocated)}</p>
-        </Card>
-        <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-3">
-          <p className="text-xs text-white/50">{t('biz.allocationCount')}</p>
-          <p className="text-sm font-bold text-white">{allocations.length}</p>
-        </Card>
-        <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-3">
-          <p className="text-xs text-white/50">{t('biz.allocationPercent')}</p>
-          <p className="text-sm font-bold text-[#03DAC6]">
-            {allocations.length > 0
-              ? `${(allocations.reduce((s, a) => s + a.percentage, 0) / allocations.length).toFixed(1)}%`
-              : '-'}
-          </p>
-          <p className="text-[9px] text-white/30 mt-0.5">{t('biz.avgPercent')}</p>
-        </Card>
-        <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-3">
-          <p className="text-xs text-white/50">{t('biz.lastAllocation')}</p>
-          <p className="text-sm font-bold text-white">
-            {allocations.length > 0
-              ? formatAmount(allocations[0].amount)
-              : '-'}
-          </p>
-          <p className="text-[9px] text-white/30 mt-0.5">
-            {allocations.length > 0
-              ? new Date(allocations[0].allocatedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-              : ''}
-          </p>
-        </Card>
-      </div>
+      {/* Config Card */}
+      <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Wallet className="h-4 w-4 text-[#BB86FC]" />
+          <h3 className="text-sm font-medium text-white">{t('biz.autoAllocation')}</h3>
+        </div>
+        <p className="text-xs text-white/50 mb-3">
+          {t('biz.allocatedFrom')}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-white/[0.03] rounded-xl p-3">
+            <p className="text-xs text-white/40">{t('biz.allocationPercent')}</p>
+            <p className="text-lg font-bold text-white mt-1">
+              {allocations.length > 0
+                ? `${(allocations.reduce((s, a) => s + a.percentage, 0) / allocations.length || 0).toFixed(1)}%`
+                : '-'}
+            </p>
+          </div>
+          <div className="bg-white/[0.03] rounded-xl p-3">
+            <p className="text-xs text-white/40">{t('biz.allocationFixed')}</p>
+            <p className="text-lg font-bold text-[#BB86FC] mt-1">
+              {totalAllocated > 0 ? formatAmount(totalAllocated / Math.max(allocations.length, 1)) : '-'}
+            </p>
+          </div>
+        </div>
+      </Card>
 
       {/* History Table */}
       <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
@@ -251,7 +219,6 @@ export default function BusinessAllocation() {
                     <TableHead className="text-white/50 text-xs text-right">{t('biz.debtAmount')}</TableHead>
                     <TableHead className="text-white/50 text-xs text-right">{t('biz.allocationPercent')}</TableHead>
                     <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.customerNotes')}</TableHead>
-                    <TableHead className="text-white/50 text-xs w-16" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -272,16 +239,6 @@ export default function BusinessAllocation() {
                       <TableCell className="text-white/40 text-xs py-3 max-w-[150px] truncate hidden sm:table-cell">
                         {alloc.personalNote || '-'}
                       </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
-                          onClick={() => setDeleteId(alloc.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -299,16 +256,16 @@ export default function BusinessAllocation() {
               {t('biz.autoAllocation')}
             </DialogTitle>
             <DialogDescription className="text-white/60">
-              {t('biz.autoAllocation')} — {t('biz.allocatedFrom')}
+              {t('biz.allocatedFrom')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.penjualan')}</Label>
+              <Label className="text-white/80">{t('biz.saleDescription')}</Label>
               <Select value={formData.saleId} onValueChange={(v) => setFormData({ ...formData, saleId: v })}>
                 <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
-                  <SelectValue placeholder="Pilih penjualan (opsional)" />
+                  <SelectValue placeholder={t('biz.saleDescription')} />
                 </SelectTrigger>
                 <SelectContent>
                   {sales.map((s) => (
@@ -377,29 +334,6 @@ export default function BusinessAllocation() {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
-            <AlertDialogDescription className="text-white/60">
-              {t('kas.deleteDesc')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600 text-white border-0"
-            >
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

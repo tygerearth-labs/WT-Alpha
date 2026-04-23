@@ -105,7 +105,7 @@ export default function BusinessLaporan() {
   const fetchReport = useCallback(() => {
     if (!businessId) return;
     setLoading(true);
-    fetch(`/api/business/${businessId}/report?startDate=${encodeURIComponent(fromDate)}&endDate=${encodeURIComponent(toDate)}`)
+    fetch(`/api/business/${businessId}/report?from=${encodeURIComponent(fromDate)}&to=${encodeURIComponent(toDate)}`)
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
@@ -222,7 +222,7 @@ export default function BusinessLaporan() {
 
       // Summary
       doc.setFontSize(12);
-      doc.text(t('biz.bizLaporan'), 14, yPos);
+      doc.text(t('dashboard.totalSavings'), 14, yPos);
       yPos += 8;
       doc.setFontSize(10);
 
@@ -237,7 +237,7 @@ export default function BusinessLaporan() {
 
       autoTable(doc, {
         startY: yPos,
-        head: [[t('biz.debtDescription'), t('biz.cashAmount')]],
+        head: [['Keterangan', 'Jumlah']],
         body: summaryRows,
         theme: 'grid',
         headStyles: { fillColor: [187, 134, 252], textColor: 0 },
@@ -347,7 +347,7 @@ export default function BusinessLaporan() {
           size="sm"
           className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB] h-9 text-xs"
         >
-          {t('biz.refreshReport')}
+          {t('dashboard.savingsTargets')}
         </Button>
       </div>
 
@@ -510,7 +510,7 @@ export default function BusinessLaporan() {
                             <TableCell className="text-white/60 text-xs py-2 hidden sm:table-cell">{inv.customer?.name || '-'}</TableCell>
                             <TableCell className="py-2">
                               <Badge variant="outline" className={cn('text-xs font-normal border-0', statusClass)}>
-                                {inv.status === 'paid' ? t('biz.invoicePaid') : inv.status === 'overdue' ? t('biz.invoiceOverdue') : inv.status === 'cancelled' ? t('biz.invoiceCancelled') : t('biz.invoicePending')}
+                                {inv.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-white text-xs text-right py-2 font-medium">{formatAmount(inv.total)}</TableCell>
@@ -563,7 +563,7 @@ export default function BusinessLaporan() {
                                 debt.type === 'hutang' ? 'bg-[#CF6679]/20 text-[#CF6679]' : 'bg-[#03DAC6]/20 text-[#03DAC6]'
                               )}
                             >
-                              {debt.type === 'hutang' ? t('biz.hutang') : t('biz.piutang')}
+                              {debt.type}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-white/70 text-xs py-2">{formatAmount(debt.amount)}</TableCell>

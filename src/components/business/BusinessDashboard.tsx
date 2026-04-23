@@ -13,7 +13,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import {
   TrendingUp,
   TrendingDown,
@@ -25,7 +24,6 @@ import {
   Clock,
   AlertTriangle,
   ArrowUpRight,
-  RefreshCw,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -78,7 +76,7 @@ const itemVariants = {
 
 export default function BusinessDashboard() {
   const { t } = useTranslation();
-  const { activeBusiness, requestPage } = useBusinessStore();
+  const { activeBusiness } = useBusinessStore();
   const { formatAmount } = useCurrencyFormat();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -225,11 +223,11 @@ export default function BusinessDashboard() {
       ]
     : [];
 
-  // Quick actions — now functional
+  // Quick actions
   const quickActions = [
-    { label: t('biz.addSale'), icon: Plus, color: '#03DAC6', page: 'biz-penjualan' as const },
-    { label: t('biz.addInvoice'), icon: FileText, color: '#BB86FC', page: 'biz-invoice' as const },
-    { label: t('biz.kasKeluar'), icon: Receipt, color: '#CF6679', page: 'biz-kas' as const },
+    { label: t('biz.addSale'), icon: Plus, color: '#03DAC6' },
+    { label: t('biz.addInvoice'), icon: FileText, color: '#BB86FC' },
+    { label: t('biz.kasKeluar'), icon: Receipt, color: '#CF6679' },
   ];
 
   // Format date helper
@@ -297,7 +295,7 @@ export default function BusinessDashboard() {
           <CardContent className="px-5 py-3">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-xs text-white/40 font-medium uppercase tracking-wide shrink-0">
-                {t('biz.quickActions')}
+                Quick Actions
               </span>
               <Separator orientation="vertical" className="h-5 bg-white/[0.06]" />
               <div className="flex items-center gap-2 flex-wrap">
@@ -308,8 +306,7 @@ export default function BusinessDashboard() {
                       key={action.label}
                       variant="ghost"
                       size="sm"
-                      onClick={() => requestPage(action.page)}
-                      className="h-8 px-3 gap-1.5 text-xs text-white/60 hover:text-white hover:bg-white/[0.06] border border-white/[0.06] rounded-lg transition-all hover:border-white/[0.12]"
+                      className="h-8 px-3 gap-1.5 text-xs text-white/60 hover:text-white hover:bg-white/[0.06] border border-white/[0.06] rounded-lg"
                     >
                       <Icon className="h-3.5 w-3.5" style={{ color: action.color }} />
                       <span>{action.label}</span>
@@ -328,20 +325,9 @@ export default function BusinessDashboard() {
         <motion.div variants={itemVariants} className="lg:col-span-3">
           <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white text-sm font-semibold">
-                  {t('biz.bizRevenue')} vs {t('biz.bizExpense')}
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFetchKey(prev => prev + 1)}
-                  className="h-7 w-7 p-0 text-white/30 hover:text-white/60 hover:bg-white/[0.06]"
-                  title="Refresh"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+              <CardTitle className="text-white text-sm font-semibold">
+                {t('biz.bizRevenue')} vs {t('biz.bizExpense')}
+              </CardTitle>
             </CardHeader>
             <CardContent className="pb-5">
               {comparisonData.some(d => d.value > 0) ? (
@@ -417,7 +403,7 @@ export default function BusinessDashboard() {
           <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-sm font-semibold">
-                {t('biz.statusRingkas')}
+                Status Ringkas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pb-5">
@@ -442,7 +428,7 @@ export default function BusinessDashboard() {
                         <div className="flex items-center gap-2">
                           {item.count !== undefined && item.count > 0 && (
                             <span className="text-sm font-bold text-white">
-                              {item.count} <span className="text-[11px] font-normal text-white/40">{t('biz.items')}</span>
+                              {item.count} <span className="text-[11px] font-normal text-white/40">items</span>
                             </span>
                           )}
                           {item.amount !== null && item.amount > 0 && (
@@ -494,7 +480,7 @@ export default function BusinessDashboard() {
         <Card className="bg-[#1A1A2E] border-white/[0.06]">
           <CardHeader className="pb-2">
             <CardTitle className="text-white text-sm font-semibold">
-              {t('biz.recentActivity')}
+              Aktivitas Terbaru
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -534,62 +520,7 @@ export default function BusinessDashboard() {
         </Card>
       </motion.div>
 
-      {/* ── Section 5: Kas Terbaru ── */}
-      {data && data.recentCashEntries && data.recentCashEntries.length > 0 && (
-        <motion.div variants={itemVariants}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-sm font-semibold">
-                Kas Terbaru
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-[200px] overflow-y-auto pr-1 space-y-0.5 custom-scrollbar">
-                <div className="divide-y divide-white/[0.04]">
-                  {data.recentCashEntries.slice(0, 5).map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center gap-3 py-2.5 group hover:bg-white/[0.02] rounded-lg px-2 -mx-2 transition-colors"
-                    >
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${
-                        entry.type === 'kas_keluar' ? 'bg-[#CF6679]/[0.08]' : 'bg-[#03DAC6]/[0.08]'
-                      }`}>
-                        {entry.type === 'kas_keluar' ? (
-                          <TrendingDown className="h-3.5 w-3.5 text-[#CF6679]" />
-                        ) : (
-                          <TrendingUp className="h-3.5 w-3.5 text-[#03DAC6]" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white/85 truncate group-hover:text-white transition-colors">
-                          {entry.description}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Badge variant="outline" className={`text-[9px] font-normal border-0 px-1 py-0 h-3.5 ${
-                            entry.type === 'kas_besar' ? 'bg-green-500/20 text-green-400' :
-                            entry.type === 'kas_kecil' ? 'bg-teal-500/20 text-teal-400' :
-                            'bg-red-500/20 text-red-400'
-                          }`}>
-                            {entry.type === 'kas_besar' ? 'Kas Besar' : entry.type === 'kas_kecil' ? 'Kas Kecil' : 'Kas Keluar'}
-                          </Badge>
-                          <span className="text-[11px] text-white/35">{formatDate(entry.date)}</span>
-                        </div>
-                      </div>
-                      <span className={`text-sm font-semibold ml-2 shrink-0 ${
-                        entry.type === 'kas_keluar' ? 'text-[#CF6679]' : 'text-[#03DAC6]'
-                      }`}>
-                        {entry.type === 'kas_keluar' ? '-' : '+'}{formatAmount(entry.amount)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }

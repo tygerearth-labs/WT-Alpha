@@ -115,7 +115,7 @@ export async function PUT(request: NextRequest) {
         whatsappNumber: whatsappNumber ?? null,
         registrationOpen: registrationOpen ?? true,
         registrationMessage: registrationMessage ?? null,
-        availablePlans: availablePlans ?? '["basic","pro"]',
+        availablePlans: availablePlans ?? '["basic","pro","ultimate"]',
         sectionVisibility: sectionVisibility ?? null,
         exportEnabled: exportEnabled ?? null,
       },

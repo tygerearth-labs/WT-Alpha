@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const unreadOnly = searchParams.get('unread') === 'true';
 
-    const whereClause: Record<string, unknown> = { userId };
+    const whereClause: any = { userId };
     if (unreadOnly) {
       whereClause.isRead = false;
     }
