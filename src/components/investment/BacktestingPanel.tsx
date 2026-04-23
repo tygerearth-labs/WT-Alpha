@@ -271,13 +271,13 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
     } finally {
       setLoading(false);
     }
-  }, [businessId, selectedAsset, startDate, endDate]); // Remove strategy, initialBalance, riskPerTrade
+  }, [businessId, selectedAsset, startDate, endDate, strategy, initialBalance, riskPerTrade]);
 
   useEffect(() => {
     if (selectedAsset) {
       fetchBacktest();
     }
-  }, [selectedAsset?.key]); // Only re-fetch when asset changes
+  }, [fetchBacktest]);
 
   // ── Formatters ──────────────────────────────────────────────────────────
   const fmtPrice = useCallback((type: string, val: number) => {

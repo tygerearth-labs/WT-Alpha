@@ -335,6 +335,10 @@ model BusinessDebt {
   dueDate       DateTime?
   description   String?
   status        String   @default("active") // active, partially_paid, paid, overdue
+  downPayment       Float?    // DP amount (if different from remaining)
+  installmentAmount Float?    // Fixed monthly installment amount
+  installmentPeriod Int?      // Number of installments (months)
+  nextInstallmentDate DateTime? // Next installment due date
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
