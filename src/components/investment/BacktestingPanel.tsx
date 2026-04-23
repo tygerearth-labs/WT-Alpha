@@ -19,6 +19,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   BarChart3,
   TrendingUp,
   TrendingDown,
@@ -36,8 +42,13 @@ import {
   Shield,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Wallet,
   LineChart,
+  FlaskConical,
+  Clock,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -164,6 +175,16 @@ interface StrategyComparisonItem {
   metrics: StrategyMetrics;
 }
 
+interface DataQuality {
+  dataSource: string;
+  totalCandles: number;
+  dateRange: { start: string; end: string };
+  isMock: boolean;
+  coingeckoFailed?: boolean;
+  candlesUsedForStrategy: number;
+  candlesInDisplayRange?: number;
+}
+
 interface BacktestData {
   symbol: string;
   type: string;
@@ -177,6 +198,8 @@ interface BacktestData {
   weeklyData: BacktestWeeklyData[];
   summary: BacktestSummary;
   marginCall?: boolean;
+  dataQuality?: DataQuality;
+  warnings?: string[];
 }
 
 interface AssetOption {
@@ -218,6 +241,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
   const [data, setData] = useState<BacktestData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
   const [startDate, setStartDate] = useState<string>(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
@@ -227,6 +251,8 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
   });
   const [weeklyOpen, setWeeklyOpen] = useState(false);
   const weeklyRef = useRef<HTMLDivElement>(null);
+  const [tradePage, setTradePage] = useState(1);
+  const TRADES_PER_PAGE = 10;
 
   const selectedAsset = useMemo(() => {
     if (!selectedKey) return null;
@@ -244,6 +270,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
     if (!businessId || !selectedAsset) return;
     setLoading(true);
     setError(null);
+    setShowResults(false);
 
     try {
       const params = new URLSearchParams({
@@ -272,6 +299,14 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
       setLoading(false);
     }
   }, [businessId, selectedAsset, startDate, endDate, strategy, initialBalance, riskPerTrade]);
+
+  // Show results dialog when data arrives; reset trade page
+  useEffect(() => {
+    if (data) {
+      setTradePage(1);
+      setShowResults(true);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (selectedAsset) {
@@ -384,127 +419,146 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#BB86FC]/10 border border-[#BB86FC]/20">
-              <LineChart className="h-4 w-4 text-[#BB86FC]" />
+              <FlaskConical className="h-4 w-4 text-[#BB86FC]" />
             </div>
             <div>
               <h3 className="text-xs font-bold text-white/80">Strategy Backtesting</h3>
-              <p className="text-[10px] text-white/30">Simulasi trading dengan saldo real</p>
+              <p className="text-[10px] text-white/30">Paper Trading — Uji strategi berdasarkan data historis</p>
+            </div>
+          </div>
+
+          {/* Strategy chip (active filter style, moved below title) */}
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] text-white/25 uppercase tracking-wider font-bold">Strategi aktif:</span>
+            <div
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold cursor-default transition-colors"
+              style={{
+                backgroundColor: `${PURPLE_COLOR}18`,
+                color: PURPLE_COLOR,
+                border: `1px solid ${PURPLE_COLOR}35`,
+              }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: PURPLE_COLOR }} />
+              {STRATEGY_LABELS[strategy] || strategy}
             </div>
           </div>
 
           {/* Controls Row */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             {/* Asset Selector */}
-            <Select value={selectedKey} onValueChange={setSelectedKey}>
-              <SelectTrigger className="h-8 w-[150px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80">
-                <SelectValue placeholder="Select asset" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
-                {assets.map(asset => {
-                  const tc = TYPE_COLORS[asset.type];
-                  return (
-                    <SelectItem key={asset.key} value={asset.key} className="text-[11px] text-white/70 focus:text-white focus:bg-white/[0.06]">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
-                          {asset.symbol}
-                        </span>
-                        <span className="text-white/40 truncate max-w-[80px]">{asset.name || asset.type}</span>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-white/25 uppercase tracking-wider font-bold pl-1">Aset</span>
+              <Select value={selectedKey} onValueChange={setSelectedKey}>
+                <SelectTrigger className="h-8 w-[150px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80">
+                  <SelectValue placeholder="Select asset" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  {assets.map(asset => {
+                    const tc = TYPE_COLORS[asset.type];
+                    return (
+                      <SelectItem key={asset.key} value={asset.key} className="text-[11px] text-white/70 focus:text-white focus:bg-white/[0.06]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: tc?.bg, color: tc?.text }}>
+                            {asset.symbol}
+                          </span>
+                          <span className="text-white/40 truncate max-w-[80px]">{asset.name || asset.type}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Strategy Selector */}
-            <Select value={strategy} onValueChange={setStrategy}>
-              <SelectTrigger className="h-8 w-[150px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
-                {Object.entries(STRATEGY_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key} className="text-[11px] text-white/70 focus:text-white focus:bg-white/[0.06]">
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-white/25 uppercase tracking-wider font-bold pl-1">Strategi</span>
+              <Select value={strategy} onValueChange={setStrategy}>
+                <SelectTrigger className="h-8 w-[150px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  {Object.entries(STRATEGY_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key} className="text-[11px] text-white/70 focus:text-white focus:bg-white/[0.06]">
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Initial Balance */}
-            <div className="relative">
-              <Wallet className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/30" />
-              <Input
-                type="number"
-                value={initialBalance}
-                onChange={e => setInitialBalance(e.target.value)}
-                className="h-8 w-[120px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80 font-mono pl-7 pr-2"
-                placeholder="10000"
-                min={100}
-              />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-white/25 uppercase tracking-wider font-bold pl-1">Modal Awal</span>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-white/30 font-mono">$</span>
+                <Input
+                  type="number"
+                  value={initialBalance}
+                  onChange={e => setInitialBalance(e.target.value)}
+                  className="h-8 w-[120px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80 font-mono pl-6 pr-2"
+                  placeholder="10000"
+                  min={100}
+                />
+              </div>
             </div>
 
             {/* Risk % */}
-            <Select value={riskPerTrade} onValueChange={setRiskPerTrade}>
-              <SelectTrigger className="h-8 w-[90px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
-                {[1, 1.5, 2, 2.5, 3, 4, 5].map(r => (
-                  <SelectItem key={r} value={String(r)} className="text-[11px] text-white/70 focus:text-white focus:bg-white/[0.06]">
-                    {r}% risk
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-white/25 uppercase tracking-wider font-bold pl-1">Risk/Trade</span>
+              <Select value={riskPerTrade} onValueChange={setRiskPerTrade}>
+                <SelectTrigger className="h-8 w-[110px] bg-white/[0.04] border-white/[0.08] text-[11px] text-white/80">
+                  <Percent className="h-3 w-3 text-white/30 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  {[1, 1.5, 2, 2.5, 3, 4, 5].map(r => (
+                    <SelectItem key={r} value={String(r)} className="text-[11px] text-white/70 focus:text-white focus:bg-white/[0.06]">
+                      {r}%
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Date Range */}
-            <div className="flex items-center gap-1">
-              <CalendarDays className="h-3 w-3 text-white/30" />
-              <Input
-                type="date"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                className="h-8 w-[130px] bg-white/[0.04] border-white/[0.08] text-[10px] text-white/80 font-mono px-2"
-                max={endDate || undefined}
-              />
-              <span className="text-[10px] text-white/25">→</span>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className="h-8 w-[130px] bg-white/[0.04] border-white/[0.08] text-[10px] text-white/80 font-mono px-2"
-                min={startDate || undefined}
-              />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-white/25 uppercase tracking-wider font-bold pl-1">Periode</span>
+              <div className="flex items-center gap-1">
+                <CalendarDays className="h-3 w-3 text-white/30" />
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="h-8 w-[130px] bg-white/[0.04] border-white/[0.08] text-[10px] text-white/80 font-mono px-2"
+                  max={endDate || undefined}
+                />
+                <span className="text-[10px] text-white/25">→</span>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="h-8 w-[130px] bg-white/[0.04] border-white/[0.08] text-[10px] text-white/80 font-mono px-2"
+                  min={startDate || undefined}
+                />
+              </div>
             </div>
 
             {/* Run Backtest Button */}
-            <button
-              onClick={fetchBacktest}
-              disabled={loading}
-              className={cn(
-                "flex h-8 items-center justify-center rounded-lg px-3 gap-1.5 text-[10px] font-bold transition-colors disabled:opacity-40",
-                "bg-[#BB86FC]/15 border border-[#BB86FC]/25 text-[#BB86FC] hover:bg-[#BB86FC]/25"
-              )}
-            >
-              <Zap className="h-3 w-3" />
-              {loading ? 'Running...' : 'Run'}
-            </button>
-
-            {/* Strategy badge */}
-            {data && (
-              <Badge
-                className="text-[9px] px-2 py-0.5 h-5 font-bold ml-auto"
-                style={{
-                  backgroundColor: `${PURPLE_COLOR}15`,
-                  color: PURPLE_COLOR,
-                  borderColor: `${PURPLE_COLOR}30`,
-                  borderWidth: 1,
-                  borderStyle: 'solid',
-                }}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-transparent select-none">.</span>
+              <button
+                onClick={fetchBacktest}
+                disabled={loading}
+                className={cn(
+                  "flex h-8 items-center justify-center rounded-lg px-3 gap-1.5 text-[10px] font-bold transition-colors disabled:opacity-40",
+                  "bg-[#BB86FC]/15 border border-[#BB86FC]/25 text-[#BB86FC] hover:bg-[#BB86FC]/25"
+                )}
               >
-                {STRATEGY_LABELS[data.strategy] || data.strategy}
-              </Badge>
-            )}
+                <Zap className="h-3 w-3" />
+                {loading ? 'Menganalisis...' : 'Jalankan Simulasi'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -529,579 +583,745 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
             <Skeleton className="h-40 rounded-lg bg-white/[0.04]" />
           </div>
         )}
+      </CardContent>
 
-        {/* ── Data view ── */}
-        {data && !loading && (
-          <>
-            {/* ════════════════════════════════════════════════════════════
-                MARGIN CALL WARNING
-                ════════════════════════════════════════════════════════════ */}
-            {data.marginCall && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-lg bg-[#CF6679]/10 border border-[#CF6679]/30 p-5 text-center"
+      {/* ── Results Dialog ── */}
+      <Dialog open={showResults} onOpenChange={setShowResults}>
+        <DialogContent className="max-w-5xl max-w-[95vw] bg-[#0D0D0D] border-white/[0.06] p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Dialog Header */}
+          <DialogHeader className="p-5 pb-3 border-b border-white/[0.04] shrink-0">
+            {/* Simulasi Badge */}
+            <div className="flex items-center gap-2 mb-3">
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{
+                  backgroundColor: `${PURPLE_COLOR}15`,
+                  color: PURPLE_COLOR,
+                  border: `1.5px solid ${PURPLE_COLOR}35`,
+                }}
               >
-                <AlertTriangle className="h-8 w-8 text-[#CF6679] mx-auto mb-2" />
-                <h4 className="text-sm font-bold text-[#CF6679] mb-1">MARGIN CALL - Saldo Habis</h4>
-                <p className="text-[11px] text-white/40">
-                  Strategi ini menghabiskan seluruh modal ({fmtUsd(data.metrics.finalBalance)} tersisa).{' '}
-                  Strategi dihentikan karena saldo mencapai $0.
-                </p>
-              </motion.div>
-            )}
+                <FlaskConical className="h-3.5 w-3.5" />
+                SIMULASI
+              </div>
+            </div>
 
-            {/* ════════════════════════════════════════════════════════════
-                NO TRADES FOUND - explain why
-                ════════════════════════════════════════════════════════════ */}
-            {data.metrics.totalTrades === 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-lg bg-white/[0.02] border border-[#FFD700]/20 p-5 text-center"
+            <DialogTitle className="text-sm font-bold text-white/90">
+              Hasil Simulasi — {data?.symbol} ({data ? STRATEGY_LABELS[data.strategy] || data.strategy : ''})
+            </DialogTitle>
+
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() => {
+                  setShowResults(false);
+                  fetchBacktest();
+                }}
+                disabled={loading}
+                className={cn(
+                  "flex h-7 items-center justify-center rounded-lg px-3 gap-1.5 text-[10px] font-bold transition-colors disabled:opacity-40",
+                  "bg-[#BB86FC]/15 border border-[#BB86FC]/25 text-[#BB86FC] hover:bg-[#BB86FC]/25"
+                )}
               >
-                <div className="flex justify-center mb-2">
-                  <div className="h-10 w-10 rounded-full bg-[#FFD700]/10 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-[#FFD700]" />
-                  </div>
-                </div>
-                <h4 className="text-xs font-bold text-white/70 mb-1">Tidak Ada Sinyal Trading</h4>
-                <p className="text-[10px] text-white/35 leading-relaxed max-w-md mx-auto">
-                  Strategi <span className="text-[#BB86FC] font-bold">{STRATEGY_LABELS[data.strategy] || data.strategy}</span> tidak menghasilkan sinyal entry pada periode ini. Ini berdasarkan simulasi indikator, bukan trade aktual.
-                </p>
-                <div className="mt-3 space-y-1.5 text-[9px] text-white/25">
-                  <p>💡 <span className="text-white/40">Tips:</span> Coba ubah range tanggal atau ganti aset untuk melihat sinyal yang berbeda.</p>
-                  <p>• <span className="text-[#03DAC6]/70">Trend Following</span> — baik di market yang jelas naik/turun</p>
-                  <p>• <span className="text-[#03DAC6]/70">RSI Mean Reversion</span> — baik saat market oversold/overbought</p>
-                  <p>• <span className="text-[#03DAC6]/70">Smart Money</span> — komposit skor dari 4 layer indikator</p>
-                  <p>• <span className="text-[#03DAC6]/70">Breakout</span> — baik saat harga menembus resistance/support</p>
-                </div>
-              </motion.div>
-            )}
+                <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+                Jalankan Ulang
+              </button>
+            </div>
+          </DialogHeader>
 
-            {/* ════════════════════════════════════════════════════════════
-                1.5 BALANCE PROGRESSION (start → end)
-                ════════════════════════════════════════════════════════════ */}
-            {data.metrics.totalTrades > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
-                className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-4"
-              >
-                <div className="flex items-center gap-1.5 mb-3">
-                  <Wallet className="h-3.5 w-3.5 text-white/25" />
-                  <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Balance Progression</span>
-                </div>
-                <div className="flex items-center justify-center gap-4">
-                  <div className="text-center">
-                    <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Starting</span>
-                    <span className="text-sm font-black font-mono text-white/50">
-                      {fmtUsd(data.initialBalance)}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <ArrowUpRight className={cn("h-5 w-5", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679] hidden")} />
-                    <ArrowDownRight className={cn("h-5 w-5", data.metrics.totalReturnPct < 0 ? "text-[#CF6679]" : "text-[#03DAC6] hidden")} />
-                    <span className={cn("text-[10px] font-bold font-mono", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679]")}>
-                      {data.metrics.totalReturnPct >= 0 ? '+' : ''}{toF(data.metrics.totalReturnPct)}%
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Ending</span>
-                    <span className={cn("text-sm font-black font-mono", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679]")}>
-                      {fmtUsd(data.metrics.finalBalance)}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center justify-center gap-3 text-[9px] text-white/25">
-                  <span>{data.metrics.totalTrades} trades</span>
-                  <span>•</span>
-                  <span>Best: <span className="text-[#03DAC6] font-mono">+{toF(data.metrics.bestTradePct)}%</span></span>
-                  <span>•</span>
-                  <span>Worst: <span className="text-[#CF6679] font-mono">{toF(data.metrics.worstTradePct)}%</span></span>
-                </div>
-              </motion.div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════════
-                1. EQUITY CURVE CHART
-                ════════════════════════════════════════════════════════════ */}
-            {data.equityCurve.length > 2 && data.metrics.totalTrades > 0 && <EquityCurveChart equityCurve={data.equityCurve} initialBalance={data.initialBalance} fmtDate={fmtDate} />}
-
-            {/* ════════════════════════════════════════════════════════════
-                2. KEY METRICS DASHBOARD (6 cards in 2x3 grid)
-                ════════════════════════════════════════════════════════════ */}
-            {data.metrics.totalTrades > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-              {metricCards.map((card, idx) => (
+          {/* Dialog Body — scrollable */}
+          {data && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 pt-3 space-y-4">
+              {/* ════════════════════════════════════════════════════════════
+                  MARGIN CALL WARNING
+                  ════════════════════════════════════════════════════════════ */}
+              {data.marginCall && (
                 <motion.div
-                  key={card.label}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.04, duration: 0.3 }}
-                  className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-3"
+                  className="rounded-lg bg-[#CF6679]/10 border border-[#CF6679]/30 p-5 text-center"
                 >
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <card.icon className="h-3 w-3" style={{ color: `${card.color}60` }} />
-                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">{card.label}</span>
-                  </div>
-                  <span className="text-sm font-black font-mono block" style={{ color: card.color }}>
-                    {card.value}
-                  </span>
-                  <span className="text-[10px] text-white/30 font-mono block mt-0.5">
-                    {card.subValue}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════════
-                3. STRATEGY COMPARISON BAR (only when strategy=all)
-                ════════════════════════════════════════════════════════════ */}
-            {data.strategyComparison && data.strategyComparison.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25, duration: 0.3 }}
-                className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-4"
-              >
-                <div className="flex items-center gap-1.5 mb-3">
-                  <BarChart3 className="h-3.5 w-3.5 text-white/25" />
-                  <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Strategy Comparison</span>
-                </div>
-                <div className="space-y-2">
-                  {data.strategyComparison.map(s => {
-                    const isBest = s.name === bestStrategyName;
-                    const returnPct = s.metrics.totalReturnPct;
-                    const maxAbs = Math.max(
-                      ...data.strategyComparison!.map(x => Math.abs(x.metrics.totalReturnPct)),
-                      1,
-                    );
-                    const barWidth = Math.max(Math.abs(returnPct) / maxAbs * 100, 3);
-                    const barColor = returnPct >= 0 ? UP_COLOR : DOWN_COLOR;
-
-                    return (
-                      <div key={s.name} className="flex items-center gap-3">
-                        <span className={cn(
-                          'text-[10px] w-[100px] shrink-0 truncate font-medium',
-                          isBest ? 'text-white/90' : 'text-white/50',
-                        )}>
-                          {s.label}
-                        </span>
-                        <div className="flex-1 relative h-5 bg-white/[0.02] rounded-sm overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${barWidth}%` }}
-                            transition={{ duration: 0.6, ease: 'easeOut' }}
-                            className={cn(
-                              'absolute top-0 h-full rounded-sm',
-                              returnPct >= 0 ? 'left-0' : 'right-0',
-                            )}
-                            style={{
-                              backgroundColor: barColor,
-                              opacity: isBest ? 0.8 : 0.4,
-                            }}
-                          />
-                          {isBest && (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.8 }}
-                              className="absolute top-0 h-full w-full border border-[#FFD700]/30 rounded-sm"
-                            />
-                          )}
-                        </div>
-                        <span
-                          className="text-[10px] font-mono font-bold w-[65px] text-right shrink-0"
-                          style={{ color: barColor }}
-                        >
-                          {returnPct >= 0 ? '+' : ''}{toF(returnPct)}%
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════════
-                4. MARKET REGIME ANALYSIS
-                ════════════════════════════════════════════════════════════ */}
-            {data.metrics.totalTrades > 0 && data.regimeAnalysis && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.3 }}
-                className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-4"
-              >
-                <div className="flex items-center gap-1.5 mb-3">
-                  <Activity className="h-3.5 w-3.5 text-white/25" />
-                  <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Market Regime Analysis</span>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <Badge
-                    className="text-[9px] px-2 py-0.5 h-5 font-bold uppercase tracking-wider"
-                    style={{
-                      backgroundColor: `${REGIME_COLORS[data.regimeAnalysis.currentRegime]}15`,
-                      color: REGIME_COLORS[data.regimeAnalysis.currentRegime],
-                      borderColor: `${REGIME_COLORS[data.regimeAnalysis.currentRegime]}30`,
-                      borderWidth: 1,
-                      borderStyle: 'solid',
-                    }}
-                  >
-                    {data.regimeAnalysis.currentRegime}
-                  </Badge>
-                  <span className="text-[10px] text-white/40">{data.regimeAnalysis.regimeDescription}</span>
-                </div>
-
-                {/* Recommended Strategy */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="h-3 w-3 text-[#FFD700]/60" />
-                  <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Recommended</span>
-                  <Badge
-                    className="text-[9px] px-2 py-0.5 h-5 font-bold"
-                    style={{
-                      backgroundColor: 'rgba(187,134,252,0.12)',
-                      color: PURPLE_COLOR,
-                      borderColor: 'rgba(187,134,252,0.3)',
-                      borderWidth: 1,
-                      borderStyle: 'solid',
-                    }}
-                  >
-                    {STRATEGY_LABELS[data.regimeAnalysis.recommendedStrategy] || data.regimeAnalysis.recommendedStrategy}
-                  </Badge>
-                </div>
-
-                {/* Regime cards */}
-                <div className="grid grid-cols-3 gap-2">
-                  {(['trending', 'ranging', 'volatile'] as const).map(regime => {
-                    const stats = data.regimeAnalysis[regime];
-                    const color = REGIME_COLORS[regime];
-                    return (
-                      <div
-                        key={regime}
-                        className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-2.5"
-                      >
-                        <span className="text-[9px] uppercase tracking-wider font-bold block mb-1.5" style={{ color: `${color}80` }}>
-                          {regime}
-                        </span>
-                        <div className="space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-[8px] text-white/25">Time</span>
-                            <span className="text-[10px] text-white/60 font-mono">{toF(stats.pct, 0)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-[8px] text-white/25">Avg Ret</span>
-                            <span className="text-[10px] font-mono" style={{ color: stats.avgReturnPct >= 0 ? UP_COLOR : DOWN_COLOR }}>
-                              {stats.avgReturnPct >= 0 ? '+' : ''}{toF(stats.avgReturnPct)}%
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-[8px] text-white/25">Win Rate</span>
-                            <span className="text-[10px] text-white/60 font-mono">{toF(stats.winRate, 0)}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Insight */}
-                <div className="mt-3 px-2.5 py-2 rounded-md bg-white/[0.02] border border-white/[0.03]">
-                  <p className="text-[10px] text-white/35 leading-relaxed">
-                    In uncertain/ranging markets, <span className="text-[#FFD700]/70 font-semibold">Conservative</span> strategy has higher win rate because it avoids low-confluence trades. In trending markets, <span style={{ color: UP_COLOR }} className="font-semibold">Trend Following</span> captures directional momentum.
+                  <AlertTriangle className="h-8 w-8 text-[#CF6679] mx-auto mb-2" />
+                  <h4 className="text-sm font-bold text-[#CF6679] mb-1">MARGIN CALL - Saldo Habis</h4>
+                  <p className="text-[11px] text-white/40">
+                    Strategi ini menghabiskan seluruh modal ({fmtUsd(data.metrics.finalBalance)} tersisa).{' '}
+                    Strategi dihentikan karena saldo mencapai $0.
                   </p>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
-            {/* ════════════════════════════════════════════════════════════
-                5. TRADE HISTORY TABLE
-                ════════════════════════════════════════════════════════════ */}
-            {data.trades.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.3 }}
-                className="rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden"
-              >
-                <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/[0.04]">
-                  <Target className="h-3.5 w-3.5 text-white/25" />
-                  <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Trade History</span>
-                  <Badge variant="outline" className="border-white/[0.06] text-white/25 text-[9px] ml-auto px-1.5 py-0 h-4">
-                    {data.trades.length} trades
-                  </Badge>
+              {/* ════════════════════════════════════════════════════════════
+                  NO TRADES FOUND - explain why
+                  ════════════════════════════════════════════════════════════ */}
+              {data.metrics.totalTrades === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-lg bg-white/[0.02] border border-[#FFD700]/20 p-5 text-center"
+                >
+                  <div className="flex justify-center mb-2">
+                    <div className="h-10 w-10 rounded-full bg-[#FFD700]/10 flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-[#FFD700]" />
+                    </div>
+                  </div>
+                  <h4 className="text-xs font-bold text-white/70 mb-1">Tidak Ada Sinyal Trading</h4>
+                  <p className="text-[10px] text-white/35 leading-relaxed max-w-md mx-auto">
+                    Strategi <span className="text-[#BB86FC] font-bold">{STRATEGY_LABELS[data.strategy] || data.strategy}</span> tidak menghasilkan sinyal entry pada periode ini. Ini berdasarkan simulasi indikator, bukan trade aktual.
+                  </p>
+                  <div className="mt-3 space-y-1.5 text-[9px] text-white/25">
+                    <p>💡 <span className="text-white/40">Tips:</span> Coba ubah range tanggal atau ganti aset untuk melihat sinyal yang berbeda.</p>
+                    <p>• <span className="text-[#03DAC6]/70">Trend Following</span> — baik di market yang jelas naik/turun</p>
+                    <p>• <span className="text-[#03DAC6]/70">RSI Mean Reversion</span> — baik saat market oversold/overbought</p>
+                    <p>• <span className="text-[#03DAC6]/70">Smart Money</span> — komposit skor dari 4 layer indikator</p>
+                    <p>• <span className="text-[#03DAC6]/70">Breakout</span> — baik saat harga menembus resistance/support</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════
+                  1.5 BALANCE PROGRESSION (start → end)
+                  ════════════════════════════════════════════════════════════ */}
+              {data.metrics.totalTrades > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                  className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-4"
+                >
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Wallet className="h-3.5 w-3.5 text-white/25" />
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Balance Progression</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="text-center">
+                      <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Starting</span>
+                      <span className="text-sm font-black font-mono text-white/50">
+                        {fmtUsd(data.initialBalance)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <ArrowUpRight className={cn("h-5 w-5", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679] hidden")} />
+                      <ArrowDownRight className={cn("h-5 w-5", data.metrics.totalReturnPct < 0 ? "text-[#CF6679]" : "text-[#03DAC6] hidden")} />
+                      <span className={cn("text-[10px] font-bold font-mono", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679]")}>
+                        {data.metrics.totalReturnPct >= 0 ? '+' : ''}{toF(data.metrics.totalReturnPct)}%
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-1">Ending</span>
+                      <span className={cn("text-sm font-black font-mono", data.metrics.totalReturnPct >= 0 ? "text-[#03DAC6]" : "text-[#CF6679]")}>
+                        {fmtUsd(data.metrics.finalBalance)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-center gap-3 text-[9px] text-white/25">
+                    <span>{data.metrics.totalTrades} trades</span>
+                    <span>•</span>
+                    <span>Best: <span className="text-[#03DAC6] font-mono">+{toF(data.metrics.bestTradePct)}%</span></span>
+                    <span>•</span>
+                    <span>Worst: <span className="text-[#CF6679] font-mono">{toF(data.metrics.worstTradePct)}%</span></span>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════
+                  1. EQUITY CURVE CHART
+                  ════════════════════════════════════════════════════════════ */}
+              {data.equityCurve.length > 2 && data.metrics.totalTrades > 0 && <EquityCurveChart equityCurve={data.equityCurve} initialBalance={data.initialBalance} fmtDate={fmtDate} />}
+
+              {/* ════════════════════════════════════════════════════════════
+                  2. KEY METRICS DASHBOARD (6 cards in 2x3 grid)
+                  ════════════════════════════════════════════════════════════ */}
+              {data.metrics.totalTrades > 0 && (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {metricCards.map((card, idx) => (
+                  <motion.div
+                    key={card.label}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04, duration: 0.3 }}
+                    className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-3"
+                  >
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <card.icon className="h-3 w-3" style={{ color: `${card.color}60` }} />
+                      <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">{card.label}</span>
+                    </div>
+                    <span className="text-sm font-black font-mono block" style={{ color: card.color }}>
+                      {card.value}
+                    </span>
+                    <span className="text-[10px] text-white/30 font-mono block mt-0.5">
+                      {card.subValue}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════
+                  3. STRATEGY COMPARISON BAR (only when strategy=all)
+                  ════════════════════════════════════════════════════════════ */}
+              {data.strategyComparison && data.strategyComparison.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25, duration: 0.3 }}
+                  className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-4"
+                >
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <BarChart3 className="h-3.5 w-3.5 text-white/25" />
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Strategy Comparison</span>
+                  </div>
+                  <div className="space-y-2">
+                    {data.strategyComparison.map(s => {
+                      const isBest = s.name === bestStrategyName;
+                      const returnPct = s.metrics.totalReturnPct;
+                      const maxAbs = Math.max(
+                        ...data.strategyComparison!.map(x => Math.abs(x.metrics.totalReturnPct)),
+                        1,
+                      );
+                      const barWidth = Math.max(Math.abs(returnPct) / maxAbs * 100, 3);
+                      const barColor = returnPct >= 0 ? UP_COLOR : DOWN_COLOR;
+
+                      return (
+                        <div key={s.name} className="flex items-center gap-3">
+                          <span className={cn(
+                            'text-[10px] w-[100px] shrink-0 truncate font-medium',
+                            isBest ? 'text-white/90' : 'text-white/50',
+                          )}>
+                            {s.label}
+                          </span>
+                          <div className="flex-1 relative h-5 bg-white/[0.02] rounded-sm overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${barWidth}%` }}
+                              transition={{ duration: 0.6, ease: 'easeOut' }}
+                              className={cn(
+                                'absolute top-0 h-full rounded-sm',
+                                returnPct >= 0 ? 'left-0' : 'right-0',
+                              )}
+                              style={{
+                                backgroundColor: barColor,
+                                opacity: isBest ? 0.8 : 0.4,
+                              }}
+                            />
+                            {isBest && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.8 }}
+                                className="absolute top-0 h-full w-full border border-[#FFD700]/30 rounded-sm"
+                              />
+                            )}
+                          </div>
+                          <span
+                            className="text-[10px] font-mono font-bold w-[65px] text-right shrink-0"
+                            style={{ color: barColor }}
+                          >
+                            {returnPct >= 0 ? '+' : ''}{toF(returnPct)}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════
+                  4. MARKET REGIME ANALYSIS
+                  ════════════════════════════════════════════════════════════ */}
+              {data.metrics.totalTrades > 0 && data.regimeAnalysis && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.3 }}
+                  className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-4"
+                >
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Activity className="h-3.5 w-3.5 text-white/25" />
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Market Regime Analysis</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <Badge
+                      className="text-[9px] px-2 py-0.5 h-5 font-bold uppercase tracking-wider"
+                      style={{
+                        backgroundColor: `${REGIME_COLORS[data.regimeAnalysis.currentRegime]}15`,
+                        color: REGIME_COLORS[data.regimeAnalysis.currentRegime],
+                        borderColor: `${REGIME_COLORS[data.regimeAnalysis.currentRegime]}30`,
+                        borderWidth: 1,
+                        borderStyle: 'solid',
+                      }}
+                    >
+                      {data.regimeAnalysis.currentRegime}
+                    </Badge>
+                    <span className="text-[10px] text-white/40">{data.regimeAnalysis.regimeDescription}</span>
+                  </div>
+
+                  {/* Recommended Strategy */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="h-3 w-3 text-[#FFD700]/60" />
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Recommended</span>
+                    <Badge
+                      className="text-[9px] px-2 py-0.5 h-5 font-bold"
+                      style={{
+                        backgroundColor: 'rgba(187,134,252,0.12)',
+                        color: PURPLE_COLOR,
+                        borderColor: 'rgba(187,134,252,0.3)',
+                        borderWidth: 1,
+                        borderStyle: 'solid',
+                      }}
+                    >
+                      {STRATEGY_LABELS[data.regimeAnalysis.recommendedStrategy] || data.regimeAnalysis.recommendedStrategy}
+                    </Badge>
+                  </div>
+
+                  {/* Regime cards */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['trending', 'ranging', 'volatile'] as const).map(regime => {
+                      const stats = data.regimeAnalysis[regime];
+                      const color = REGIME_COLORS[regime];
+                      return (
+                        <div
+                          key={regime}
+                          className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-2.5"
+                        >
+                          <span className="text-[9px] uppercase tracking-wider font-bold block mb-1.5" style={{ color: `${color}80` }}>
+                            {regime}
+                          </span>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-[8px] text-white/25">Time</span>
+                              <span className="text-[10px] text-white/60 font-mono">{toF(stats.pct, 0)}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[8px] text-white/25">Avg Ret</span>
+                              <span className="text-[10px] font-mono" style={{ color: stats.avgReturnPct >= 0 ? UP_COLOR : DOWN_COLOR }}>
+                                {stats.avgReturnPct >= 0 ? '+' : ''}{toF(stats.avgReturnPct)}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[8px] text-white/25">Win Rate</span>
+                              <span className="text-[10px] text-white/60 font-mono">{toF(stats.winRate, 0)}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Insight */}
+                  <div className="mt-3 px-2.5 py-2 rounded-md bg-white/[0.02] border border-white/[0.03]">
+                    <p className="text-[10px] text-white/35 leading-relaxed">
+                      In uncertain/ranging markets, <span className="text-[#FFD700]/70 font-semibold">Conservative</span> strategy has higher win rate because it avoids low-confluence trades. In trending markets, <span style={{ color: UP_COLOR }} className="font-semibold">Trend Following</span> captures directional momentum.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════
+                  4.5 DATA QUALITY & WARNINGS
+                  ════════════════════════════════════════════════════════════ */}
+              {data.dataQuality && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05, duration: 0.3 }}
+                  className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-4"
+                >
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Database className="h-3.5 w-3.5 text-white/25" />
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Data Quality</span>
+                    <Badge
+                      className={cn(
+                        'text-[8px] px-2 py-0 h-4 font-bold ml-auto',
+                        data.dataQuality.isMock
+                          ? 'bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/25'
+                          : data.dataQuality.coingeckoFailed
+                            ? 'bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/25'
+                            : 'bg-[#03DAC6]/10 text-[#03DAC6] border border-[#03DAC6]/25',
+                      )}
+                    >
+                      {data.dataQuality.isMock ? '⚠ MOCK' : data.dataQuality.coingeckoFailed ? '⚠ ALT SOURCE' : '✓ LIVE'}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-white/35">
+                    <span>Source: <span className="text-white/50 font-mono capitalize">{data.dataQuality.dataSource}</span></span>
+                    <span>Candles: <span className="text-white/50 font-mono">{data.dataQuality.totalCandles}</span></span>
+                    <span>Range: <span className="text-white/50 font-mono">{data.dataQuality.dateRange.start} → {data.dataQuality.dateRange.end}</span></span>
+                  </div>
+                  {data.dataQuality.isMock && (
+                    <p className="mt-2 text-[9px] text-[#FFD700]/50 leading-relaxed">
+                      ⚠ Simulated mock data — results are for demonstration only and do not reflect real market conditions.
+                    </p>
+                  )}
+                </motion.div>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════
+                  4.6 API WARNINGS
+                  ════════════════════════════════════════════════════════════ */}
+              {data.warnings && data.warnings.length > 0 && (
+                <div className="space-y-2">
+                  {data.warnings.map((warning, wIdx) => (
+                    <motion.div
+                      key={wIdx}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.06, duration: 0.3 }}
+                      className="rounded-lg bg-[#FFD700]/[0.06] border border-[#FFD700]/15 p-3.5"
+                    >
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-[#FFD700] shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-[#FFD700]/70 leading-relaxed">{warning}</p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-                <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
+              )}
+
+              {/* ════════════════════════════════════════════════════════════
+                  5. TRADE LOG (paginated)
+                  ════════════════════════════════════════════════════════════ */}
+              {data.trades.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35, duration: 0.3 }}
+                  className="rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden"
+                >
+                  <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/[0.04]">
+                    <Target className="h-3.5 w-3.5 text-white/25" />
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Trade Log</span>
+                    <Badge variant="outline" className="border-white/[0.06] text-white/25 text-[9px] ml-auto px-1.5 py-0 h-4">
+                      {data.trades.length} trades
+                    </Badge>
+                  </div>
                   <table className="w-full text-left">
                     <thead className="sticky top-0 bg-[#0D0D0D] z-10">
                       <tr className="border-b border-white/[0.04]">
                         <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2">#</th>
                         <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2">Dir</th>
-                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden sm:table-cell">Entry Date</th>
-                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden md:table-cell">Entry Price</th>
-                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden sm:table-cell">Exit Date</th>
-                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden md:table-cell">Exit Price</th>
+                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden sm:table-cell">Entry</th>
+                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden md:table-cell">Exit</th>
                         <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">PnL %</th>
-                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">PnL $</th>
-                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden lg:table-cell">Exit Reason</th>
+                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right hidden sm:table-cell">PnL $</th>
+                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden lg:table-cell">Reason</th>
+                        <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 hidden lg:table-cell text-right">Duration</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {data.trades.map((trade, idx) => {
-                        const pnlColor = trade.pnlPct >= 0 ? UP_COLOR : DOWN_COLOR;
-                        return (
-                          <motion.tr
-                            key={trade.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: idx * 0.015, duration: 0.2 }}
-                            className={cn(
-                              'border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors',
-                              trade.isWin ? 'bg-[#03DAC6]/[0.03]' : 'bg-[#CF6679]/[0.03]',
-                            )}
-                          >
-                            <td className="px-3 py-1.5">
-                              <span className="text-[10px] text-white/30 font-mono">{trade.id}</span>
-                            </td>
-                            <td className="px-3 py-1.5">
-                              <Badge
-                                className="text-[8px] px-1.5 py-0 h-4 font-bold"
-                                style={{
-                                  backgroundColor: trade.direction === 'LONG'
-                                    ? `${UP_COLOR}15`
-                                    : `${DOWN_COLOR}15`,
-                                  color: trade.direction === 'LONG' ? UP_COLOR : DOWN_COLOR,
-                                  borderColor: trade.direction === 'LONG'
-                                    ? `${UP_COLOR}30`
-                                    : `${DOWN_COLOR}30`,
-                                  borderWidth: 1,
-                                  borderStyle: 'solid',
-                                }}
-                              >
-                                {trade.direction}
-                              </Badge>
-                            </td>
-                            <td className="px-3 py-1.5 hidden sm:table-cell">
-                              <span className="text-[10px] text-white/50 font-mono">{fmtDate(trade.entryDate)}</span>
-                            </td>
-                            <td className="px-3 py-1.5 hidden md:table-cell">
-                              <span className="text-[10px] text-white/40 font-mono">{fmtPrice(data.type, trade.entryPrice)}</span>
-                            </td>
-                            <td className="px-3 py-1.5 hidden sm:table-cell">
-                              <span className="text-[10px] text-white/50 font-mono">{fmtDate(trade.exitDate)}</span>
-                            </td>
-                            <td className="px-3 py-1.5 hidden md:table-cell">
-                              <span className="text-[10px] text-white/40 font-mono">{fmtPrice(data.type, trade.exitPrice)}</span>
-                            </td>
-                            <td className="px-3 py-1.5 text-right">
-                              <span className="text-[10px] font-mono font-bold" style={{ color: pnlColor }}>
-                                {trade.pnlPct >= 0 ? '+' : ''}{toF(trade.pnlPct)}%
-                              </span>
-                            </td>
-                            <td className="px-3 py-1.5 text-right">
-                              <span className="text-[10px] font-mono font-bold" style={{ color: pnlColor }}>
-                                {trade.pnlUsd >= 0 ? '+' : ''}{fmtUsd(trade.pnlUsd)}
-                              </span>
-                            </td>
-                            <td className="px-3 py-1.5 hidden lg:table-cell">
-                              <span className="text-[9px] text-white/30 font-mono">
-                                {trade.exitReason.replace(/_/g, ' ')}
-                              </span>
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
+                      {data.trades
+                        .slice((tradePage - 1) * TRADES_PER_PAGE, tradePage * TRADES_PER_PAGE)
+                        .map((trade, idx) => {
+                          const pnlColor = trade.pnlPct >= 0 ? UP_COLOR : DOWN_COLOR;
+                          const entryTs = new Date(trade.entryDate + 'T00:00:00Z').getTime();
+                          const exitTs = new Date(trade.exitDate + 'T00:00:00Z').getTime();
+                          const durationDays = Math.round((exitTs - entryTs) / (1000 * 60 * 60 * 24));
+                          return (
+                            <motion.tr
+                              key={trade.id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: idx * 0.015, duration: 0.2 }}
+                              className={cn(
+                                'border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors',
+                                trade.isWin ? 'bg-[#03DAC6]/[0.03]' : 'bg-[#CF6679]/[0.03]',
+                              )}
+                            >
+                              <td className="px-3 py-1.5">
+                                <span className="text-[10px] text-white/30 font-mono">{trade.id}</span>
+                              </td>
+                              <td className="px-3 py-1.5">
+                                <Badge
+                                  className="text-[8px] px-1.5 py-0 h-4 font-bold"
+                                  style={{
+                                    backgroundColor: trade.direction === 'LONG'
+                                      ? `${UP_COLOR}15`
+                                      : `${DOWN_COLOR}15`,
+                                    color: trade.direction === 'LONG' ? UP_COLOR : DOWN_COLOR,
+                                    borderColor: trade.direction === 'LONG'
+                                      ? `${UP_COLOR}30`
+                                      : `${DOWN_COLOR}30`,
+                                    borderWidth: 1,
+                                    borderStyle: 'solid',
+                                  }}
+                                >
+                                  {trade.direction}
+                                </Badge>
+                              </td>
+                              <td className="px-3 py-1.5 hidden sm:table-cell">
+                                <div className="flex flex-col gap-0">
+                                  <span className="text-[10px] text-white/50 font-mono">{fmtPrice(data.type, trade.entryPrice)}</span>
+                                  <span className="text-[8px] text-white/25 font-mono">{fmtDate(trade.entryDate)}</span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-1.5 hidden md:table-cell">
+                                <div className="flex flex-col gap-0">
+                                  <span className="text-[10px] text-white/50 font-mono">{fmtPrice(data.type, trade.exitPrice)}</span>
+                                  <span className="text-[8px] text-white/25 font-mono">{fmtDate(trade.exitDate)}</span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-1.5 text-right">
+                                <span className="text-[10px] font-mono font-bold" style={{ color: pnlColor }}>
+                                  {trade.pnlPct >= 0 ? '+' : ''}{toF(trade.pnlPct)}%
+                                </span>
+                              </td>
+                              <td className="px-3 py-1.5 text-right hidden sm:table-cell">
+                                <span className="text-[10px] font-mono font-bold" style={{ color: pnlColor }}>
+                                  {trade.pnlUsd >= 0 ? '+' : ''}{fmtUsd(trade.pnlUsd)}
+                                </span>
+                              </td>
+                              <td className="px-3 py-1.5 hidden lg:table-cell">
+                                <span className={cn(
+                                  'text-[9px] font-mono',
+                                  trade.exitReason === 'TAKE_PROFIT' ? 'text-[#03DAC6]/60' :
+                                  trade.exitReason === 'STOP_LOSS' ? 'text-[#CF6679]/60' :
+                                  trade.exitReason === 'MARGIN_CALL' ? 'text-[#CF6679] font-bold' : 'text-white/30',
+                                )}>
+                                  {trade.exitReason.replace(/_/g, ' ')}
+                                </span>
+                              </td>
+                              <td className="px-3 py-1.5 hidden lg:table-cell text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Clock className="h-2.5 w-2.5 text-white/20" />
+                                  <span className="text-[9px] text-white/30 font-mono">{durationDays}d</span>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
                     </tbody>
                     {/* Summary row */}
                     {tradeStats && (
                       <tfoot>
                         <tr className="bg-white/[0.03] border-t border-white/[0.06]">
-                          <td colSpan={6} className="px-3 py-2">
+                          <td colSpan={2} className="px-3 py-2">
                             <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold">
-                              Summary: {tradeStats.total} trades
-                            </span>
+                                Total: {tradeStats.total}
+                              </span>
                           </td>
-                          <td className="px-3 py-2 text-right">
-                            <span className="text-[10px] font-mono font-bold text-white/50">
+                          <td colSpan={2} className="px-3 py-2 hidden sm:table-cell">
+                            <span className="text-[10px] font-mono text-white/50">
                               <span style={{ color: UP_COLOR }}>{tradeStats.wins}W</span>
                               {' / '}
                               <span style={{ color: DOWN_COLOR }}>{tradeStats.losses}L</span>
                             </span>
                           </td>
                           <td className="px-3 py-2 text-right">
-                            <span
-                              className="text-[10px] font-mono font-bold"
-                              style={{ color: tradeStats.totalPnl >= 0 ? UP_COLOR : DOWN_COLOR }}
-                            >
+                            <span className="text-[10px] font-mono font-bold" style={{ color: tradeStats.totalPnl >= 0 ? UP_COLOR : DOWN_COLOR }}>
+                              {tradeStats.totalPnl >= 0 ? '+' : ''}{toF(tradeStats.totalPnl / (tradeStats.total || 1))}%
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right hidden sm:table-cell">
+                            <span className="text-[10px] font-mono font-bold" style={{ color: tradeStats.totalPnl >= 0 ? UP_COLOR : DOWN_COLOR }}>
                               {tradeStats.totalPnl >= 0 ? '+' : ''}{fmtUsd(tradeStats.totalPnl)}
                             </span>
                           </td>
-                          <td className="hidden lg:table-cell" />
+                          <td colSpan={2} className="hidden lg:table-cell" />
                         </tr>
                       </tfoot>
                     )}
                   </table>
-                </div>
-              </motion.div>
-            )}
 
-            {/* ════════════════════════════════════════════════════════════
-                6. WEEKLY RETURNS (collapsible)
-                ════════════════════════════════════════════════════════════ */}
-            {data.weeklyData.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.3 }}
-                className="rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden"
-              >
-                <button
-                  onClick={() => setWeeklyOpen(!weeklyOpen)}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-white/[0.02] transition-colors"
-                >
-                  <CalendarDays className="h-3.5 w-3.5 text-white/25" />
-                  <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Weekly Returns</span>
-                  <Badge variant="outline" className="border-white/[0.06] text-white/25 text-[9px] px-1.5 py-0 h-4">
-                    {data.weeklyData.length} weeks
-                  </Badge>
-                  {weeklyOpen ? (
-                    <ChevronUp className="h-3.5 w-3.5 text-white/20 ml-auto" />
-                  ) : (
-                    <ChevronDown className="h-3.5 w-3.5 text-white/20 ml-auto" />
+                  {/* Pagination */}
+                  {data.trades.length > TRADES_PER_PAGE && (
+                    <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/[0.04]">
+                      <span className="text-[9px] text-white/25 font-mono">
+                        {(tradePage - 1) * TRADES_PER_PAGE + 1}–{Math.min(tradePage * TRADES_PER_PAGE, data.trades.length)} of {data.trades.length}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setTradePage(p => Math.max(1, p - 1))}
+                          disabled={tradePage <= 1}
+                          className="flex h-6 w-6 items-center justify-center rounded border border-white/[0.08] text-white/30 hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="h-3 w-3" />
+                        </button>
+                        {Array.from({ length: Math.ceil(data.trades.length / TRADES_PER_PAGE) }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setTradePage(page)}
+                            className={cn(
+                              'flex h-6 min-w-6 items-center justify-center rounded border px-1.5 text-[9px] font-mono transition-colors',
+                              page === tradePage
+                                ? 'bg-[#BB86FC]/15 border-[#BB86FC]/30 text-[#BB86FC]'
+                                : 'border-white/[0.08] text-white/30 hover:bg-white/[0.04]',
+                            )}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setTradePage(p => Math.min(Math.ceil(data.trades.length / TRADES_PER_PAGE), p + 1))}
+                          disabled={tradePage >= Math.ceil(data.trades.length / TRADES_PER_PAGE)}
+                          className="flex h-6 w-6 items-center justify-center rounded border border-white/[0.08] text-white/30 hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </button>
+                </motion.div>
+              )}
 
-                <AnimatePresence>
-                  {weeklyOpen && (
-                    <motion.div
-                      ref={weeklyRef}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="overflow-hidden"
-                    >
-                      {/* Weekly Bar Chart */}
-                      <div className="px-4 pb-3">
-                        <div className="flex items-end gap-1.5 h-32">
-                          {data.weeklyData.map((week) => {
-                            const isPositive = (week.change ?? 0) >= 0;
-                            const barHeight = Math.max(Math.abs(week.change ?? 0) / chartMax * 100, 2);
-                            return (
-                              <div key={week.weekStart} className="flex-1 flex flex-col items-center gap-0.5 group relative min-w-0">
-                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
-                                  <div className="bg-[#0D0D0D] border border-white/10 rounded px-2 py-1 shadow-lg space-y-0.5">
-                                    <div>
-                                      <span className="text-[8px] text-white/30">{fmtDate(week.weekStart)} - {fmtDate(week.weekEnd)}</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-[9px] font-mono" style={{ color: isPositive ? UP_COLOR : DOWN_COLOR }}>
-                                        {isPositive ? '+' : ''}{toF(week.change)}%
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-[8px] text-white/40 font-mono">Close: {fmtPrice(data.type, week.close)}</span>
+              {/* ════════════════════════════════════════════════════════════
+                  6. WEEKLY RETURNS (collapsible)
+                  ════════════════════════════════════════════════════════════ */}
+              {data.weeklyData.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.3 }}
+                  className="rounded-lg bg-white/[0.02] border border-white/[0.04] overflow-hidden"
+                >
+                  <button
+                    onClick={() => setWeeklyOpen(!weeklyOpen)}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5 text-white/25" />
+                    <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">Weekly Returns</span>
+                    <Badge variant="outline" className="border-white/[0.06] text-white/25 text-[9px] px-1.5 py-0 h-4">
+                      {data.weeklyData.length} weeks
+                    </Badge>
+                    {weeklyOpen ? (
+                      <ChevronUp className="h-3.5 w-3.5 text-white/20 ml-auto" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5 text-white/20 ml-auto" />
+                    )}
+                  </button>
+
+                  <AnimatePresence>
+                    {weeklyOpen && (
+                      <motion.div
+                        ref={weeklyRef}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        {/* Weekly Bar Chart */}
+                        <div className="px-4 pb-3">
+                          <div className="flex items-end gap-1.5 h-32">
+                            {data.weeklyData.map((week) => {
+                              const isPositive = week.close >= week.open;
+                              const barHeight = Math.max(Math.abs(week.change ?? 0) / chartMax * 100, 2);
+                              return (
+                                <div key={week.weekStart} className="flex-1 flex flex-col items-center gap-0.5 group relative min-w-0">
+                                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
+                                    <div className="bg-[#0D0D0D] border border-white/10 rounded px-2 py-1 shadow-lg space-y-0.5">
+                                      <div>
+                                        <span className="text-[8px] text-white/30">{fmtDate(week.weekStart)} - {fmtDate(week.weekEnd)}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[9px] font-mono" style={{ color: isPositive ? UP_COLOR : DOWN_COLOR }}>
+                                          {isPositive ? '+' : ''}{toF(week.change)}%
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[8px] text-white/40 font-mono">Close: {fmtPrice(data.type, week.close)}</span>
+                                      </div>
                                     </div>
                                   </div>
+                                  <div
+                                    className="w-full rounded-t-sm transition-all duration-300 min-h-[2px]"
+                                    style={{
+                                      height: `${barHeight}%`,
+                                      backgroundColor: isPositive ? UP_COLOR : DOWN_COLOR,
+                                      opacity: 0.7,
+                                      marginTop: isPositive ? `${100 - barHeight}%` : 0,
+                                    }}
+                                  />
+                                  <span className="text-[7px] text-white/30 font-mono mt-0.5 truncate w-full text-center block">
+                                    {fmtPrice(data.type, week.close)}
+                                  </span>
+                                  <span className="text-[7px] text-white/15 font-mono truncate w-full text-center block">
+                                    {fmtDate(week.weekStart)}
+                                  </span>
                                 </div>
-                                <div
-                                  className="w-full rounded-t-sm transition-all duration-300 min-h-[2px]"
-                                  style={{
-                                    height: `${barHeight}%`,
-                                    backgroundColor: isPositive ? UP_COLOR : DOWN_COLOR,
-                                    opacity: 0.7,
-                                    marginTop: isPositive ? `${100 - barHeight}%` : 0,
-                                  }}
-                                />
-                                <span className="text-[7px] text-white/30 font-mono mt-0.5 truncate w-full text-center block">
-                                  {fmtPrice(data.type, week.close)}
-                                </span>
-                                <span className="text-[7px] text-white/15 font-mono truncate w-full text-center block">
-                                  {fmtDate(week.weekStart)}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="relative h-px mt-0.5">
-                          <div className="absolute left-0 top-0 w-full h-px bg-white/[0.06]" />
-                        </div>
-                      </div>
-
-                      {/* Weekly Table */}
-                      <div className="border-t border-white/[0.04]">
-                        <table className="w-full text-left">
-                          <thead className="sticky top-0 bg-[#0D0D0D] z-10">
-                            <tr className="border-b border-white/[0.04]">
-                              <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2">Week</th>
-                              <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">Open</th>
-                              <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">Close</th>
-                              <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right hidden sm:table-cell">High</th>
-                              <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right hidden sm:table-cell">Low</th>
-                              <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">Change</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {data.weeklyData.map((week) => {
-                              const isPositive = (week.change ?? 0) >= 0;
-                              const changeColor = isPositive ? UP_COLOR : DOWN_COLOR;
-                              return (
-                                <tr key={week.weekStart} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors">
-                                  <td className="px-3 py-2">
-                                    <span className="text-[10px] text-white/50 font-mono">
-                                      {fmtDate(week.weekStart)} – {fmtDate(week.weekEnd)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-right">
-                                    <span className="text-[10px] text-white/40 font-mono">
-                                      {fmtPrice(data.type, week.open)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-right">
-                                    <span className="text-[10px] text-white/60 font-mono">
-                                      {fmtPrice(data.type, week.close)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-right hidden sm:table-cell">
-                                    <span className="text-[10px] text-white/30 font-mono">
-                                      {fmtPrice(data.type, week.high)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-right hidden sm:table-cell">
-                                    <span className="text-[10px] text-white/30 font-mono">
-                                      {fmtPrice(data.type, week.low)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                      {isPositive ? (
-                                        <TrendingUp className="h-3 w-3" style={{ color: changeColor }} />
-                                      ) : (
-                                        <TrendingDown className="h-3 w-3" style={{ color: changeColor }} />
-                                      )}
-                                      <span className="text-[10px] font-mono font-bold" style={{ color: changeColor }}>
-                                        {isPositive ? '+' : ''}{toF(week.change)}%
-                                      </span>
-                                    </div>
-                                  </td>
-                                </tr>
                               );
                             })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </>
-        )}
-      </CardContent>
+                          </div>
+                          <div className="relative h-px mt-0.5">
+                            <div className="absolute left-0 top-0 w-full h-px bg-white/[0.06]" />
+                          </div>
+                        </div>
+
+                        {/* Weekly Table */}
+                        <div className="border-t border-white/[0.04]">
+                          <table className="w-full text-left">
+                            <thead className="sticky top-0 bg-[#0D0D0D] z-10">
+                              <tr className="border-b border-white/[0.04]">
+                                <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2">Week</th>
+                                <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">Open</th>
+                                <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">Close</th>
+                                <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right hidden sm:table-cell">High</th>
+                                <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right hidden sm:table-cell">Low</th>
+                                <th className="text-[8px] text-white/25 uppercase tracking-wider font-bold px-3 py-2 text-right">Change</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {data.weeklyData.map((week) => {
+                                const isPositive = week.close >= week.open;
+                                const changeColor = isPositive ? UP_COLOR : DOWN_COLOR;
+                                return (
+                                  <tr key={week.weekStart} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors">
+                                    <td className="px-3 py-2">
+                                      <span className="text-[10px] text-white/50 font-mono">
+                                        {fmtDate(week.weekStart)} – {fmtDate(week.weekEnd)}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2 text-right">
+                                      <span className="text-[10px] text-white/40 font-mono">
+                                        {fmtPrice(data.type, week.open)}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2 text-right">
+                                      <span className="text-[10px] text-white/60 font-mono">
+                                        {fmtPrice(data.type, week.close)}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2 text-right hidden sm:table-cell">
+                                      <span className="text-[10px] text-white/30 font-mono">
+                                        {fmtPrice(data.type, week.high)}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2 text-right hidden sm:table-cell">
+                                      <span className="text-[10px] text-white/30 font-mono">
+                                        {fmtPrice(data.type, week.low)}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2 text-right">
+                                      <div className="flex items-center justify-end gap-1">
+                                        {isPositive ? (
+                                          <TrendingUp className="h-3 w-3" style={{ color: changeColor }} />
+                                        ) : (
+                                          <TrendingDown className="h-3 w-3" style={{ color: changeColor }} />
+                                        )}
+                                        <span className="text-[10px] font-mono font-bold" style={{ color: changeColor }}>
+                                          {isPositive ? '+' : ''}{toF(week.change)}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+
+              {/* ── Disclaimer Footer ── */}
+              <div className="pt-2 pb-1 border-t border-white/[0.04]">
+                <p className="text-[9px] text-white/20 text-center leading-relaxed">
+                  Ini adalah simulasi berdasarkan data historis. Hasil tidak menjamin performa di masa depan.
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -1242,8 +1462,6 @@ function EquityCurveChart({
 
         {/* Starting balance dashed line */}
         {(() => {
-          const y = padding.t + (1 - (initialBalance - (points ? (yLabels[0]?.val ?? 0) : initialBalance)) / ((points ? (yLabels[0]?.val ?? 0) : initialBalance) === initialBalance ? 1 : 1)) * (points ? 120 : 1);
-          // Simplified: find Y for initialBalance
           const minB = points ? yLabels[yLabels.length - 1]?.val ?? initialBalance : initialBalance;
           const maxB = points ? yLabels[0]?.val ?? initialBalance : initialBalance;
           const range = maxB - minB || 1;

@@ -305,14 +305,19 @@ export function LandingPage() {
   const [platformConfig, setPlatformConfig] = useState<{
     basicPlanPrice: string;
     proPlanPrice: string;
+    ultimatePlanPrice: string;
     basicPlanFeatures: string[] | null;
     proPlanFeatures: string[] | null;
+    ultimatePlanFeatures: string[] | null;
     basicPlanDiscount: string | null;
     proPlanDiscount: string | null;
+    ultimatePlanDiscount: string | null;
     basicPlanDiscountLabel: string | null;
     proPlanDiscountLabel: string | null;
+    ultimatePlanDiscountLabel: string | null;
     basicPurchaseUrl: string | null;
     proPurchaseUrl: string | null;
+    ultimatePurchaseUrl: string | null;
     trialEnabled: boolean;
     trialDurationDays: number;
     whatsappNumber: string | null;
@@ -340,8 +345,10 @@ export function LandingPage() {
           // Safely parse JSON fields with try-catch to prevent crashes from malformed data
           let basicPlanFeatures: string[] | null = null;
           let proPlanFeatures: string[] | null = null;
+          let ultimatePlanFeatures: string[] | null = null;
           try { basicPlanFeatures = data.basicPlanFeatures ? JSON.parse(data.basicPlanFeatures) : null; } catch { basicPlanFeatures = null; }
           try { proPlanFeatures = data.proPlanFeatures ? JSON.parse(data.proPlanFeatures) : null; } catch { proPlanFeatures = null; }
+          try { ultimatePlanFeatures = data.ultimatePlanFeatures ? JSON.parse(data.ultimatePlanFeatures) : null; } catch { ultimatePlanFeatures = null; }
 
           // Validate purchase URLs — only allow http(s) schemes to prevent javascript: XSS
           const safeUrl = (url: string | null | undefined): string | null => {
@@ -353,16 +360,20 @@ export function LandingPage() {
             ...data,
             basicPlanFeatures,
             proPlanFeatures,
+            ultimatePlanFeatures,
             basicPlanDiscount: data.basicPlanDiscount || null,
             proPlanDiscount: data.proPlanDiscount || null,
+            ultimatePlanDiscount: data.ultimatePlanDiscount || null,
             basicPlanDiscountLabel: data.basicPlanDiscountLabel || null,
             proPlanDiscountLabel: data.proPlanDiscountLabel || null,
+            ultimatePlanDiscountLabel: data.ultimatePlanDiscountLabel || null,
             basicPurchaseUrl: safeUrl(data.basicPurchaseUrl),
             proPurchaseUrl: safeUrl(data.proPurchaseUrl),
+            ultimatePurchaseUrl: safeUrl(data.ultimatePurchaseUrl),
             whatsappNumber: data.whatsappNumber || null,
             registrationOpen: data.registrationOpen ?? true,
             registrationMessage: data.registrationMessage || null,
-            availablePlans: Array.isArray(data.availablePlans) ? data.availablePlans : ['basic', 'pro'],
+            availablePlans: Array.isArray(data.availablePlans) ? data.availablePlans : ['basic', 'pro', 'ultimate'],
           });
         }
       })
@@ -456,6 +467,27 @@ export function LandingPage() {
         t('landing.proF4'),
         t('landing.proF5'),
         t('landing.proF6'),
+      ],
+    },
+    {
+      id: 'ultimate',
+      name: t('landing.ultimateName'),
+      price: platformConfig?.ultimatePlanPrice || t('landing.ultimatePrice'),
+      originalPrice: t('landing.ultimateOriginalPrice'),
+      period: '',
+      description: t('landing.ultimateDesc'),
+      highlighted: false,
+      badge: t('landing.ultimateBadge'),
+      discount: platformConfig?.ultimatePlanDiscount || null,
+      discountLabel: platformConfig?.ultimatePlanDiscountLabel || null,
+      purchaseUrl: platformConfig?.ultimatePurchaseUrl || null,
+      features: platformConfig?.ultimatePlanFeatures || [
+        t('landing.ultimateF1'),
+        t('landing.ultimateF2'),
+        t('landing.ultimateF3'),
+        t('landing.ultimateF4'),
+        t('landing.ultimateF5'),
+        t('landing.ultimateF6'),
       ],
     },
   ];
@@ -982,7 +1014,7 @@ export function LandingPage() {
             </FadeUp>
           )}
 
-          <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 items-stretch">
+          <div className={`space-y-4 ${plans.length >= 3 ? 'sm:space-y-0 sm:grid sm:grid-cols-3' : 'sm:space-y-0 sm:grid sm:grid-cols-2'} sm:gap-6 items-stretch`}>
             {plans.map((plan, i) => (
               <FadeUp key={plan.name} delay={i * 120}>
                 <div

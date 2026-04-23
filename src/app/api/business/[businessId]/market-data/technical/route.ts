@@ -95,6 +95,8 @@ function computeRSI(closes: number[], period: number = 14): number {
   const avgGain = gains / period;
   const avgLoss = losses / period;
 
+  // Guard: if both avgGain and avgLoss are 0, return 50 (neutral)
+  if (avgGain === 0 && avgLoss === 0) return 50;
   if (avgLoss === 0) return 100;
   const rs = avgGain / avgLoss;
   return 100 - (100 / (1 + rs));
@@ -1239,6 +1241,32 @@ Hanya response JSON saja.`;
 
     const parsed = JSON.parse(jsonMatch[0]) as AIAnalysisResult;
 
+    // Validate price forecasts are within reasonable range (±25% of current price)
+    if (parsed.priceForecast) {
+      const minForecast = price * 0.75;
+      const maxForecast = price * 1.25;
+      if (parsed.priceForecast.shortTerm) {
+        parsed.priceForecast.shortTerm.target = Math.max(minForecast, Math.min(maxForecast, Number(parsed.priceForecast.shortTerm.target) || price));
+      }
+      if (parsed.priceForecast.midTerm) {
+        parsed.priceForecast.midTerm.target = Math.max(minForecast, Math.min(maxForecast, Number(parsed.priceForecast.midTerm.target) || price));
+      }
+      if (parsed.priceForecast.longTerm) {
+        parsed.priceForecast.longTerm.target = Math.max(minForecast, Math.min(maxForecast, Number(parsed.priceForecast.longTerm.target) || price));
+      }
+    }
+
+    // Validate trade zone prices are within reasonable range
+    if (parsed.entryPrice > 0) {
+      parsed.entryPrice = Math.max(price * 0.5, Math.min(price * 1.5, parsed.entryPrice));
+    }
+    if (parsed.stopLossPrice > 0 && parsed.entryPrice > 0) {
+      parsed.stopLossPrice = Math.max(price * 0.3, Math.min(price * 1.7, parsed.stopLossPrice));
+    }
+    if (parsed.takeProfitPrice > 0 && parsed.entryPrice > 0) {
+      parsed.takeProfitPrice = Math.max(price * 0.3, Math.min(price * 1.7, parsed.takeProfitPrice));
+    }
+
     // Validate and sanitize
     const validSignals = ['STRONG_BUY', 'BUY', 'NEUTRAL', 'SELL', 'STRONG_SELL'];
     if (!validSignals.includes(parsed.overallSignal)) parsed.overallSignal = 'NEUTRAL';
@@ -1364,7 +1392,7 @@ async function fetchNewsConfirmation(
     return {
       confirmed: false,
       recentEvents: [],
-      sentiment: 'neutral',
+      sentiment: 'error',
       source: 'Gagal mengambil berita',
     };
   }

@@ -242,7 +242,7 @@ Respond ONLY with valid JSON:
       {
         error: 'Failed to fetch news data',
         news: [],
-        sentiment: 'neutral',
+        sentiment: 'error',
         impacts: [],
         timestamp: new Date().toISOString(),
       },

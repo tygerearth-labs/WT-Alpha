@@ -11,6 +11,7 @@ const JSON_FIELDS = [
   'availablePlans',
   'basicPlanFeatures',
   'proPlanFeatures',
+  'ultimatePlanFeatures',
 ] as const;
 
 function validateJsonField(value: unknown, fieldName: string): string | null {
@@ -58,10 +59,10 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const {
       defaultPlan, defaultMaxCategories, defaultMaxSavings, autoSuspendExpired,
-      basicPlanFeatures, proPlanFeatures, basicPlanPrice, proPlanPrice,
-      basicPlanDiscount, proPlanDiscount,
-      basicPlanDiscountLabel, proPlanDiscountLabel,
-      basicPurchaseUrl, proPurchaseUrl,
+      basicPlanFeatures, proPlanFeatures, ultimatePlanFeatures, basicPlanPrice, proPlanPrice, ultimatePlanPrice,
+      basicPlanDiscount, proPlanDiscount, ultimatePlanDiscount,
+      basicPlanDiscountLabel, proPlanDiscountLabel, ultimatePlanDiscountLabel,
+      basicPurchaseUrl, proPurchaseUrl, ultimatePurchaseUrl,
       trialEnabled, trialDurationDays, trialPlan,
       whatsappNumber, registrationOpen, registrationMessage, availablePlans,
       sectionVisibility, exportEnabled,
@@ -74,6 +75,7 @@ export async function PUT(request: NextRequest) {
       availablePlans,
       basicPlanFeatures,
       proPlanFeatures,
+      ultimatePlanFeatures,
     };
 
     for (const fieldName of JSON_FIELDS) {
@@ -96,12 +98,17 @@ export async function PUT(request: NextRequest) {
         proPlanFeatures: proPlanFeatures ?? null,
         basicPlanPrice: basicPlanPrice ?? 'Gratis',
         proPlanPrice: proPlanPrice ?? 'Rp 99.000',
+        ultimatePlanPrice: ultimatePlanPrice ?? 'Rp 199.000',
+        ultimatePlanFeatures: ultimatePlanFeatures ?? null,
         basicPlanDiscount: basicPlanDiscount ?? null,
         proPlanDiscount: proPlanDiscount ?? null,
+        ultimatePlanDiscount: ultimatePlanDiscount ?? null,
         basicPlanDiscountLabel: basicPlanDiscountLabel ?? null,
         proPlanDiscountLabel: proPlanDiscountLabel ?? null,
+        ultimatePlanDiscountLabel: ultimatePlanDiscountLabel ?? null,
         basicPurchaseUrl: basicPurchaseUrl ?? null,
         proPurchaseUrl: proPurchaseUrl ?? null,
+        ultimatePurchaseUrl: ultimatePurchaseUrl ?? null,
         trialEnabled: trialEnabled ?? true,
         trialDurationDays: trialDurationDays ?? 30,
         trialPlan: trialPlan ?? 'basic',
@@ -121,12 +128,17 @@ export async function PUT(request: NextRequest) {
         ...(proPlanFeatures !== undefined && { proPlanFeatures }),
         ...(basicPlanPrice !== undefined && { basicPlanPrice }),
         ...(proPlanPrice !== undefined && { proPlanPrice }),
+        ...(ultimatePlanPrice !== undefined && { ultimatePlanPrice }),
+        ...(ultimatePlanFeatures !== undefined && { ultimatePlanFeatures }),
         ...(basicPlanDiscount !== undefined && { basicPlanDiscount }),
         ...(proPlanDiscount !== undefined && { proPlanDiscount }),
+        ...(ultimatePlanDiscount !== undefined && { ultimatePlanDiscount }),
         ...(basicPlanDiscountLabel !== undefined && { basicPlanDiscountLabel }),
         ...(proPlanDiscountLabel !== undefined && { proPlanDiscountLabel }),
+        ...(ultimatePlanDiscountLabel !== undefined && { ultimatePlanDiscountLabel }),
         ...(basicPurchaseUrl !== undefined && { basicPurchaseUrl }),
         ...(proPurchaseUrl !== undefined && { proPurchaseUrl }),
+        ...(ultimatePurchaseUrl !== undefined && { ultimatePurchaseUrl }),
         ...(trialEnabled !== undefined && { trialEnabled }),
         ...(trialDurationDays !== undefined && { trialDurationDays }),
         ...(trialPlan !== undefined && { trialPlan }),
@@ -179,8 +191,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { plan } = body;
 
-    if (!plan || !['basic', 'pro'].includes(plan)) {
-      return NextResponse.json({ error: 'Plan is required (basic or pro)' }, { status: 400 });
+    if (!plan || !['basic', 'pro', 'ultimate'].includes(plan)) {
+      return NextResponse.json({ error: 'Plan is required (basic, pro, or ultimate)' }, { status: 400 });
     }
 
     const config = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
@@ -188,7 +200,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Platform config not found' }, { status: 404 });
     }
 
-    const multiplier = plan === 'pro' ? 5 : 1;
+    const multiplier = plan === 'ultimate' ? 10 : plan === 'pro' ? 5 : 1;
     const result = await db.user.updateMany({
       where: { plan, status: 'active' },
       data: {
