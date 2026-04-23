@@ -109,9 +109,18 @@ export async function POST(
     const body = await request.json();
     const { type, counterpart, amount, dueDate, description, status } = body;
 
-    if (!type || !counterpart || !amount) {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+    if (!type || !counterpart || amount === undefined || amount === null) {
       return NextResponse.json(
         { error: 'Type, counterpart, and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Amount must be a positive number' },
         { status: 400 }
       );
     }
@@ -122,8 +131,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const numAmount = parseFloat(amount) || 0;
 
     const debt = await db.businessDebt.create({
       data: {

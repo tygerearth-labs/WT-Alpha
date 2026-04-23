@@ -34,6 +34,20 @@ export async function GET(request: NextRequest) {
     const filterYear = yearParam ? parseInt(yearParam) : currentYear;
     const filterMonth = monthParam ? parseInt(monthParam) : currentMonth;
 
+    // Validate month and year params
+    if (isNaN(filterMonth) || filterMonth < 1 || filterMonth > 12) {
+      return NextResponse.json(
+        { error: 'Month must be between 1 and 12' },
+        { status: 400 }
+      );
+    }
+    if (isNaN(filterYear) || filterYear < 2000 || filterYear > 2100) {
+      return NextResponse.json(
+        { error: 'Invalid year' },
+        { status: 400 }
+      );
+    }
+
     const { start: filterStart, end: filterEnd } = getMonthBounds(filterYear, filterMonth);
 
     // Previous month bounds

@@ -47,10 +47,34 @@ export async function PUT(
       }
     }
 
+    // Validate type if being updated
+    if (type !== undefined) {
+      if (!['income', 'expense'].includes(type)) {
+        return NextResponse.json(
+          { error: 'Type must be income or expense' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate amount if being updated
+    if (amount !== undefined) {
+      const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+      if (isNaN(numAmount) || numAmount <= 0) {
+        return NextResponse.json(
+          { error: 'Amount must be a positive number' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Build update data - only include fields that are provided
     const updateData: Record<string, unknown> = {};
     if (type !== undefined) updateData.type = type;
-    if (amount !== undefined) updateData.amount = amount;
+    if (amount !== undefined) {
+      const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+      updateData.amount = numAmount;
+    }
     if (description !== undefined) updateData.description = description;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (date !== undefined) updateData.date = date ? new Date(date) : undefined;

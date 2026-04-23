@@ -47,6 +47,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, TrendingUp, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import ProductList from './ProductList';
 
 interface Customer {
   id: string;
@@ -75,6 +76,7 @@ export default function BusinessSales() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
   const { formatAmount } = useCurrencyFormat();
+  const [activeTab, setActiveTab] = useState<'sales' | 'products'>('sales');
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,12 +117,14 @@ export default function BusinessSales() {
   }, [businessId]);
 
   useEffect(() => {
-    if (businessId) {
+    if (businessId && activeTab === 'sales') {
       fetchSales();
+    } else if (businessId) {
+      setLoading(false);
     } else {
       setLoading(false);
     }
-  }, [businessId, fetchSales]);
+  }, [businessId, fetchSales, activeTab]);
 
   const openCreateDialog = () => {
     setEditingSale(null);
@@ -212,241 +216,278 @@ export default function BusinessSales() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-[#03DAC6]" />
-            {t('biz.penjualan')}
-          </h2>
-          <p className="text-sm text-white/50 mt-1">
-            {t('biz.totalPenjualan')}: <span className="text-[#03DAC6] font-semibold">{formatAmount(total)}</span>
-          </p>
-        </div>
-        <Button onClick={openCreateDialog} size="sm" className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]">
-          <Plus className="h-4 w-4 mr-1" />
-          {t('biz.addSale')}
+      {/* Tab Toggle */}
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setActiveTab('sales')}
+          className={`rounded-lg px-4 ${
+            activeTab === 'sales'
+              ? 'bg-[#BB86FC]/20 text-[#BB86FC] hover:bg-[#BB86FC]/30'
+              : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+          }`}
+        >
+          <ShoppingBag className="h-4 w-4 mr-1.5" />
+          {t('biz.penjualan')}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setActiveTab('products')}
+          className={`rounded-lg px-4 ${
+            activeTab === 'products'
+              ? 'bg-[#BB86FC]/20 text-[#BB86FC] hover:bg-[#BB86FC]/30'
+              : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+          }`}
+        >
+          <TrendingUp className="h-4 w-4 mr-1.5" />
+          {t('biz.products')}
         </Button>
       </div>
 
-      {/* Search */}
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('common.search') + '...'}
-        className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 max-w-sm"
-      />
+      {/* Products Tab */}
+      {activeTab === 'products' ? (
+        <ProductList />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5 text-[#03DAC6]" />
+                {t('biz.penjualan')}
+              </h2>
+              <p className="text-sm text-white/50 mt-1">
+                {t('biz.totalPenjualan')}: <span className="text-[#03DAC6] font-semibold">{formatAmount(total)}</span>
+              </p>
+            </div>
+            <Button onClick={openCreateDialog} size="sm" className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]">
+              <Plus className="h-4 w-4 mr-1" />
+              {t('biz.addSale')}
+            </Button>
+          </div>
 
-      {/* Table */}
-      <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-3 p-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
-              ))}
-            </div>
-          ) : filteredSales.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-white/40">
-              <TrendingUp className="h-10 w-10 mb-2 opacity-40" />
-              <p className="text-sm">{t('biz.noBizData')}</p>
-            </div>
-          ) : (
-            <div className="max-h-[500px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/[0.06] hover:bg-transparent">
-                    <TableHead className="text-white/50 text-xs">{t('biz.cashDate')}</TableHead>
-                    <TableHead className="text-white/50 text-xs">{t('biz.saleDescription')}</TableHead>
-                    <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.saleCustomer')}</TableHead>
-                    <TableHead className="text-white/50 text-xs hidden md:table-cell">{t('biz.salePaymentMethod')}</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">{t('biz.saleAmount')}</TableHead>
-                    <TableHead className="text-white/50 text-xs w-24" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSales.map((sale) => (
-                    <TableRow key={sale.id} className="border-white/[0.04] hover:bg-white/[0.02]">
-                      <TableCell className="text-white/70 text-xs py-3">
-                        {new Date(sale.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-white text-xs py-3 font-medium max-w-[180px] truncate">
-                        {sale.description}
-                      </TableCell>
-                      <TableCell className="py-3 hidden sm:table-cell">
-                        <span className="text-white/60 text-xs">{sale.customer?.name || '-'}</span>
-                      </TableCell>
-                      <TableCell className="py-3 hidden md:table-cell">
-                        {sale.paymentMethod && (
-                          <Badge variant="outline" className="text-xs font-normal border-0 bg-[#BB86FC]/20 text-[#BB86FC]">
-                            {PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod)
-                              ? t(PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod)!.labelKey)
-                              : sale.paymentMethod}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-right font-medium py-3 text-[#03DAC6]">
-                        +{formatAmount(sale.amount)}
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
-                          onClick={() => openEditDialog(sale)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
-                          onClick={() => setDeleteId(sale.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+          {/* Search */}
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('common.search') + '...'}
+            className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 max-w-sm"
+          />
+
+          {/* Table */}
+          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-3 p-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              ) : filteredSales.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-white/40">
+                  <TrendingUp className="h-10 w-10 mb-2 opacity-40" />
+                  <p className="text-sm">{t('biz.noBizData')}</p>
+                </div>
+              ) : (
+                <div className="max-h-[500px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/[0.06] hover:bg-transparent">
+                        <TableHead className="text-white/50 text-xs">{t('biz.cashDate')}</TableHead>
+                        <TableHead className="text-white/50 text-xs">{t('biz.saleDescription')}</TableHead>
+                        <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.saleCustomer')}</TableHead>
+                        <TableHead className="text-white/50 text-xs hidden md:table-cell">{t('biz.salePaymentMethod')}</TableHead>
+                        <TableHead className="text-white/50 text-xs text-right">{t('biz.saleAmount')}</TableHead>
+                        <TableHead className="text-white/50 text-xs w-24" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSales.map((sale) => (
+                        <TableRow key={sale.id} className="border-white/[0.04] hover:bg-white/[0.02]">
+                          <TableCell className="text-white/70 text-xs py-3">
+                            {new Date(sale.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-white text-xs py-3 font-medium max-w-[180px] truncate">
+                            {sale.description}
+                          </TableCell>
+                          <TableCell className="py-3 hidden sm:table-cell">
+                            <span className="text-white/60 text-xs">{sale.customer?.name || '-'}</span>
+                          </TableCell>
+                          <TableCell className="py-3 hidden md:table-cell">
+                            {sale.paymentMethod && (
+                              <Badge variant="outline" className="text-xs font-normal border-0 bg-[#BB86FC]/20 text-[#BB86FC]">
+                                {PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod)
+                                  ? t(PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod)!.labelKey)
+                                  : sale.paymentMethod}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-medium py-3 text-[#03DAC6]">
+                            +{formatAmount(sale.amount)}
+                          </TableCell>
+                          <TableCell className="py-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
+                              onClick={() => openEditDialog(sale)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
+                              onClick={() => setDeleteId(sale.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              {editingSale ? t('common.edit') : t('biz.addSale')}
-            </DialogTitle>
-            <DialogDescription className="text-white/60">
-              {t('biz.saleDescription')}
-            </DialogDescription>
-          </DialogHeader>
+          {/* Add/Edit Dialog */}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle className="text-white">
+                  {editingSale ? t('common.edit') : t('biz.addSale')}
+                </DialogTitle>
+                <DialogDescription className="text-white/60">
+                  {t('biz.saleDescription')}
+                </DialogDescription>
+              </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.saleDescription')} *</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t('biz.saleDescription')}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-              />
-            </div>
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('biz.saleDescription')} *</Label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder={t('biz.saleDescription')}
+                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.saleAmount')} *</Label>
-              <Input
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                placeholder="0"
-                min="0"
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('biz.saleAmount')} *</Label>
+                  <Input
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.saleCustomer')}</Label>
-              <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
-                <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
-                  <SelectValue placeholder={t('biz.saleCustomer')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id} className="text-white">
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('biz.saleCustomer')}</Label>
+                  <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
+                    <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                      <SelectValue placeholder={t('biz.saleCustomer')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((c) => (
+                        <SelectItem key={c.id} value={c.id} className="text-white">
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.saleDate')}</Label>
-                <Input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="bg-white/[0.05] border-white/[0.1] text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.salePaymentMethod')}</Label>
-                <Select value={formData.paymentMethod} onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}>
-                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_METHODS.map((m) => (
-                      <SelectItem key={m.value} value={m.value} className="text-white">
-                        {t(m.labelKey)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-white/80">{t('biz.saleDate')}</Label>
+                    <Input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="bg-white/[0.05] border-white/[0.1] text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/80">{t('biz.salePaymentMethod')}</Label>
+                    <Select value={formData.paymentMethod} onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}>
+                      <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_METHODS.map((m) => (
+                          <SelectItem key={m.value} value={m.value} className="text-white">
+                            {t(m.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.customerNotes')}</Label>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder={t('biz.customerNotes')}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px]"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('biz.customerNotes')}</Label>
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder={t('biz.customerNotes')}
+                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px]"
+                  />
+                </div>
 
-            <DialogFooter className="gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-                className="border-white/[0.1] text-white hover:bg-white/10"
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving || !formData.description || !formData.amount}
-                className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
-              >
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {t('common.save')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+                <DialogFooter className="gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
+                    className="border-white/[0.1] text-white hover:bg-white/10"
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={saving || !formData.description || !formData.amount}
+                    className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
+                  >
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t('common.save')}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
-            <AlertDialogDescription className="text-white/60">
-              {t('kas.deleteDesc')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600 text-white border-0"
-            >
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          {/* Delete Confirmation */}
+          <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+            <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
+                <AlertDialogDescription className="text-white/60">
+                  {t('kas.deleteDesc')}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
+                  {t('common.cancel')}
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-red-500 hover:bg-red-600 text-white border-0"
+                >
+                  {t('common.delete')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </div>
   );
 }

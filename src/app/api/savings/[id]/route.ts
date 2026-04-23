@@ -29,6 +29,46 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
+    // Validate numeric fields
+    const numTargetAmount = typeof targetAmount === 'string' ? parseFloat(targetAmount) : targetAmount;
+    if (isNaN(numTargetAmount) || numTargetAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Target amount must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    const validDate = new Date(targetDate);
+    if (isNaN(validDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid target date' },
+        { status: 400 }
+      );
+    }
+
+    const numInitial = initialInvestment != null ? parseFloat(String(initialInvestment)) : 0;
+    const numMonthly = monthlyContribution != null ? parseFloat(String(monthlyContribution)) : 0;
+    const numAllocPct = allocationPercentage != null ? parseFloat(String(allocationPercentage)) : 0;
+
+    if (isNaN(numInitial) || numInitial < 0) {
+      return NextResponse.json(
+        { error: 'Initial investment must be a non-negative number' },
+        { status: 400 }
+      );
+    }
+    if (isNaN(numMonthly) || numMonthly < 0) {
+      return NextResponse.json(
+        { error: 'Monthly contribution must be a non-negative number' },
+        { status: 400 }
+      );
+    }
+    if (isNaN(numAllocPct) || numAllocPct < 0 || numAllocPct > 100) {
+      return NextResponse.json(
+        { error: 'Allocation percentage must be between 0 and 100' },
+        { status: 400 }
+      );
+    }
+
     // Verify target belongs to user
     const existingTarget = await db.savingsTarget.findFirst({
       where: { id, userId },
@@ -45,11 +85,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       data: {
         name,
-        targetAmount,
-        targetDate: new Date(targetDate),
-        initialInvestment: initialInvestment || 0,
-        monthlyContribution: monthlyContribution || 0,
-        allocationPercentage: allocationPercentage || 0,
+        targetAmount: numTargetAmount,
+        targetDate: validDate,
+        initialInvestment: numInitial,
+        monthlyContribution: numMonthly,
+        allocationPercentage: numAllocPct,
         isAllocated: isAllocated !== undefined ? isAllocated : existingTarget.isAllocated,
       },
     });

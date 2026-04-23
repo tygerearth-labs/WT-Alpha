@@ -36,6 +36,13 @@ export async function GET(
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50'), 100);
 
+    if (isNaN(page) || page < 1 || isNaN(pageSize) || pageSize < 1) {
+      return NextResponse.json(
+        { error: 'Invalid pagination parameters' },
+        { status: 400 }
+      );
+    }
+
     const whereClause: Record<string, unknown> = { businessId };
     if (type) whereClause.type = type;
     if (category) whereClause.category = category;
@@ -95,9 +102,18 @@ export async function POST(
     const body = await request.json();
     const { type, amount, description, category, date, referenceId, notes } = body;
 
-    if (!type || !amount || !description) {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+    if (!type || amount === undefined || amount === null || !description) {
       return NextResponse.json(
         { error: 'Type, amount, and description are required' },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Amount must be a positive number' },
         { status: 400 }
       );
     }
@@ -113,7 +129,7 @@ export async function POST(
       data: {
         businessId,
         type,
-        amount: parseFloat(amount) || 0,
+        amount: numAmount,
         description,
         category,
         date: date ? new Date(date) : new Date(),

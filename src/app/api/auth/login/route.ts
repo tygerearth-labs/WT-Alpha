@@ -31,6 +31,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure password is a string (bcrypt.compare requires strings)
+    const passwordStr = typeof password === 'string' ? password : String(password);
+
     // Rate limiting check
     const now = Date.now();
     const attemptRecord = loginAttempts.get(email);
@@ -63,7 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(passwordStr, user.password);
 
     if (!isValidPassword) {
       return NextResponse.json(

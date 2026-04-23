@@ -34,6 +34,13 @@ export async function GET(
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50'), 100);
 
+    if (isNaN(page) || page < 1 || isNaN(pageSize) || pageSize < 1) {
+      return NextResponse.json(
+        { error: 'Invalid pagination parameters' },
+        { status: 400 }
+      );
+    }
+
     const whereClause: Record<string, unknown> = { businessId };
     if (customerId) whereClause.customerId = customerId;
     if (paymentMethod) whereClause.paymentMethod = paymentMethod;
@@ -85,9 +92,17 @@ export async function POST(
     const body = await request.json();
     const { customerId, invoiceId, description, amount, date, paymentMethod, notes } = body;
 
-    if (!description || !amount) {
+    if (!description || amount === undefined || amount === null) {
       return NextResponse.json(
         { error: 'Description and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Amount must be a positive number' },
         { status: 400 }
       );
     }
@@ -111,7 +126,7 @@ export async function POST(
         customerId,
         invoiceId,
         description,
-        amount: parseFloat(amount) || 0,
+        amount: numAmount,
         date: date ? new Date(date) : new Date(),
         paymentMethod,
         notes,
@@ -129,7 +144,7 @@ export async function POST(
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
-      }).format(parseFloat(amount) || 0);
+      }).format(numAmount);
 
       await db.notification.create({
         data: {
@@ -137,7 +152,7 @@ export async function POST(
           type: 'income',
           title: 'Penjualan Baru',
           message: `Penjualan ${formattedAmount} — ${description}`,
-          amount: parseFloat(amount) || 0,
+          amount: numAmount,
           actionUrl: '/dashboard',
         },
       });

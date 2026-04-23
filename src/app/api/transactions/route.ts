@@ -20,6 +20,20 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50'), 100);
 
+    // Validate pagination params
+    if (isNaN(page) || page < 1) {
+      return NextResponse.json(
+        { error: 'Page must be a positive integer' },
+        { status: 400 }
+      );
+    }
+    if (isNaN(pageSize) || pageSize < 1) {
+      return NextResponse.json(
+        { error: 'PageSize must be a positive integer' },
+        { status: 400 }
+      );
+    }
+
     const whereClause: any = { userId };
     if (type) whereClause.type = type;
     if (categoryId) whereClause.categoryId = categoryId;

@@ -241,6 +241,7 @@ model Business {
   portfolios       InvestmentPortfolio[]
   watchlist        WatchlistItem[]
   invoiceSettings  InvoiceSettings?
+  products         Product[]
 
   @@index([userId, category])
   @@index([userId])
@@ -351,6 +352,24 @@ model BusinessIncomeAllocation {
   percentage    Float
   allocatedAt   DateTime @default(now())
   personalNote  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  sku           String?  @unique
+  price         Float
+  stock         Int      @default(0)
+  category      String?
+  unit          String?  @default("pcs")
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
