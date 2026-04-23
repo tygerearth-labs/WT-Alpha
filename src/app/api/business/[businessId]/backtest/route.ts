@@ -573,6 +573,10 @@ interface StrategyMetrics {
   consecutiveLosses: number;
   bestTradePct: number;
   worstTradePct: number;
+  avgRiskReward: number;
+  bestRiskReward: number;
+  worstRiskReward: number;
+  expectedValue: number;
 }
 
 interface EquityPoint {
@@ -1254,6 +1258,10 @@ function calculateMetrics(
     consecutiveLosses: 0,
     bestTradePct: 0,
     worstTradePct: 0,
+    avgRiskReward: 0,
+    bestRiskReward: 0,
+    worstRiskReward: 0,
+    expectedValue: 0,
   };
 
   if (trades.length === 0) return emptyMetrics;
@@ -1341,6 +1349,24 @@ function calculateMetrics(
   const bestTradePct = trades.length > 0 ? Math.max(...trades.map(t => t.pnlPct)) : 0;
   const worstTradePct = trades.length > 0 ? Math.min(...trades.map(t => t.pnlPct)) : 0;
 
+  // ── Risk/Reward calculations ──────────────────────────────────────────────
+  const rrRatios = trades.map(t => {
+    const riskDist = Math.abs(t.entryPrice - t.stopLoss);
+    const rewardDist = Math.abs(t.takeProfit - t.entryPrice);
+    return riskDist > 0 ? rewardDist / riskDist : 0;
+  });
+
+  const avgRiskReward = rrRatios.length > 0
+    ? rrRatios.reduce((s, r) => s + r, 0) / rrRatios.length
+    : 0;
+  const bestRiskReward = rrRatios.length > 0 ? Math.max(...rrRatios) : 0;
+  const worstRiskReward = rrRatios.length > 0 ? Math.min(...rrRatios) : 0;
+
+  // Expected Value per trade: winRate% * avgWin% + lossRate% * avgLoss%
+  const winRateFrac = winTrades.length / trades.length;
+  const lossRateFrac = lossTrades.length / trades.length;
+  const expectedValue = winRateFrac * avgWinPct + lossRateFrac * avgLossPct;
+
   return {
     finalBalance: parseFloat(finalBalance.toFixed(2)),
     totalReturnPct: parseFloat(totalReturnPct.toFixed(4)),
@@ -1362,6 +1388,10 @@ function calculateMetrics(
     consecutiveLosses,
     bestTradePct: parseFloat(bestTradePct.toFixed(4)),
     worstTradePct: parseFloat(worstTradePct.toFixed(4)),
+    avgRiskReward: parseFloat(avgRiskReward.toFixed(4)),
+    bestRiskReward: parseFloat(bestRiskReward.toFixed(4)),
+    worstRiskReward: parseFloat(worstRiskReward.toFixed(4)),
+    expectedValue: parseFloat(expectedValue.toFixed(4)),
   };
 }
 
@@ -1629,6 +1659,10 @@ export async function GET(
       consecutiveLosses: 0,
       bestTradePct: 0,
       worstTradePct: 0,
+      avgRiskReward: 0,
+      bestRiskReward: 0,
+      worstRiskReward: 0,
+      expectedValue: 0,
     };
 
     const emptyRegime: MarketRegime = {

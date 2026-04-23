@@ -107,9 +107,15 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { type, counterpart, amount, dueDate, description, status } = body;
+    const {
+      type, counterpart, amount, dueDate, description, status,
+      downPayment, installmentAmount, installmentPeriod,
+    } = body;
 
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    const numDownPayment = downPayment ? (typeof downPayment === 'string' ? parseFloat(downPayment) : downPayment) : 0;
+    const numInstallmentAmount = installmentAmount ? (typeof installmentAmount === 'string' ? parseFloat(installmentAmount) : installmentAmount) : null;
+    const numInstallmentPeriod = installmentPeriod ? (typeof installmentPeriod === 'string' ? parseInt(installmentPeriod) : installmentPeriod) : null;
 
     if (!type || !counterpart || amount === undefined || amount === null) {
       return NextResponse.json(
@@ -132,16 +138,33 @@ export async function POST(
       );
     }
 
+    // Calculate remaining based on installment logic
+    const hasInstallments = numInstallmentAmount && numInstallmentAmount > 0;
+    const calculatedRemaining = hasInstallments && numDownPayment > 0
+      ? numAmount - numDownPayment
+      : numAmount;
+
+    // Calculate next installment date (1 month from now) if installment is set
+    let nextInstallmentDate: Date | null = null;
+    if (hasInstallments && calculatedRemaining > 0) {
+      nextInstallmentDate = new Date();
+      nextInstallmentDate.setMonth(nextInstallmentDate.getMonth() + 1);
+    }
+
     const debt = await db.businessDebt.create({
       data: {
         businessId,
         type,
         counterpart,
         amount: numAmount,
-        remaining: numAmount,
+        remaining: calculatedRemaining,
         dueDate: dueDate ? new Date(dueDate) : null,
         description,
-        status: status || 'active',
+        status: hasInstallments && calculatedRemaining > 0 ? 'partially_paid' : (status || 'active'),
+        downPayment: numDownPayment > 0 ? numDownPayment : null,
+        installmentAmount: numInstallmentAmount,
+        installmentPeriod: numInstallmentPeriod,
+        nextInstallmentDate,
       },
     });
 

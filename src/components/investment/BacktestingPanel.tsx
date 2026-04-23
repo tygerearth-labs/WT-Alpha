@@ -114,6 +114,10 @@ interface StrategyMetrics {
   consecutiveLosses: number;
   bestTradePct: number;
   worstTradePct: number;
+  avgRiskReward: number;
+  bestRiskReward: number;
+  worstRiskReward: number;
+  expectedValue: number;
 }
 
 interface EquityPoint {

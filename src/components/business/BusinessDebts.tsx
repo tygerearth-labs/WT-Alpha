@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -38,7 +40,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle, CreditCard } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle, CreditCard, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
@@ -53,6 +55,10 @@ interface Debt {
   description?: string;
   status: string;
   createdAt: string;
+  downPayment?: number | null;
+  installmentAmount?: number | null;
+  installmentPeriod?: number | null;
+  nextInstallmentDate?: string | null;
 }
 
 const STATUS_STYLES: Record<string, { label: string; className: string }> = {
@@ -86,6 +92,10 @@ export default function BusinessDebts() {
     amount: '',
     dueDate: '',
     description: '',
+    isInstallment: false,
+    downPayment: '',
+    installmentAmount: '',
+    installmentPeriod: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -97,6 +107,26 @@ export default function BusinessDebts() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const businessId = activeBusiness?.id;
+
+  // Derived installment preview values
+  const installmentPreview = useMemo(() => {
+    const numAmount = parseFloat(formData.amount) || 0;
+    const numDP = parseFloat(formData.downPayment) || 0;
+    const numInstallment = parseFloat(formData.installmentAmount) || 0;
+    const numPeriod = parseInt(formData.installmentPeriod) || 0;
+
+    const remainingAfterDP = numAmount - numDP;
+    const totalInstallments = numInstallment * numPeriod;
+    const totalDPPlusInstallments = numDP + totalInstallments;
+
+    return {
+      remainingAfterDP: Math.max(0, remainingAfterDP),
+      totalInstallments,
+      totalDPPlusInstallments,
+      numPeriod,
+      numInstallment,
+    };
+  }, [formData.amount, formData.downPayment, formData.installmentAmount, formData.installmentPeriod]);
 
   const fetchDebts = useCallback(() => {
     if (!businessId) return;
@@ -127,6 +157,10 @@ export default function BusinessDebts() {
       amount: '',
       dueDate: '',
       description: '',
+      isInstallment: false,
+      downPayment: '',
+      installmentAmount: '',
+      installmentPeriod: '',
     });
     setDialogOpen(true);
   };
@@ -139,6 +173,10 @@ export default function BusinessDebts() {
       amount: debt.amount.toString(),
       dueDate: debt.dueDate ? debt.dueDate.split('T')[0] : '',
       description: debt.description || '',
+      isInstallment: !!debt.installmentAmount,
+      downPayment: debt.downPayment ? debt.downPayment.toString() : '',
+      installmentAmount: debt.installmentAmount ? debt.installmentAmount.toString() : '',
+      installmentPeriod: debt.installmentPeriod ? debt.installmentPeriod.toString() : '',
     });
     setDialogOpen(true);
   };
@@ -146,21 +184,42 @@ export default function BusinessDebts() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessId || !formData.counterpart || !formData.amount) return;
+
+    // Validate installment fields when toggle is ON
+    if (formData.isInstallment) {
+      if (!formData.installmentAmount || parseFloat(formData.installmentAmount) <= 0) {
+        toast.error(t('biz.installmentAmount') + ' required');
+        return;
+      }
+      if (!formData.installmentPeriod || parseInt(formData.installmentPeriod) <= 0) {
+        toast.error(t('biz.installmentPeriod') + ' required');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const url = editingDebt
         ? `/api/business/${businessId}/debts/${editingDebt.id}`
         : `/api/business/${businessId}/debts`;
+      const payload: Record<string, unknown> = {
+        type: formData.type,
+        counterpart: formData.counterpart.trim(),
+        amount: parseFloat(formData.amount),
+        dueDate: formData.dueDate || undefined,
+        description: formData.description || undefined,
+      };
+
+      if (!editingDebt && formData.isInstallment) {
+        payload.downPayment = formData.downPayment ? parseFloat(formData.downPayment) : 0;
+        payload.installmentAmount = parseFloat(formData.installmentAmount);
+        payload.installmentPeriod = parseInt(formData.installmentPeriod);
+      }
+
       const res = await fetch(url, {
         method: editingDebt ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: formData.type,
-          counterpart: formData.counterpart.trim(),
-          amount: parseFloat(formData.amount),
-          dueDate: formData.dueDate || undefined,
-          description: formData.description || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
       toast.success(editingDebt ? t('biz.businessUpdated') : t('biz.businessCreated'));
@@ -187,9 +246,9 @@ export default function BusinessDebts() {
     }
   };
 
-  const openPaymentDialog = (debt: Debt) => {
+  const openPaymentDialog = (debt: Debt, isInstallmentPay = false) => {
     setPaymentDebt(debt);
-    setPayAmount('');
+    setPayAmount(isInstallmentPay && debt.installmentAmount ? debt.installmentAmount.toString() : '');
     setPaymentDialogOpen(true);
   };
 
@@ -307,11 +366,21 @@ export default function BusinessDebts() {
                     <TableBody>
                       {filtered.map((debt) => {
                         const statusStyle = STATUS_STYLES[debt.status] || STATUS_STYLES.active;
+                        const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
+                        const paidPercent = debt.amount > 0 ? Math.round(((debt.amount - debt.remaining) / debt.amount) * 100) : 0;
+
                         return (
                           <TableRow key={debt.id} className="border-white/[0.04] hover:bg-white/[0.02]">
                             <TableCell className="py-3">
                               <div>
-                                <p className="text-white text-xs font-medium">{debt.counterpart}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-white text-xs font-medium">{debt.counterpart}</p>
+                                  {isInstallment && (
+                                    <Badge className="text-[9px] font-bold px-1.5 py-0 h-4 bg-[#FFD700]/20 text-[#FFD700] border-0 leading-none">
+                                      {t('biz.installmentBadge')}
+                                    </Badge>
+                                  )}
+                                </div>
                                 {debt.description && (
                                   <p className="text-white/30 text-[10px] mt-0.5 max-w-[150px] truncate">{debt.description}</p>
                                 )}
@@ -319,16 +388,44 @@ export default function BusinessDebts() {
                             </TableCell>
                             <TableCell className={cn('text-xs font-medium py-3', activeTab === 'hutang' ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
                               {formatAmount(debt.amount)}
+                              {isInstallment && debt.downPayment && debt.downPayment > 0 && (
+                                <p className="text-[10px] text-white/40 mt-0.5">
+                                  DP: {formatAmount(debt.downPayment)}
+                                </p>
+                              )}
                             </TableCell>
                             <TableCell className="text-white text-xs py-3">
-                              {debt.remaining > 0 ? formatAmount(debt.remaining) : (
+                              {debt.remaining > 0 ? (
+                                <div>
+                                  {formatAmount(debt.remaining)}
+                                  {isInstallment && (
+                                    <div className="mt-1">
+                                      <Progress
+                                        value={paidPercent}
+                                        className="h-1.5 bg-white/[0.06]"
+                                      />
+                                      <p className="text-[9px] text-white/40 mt-0.5">{paidPercent}%</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
                                 <span className="text-[#03DAC6]">{t('biz.debtPaid')}</span>
                               )}
                             </TableCell>
                             <TableCell className="text-xs py-3 hidden sm:table-cell">
-                              <span className={getDueDateColor(debt.dueDate, debt.remaining)}>
-                                {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : '-'}
-                              </span>
+                              <div>
+                                <span className={getDueDateColor(debt.dueDate, debt.remaining)}>
+                                  {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : '-'}
+                                </span>
+                                {isInstallment && debt.nextInstallmentDate && debt.remaining > 0 && (
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <CalendarDays className="h-3 w-3 text-[#FFD700]" />
+                                    <span className="text-[#FFD700] text-[10px]">
+                                      {new Date(debt.nextInstallmentDate).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="py-3">
                               <Badge variant="outline" className={cn('text-xs font-normal border-0', statusStyle.className)}>
@@ -337,15 +434,28 @@ export default function BusinessDebts() {
                             </TableCell>
                             <TableCell className="py-3 text-right">
                               {debt.remaining > 0 && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-white/40 hover:text-[#03DAC6] hover:bg-white/10"
-                                  onClick={() => openPaymentDialog(debt)}
-                                  title={t('biz.payDebt')}
-                                >
-                                  <CreditCard className="h-3.5 w-3.5" />
-                                </Button>
+                                <>
+                                  {isInstallment && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-[#FFD700]/60 hover:text-[#FFD700] hover:bg-[#FFD700]/10"
+                                      onClick={() => openPaymentDialog(debt, true)}
+                                      title={t('biz.payInstallment')}
+                                    >
+                                      <CreditCard className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-[#03DAC6] hover:bg-white/10"
+                                    onClick={() => openPaymentDialog(debt)}
+                                    title={t('biz.payDebt')}
+                                  >
+                                    <CreditCard className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
                               )}
                               <Button
                                 variant="ghost"
@@ -378,7 +488,7 @@ export default function BusinessDebts() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[440px]">
+        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">
               {editingDebt ? t('common.edit') : t('biz.addDebt')}
@@ -441,6 +551,96 @@ export default function BusinessDebts() {
               />
             </div>
 
+            {/* Installment Toggle */}
+            {!editingDebt && (
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div>
+                  <Label className="text-white/80 text-sm">{t('biz.isInstallment')}</Label>
+                  <p className="text-[10px] text-white/40">DP + cicilan bulanan</p>
+                </div>
+                <Switch
+                  checked={formData.isInstallment}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isInstallment: checked })}
+                  className="data-[state=checked]:bg-[#FFD700]"
+                />
+              </div>
+            )}
+
+            {/* Installment Fields */}
+            {!editingDebt && formData.isInstallment && (
+              <div className="space-y-3 p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/[0.12]">
+                <p className="text-xs font-medium text-[#FFD700]">{t('biz.installmentInfo')}</p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-white/60 text-xs">{t('biz.downPayment')}</Label>
+                    <Input
+                      type="number"
+                      value={formData.downPayment}
+                      onChange={(e) => setFormData({ ...formData, downPayment: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-sm h-9"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-white/60 text-xs">{t('biz.installmentAmount')} *</Label>
+                    <Input
+                      type="number"
+                      value={formData.installmentAmount}
+                      onChange={(e) => setFormData({ ...formData, installmentAmount: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-sm h-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-white/60 text-xs">{t('biz.installmentPeriod')} *</Label>
+                  <Input
+                    type="number"
+                    value={formData.installmentPeriod}
+                    onChange={(e) => setFormData({ ...formData, installmentPeriod: e.target.value })}
+                    placeholder="12"
+                    min="1"
+                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-sm h-9 w-1/2"
+                  />
+                </div>
+
+                {/* Installment Preview */}
+                {formData.amount && installmentPreview.numInstallment > 0 && installmentPreview.numPeriod > 0 && (
+                  <div className="mt-3 space-y-2 p-2.5 rounded-lg bg-white/[0.03]">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-white/50">{t('biz.downPayment')}</span>
+                      <span className="text-white font-medium">{formatAmount(parseFloat(formData.downPayment) || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-white/50">{t('biz.remainingAfterDP')}</span>
+                      <span className="text-white font-medium">{formatAmount(installmentPreview.remainingAfterDP)}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-white/50">
+                        {t('biz.installmentSchedule')} ({installmentPreview.numPeriod}x)
+                      </span>
+                      <span className="text-[#FFD700] font-medium">{formatAmount(installmentPreview.totalInstallments)}</span>
+                    </div>
+                    <div className="border-t border-white/[0.06] pt-2 flex justify-between text-[11px]">
+                      <span className="text-white/50">Total</span>
+                      <span className="text-white font-bold">{formatAmount(installmentPreview.totalDPPlusInstallments)}</span>
+                    </div>
+                    {installmentPreview.totalDPPlusInstallments !== parseFloat(formData.amount) && (
+                      <p className="text-[9px] text-white/30">
+                        {installmentPreview.totalDPPlusInstallments > parseFloat(formData.amount)
+                          ? `⚠️ ${formatAmount(installmentPreview.totalDPPlusInstallments - parseFloat(formData.amount))} lebih dari jumlah`
+                          : `ℹ️ ${formatAmount(parseFloat(formData.amount) - installmentPreview.totalDPPlusInstallments)} kurang dari jumlah`}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-white/80">{t('biz.debtDueDate')}</Label>
               <Input
@@ -487,11 +687,34 @@ export default function BusinessDebts() {
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-white">{t('biz.payDebt')}</DialogTitle>
+            <DialogTitle className="text-white">
+              {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
+            </DialogTitle>
             <DialogDescription className="text-white/60">
               {paymentDebt?.counterpart} — Sisa: {formatAmount(paymentDebt?.remaining || 0)}
             </DialogDescription>
           </DialogHeader>
+
+          {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
+            <div className="p-3 rounded-lg bg-[#FFD700]/[0.04] border border-[#FFD700]/[0.12]">
+              <div className="flex justify-between text-xs">
+                <span className="text-white/50">{t('biz.installmentAmount')}</span>
+                <span className="text-[#FFD700] font-medium">{formatAmount(paymentDebt.installmentAmount)}</span>
+              </div>
+              {paymentDebt.nextInstallmentDate && paymentDebt.remaining > 0 && (
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-white/50">{t('biz.nextDueDate')}</span>
+                  <span className="text-white/80">{new Date(paymentDebt.nextInstallmentDate).toLocaleDateString()}</span>
+                </div>
+              )}
+              {paymentDebt.installmentPeriod && (
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-white/50">{t('biz.installmentPeriod')}</span>
+                  <span className="text-white/80">{paymentDebt.installmentPeriod} bulan</span>
+                </div>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handlePay} className="space-y-4">
             <div className="space-y-2">
@@ -525,7 +748,7 @@ export default function BusinessDebts() {
                 className="bg-[#03DAC6] text-black hover:bg-[#02B8A8]"
               >
                 {paying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {t('biz.payDebt')}
+                {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
               </Button>
             </DialogFooter>
           </form>

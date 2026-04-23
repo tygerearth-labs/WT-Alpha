@@ -79,6 +79,8 @@ export default function BusinessSales() {
   const [activeTab, setActiveTab] = useState<'sales' | 'products'>('sales');
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Array<{id: string; name: string; price: number; stock: number; sku: string | null}>>([]);
+  const [selectedProductId, setSelectedProductId] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -104,14 +106,17 @@ export default function BusinessSales() {
     Promise.all([
       fetch(`/api/business/${businessId}/sales`).then((r) => (r.ok ? r.json() : [])),
       fetch(`/api/business/${businessId}/customers`).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/business/${businessId}/products`).then((r) => (r.ok ? r.json() : { products: [] })),
     ])
-      .then(([salesData, customersData]) => {
+      .then(([salesData, customersData, productsData]) => {
         setSales(salesData?.sales || []);
         setCustomers(customersData?.customers || []);
+        setProducts(productsData?.products || []);
       })
       .catch(() => {
         setSales([]);
         setCustomers([]);
+        setProducts([]);
       })
       .finally(() => setLoading(false));
   }, [businessId]);
@@ -126,8 +131,17 @@ export default function BusinessSales() {
     }
   }, [businessId, fetchSales, activeTab]);
 
+  const handleProductSelect = (productId: string) => {
+    setSelectedProductId(productId);
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      setFormData(prev => ({ ...prev, description: product.name, amount: product.price.toString() }));
+    }
+  };
+
   const openCreateDialog = () => {
     setEditingSale(null);
+    setSelectedProductId('');
     setFormData({
       description: '',
       amount: '',
@@ -367,6 +381,23 @@ export default function BusinessSales() {
               </DialogHeader>
 
               <form onSubmit={handleSave} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('biz.selectProduct')}</Label>
+                  <Select value={selectedProductId} onValueChange={(v) => handleProductSelect(v)}>
+                    <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                      <SelectValue placeholder={t('biz.selectProduct')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.filter(p => p.stock > 0).map((p) => (
+                        <SelectItem key={p.id} value={p.id} className="text-white">
+                          {p.name} — {formatAmount(p.price)}
+                          <span className="ml-2 text-xs text-[#03DAC6]">({p.stock})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-white/80">{t('biz.saleDescription')} *</Label>
                   <Input

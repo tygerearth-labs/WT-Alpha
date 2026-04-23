@@ -30,7 +30,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { type, counterpart, amount, remaining, dueDate, description, status } = body;
+    const { type, counterpart, amount, remaining, dueDate, description, status, payAmount } = body;
 
     const updateData: Record<string, unknown> = {};
     if (type !== undefined) updateData.type = type;
@@ -42,8 +42,29 @@ export async function PUT(
       const numRemaining = parseFloat(remaining) || 0;
       if (numRemaining <= 0) {
         updateData.status = 'paid';
-      } else if (numRemaining < (parseFloat(amount) || 0)) {
+        updateData.nextInstallmentDate = null;
+      } else if (numRemaining < (parseFloat(amount) || debt.amount)) {
         updateData.status = 'partially_paid';
+      }
+    }
+    // Handle payAmount (partial payment)
+    if (payAmount !== undefined) {
+      const numPay = typeof payAmount === 'string' ? parseFloat(payAmount) : payAmount;
+      if (!isNaN(numPay) && numPay > 0) {
+        const newRemaining = Math.max(0, debt.remaining - numPay);
+        updateData.remaining = newRemaining;
+        if (newRemaining <= 0) {
+          updateData.status = 'paid';
+          updateData.nextInstallmentDate = null;
+        } else {
+          updateData.status = 'partially_paid';
+          // If installment is set, calculate next due date
+          if (debt.installmentAmount && debt.installmentAmount > 0) {
+            const nextDate = new Date();
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            updateData.nextInstallmentDate = nextDate;
+          }
+        }
       }
     }
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
