@@ -92,7 +92,7 @@ interface NavItem {
 
 export function MainLayout() {
   const { user, logout } = useAuthStore();
-  const { mode, setMode, businesses, setBusinesses, setActiveBusiness, setLoading: setBizLoading } = useBusinessStore();
+  const { mode, setMode, businesses, setBusinesses, setActiveBusiness, setLoading: setBizLoading, requestedPage, requestPage } = useBusinessStore();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
@@ -107,6 +107,13 @@ export function MainLayout() {
   const isUltimate = user?.plan === 'ultimate';
   const isPro = user?.plan === 'pro';
   const isBasic = user?.plan === 'basic';
+
+  // Listen for requested page changes from child components
+  useEffect(() => {
+    if (!requestedPage) return;
+    navigateTo(requestedPage);
+    requestPage(null); // clear after navigation
+  }, [requestedPage]);
 
   // Check if admin is viewing as user
   const isAdminPreview = useMemo(() => {
@@ -132,7 +139,6 @@ export function MainLayout() {
   }, [user?.id, isUltimate, setBusinesses, setBizLoading]);
 
   const navigateTo = useCallback((page: PageType) => {
-    if (page === currentPage) return;
     setIsTransitioning(true);
     setTabletSidebarOpen(false);
     setTimeout(() => {
@@ -140,7 +146,7 @@ export function MainLayout() {
       setPageKey(prev => prev + 1);
       setTimeout(() => setIsTransitioning(false), 400);
     }, 200);
-  }, [currentPage]);
+  }, []);
 
   // Fetch current month stats for sidebar mini bar
   useEffect(() => {

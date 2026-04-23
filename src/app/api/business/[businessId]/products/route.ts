@@ -85,7 +85,12 @@ export async function GET(
       },
     });
 
-    const totalStockValue = products.reduce(
+    // Calculate total stock value from ALL active products (not just the current page)
+    const allActiveProducts = await db.product.findMany({
+      where: { businessId, isActive: true },
+      select: { price: true, stock: true },
+    });
+    const totalStockValue = allActiveProducts.reduce(
       (sum, p) => sum + p.price * p.stock,
       0
     );
