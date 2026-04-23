@@ -135,7 +135,7 @@ interface SimulatedTrade {
   pnlUsd: number;
   balanceAfter: number;
   isWin: boolean;
-  exitReason: 'TAKE_PROFIT' | 'STOP_LOSS' | 'SIGNAL_REVERSAL' | 'TIME_EXIT';
+  exitReason: 'TAKE_PROFIT' | 'STOP_LOSS' | 'SIGNAL_REVERSAL' | 'TIME_EXIT' | 'MARGIN_CALL';
 }
 
 interface RegimeStats {
@@ -172,6 +172,7 @@ interface BacktestData {
   strategyComparison?: StrategyComparisonItem[];
   weeklyData: BacktestWeeklyData[];
   summary: BacktestSummary;
+  marginCall?: boolean;
 }
 
 interface AssetOption {
@@ -213,8 +214,13 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
   const [data, setData] = useState<BacktestData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    return new Date().toISOString().slice(0, 10);
+  });
   const [weeklyOpen, setWeeklyOpen] = useState(false);
   const weeklyRef = useRef<HTMLDivElement>(null);
 
@@ -524,7 +530,25 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
         {data && !loading && (
           <>
             {/* ════════════════════════════════════════════════════════════
-                NO TRADES FOUND — explain why
+                MARGIN CALL WARNING
+                ════════════════════════════════════════════════════════════ */}
+            {data.marginCall && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-lg bg-[#CF6679]/10 border border-[#CF6679]/30 p-5 text-center"
+              >
+                <AlertTriangle className="h-8 w-8 text-[#CF6679] mx-auto mb-2" />
+                <h4 className="text-sm font-bold text-[#CF6679] mb-1">MARGIN CALL - Saldo Habis</h4>
+                <p className="text-[11px] text-white/40">
+                  Strategi ini menghabiskan seluruh modal ({fmtUsd(data.metrics.finalBalance)} tersisa).{' '}
+                  Strategi dihentikan karena saldo mencapai $0.
+                </p>
+              </motion.div>
+            )}
+
+            {/* ════════════════════════════════════════════════════════════
+                NO TRADES FOUND - explain why
                 ════════════════════════════════════════════════════════════ */}
             {data.metrics.totalTrades === 0 && (
               <motion.div
@@ -537,12 +561,12 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                     <AlertTriangle className="h-5 w-5 text-[#FFD700]" />
                   </div>
                 </div>
-                <h4 className="text-xs font-bold text-white/70 mb-1">Tidak Ada Trade Terdeteksi</h4>
+                <h4 className="text-xs font-bold text-white/70 mb-1">Tidak Ada Sinyal Trading</h4>
                 <p className="text-[10px] text-white/35 leading-relaxed max-w-md mx-auto">
-                  Strategi <span className="text-[#BB86FC] font-bold">{STRATEGY_LABELS[data.strategy] || data.strategy}</span> tidak menemukan kondisi entry yang memenuhi syarat pada periode ini.
+                  Strategi <span className="text-[#BB86FC] font-bold">{STRATEGY_LABELS[data.strategy] || data.strategy}</span> tidak menghasilkan sinyal entry pada periode ini. Ini berdasarkan simulasi indikator, bukan trade aktual.
                 </p>
                 <div className="mt-3 space-y-1.5 text-[9px] text-white/25">
-                  <p>💡 <span className="text-white/40">Tips:</span> Coba strategi lain atau perpanjang range tanggal.</p>
+                  <p>💡 <span className="text-white/40">Tips:</span> Coba ubah range tanggal atau ganti aset untuk melihat sinyal yang berbeda.</p>
                   <p>• <span className="text-[#03DAC6]/70">Trend Following</span> — baik di market yang jelas naik/turun</p>
                   <p>• <span className="text-[#03DAC6]/70">RSI Mean Reversion</span> — baik saat market oversold/overbought</p>
                   <p>• <span className="text-[#03DAC6]/70">Smart Money</span> — komposit skor dari 4 layer indikator</p>
@@ -964,12 +988,20 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                             const isPositive = (week.change ?? 0) >= 0;
                             const barHeight = Math.max(Math.abs(week.change ?? 0) / chartMax * 100, 2);
                             return (
-                              <div key={week.weekStart} className="flex-1 flex flex-col items-center gap-1 group relative">
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
-                                  <div className="bg-[#0D0D0D] border border-white/10 rounded px-2 py-1 shadow-lg">
-                                    <span className="text-[9px] font-mono" style={{ color: isPositive ? UP_COLOR : DOWN_COLOR }}>
-                                      {isPositive ? '+' : ''}{toF(week.change)}%
-                                    </span>
+                              <div key={week.weekStart} className="flex-1 flex flex-col items-center gap-0.5 group relative min-w-0">
+                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
+                                  <div className="bg-[#0D0D0D] border border-white/10 rounded px-2 py-1 shadow-lg space-y-0.5">
+                                    <div>
+                                      <span className="text-[8px] text-white/30">{fmtDate(week.weekStart)} - {fmtDate(week.weekEnd)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-[9px] font-mono" style={{ color: isPositive ? UP_COLOR : DOWN_COLOR }}>
+                                        {isPositive ? '+' : ''}{toF(week.change)}%
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-[8px] text-white/40 font-mono">Close: {fmtPrice(data.type, week.close)}</span>
+                                    </div>
                                   </div>
                                 </div>
                                 <div
@@ -981,7 +1013,10 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                                     marginTop: isPositive ? `${100 - barHeight}%` : 0,
                                   }}
                                 />
-                                <span className="text-[7px] text-white/20 font-mono mt-0.5">
+                                <span className="text-[7px] text-white/30 font-mono mt-0.5 truncate w-full text-center block">
+                                  {fmtPrice(data.type, week.close)}
+                                </span>
+                                <span className="text-[7px] text-white/15 font-mono truncate w-full text-center block">
                                   {fmtDate(week.weekStart)}
                                 </span>
                               </div>

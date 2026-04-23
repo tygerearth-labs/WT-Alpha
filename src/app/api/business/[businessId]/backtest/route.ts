@@ -526,7 +526,7 @@ function computeADX(candles: { high: number; low: number; close: number }[], per
 
 type StrategyName = 'trend' | 'rsi' | 'breakout' | 'smartmoney' | 'conservative';
 type SignalDirection = 'LONG' | 'SHORT' | 'NEUTRAL';
-type ExitReason = 'TAKE_PROFIT' | 'STOP_LOSS' | 'SIGNAL_REVERSAL' | 'TIME_EXIT';
+type ExitReason = 'TAKE_PROFIT' | 'STOP_LOSS' | 'SIGNAL_REVERSAL' | 'TIME_EXIT' | 'MARGIN_CALL';
 
 interface StrategySignal {
   date: string;
@@ -988,9 +988,9 @@ function simulateTrades(
   initialBalance: number,
   riskPerTrade: number,
   strategyName: StrategyName,
-): { trades: SimulatedTrade[]; equityCurve: EquityPoint[] } {
+): { trades: SimulatedTrade[]; equityCurve: EquityPoint[]; marginCall: boolean } {
   if (candles.length < 30 || signals.length === 0) {
-    return { trades: [], equityCurve: [] };
+    return { trades: [], equityCurve: [], marginCall: false };
   }
 
   const candleMap = buildCandleMap(candles);
@@ -1000,6 +1000,7 @@ function simulateTrades(
   let balance = initialBalance;
   let peakBalance = initialBalance;
   let tradeId = 1;
+  let marginCall = false;
 
   // Track equity at every day
   let currentOpenTrade: SimulatedTradeInternal | null = null;
@@ -1011,6 +1012,12 @@ function simulateTrades(
     const candleIdx = candleMap.get(signal.date);
 
     if (candleIdx === undefined) {
+      signalIdx++;
+      continue;
+    }
+
+    // Skip signals that fall before we have enough candle data for indicators
+    if (candleIdx < 50) {
       signalIdx++;
       continue;
     }
@@ -1141,6 +1148,20 @@ function simulateTrades(
     const pnlPct = trade.entryPrice > 0 ? (pnlUsd / (trade.entryPrice * positionSize)) * 100 : 0;
     balance += pnlUsd;
 
+    // ── Margin Call Check ──
+    if (balance <= 0) {
+      balance = 0;
+      trade.balanceAfter = 0;
+      trade.pnlPct = parseFloat(pnlPct.toFixed(4));
+      trade.pnlUsd = parseFloat(pnlUsd.toFixed(2));
+      trade.isWin = false;
+      trade.exitPrice = parseFloat(trade.exitPrice.toFixed(6));
+      trade.exitReason = 'MARGIN_CALL';
+      trades.push(trade);
+      marginCall = true;
+      break; // Stop simulation entirely — no more trades
+    }
+
     trade.pnlPct = parseFloat(pnlPct.toFixed(4));
     trade.pnlUsd = parseFloat(pnlUsd.toFixed(2));
     trade.balanceAfter = parseFloat(balance.toFixed(2));
@@ -1200,6 +1221,7 @@ function simulateTrades(
       return rest;
     }),
     equityCurve,
+    marginCall,
   };
 }
 
@@ -1209,6 +1231,7 @@ function calculateMetrics(
   trades: SimulatedTrade[],
   equityCurve: EquityPoint[],
   initialBalance: number,
+  marginCall?: boolean,
 ): StrategyMetrics {
   const emptyMetrics: StrategyMetrics = {
     finalBalance: initialBalance,
@@ -1235,9 +1258,11 @@ function calculateMetrics(
 
   if (trades.length === 0) return emptyMetrics;
 
-  const finalBalance = trades[trades.length - 1].balanceAfter;
+  // If margin call happened, cap finalBalance to 0 and totalReturnPct to -100
+  const rawFinalBalance = trades[trades.length - 1].balanceAfter;
+  const finalBalance = marginCall ? 0 : rawFinalBalance;
   const totalReturnUsd = finalBalance - initialBalance;
-  const totalReturnPct = initialBalance > 0 ? (totalReturnUsd / initialBalance) * 100 : 0;
+  const totalReturnPct = marginCall ? -100 : (initialBalance > 0 ? (totalReturnUsd / initialBalance) * 100 : 0);
 
   const winTrades = trades.filter(t => t.isWin);
   const lossTrades = trades.filter(t => !t.isWin);
@@ -1441,7 +1466,7 @@ function runStrategy(
   candles: DailyCandle[],
   initialBalance: number,
   riskPerTrade: number,
-): { signals: StrategySignal[]; trades: SimulatedTrade[]; equityCurve: EquityPoint[]; metrics: StrategyMetrics } {
+): { signals: StrategySignal[]; trades: SimulatedTrade[]; equityCurve: EquityPoint[]; metrics: StrategyMetrics; marginCall: boolean } {
   let signals: StrategySignal[] = [];
 
   switch (strategy) {
@@ -1462,10 +1487,10 @@ function runStrategy(
       break;
   }
 
-  const { trades, equityCurve } = simulateTrades(candles, signals, initialBalance, riskPerTrade, strategy);
-  const metrics = calculateMetrics(trades, equityCurve, initialBalance);
+  const { trades, equityCurve, marginCall } = simulateTrades(candles, signals, initialBalance, riskPerTrade, strategy);
+  const metrics = calculateMetrics(trades, equityCurve, initialBalance, marginCall);
 
-  return { signals, trades, equityCurve, metrics };
+  return { signals, trades, equityCurve, metrics, marginCall };
 }
 
 // ── Main GET handler ────────────────────────────────────────────────────────
@@ -1580,6 +1605,7 @@ export async function GET(
     let equityCurve: EquityPoint[] = [];
     let regimeAnalysis: MarketRegime;
     let strategyComparison: Array<{ name: string; label: string; metrics: StrategyMetrics }> | undefined;
+    let marginCall = false;
     const activeStrategy = strategy as 'all' | StrategyName;
 
     const emptyMetrics: StrategyMetrics = {
@@ -1629,13 +1655,11 @@ export async function GET(
       }));
 
       // Use smartmoney as the primary display
-      const primary = results.find(r => {
-        // Match by index (smartmoney is index 3)
-        return strategies[3] === 'smartmoney';
-      }) || results[3];
+      const primary = results[3] || results[0];
       metrics = primary.metrics;
       trades = primary.trades;
       equityCurve = primary.equityCurve;
+      marginCall = primary.marginCall;
 
       // Regime analysis uses smartmoney trades
       const regimeData = classifyRegimes(dailyCandles);
@@ -1645,6 +1669,7 @@ export async function GET(
       metrics = result.metrics;
       trades = result.trades;
       equityCurve = result.equityCurve;
+      marginCall = result.marginCall;
 
       const regimeData = classifyRegimes(dailyCandles);
       regimeAnalysis = calculateRegimeAnalysis(trades, regimeData, dailyCandles);
@@ -1661,6 +1686,7 @@ export async function GET(
       equityCurve,
       trades,
       regimeAnalysis,
+      marginCall,
       ...(strategyComparison ? { strategyComparison } : {}),
     });
   } catch (error) {
