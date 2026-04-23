@@ -164,8 +164,8 @@ export async function POST(
 
     // Check SKU uniqueness if provided
     if (sku && sku.trim()) {
-      const existingProduct = await db.product.findUnique({
-        where: { sku: sku.trim() },
+      const existingProduct = await db.product.findFirst({
+        where: { sku: sku.trim(), businessId },
       });
       if (existingProduct) {
         return NextResponse.json(

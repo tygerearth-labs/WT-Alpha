@@ -19,7 +19,7 @@ export async function PUT(
     if (authResult instanceof NextResponse) return authResult;
     const userId = authResult;
 
-    const { id } = await params;
+    const { businessId, id } = await params;
 
     const product = await verifyProductOwnership(id, userId);
     if (!product) {
@@ -64,8 +64,8 @@ export async function PUT(
 
     // Check SKU uniqueness if changing
     if (sku !== undefined && sku?.trim() && sku.trim() !== product.sku) {
-      const existingProduct = await db.product.findUnique({
-        where: { sku: sku.trim() },
+      const existingProduct = await db.product.findFirst({
+        where: { sku: sku.trim(), businessId },
       });
       if (existingProduct) {
         return NextResponse.json(
@@ -109,7 +109,7 @@ export async function DELETE(
     if (authResult instanceof NextResponse) return authResult;
     const userId = authResult;
 
-    const { id } = await params;
+    const { businessId, id } = await params;
 
     const product = await verifyProductOwnership(id, userId);
     if (!product) {

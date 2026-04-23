@@ -1392,7 +1392,7 @@ async function fetchNewsConfirmation(
     return {
       confirmed: false,
       recentEvents: [],
-      sentiment: 'error',
+      sentiment: 'neutral',
       source: 'Gagal mengambil berita',
     };
   }
