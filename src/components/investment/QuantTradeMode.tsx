@@ -417,15 +417,15 @@ function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number | u
       <div className="grid grid-cols-3 gap-1 text-[10px] font-mono">
         <div className="text-right">
           <span className="text-white/25">Upper </span>
-          <span className="text-[#CF6679]/80">{u.toLocaleString()}</span>
+          <span className="text-[#CF6679]/80">{fmtNum(u)}</span>
         </div>
         <div className="text-center">
           <span className="text-white/25">Mid </span>
-          <span className="text-white/50">{md.toLocaleString()}</span>
+          <span className="text-white/50">{fmtNum(md)}</span>
         </div>
         <div>
           <span className="text-white/25">Lower </span>
-          <span className="text-[#03DAC6]/80">{lo.toLocaleString()}</span>
+          <span className="text-[#03DAC6]/80">{fmtNum(lo)}</span>
         </div>
       </div>
     </div>
@@ -450,11 +450,11 @@ function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number | 
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">SMA 20</span>
-            <span className="text-[11px] font-mono text-white/70">{s20.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{fmtNum(s20)}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">SMA 50</span>
-            <span className="text-[11px] font-mono text-white/70">{s50.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{fmtNum(s50)}</span>
           </div>
           <Badge
             className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
@@ -469,11 +469,11 @@ function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number | 
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">EMA 12</span>
-            <span className="text-[11px] font-mono text-white/70">{e12.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{fmtNum(e12)}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 font-mono">EMA 26</span>
-            <span className="text-[11px] font-mono text-white/70">{e26.toLocaleString()}</span>
+            <span className="text-[11px] font-mono text-white/70">{fmtNum(e26)}</span>
           </div>
           <Badge
             className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
@@ -737,7 +737,7 @@ export default function QuantTradeMode() {
               },
               {
                 label: 'Active Cryptos',
-                value: macroData.global.activeCryptos.toLocaleString(),
+                value: fmtNum(macroData.global.activeCryptos),
                 change: null,
                 icon: Zap,
               },
@@ -1064,7 +1064,7 @@ export default function QuantTradeMode() {
 
       {/* ── Expanded Analysis Dialog ─────────────────────────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
+        <DialogContent aria-describedby={undefined} className="max-w-7xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
           {selectedAsset && (
             <>
               {/* Dialog Header */}

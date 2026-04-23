@@ -490,9 +490,9 @@ function BollingerBandsInfo({ upper, middle, lower, price }: { upper: number | u
           initial={{ left: '50%' }} animate={{ left: `${Math.min(100, Math.max(0, position))}%` }} transition={{ duration: 0.6 }} />
       </div>
       <div className="grid grid-cols-3 gap-1 text-[10px] font-mono">
-        <div className="text-right"><span className="text-white/25">Upper </span><span className="text-[#CF6679]/80">{u.toLocaleString()}</span></div>
-        <div className="text-center"><span className="text-white/25">Mid </span><span className="text-white/50">{md.toLocaleString()}</span></div>
-        <div><span className="text-white/25">Lower </span><span className="text-[#03DAC6]/80">{lo.toLocaleString()}</span></div>
+        <div className="text-right"><span className="text-white/25">Upper </span><span className="text-[#CF6679]/80">{formatCompact(u)}</span></div>
+        <div className="text-center"><span className="text-white/25">Mid </span><span className="text-white/50">{formatCompact(md)}</span></div>
+        <div><span className="text-white/25">Lower </span><span className="text-[#03DAC6]/80">{formatCompact(lo)}</span></div>
       </div>
     </div>
   );
@@ -513,16 +513,16 @@ function MovingAverageSection({ sma20, sma50, ema12, ema26 }: { sma20: number | 
       </span>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 20</span><span className="text-[11px] font-mono text-white/70">{s20.toLocaleString()}</span></div>
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 50</span><span className="text-[11px] font-mono text-white/70">{s50.toLocaleString()}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 20</span><span className="text-[11px] font-mono text-white/70">{formatCompact(s20)}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">SMA 50</span><span className="text-[11px] font-mono text-white/70">{formatCompact(s50)}</span></div>
           <Badge className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
             style={{ backgroundColor: smaGoldenCross ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: smaGoldenCross ? '#03DAC6' : '#CF6679' }}>
             {smaGoldenCross ? 'Golden Cross ↑' : 'Death Cross ↓'}
           </Badge>
         </div>
         <div className="rounded-lg bg-white/[0.03] p-2 space-y-1">
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 12</span><span className="text-[11px] font-mono text-white/70">{e12.toLocaleString()}</span></div>
-          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 26</span><span className="text-[11px] font-mono text-white/70">{e26.toLocaleString()}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 12</span><span className="text-[11px] font-mono text-white/70">{formatCompact(e12)}</span></div>
+          <div className="flex items-center justify-between"><span className="text-[10px] text-white/40 font-mono">EMA 26</span><span className="text-[11px] font-mono text-white/70">{formatCompact(e26)}</span></div>
           <Badge className="text-[9px] px-1.5 py-0 h-4 font-medium border-0"
             style={{ backgroundColor: emaGoldenCross ? 'rgba(3,218,198,0.15)' : 'rgba(207,102,121,0.15)', color: emaGoldenCross ? '#03DAC6' : '#CF6679' }}>
             {emaGoldenCross ? 'Bullish EMA ↑' : 'Bearish EMA ↓'}
@@ -1401,7 +1401,7 @@ export default function QuantMacroPanel() {
               { label: '24h Volume', value: formatLargeNumber(macroData.global.totalVolume), change: null, icon: Activity },
               { label: 'BTC Dominance', value: `${toF(macroData.global.btcDominance, 1)}%`, change: null, icon: TrendingUp },
               { label: 'ETH Dominance', value: `${toF(macroData.global.ethDominance, 1)}%`, change: null, icon: Layers },
-              { label: 'Active Cryptos', value: (macroData.global.activeCryptos ?? 0).toLocaleString(), change: null, icon: Zap },
+              { label: 'Active Cryptos', value: formatCompact(macroData.global.activeCryptos ?? 0), change: null, icon: Zap },
             ].map(card => {
               const isUp = card.change !== null && card.change >= 0;
               return (
@@ -1588,9 +1588,9 @@ export default function QuantMacroPanel() {
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono">
           <span className="text-white/30">Range:</span>
-          <span className="text-[#03DAC6]/80">{smc.fairValueGaps.low.toLocaleString()}</span>
+          <span className="text-[#03DAC6]/80">{formatCompact(smc.fairValueGaps.low)}</span>
           <ArrowLeftRight className="h-3 w-3 text-white/20" />
-          <span className="text-[#CF6679]/80">{smc.fairValueGaps.high.toLocaleString()}</span>
+          <span className="text-[#CF6679]/80">{formatCompact(smc.fairValueGaps.high)}</span>
         </div>
         <p className="text-[10px] text-white/25 leading-relaxed line-clamp-2">{smc.fairValueGaps.description}</p>
       </div>
@@ -1609,9 +1609,9 @@ export default function QuantMacroPanel() {
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono">
           <span className="text-white/30">Zone:</span>
-          <span className="text-white/50">{smc.orderBlock.zone.low.toLocaleString()}</span>
+          <span className="text-white/50">{formatCompact(smc.orderBlock.zone.low)}</span>
           <span className="text-white/20">—</span>
-          <span className="text-white/50">{smc.orderBlock.zone.high.toLocaleString()}</span>
+          <span className="text-white/50">{formatCompact(smc.orderBlock.zone.high)}</span>
         </div>
         <p className="text-[10px] text-white/25 leading-relaxed line-clamp-2">{smc.orderBlock.description}</p>
       </div>
@@ -1630,7 +1630,7 @@ export default function QuantMacroPanel() {
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono">
           <span className="text-white/30">Level:</span>
-          <span className="text-[#FFD700]/80">{smc.liquiditySweep.level.toLocaleString()}</span>
+          <span className="text-[#FFD700]/80">{formatCompact(smc.liquiditySweep.level)}</span>
         </div>
         <p className="text-[10px] text-white/25 leading-relaxed line-clamp-2">{smc.liquiditySweep.description}</p>
       </div>
@@ -1787,7 +1787,7 @@ export default function QuantMacroPanel() {
                 <span className="text-[10px] sm:text-[11px] text-white/40 font-medium">{row.label}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-[11px] font-bold font-mono text-white/70">{row.data.target.toLocaleString()}</span>
+                <span className="text-[11px] font-bold font-mono text-white/70">{formatCompact(row.data.target)}</span>
                 <div className="flex items-center gap-1 text-[9px] text-white/25">
                   <Clock className="h-2.5 w-2.5" />
                   <span className="font-mono">{row.data.timeframe}</span>
@@ -1899,7 +1899,7 @@ export default function QuantMacroPanel() {
 
       {/* ── Expanded Analysis Dialog (shared between tabs) ─────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent showCloseButton={false} aria-describedby={undefined} className="max-w-5xl w-[calc(100vw-1.5rem)] sm:w-[95vw] max-h-[92vh] bg-[#0D0D0D] border border-white/[0.08] rounded-2xl p-0 gap-0 overflow-hidden">
+        <DialogContent showCloseButton={false} aria-describedby={undefined} className="max-w-7xl w-[calc(100vw-1.5rem)] sm:w-[95vw] max-h-[92vh] bg-[#0D0D0D] border border-white/[0.08] rounded-2xl p-0 gap-0 overflow-hidden">
           {selectedAsset && (
             <>
               {/* ── Dialog Header ──────────────────────────────────────────────── */}
@@ -2027,15 +2027,15 @@ export default function QuantMacroPanel() {
                               <div className="flex items-center justify-between">
                                 <div className="text-left">
                                   <span className="text-[8px] text-white/20 uppercase block">Low</span>
-                                  <span className="text-[11px] font-mono text-[#CF6679]/70">${md.low24h < 1 ? md.low24h.toFixed(6) : md.low24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                                  <span className="text-[11px] font-mono text-[#CF6679]/70">${md.low24h < 1 ? md.low24h.toFixed(6) : formatCompact(md.low24h)}</span>
                                 </div>
                                 <div className="text-center">
                                   <span className="text-[8px] text-white/20 uppercase block">Current</span>
-                                  <span className="text-[11px] font-mono text-white/60">${selectedAsset.price < 1 ? selectedAsset.price.toFixed(6) : selectedAsset.price.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                                  <span className="text-[11px] font-mono text-white/60">${selectedAsset.price < 1 ? selectedAsset.price.toFixed(6) : formatCompact(selectedAsset.price)}</span>
                                 </div>
                                 <div className="text-right">
                                   <span className="text-[8px] text-white/20 uppercase block">High</span>
-                                  <span className="text-[11px] font-mono text-[#03DAC6]/70">${md.high24h < 1 ? md.high24h.toFixed(6) : md.high24h.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                                  <span className="text-[11px] font-mono text-[#03DAC6]/70">${md.high24h < 1 ? md.high24h.toFixed(6) : formatCompact(md.high24h)}</span>
                                 </div>
                               </div>
                             </div>
@@ -2063,7 +2063,7 @@ export default function QuantMacroPanel() {
                           {md.ath != null && (
                             <div className="rounded-lg bg-white/[0.02] p-2.5 text-center">
                               <span className="text-[8px] text-white/25 uppercase tracking-wider block mb-0.5">ATH</span>
-                              <span className="text-[10px] font-mono text-white/50">${md.ath < 1 ? md.ath.toFixed(6) : md.ath.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                              <span className="text-[10px] font-mono text-white/50">${md.ath < 1 ? md.ath.toFixed(6) : formatCompact(md.ath)}</span>
                               {md.athChangePercentage != null && (
                                 <span className="text-[9px] text-[#CF6679]/50 font-mono block">({md.athChangePercentage.toFixed(1)}%)</span>
                               )}
