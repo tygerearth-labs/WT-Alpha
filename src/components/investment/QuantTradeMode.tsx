@@ -118,9 +118,23 @@ const STRONG_SELL_COLOR = '#CF6679';
 
 // ── Formatting Helpers ───────────────────────────────────────────────────────
 
-function toF(val: number | undefined | null, digits = 2): string {
+/** Compact number formatter with thousands separator.
+ *  Examples: 1,234.56 | 12,345.67 | 123,456.78 | 1.23M | 2.45B
+ */
+function fmtNum(val: number | undefined | null, digits = 2): string {
   const n = typeof val === 'number' && !isNaN(val) ? val : 0;
-  return n.toFixed(digits);
+  const abs = Math.abs(n);
+  // Use compact notation for very large numbers
+  if (abs >= 1e12) return `${n < 0 ? '-' : ''}${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${n < 0 ? '-' : ''}${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${n < 0 ? '-' : ''}${(abs / 1e6).toFixed(2)}M`;
+  // Use toLocaleString for thousands separator on normal numbers
+  return n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+/** Legacy alias kept for compatibility */
+function toF(val: number | undefined | null, digits = 2): string {
+  return fmtNum(val, digits);
 }
 
 function formatLargeNumber(num: number | undefined | null): string {
@@ -128,8 +142,8 @@ function formatLargeNumber(num: number | undefined | null): string {
   if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
   if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(2)}K`;
-  return `$${n.toFixed(2)}`;
+  if (n >= 1e3) return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatVolume(num: number | undefined | null): string {
@@ -137,8 +151,8 @@ function formatVolume(num: number | undefined | null): string {
   if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
   if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
   if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
-  return n.toFixed(0);
+  if (n >= 1e3) return `${n.toLocaleString('en-US', { maximumFractionDigits: 1 })}`;
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
 function getSignalColor(strength: number): string {
@@ -1050,7 +1064,7 @@ export default function QuantTradeMode() {
 
       {/* ── Expanded Analysis Dialog ─────────────────────────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-3xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
+        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
           {selectedAsset && (
             <>
               {/* Dialog Header */}
