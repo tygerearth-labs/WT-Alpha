@@ -227,7 +227,7 @@ export function MainLayout() {
 
   const businessNav: NavItem[] = useMemo(() => [
     { id: 'biz-dashboard', label: t('biz.bizDashboard'), icon: Briefcase, desc: 'Dashboard Bisnis' },
-    { id: 'biz-kas', label: t('biz.kasBesar'), icon: Wallet, desc: 'Kas & Pengeluaran' },
+    { id: 'biz-kas', label: 'Cashflow', icon: Wallet, desc: 'Arus Kas & Piutang' },
     { id: 'biz-penjualan', label: t('biz.penjualan'), icon: ShoppingCart, desc: 'Penjualan' },
     { id: 'biz-invoice', label: t('biz.invoice'), icon: Receipt, desc: 'Invoice' },
     { id: 'biz-customer', label: t('biz.customers'), icon: Users, desc: 'Pelanggan' },

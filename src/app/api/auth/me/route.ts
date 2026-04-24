@@ -39,14 +39,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check subscription expiry
+    // Check subscription expiry (only if autoSuspendExpired is enabled)
     if (user.subscriptionEnd && new Date(user.subscriptionEnd) < new Date()) {
-      await db.user.update({
-        where: { id: userId },
-        data: { plan: 'basic', subscriptionEnd: null }
-      });
-      user.plan = 'basic';
-      user.subscriptionEnd = null;
+      const platformConfig = await db.platformConfig.findUnique({ where: { id: 'platform' } });
+      if (!platformConfig || platformConfig.autoSuspendExpired) {
+        await db.user.update({
+          where: { id: userId },
+          data: { plan: 'basic', subscriptionEnd: null }
+        });
+        user.plan = 'basic';
+        user.subscriptionEnd = null;
+      }
     }
 
     return NextResponse.json({ user });

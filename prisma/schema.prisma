@@ -244,6 +244,8 @@ model Business {
   cashEntries      BusinessCash[]
   debts            BusinessDebt[]
   incomeAllocs     BusinessIncomeAllocation[]
+  categories       BusinessCategory[]
+  investors        BusinessInvestor[]
   portfolios       InvestmentPortfolio[]
   watchlist        WatchlistItem[]
   invoiceSettings  InvoiceSettings?
@@ -295,19 +297,29 @@ model BusinessInvoice {
 }
 
 model BusinessSale {
-  id            String   @id @default(cuid())
-  businessId    String
-  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customerId    String?
-  customer      BusinessCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  invoiceId     String?
-  description   String
-  amount        Float
-  date          DateTime @default(now())
-  paymentMethod String?
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId       String?
+  customer         BusinessCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  invoiceId        String?
+  description      String
+  amount           Float
+  date             DateTime @default(now())
+  paymentMethod    String?
+  notes            String?
+  downPayment      Float?
+  // DP amount
+  downPaymentPct   Float?
+  // DP percentage
+  installmentTempo Int?
+  // Number of installments (months)
+  installmentAmount Float?
+  // Monthly installment amount
+  investorSharePct Float?   @default(0)
+  // Percentage for investor profit sharing
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([businessId, date])
 }
@@ -316,18 +328,54 @@ model BusinessCash {
   id          String   @id @default(cuid())
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  type        String   // "kas_besar", "kas_kecil", "kas_keluar"
+  type        String   // "kas_besar", "kas_kecil", "kas_keluar", "investor"
   amount      Float
   description String
-  category    String?  // e.g. "modal", "operasional", "gaji", etc.
+  category    String?  // e.g. "modal", "operasional", "gaji", "investor_modal", etc.
   date        DateTime @default(now())
-  referenceId String?  // optional link to sale/invoice
+  referenceId String?  // optional link to sale/invoice/investor
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([businessId, type, date])
   @@index([businessId, date])
+}
+
+model BusinessCategory {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type        String   // "pemasukan", "pengeluaran", "produk"
+  name        String
+  color       String?  @default("#03DAC6")
+  icon        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, type, name])
+  @@index([businessId, type])
+}
+
+model BusinessInvestor {
+  id                 String   @id @default(cuid())
+  businessId         String
+  business           Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name               String
+  phone              String?
+  email              String?
+  address            String?
+  notes              String?
+  totalInvestment    Float    @default(0)
+  profitSharePct     Float    @default(0)
+  // Percentage of sales profit for this investor
+  status             String   @default("active") // active, inactive
+  joinDate           DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+
+  @@index([businessId, status])
 }
 
 model BusinessDebt {

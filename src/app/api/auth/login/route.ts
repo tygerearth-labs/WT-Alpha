@@ -86,15 +86,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (user.subscriptionEnd && new Date(user.subscriptionEnd) < new Date()) {
-      // Auto downgrade expired subscriptions to basic
-      await db.user.update({
-        where: { id: user.id },
-        data: { plan: 'basic', subscriptionEnd: null }
-      });
-      user.plan = 'basic';
+      // Auto downgrade expired subscriptions to basic (only if enabled in platform config)
+      const platformConfig = await db.platformConfig.findUnique({ where: { id: 'platform' } });
+      if (!platformConfig || platformConfig.autoSuspendExpired) {
+        await db.user.update({
+          where: { id: user.id },
+          data: { plan: 'basic', subscriptionEnd: null }
+        });
+        user.plan = 'basic';
 
-      // Create notification about the downgrade
-      notifySubscriptionExpiry(user.id, 0).catch(() => {});
+        // Create notification about the downgrade
+        notifySubscriptionExpiry(user.id, 0).catch(() => {});
+      }
     } else if (user.subscriptionEnd && user.plan !== 'basic') {
       // Check for expiring subscriptions (within 7 days)
       const nowDate = new Date();

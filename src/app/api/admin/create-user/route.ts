@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate plan if provided
-    const userPlan = plan === 'pro' ? 'pro' : 'basic';
+    const validPlans = ['basic', 'pro', 'ultimate'];
+    const userPlan = validPlans.includes(plan) ? plan : 'basic';
 
     // Validate image URL if provided
     if (image !== undefined && image !== null && image.trim() !== '') {
@@ -84,9 +85,13 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Set defaults based on plan
-    const maxCategories = userPlan === 'pro' ? 50 : 10;
-    const maxSavings = userPlan === 'pro' ? 20 : 3;
+    // Read platform config for limits
+    const platformConfig = await db.platformConfig.findUnique({ where: { id: 'platform' } });
+    const baseCategories = platformConfig?.defaultMaxCategories || 10;
+    const baseSavings = platformConfig?.defaultMaxSavings || 3;
+    const planMultiplier = userPlan === 'ultimate' ? 10 : userPlan === 'pro' ? 5 : 1;
+    const maxCategories = baseCategories * planMultiplier;
+    const maxSavings = baseSavings * planMultiplier;
 
     // Create user
     const newUser = await db.user.create({

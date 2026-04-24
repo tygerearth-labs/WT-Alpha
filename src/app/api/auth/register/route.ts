@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check invite token if provided
-    let assignedPlan = 'basic';
+    let assignedPlan = config?.defaultPlan || 'basic';
     if (inviteToken) {
       // Use a transaction to atomically check and update the invite token (prevent race condition)
       const tokenResult = await db.$transaction(async (tx) => {
@@ -202,13 +202,9 @@ export async function POST(request: NextRequest) {
       config = await db.platformConfig.create({ data: { id: 'platform' } });
     }
 
-    if (assignedPlan === 'pro') {
-      userData.maxCategories = config.defaultMaxCategories * 5; // Pro gets 5x basic limits
-      userData.maxSavings = config.defaultMaxSavings * 5;
-    } else {
-      userData.maxCategories = config.defaultMaxCategories;
-      userData.maxSavings = config.defaultMaxSavings;
-    }
+    const planMultiplier = assignedPlan === 'ultimate' ? 10 : assignedPlan === 'pro' ? 5 : 1;
+    userData.maxCategories = config.defaultMaxCategories * planMultiplier;
+    userData.maxSavings = config.defaultMaxSavings * planMultiplier;
 
     const user = await db.user.create({ data: userData as any });
 
@@ -221,8 +217,8 @@ export async function POST(request: NextRequest) {
           data: {
             plan: config.trialPlan || 'basic',
             subscriptionEnd: trialEnd,
-            maxCategories: (config.trialPlan || 'basic') === 'pro' ? config.defaultMaxCategories * 5 : config.defaultMaxCategories,
-            maxSavings: (config.trialPlan || 'basic') === 'pro' ? config.defaultMaxSavings * 5 : config.defaultMaxSavings,
+            maxCategories: config.defaultMaxCategories * ((config.trialPlan === 'ultimate') ? 10 : (config.trialPlan === 'pro') ? 5 : 1),
+            maxSavings: config.defaultMaxSavings * ((config.trialPlan === 'ultimate') ? 10 : (config.trialPlan === 'pro') ? 5 : 1),
           }
         });
       }

@@ -118,9 +118,9 @@ export async function POST(
       );
     }
 
-    if (!['kas_besar', 'kas_kecil', 'kas_keluar'].includes(type)) {
+    if (!['kas_besar', 'kas_kecil', 'kas_keluar', 'investor'].includes(type)) {
       return NextResponse.json(
-        { error: 'Type must be kas_besar, kas_kecil, or kas_keluar' },
+        { error: 'Type must be kas_besar, kas_kecil, kas_keluar, or investor' },
         { status: 400 }
       );
     }

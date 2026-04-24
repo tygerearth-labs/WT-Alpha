@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -60,6 +61,11 @@ import {
   PackageOpen,
   CircleDollarSign,
   Wallet,
+  Repeat,
+  Users,
+  Percent,
+  ArrowDownToLine,
+  Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -69,6 +75,12 @@ import ProductList from './ProductList';
 interface Customer {
   id: string;
   name: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  type: string;
 }
 
 interface Sale {
@@ -81,6 +93,13 @@ interface Sale {
   customer?: Customer | null;
   customerId?: string | null;
   invoiceId?: string | null;
+  categoryId?: string | null;
+  category?: { id: string; name: string } | null;
+  downPayment?: number | null;
+  downPaymentPct?: number | null;
+  installmentTempo?: number | null;
+  installmentAmount?: number | null;
+  investorSharePct?: number | null;
 }
 
 const PAYMENT_METHODS = [
@@ -157,6 +176,27 @@ const rowVariants = {
   exit: { opacity: 0, x: 12, transition: { duration: 0.2 } },
 };
 
+const installmentSectionVariants = {
+  hidden: { opacity: 0, height: 0, marginTop: 0 },
+  visible: {
+    opacity: 1,
+    height: 'auto',
+    marginTop: 20,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 200,
+      damping: 22,
+      opacity: { duration: 0.25 },
+    },
+  },
+  exit: {
+    opacity: 0,
+    height: 0,
+    marginTop: 0,
+    transition: { duration: 0.2, opacity: { duration: 0.1 } },
+  },
+};
+
 export default function BusinessSales() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
@@ -164,6 +204,7 @@ export default function BusinessSales() {
   const [activeTab, setActiveTab] = useState<'sales' | 'products'>('sales');
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<
     Array<{ id: string; name: string; price: number; stock: number; sku: string | null }>
   >([]);
@@ -181,12 +222,43 @@ export default function BusinessSales() {
     customerId: '',
     paymentMethod: 'cash',
     notes: '',
+    categoryId: '',
+    isInstallment: false,
+    downPayment: '',
+    downPaymentPct: '',
+    installmentTempo: '',
+    investorSharePct: '',
   });
   const [saving, setSaving] = useState(false);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const businessId = activeBusiness?.id;
+
+  // Computed installment values
+  const computedDP = formData.isInstallment ? parseFloat(formData.downPayment) || 0 : 0;
+  const computedAmount = parseFloat(formData.amount) || 0;
+  const computedTenor = formData.isInstallment ? parseInt(formData.installmentTempo) || 0 : 0;
+  const remaining = Math.max(0, computedAmount - computedDP);
+  const monthlyInstallment = computedTenor > 0 ? remaining / computedTenor : 0;
+  const investorSharePct = formData.isInstallment ? parseFloat(formData.investorSharePct) || 0 : 0;
+  const investorShareAmount = monthlyInstallment > 0 ? (monthlyInstallment * investorSharePct) / 100 : 0;
+
+  // Auto-calculate DP percentage when DP amount changes
+  const handleDownPaymentChange = (value: string) => {
+    const dp = parseFloat(value) || 0;
+    const amt = parseFloat(formData.amount) || 0;
+    const pct = amt > 0 ? ((dp / amt) * 100).toFixed(1) : '';
+    setFormData((prev) => ({ ...prev, downPayment: value, downPaymentPct: pct }));
+  };
+
+  // Auto-calculate DP amount when DP percentage changes
+  const handleDownPaymentPctChange = (value: string) => {
+    const pct = parseFloat(value) || 0;
+    const amt = parseFloat(formData.amount) || 0;
+    const dp = (amt * pct) / 100;
+    setFormData((prev) => ({ ...prev, downPaymentPct: value, downPayment: dp > 0 ? dp.toString() : '' }));
+  };
 
   const fetchSales = useCallback(() => {
     if (!businessId) return;
@@ -195,16 +267,19 @@ export default function BusinessSales() {
       fetch(`/api/business/${businessId}/sales`).then((r) => (r.ok ? r.json() : [])),
       fetch(`/api/business/${businessId}/customers`).then((r) => (r.ok ? r.json() : [])),
       fetch(`/api/business/${businessId}/products`).then((r) => (r.ok ? r.json() : { products: [] })),
+      fetch(`/api/business/${businessId}/categories?type=produk`).then((r) => (r.ok ? r.json() : { categories: [] })),
     ])
-      .then(([salesData, customersData, productsData]) => {
+      .then(([salesData, customersData, productsData, categoriesData]) => {
         setSales(salesData?.sales || []);
         setCustomers(customersData?.customers || []);
         setProducts(productsData?.products || []);
+        setCategories(categoriesData?.categories || []);
       })
       .catch(() => {
         setSales([]);
         setCustomers([]);
         setProducts([]);
+        setCategories([]);
       })
       .finally(() => setLoading(false));
   }, [businessId]);
@@ -237,6 +312,12 @@ export default function BusinessSales() {
       customerId: '',
       paymentMethod: 'cash',
       notes: '',
+      categoryId: '',
+      isInstallment: false,
+      downPayment: '',
+      downPaymentPct: '',
+      installmentTempo: '',
+      investorSharePct: '',
     });
     setDialogOpen(true);
   };
@@ -250,6 +331,12 @@ export default function BusinessSales() {
       customerId: sale.customerId || '',
       paymentMethod: sale.paymentMethod || 'cash',
       notes: sale.notes || '',
+      categoryId: sale.categoryId || '',
+      isInstallment: (sale.installmentTempo ?? 0) > 0,
+      downPayment: sale.downPayment?.toString() || '',
+      downPaymentPct: sale.downPaymentPct?.toString() || '',
+      installmentTempo: sale.installmentTempo?.toString() || '',
+      investorSharePct: sale.investorSharePct?.toString() || '',
     });
     setDialogOpen(true);
   };
@@ -262,14 +349,28 @@ export default function BusinessSales() {
       const url = editingSale
         ? `/api/business/${businessId}/sales/${editingSale.id}`
         : `/api/business/${businessId}/sales`;
+      const amt = parseFloat(formData.amount);
+      const dp = formData.isInstallment ? parseFloat(formData.downPayment) || null : null;
+      const dpPct = formData.isInstallment ? parseFloat(formData.downPaymentPct) || null : null;
+      const tenor = formData.isInstallment ? parseInt(formData.installmentTempo) || null : null;
+      const instAmount = formData.isInstallment && tenor && tenor > 0
+        ? (amt - (parseFloat(formData.downPayment) || 0)) / tenor
+        : null;
+      const invPct = formData.isInstallment ? parseFloat(formData.investorSharePct) || null : null;
       const body: Record<string, unknown> = {
         description: formData.description,
-        amount: parseFloat(formData.amount),
+        amount: amt,
         date: formData.date,
         paymentMethod: formData.paymentMethod,
         notes: formData.notes || undefined,
+        downPayment: dp,
+        downPaymentPct: dpPct,
+        installmentTempo: tenor,
+        installmentAmount: instAmount,
+        investorSharePct: invPct,
       };
       if (formData.customerId) body.customerId = formData.customerId;
+      if (formData.categoryId) body.categoryId = formData.categoryId;
       const res = await fetch(url, {
         method: editingSale ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -393,21 +494,23 @@ export default function BusinessSales() {
         </motion.div>
       ) : (
         <motion.div key="sales" variants={containerVariants} initial="hidden" animate="visible">
-          {/* Summary Cards */}
+          {/* Summary Cards — Glassmorphism */}
           <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             {/* Total Penjualan */}
-            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#03DAC6]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
+            <Card className="relative rounded-2xl overflow-hidden group backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] shadow-xl shadow-black/10 hover:shadow-[#03DAC6]/5 hover:border-[#03DAC6]/20 transition-all duration-500">
+              {/* Decorative gradient circles */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-[#03DAC6]/15 to-transparent blur-xl group-hover:scale-125 transition-transform duration-700" />
+              <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-gradient-to-tr from-[#03DAC6]/8 to-transparent blur-lg" />
               <CardContent className="p-5 relative">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#03DAC6]/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#03DAC6]/20 to-[#03DAC6]/5 flex items-center justify-center border border-[#03DAC6]/20">
                     <CircleDollarSign className="h-5 w-5 text-[#03DAC6]" />
                   </div>
                   <span className="text-white/50 text-xs font-medium uppercase tracking-wider">
                     {t('biz.totalPenjualan')}
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-white tabular-nums">
                   {formatAmount(animatedTotal)}
                 </p>
                 <p className="text-xs text-white/30 mt-1">
@@ -417,18 +520,19 @@ export default function BusinessSales() {
             </Card>
 
             {/* Transaksi Hari Ini */}
-            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#BB86FC]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
+            <Card className="relative rounded-2xl overflow-hidden group backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] shadow-xl shadow-black/10 hover:shadow-[#BB86FC]/5 hover:border-[#BB86FC]/20 transition-all duration-500">
+              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-[#BB86FC]/15 to-transparent blur-xl group-hover:scale-125 transition-transform duration-700" />
+              <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-gradient-to-tr from-[#BB86FC]/8 to-transparent blur-lg" />
               <CardContent className="p-5 relative">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#BB86FC]/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#BB86FC]/20 to-[#BB86FC]/5 flex items-center justify-center border border-[#BB86FC]/20">
                     <Receipt className="h-5 w-5 text-[#BB86FC]" />
                   </div>
                   <span className="text-white/50 text-xs font-medium uppercase tracking-wider">
                     {t('biz.cashDate')}
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-white tabular-nums">
                   {formatAmount(animatedToday)}
                 </p>
                 <p className="text-xs text-white/30 mt-1">
@@ -438,18 +542,19 @@ export default function BusinessSales() {
             </Card>
 
             {/* Rata-rata per Transaksi */}
-            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD700]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
+            <Card className="relative rounded-2xl overflow-hidden group backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] shadow-xl shadow-black/10 hover:shadow-[#FFD700]/5 hover:border-[#FFD700]/20 transition-all duration-500">
+              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-[#FFD700]/15 to-transparent blur-xl group-hover:scale-125 transition-transform duration-700" />
+              <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-gradient-to-tr from-[#FFD700]/8 to-transparent blur-lg" />
               <CardContent className="p-5 relative">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#FFD700]/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 flex items-center justify-center border border-[#FFD700]/20">
                     <Calculator className="h-5 w-5 text-[#FFD700]" />
                   </div>
                   <span className="text-white/50 text-xs font-medium uppercase tracking-wider">
                     Rata-rata
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-white tabular-nums">
                   {formatAmount(animatedAvg)}
                 </p>
                 <p className="text-xs text-white/30 mt-1">
@@ -526,8 +631,10 @@ export default function BusinessSales() {
 
           {/* Table */}
           <motion.div variants={itemVariants}>
-            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/90 border border-white/[0.06] rounded-2xl overflow-hidden shadow-xl shadow-black/20">
-              <CardContent className="p-0">
+            <Card className="relative rounded-2xl overflow-hidden backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] shadow-xl shadow-black/20">
+              {/* Decorative gradient circle */}
+              <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-gradient-to-br from-[#03DAC6]/5 via-[#BB86FC]/3 to-transparent blur-3xl pointer-events-none" />
+              <CardContent className="p-0 relative">
                 {loading ? (
                   <div className="space-y-3 p-6">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -600,8 +707,8 @@ export default function BusinessSales() {
                             <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider hidden sm:table-cell">
                               {t('biz.saleCustomer')}
                             </TableHead>
-                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider hidden md:table-cell w-[130px]">
-                              {t('biz.salePaymentMethod')}
+                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider hidden lg:table-cell w-[120px]">
+                              Status
                             </TableHead>
                             <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider text-right w-[140px]">
                               {t('biz.saleAmount')}
@@ -615,6 +722,12 @@ export default function BusinessSales() {
                               const pColor = sale.paymentMethod
                                 ? paymentIconMap[sale.paymentMethod] || '#BB86FC'
                                 : '#BB86FC';
+                              const isInstallment = (sale.installmentTempo ?? 0) > 0;
+                              const hasDP = (sale.downPayment ?? 0) > 0;
+                              const hasInvestor = (sale.investorSharePct ?? 0) > 0;
+                              const dpPercent = sale.amount > 0 && hasDP
+                                ? Math.round((sale.downPayment! / sale.amount) * 100)
+                                : 0;
                               return (
                                 <motion.tr
                                   key={sale.id}
@@ -635,37 +748,117 @@ export default function BusinessSales() {
                                       year: 'numeric',
                                     })}
                                   </TableCell>
-                                  <TableCell className="text-white/90 text-xs py-3.5 font-medium max-w-[200px] truncate group-hover:text-white transition-colors">
-                                    {sale.description}
+                                  <TableCell className="py-3.5">
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-white/90 text-xs font-medium max-w-[200px] truncate group-hover:text-white transition-colors">
+                                        {sale.description}
+                                      </span>
+                                      {/* Badges row */}
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        {sale.category && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] font-medium border-0 rounded-full px-2 py-0"
+                                            style={{
+                                              backgroundColor: '#FFD70012',
+                                              color: '#FFD700',
+                                            }}
+                                          >
+                                            <Layers className="h-2 w-2 mr-0.5" />
+                                            {sale.category.name}
+                                          </Badge>
+                                        )}
+                                        {sale.paymentMethod && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] font-medium border-0 rounded-full px-2 py-0"
+                                            style={{
+                                              backgroundColor: `${pColor}15`,
+                                              color: pColor,
+                                            }}
+                                          >
+                                            {(() => {
+                                              const M = PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod);
+                                              if (!M) return sale.paymentMethod;
+                                              const Icon = M.icon;
+                                              return (
+                                                <span className="flex items-center gap-0.5">
+                                                  <Icon className="h-2 w-2" />
+                                                  {t(M.labelKey)}
+                                                </span>
+                                              );
+                                            })()}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
                                   </TableCell>
                                   <TableCell className="py-3.5 hidden sm:table-cell">
                                     <span className="text-white/50 text-xs">
                                       {sale.customer?.name || '—'}
                                     </span>
                                   </TableCell>
-                                  <TableCell className="py-3.5 hidden md:table-cell">
-                                    {sale.paymentMethod && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[10px] font-medium border-0 rounded-full px-2.5 py-0.5"
-                                        style={{
-                                          backgroundColor: `${pColor}15`,
-                                          color: pColor,
-                                        }}
-                                      >
-                                        {(() => {
-                                          const M = PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod);
-                                          if (!M) return sale.paymentMethod;
-                                          const Icon = M.icon;
-                                          return (
-                                            <span className="flex items-center gap-1">
-                                              <Icon className="h-2.5 w-2.5" />
-                                              {t(M.labelKey)}
-                                            </span>
-                                          );
-                                        })()}
-                                      </Badge>
-                                    )}
+                                  {/* Status column */}
+                                  <TableCell className="py-3.5 hidden lg:table-cell">
+                                    <div className="flex flex-col gap-1.5">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        {isInstallment && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] font-bold border-0 rounded-full px-2 py-0"
+                                            style={{
+                                              backgroundColor: '#BB86FC18',
+                                              color: '#BB86FC',
+                                            }}
+                                          >
+                                            <Repeat className="h-2.5 w-2.5 mr-0.5" />
+                                            {t('biz.installmentBadge')}
+                                          </Badge>
+                                        )}
+                                        {hasDP && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] font-medium border-0 rounded-full px-2 py-0"
+                                            style={{
+                                              backgroundColor: '#03DAC612',
+                                              color: '#03DAC6',
+                                            }}
+                                          >
+                                            <ArrowDownToLine className="h-2.5 w-2.5 mr-0.5" />
+                                            DP {dpPercent}%
+                                          </Badge>
+                                        )}
+                                        {hasInvestor && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] font-medium border-0 rounded-full px-2 py-0"
+                                            style={{
+                                              backgroundColor: '#FFD70012',
+                                              color: '#FFD700',
+                                            }}
+                                          >
+                                            <Users className="h-2.5 w-2.5 mr-0.5" />
+                                            {sale.investorSharePct}%
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      {/* Installment progress bar */}
+                                      {isInstallment && hasDP && (
+                                        <div className="w-full max-w-[100px]">
+                                          <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                            <motion.div
+                                              className="h-full rounded-full bg-gradient-to-r from-[#03DAC6] to-[#03DAC6]/70"
+                                              initial={{ width: 0 }}
+                                              animate={{ width: `${Math.min(dpPercent, 100)}%` }}
+                                              transition={{ delay: i * 0.04 + 0.2, duration: 0.6, ease: 'easeOut' as const }}
+                                            />
+                                          </div>
+                                          <span className="text-[9px] text-white/25 mt-0.5 block tabular-nums">
+                                            DP {formatAmount(sale.downPayment!)}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell className="text-xs text-right font-semibold py-3.5 text-[#03DAC6] tabular-nums">
                                     +{formatAmount(sale.amount)}
@@ -714,10 +907,10 @@ export default function BusinessSales() {
 
           {/* Add/Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[520px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+            <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[560px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden max-h-[90vh] flex flex-col">
               {/* Gradient accent line at top */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03DAC6] via-[#BB86FC] to-[#FFD700]" />
-              <DialogHeader className="pt-2">
+              <DialogHeader className="pt-2 shrink-0">
                 <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
                     {editingSale ? (
@@ -733,7 +926,7 @@ export default function BusinessSales() {
                 </DialogDescription>
               </DialogHeader>
 
-              <form onSubmit={handleSave} className="space-y-5 mt-2">
+              <form id="sale-form" onSubmit={handleSave} className="space-y-5 mt-2 overflow-y-auto flex-1 pr-1 scrollbar-thin">
                 {/* Product Quick Select */}
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
@@ -778,6 +971,41 @@ export default function BusinessSales() {
                   )}
                 </motion.div>
 
+                {/* Category Selection */}
+                {categories.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.08 }}
+                    className="space-y-2"
+                  >
+                    <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                      {t('biz.cashCategory')}
+                    </Label>
+                    <Select
+                      value={formData.categoryId}
+                      onValueChange={(v) => setFormData((prev) => ({ ...prev, categoryId: v }))}
+                    >
+                      <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all">
+                        <SelectValue placeholder={t('biz.cashCategory')} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1A1A2E] border-white/[0.08] rounded-xl">
+                        <SelectItem value="" className="text-white/40 rounded-lg focus:bg-white/[0.06]">
+                          Tanpa kategori
+                        </SelectItem>
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id} className="text-white rounded-lg focus:bg-white/[0.06]">
+                            <span className="flex items-center gap-2">
+                              <Layers className="h-3 w-3 text-[#FFD700]/70" />
+                              {c.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
+                )}
+
                 {/* Description */}
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
@@ -790,7 +1018,7 @@ export default function BusinessSales() {
                   </Label>
                   <Input
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                     placeholder={t('biz.saleDescription')}
                     className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all"
                   />
@@ -811,7 +1039,7 @@ export default function BusinessSales() {
                     <Input
                       type="number"
                       value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
                       placeholder="0"
                       min="0"
                       className="bg-white/[0.04] border-white/[0.08] text-white text-lg font-semibold placeholder:text-white/20 pl-10 pr-4 rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all tabular-nums"
@@ -831,6 +1059,183 @@ export default function BusinessSales() {
                   )}
                 </motion.div>
 
+                {/* Installment Toggle */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 }}
+                  className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
+                      <Repeat className="h-4 w-4 text-[#BB86FC]" />
+                    </div>
+                    <div>
+                      <span className="text-sm text-white/80 font-medium">{t('biz.isInstallment')}</span>
+                      <p className="text-[10px] text-white/30">Aktifkan cicilan & investor</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={formData.isInstallment}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        isInstallment: checked,
+                        downPayment: checked ? prev.downPayment : '',
+                        downPaymentPct: checked ? prev.downPaymentPct : '',
+                        installmentTempo: checked ? prev.installmentTempo : '',
+                        investorSharePct: checked ? prev.investorSharePct : '',
+                      }))
+                    }
+                    className="data-[state=checked]:bg-[#BB86FC]"
+                  />
+                </motion.div>
+
+                {/* Installment Section — Collapsible/Animated */}
+                <AnimatePresence>
+                  {formData.isInstallment && (
+                    <motion.div
+                      variants={installmentSectionVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      className="overflow-hidden"
+                    >
+                      <div className="rounded-xl bg-gradient-to-br from-[#BB86FC]/[0.04] to-[#03DAC6]/[0.02] border border-[#BB86FC]/15 p-4 space-y-4 relative overflow-hidden">
+                        {/* Decorative glow */}
+                        <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#BB86FC]/5 blur-2xl pointer-events-none" />
+
+                        {/* DP Amount & DP Percentage */}
+                        <div className="grid grid-cols-2 gap-3 relative">
+                          <div className="space-y-1.5">
+                            <Label className="text-white/60 text-[10px] font-medium uppercase tracking-wider flex items-center gap-1">
+                              <ArrowDownToLine className="h-3 w-3 text-[#03DAC6]" />
+                              {t('biz.downPayment')} (Rp)
+                            </Label>
+                            <Input
+                              type="number"
+                              value={formData.downPayment}
+                              onChange={(e) => handleDownPaymentChange(e.target.value)}
+                              placeholder="0"
+                              min="0"
+                              className="bg-white/[0.04] border-white/[0.08] text-white text-sm placeholder:text-white/15 rounded-lg focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all tabular-nums"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-white/60 text-[10px] font-medium uppercase tracking-wider flex items-center gap-1">
+                              <Percent className="h-3 w-3 text-[#03DAC6]" />
+                              DP (%)
+                            </Label>
+                            <Input
+                              type="number"
+                              value={formData.downPaymentPct}
+                              onChange={(e) => handleDownPaymentPctChange(e.target.value)}
+                              placeholder="0"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              className="bg-white/[0.04] border-white/[0.08] text-white text-sm placeholder:text-white/15 rounded-lg focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all tabular-nums"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Tenor (months) */}
+                        <div className="space-y-1.5">
+                          <Label className="text-white/60 text-[10px] font-medium uppercase tracking-wider flex items-center gap-1">
+                            <Repeat className="h-3 w-3 text-[#BB86FC]" />
+                            {t('biz.installmentPeriod')}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={formData.installmentTempo}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, installmentTempo: e.target.value }))}
+                            placeholder="0"
+                            min="1"
+                            className="bg-white/[0.04] border-white/[0.08] text-white text-sm placeholder:text-white/15 rounded-lg focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all tabular-nums w-full sm:w-1/2"
+                          />
+                        </div>
+
+                        {/* Investor Share */}
+                        <div className="space-y-1.5">
+                          <Label className="text-white/60 text-[10px] font-medium uppercase tracking-wider flex items-center gap-1">
+                            <Users className="h-3 w-3 text-[#FFD700]" />
+                            Bagi Investor (%)
+                          </Label>
+                          <Input
+                            type="number"
+                            value={formData.investorSharePct}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, investorSharePct: e.target.value }))}
+                            placeholder="0"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            className="bg-white/[0.04] border-white/[0.08] text-white text-sm placeholder:text-white/15 rounded-lg focus:border-[#FFD700]/40 focus:ring-1 focus:ring-[#FFD700]/20 transition-all tabular-nums w-full sm:w-1/2"
+                          />
+                        </div>
+
+                        {/* Live Preview Box */}
+                        {(computedAmount > 0 || computedTenor > 0) && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.97 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="rounded-lg overflow-hidden relative"
+                          >
+                            {/* Gradient border effect */}
+                            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#03DAC6]/30 via-[#BB86FC]/30 to-[#FFD700]/30 p-[1px]">
+                              <div className="w-full h-full rounded-lg bg-[#1A1A2E]" />
+                            </div>
+                            <div className="relative p-3 space-y-2">
+                              <p className="text-[10px] text-white/40 uppercase tracking-wider font-semibold mb-2">
+                                Ringkasan Cicilan
+                              </p>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] text-white/30 uppercase">{t('biz.remainingAfterDP')}</span>
+                                  <span className="text-xs font-bold text-[#03DAC6] tabular-nums">
+                                    {formatAmount(remaining)}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] text-white/30 uppercase">{t('biz.installmentAmount')}</span>
+                                  <span className="text-xs font-bold text-[#BB86FC] tabular-nums">
+                                    {computedTenor > 0 ? formatAmount(monthlyInstallment) : '—'}
+                                  </span>
+                                </div>
+                              </div>
+                              {investorSharePct > 0 && monthlyInstallment > 0 && (
+                                <div className="flex flex-col pt-1 border-t border-white/[0.06]">
+                                  <span className="text-[9px] text-white/30 uppercase">Bagi Investor ({investorSharePct}%)</span>
+                                  <span className="text-xs font-bold text-[#FFD700] tabular-nums">
+                                    {formatAmount(investorShareAmount)} / bulan
+                                  </span>
+                                </div>
+                              )}
+                              {/* Progress bar preview */}
+                              {computedAmount > 0 && computedDP > 0 && (
+                                <div className="pt-1">
+                                  <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                    <motion.div
+                                      className="h-full rounded-full bg-gradient-to-r from-[#03DAC6] to-[#BB86FC]"
+                                      initial={{ width: 0 }}
+                                      animate={{
+                                        width: `${Math.min((computedDP / computedAmount) * 100, 100)}%`,
+                                      }}
+                                      transition={{ duration: 0.4, ease: 'easeOut' as const }}
+                                    />
+                                  </div>
+                                  <p className="text-[9px] text-white/25 mt-1 tabular-nums">
+                                    DP {((computedDP / computedAmount) * 100).toFixed(1)}% dari total
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Customer */}
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
@@ -843,7 +1248,7 @@ export default function BusinessSales() {
                   </Label>
                   <Select
                     value={formData.customerId}
-                    onValueChange={(v) => setFormData({ ...formData, customerId: v })}
+                    onValueChange={(v) => setFormData((prev) => ({ ...prev, customerId: v }))}
                   >
                     <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all">
                       <SelectValue placeholder={t('biz.saleCustomer')} />
@@ -872,7 +1277,7 @@ export default function BusinessSales() {
                     <Input
                       type="date"
                       value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
                       className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all"
                     />
                   </div>
@@ -882,7 +1287,7 @@ export default function BusinessSales() {
                     </Label>
                     <Select
                       value={formData.paymentMethod}
-                      onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}
+                      onValueChange={(v) => setFormData((prev) => ({ ...prev, paymentMethod: v }))}
                     >
                       <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all">
                         <SelectValue />
@@ -916,31 +1321,32 @@ export default function BusinessSales() {
                   </Label>
                   <Textarea
                     value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder={t('biz.customerNotes')}
                     className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 min-h-[72px] rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all resize-none"
                   />
                 </motion.div>
-
-                <DialogFooter className="gap-2 pt-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDialogOpen(false)}
-                    className="border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={saving || !formData.description || !formData.amount}
-                    className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:from-[#9B6FDB] hover:to-[#7B5FBB] rounded-xl shadow-lg shadow-[#BB86FC]/20 disabled:opacity-50 transition-all"
-                  >
-                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t('common.save')}
-                  </Button>
-                </DialogFooter>
               </form>
+
+              <DialogFooter className="gap-2 pt-3 shrink-0 border-t border-white/[0.06] mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  className="border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  type="submit"
+                  form="sale-form"
+                  disabled={saving || !formData.description || !formData.amount}
+                  className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:from-[#9B6FDB] hover:to-[#7B5FBB] rounded-xl shadow-lg shadow-[#BB86FC]/20 disabled:opacity-50 transition-all"
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {t('common.save')}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 

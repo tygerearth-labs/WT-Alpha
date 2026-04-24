@@ -22,6 +22,9 @@ export function RegisterForm() {
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [registrationMessage, setRegistrationMessage] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
+  const [trialEnabled, setTrialEnabled] = useState(false);
+  const [trialDurationDays, setTrialDurationDays] = useState(0);
+  const [trialPlan, setTrialPlan] = useState('basic');
   const [configLoaded, setConfigLoaded] = useState(false);
   const { setUser } = useAuthStore();
   const { t } = useTranslation();
@@ -42,6 +45,9 @@ export function RegisterForm() {
           setRegistrationOpen(data.registrationOpen ?? true);
           setRegistrationMessage(data.registrationMessage || '');
           setWhatsappNumber(data.whatsappNumber || null);
+          setTrialEnabled(data.trialEnabled ?? false);
+          setTrialDurationDays(data.trialDurationDays || 0);
+          setTrialPlan(data.trialPlan || 'basic');
         }
         setConfigLoaded(true);
       })
@@ -84,6 +90,10 @@ export function RegisterForm() {
 
   const inputCls = "h-11 rounded-xl text-sm border-0 focus-visible:ring-1";
 
+  const trialBadge = trialEnabled && !inviteToken ? {
+    label: `Free ${trialDurationDays}-day ${trialPlan === 'pro' ? 'Pro' : trialPlan === 'ultimate' ? 'Ultimate' : 'Basic'} trial`,
+  } : null;
+
   // Show registration closed message
   if (configLoaded && !registrationOpen) {
     return (
@@ -119,6 +129,11 @@ export function RegisterForm() {
     <div className="w-full max-w-sm mx-auto space-y-6">
       <div className="text-center space-y-1">
         <p className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>{t('auth.createAccount')}</p>
+        {trialBadge && (
+          <Badge className="mx-auto text-[10px] font-bold uppercase px-3 py-1 rounded-full bg-[#03DAC6]/10 border border-[#03DAC6]/20 text-[#03DAC6]">
+            {trialBadge.label}
+          </Badge>
+        )}
       </div>
 
       {/* Invite Token Section */}

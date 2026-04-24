@@ -90,7 +90,8 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { customerId, invoiceId, description, amount, date, paymentMethod, notes } = body;
+    const { customerId, invoiceId, description, amount, date, paymentMethod, notes,
+        downPayment, downPaymentPct, installmentTempo, installmentAmount, investorSharePct } = body;
 
     if (!description || amount === undefined || amount === null) {
       return NextResponse.json(
@@ -143,6 +144,11 @@ export async function POST(
         date: date ? new Date(date) : new Date(),
         paymentMethod,
         notes,
+        downPayment: downPayment ? parseFloat(String(downPayment)) : null,
+        downPaymentPct: downPaymentPct ? parseFloat(String(downPaymentPct)) : null,
+        installmentTempo: installmentTempo ? parseInt(String(installmentTempo)) : null,
+        installmentAmount: installmentAmount ? parseFloat(String(installmentAmount)) : null,
+        investorSharePct: investorSharePct ? parseFloat(String(investorSharePct)) : null,
       },
       include: {
         customer: {
