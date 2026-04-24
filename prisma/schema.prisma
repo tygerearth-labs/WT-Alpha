@@ -393,6 +393,7 @@ model BusinessDebt {
   installmentAmount Float?    // Fixed monthly installment amount
   installmentPeriod Int?      // Number of installments (months)
   nextInstallmentDate DateTime? // Next installment due date
+  referenceId   String?  // optional link to sale/invoice that created this debt
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

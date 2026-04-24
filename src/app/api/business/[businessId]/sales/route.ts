@@ -188,7 +188,6 @@ export async function POST(
             installmentAmount: numInstAmount || (numTempo > 0 ? remaining / numTempo : 0),
             installmentPeriod: numTempo,
             nextInstallmentDate: nextDate,
-            referenceId: sale.id,
           },
         });
       } catch (piutangErr) {
