@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -216,6 +216,7 @@ model PlatformConfig {
   availablePlans       String?  @default("[\"basic\",\"pro\",\"ultimate\"]")
   sectionVisibility    String?
   exportEnabled        String?
+  landingPageConfig    String?
   updatedAt            DateTime @updatedAt
 }
 

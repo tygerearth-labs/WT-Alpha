@@ -5,10 +5,11 @@ const securityHeaders = [
     key: "X-Content-Type-Options",
     value: "nosniff",
   },
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
+  // X-Frame-Options: allow embedding in iframes (preview panels, etc.)
+  // {
+  //   key: "X-Frame-Options",
+  //   value: "DENY",
+  // },
   {
     key: "X-XSS-Protection",
     value: "1; mode=block",
@@ -28,6 +29,14 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     "preview-chat-cbfcbd9b-5c49-4c8f-a37a-c6809d64ae6a.space.z.ai",
   ],
+  // Vercel: uses default serverless output
+  // Local production: uncomment next line for standalone output
+  // output: "standalone",
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
+  },
   async headers() {
     return [
       {
