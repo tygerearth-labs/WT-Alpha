@@ -101,21 +101,17 @@ export async function GET() {
 
     let databaseSize = 'Unknown';
     try {
-      // Use a simple table count approach instead of pg_database_size
-      // which may not be accessible on hosted Postgres (Neon, etc.)
-      const tableCountResult = await db.$queryRawUnsafe<{ count: bigint }[]>(
-        `SELECT count(*) as count FROM information_schema.tables WHERE table_schema = 'public'`
-      );
+      // SQLite-compatible: count records across main tables to estimate DB size
       const userCount = await db.user.count();
       const txCount = await db.transaction.count();
       const catCount = await db.category.count();
-      const totalRecords = userCount + txCount + catCount;
+      const busCount = await db.business.count();
+      const salesCount = await db.businessSale.count();
+      const totalRecords = userCount + txCount + catCount + busCount + salesCount;
       // Rough estimate: ~2KB per record
       const estimatedBytes = totalRecords * 2048;
       if (estimatedBytes < 1024 * 1024) databaseSize = `${(estimatedBytes / 1024).toFixed(1)} KB`;
       else databaseSize = `${(estimatedBytes / (1024 * 1024)).toFixed(2)} MB`;
-      // Also store table count for display
-      void tableCountResult;
     } catch {
       databaseSize = 'Unknown';
     }

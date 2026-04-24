@@ -7,7 +7,13 @@ export async function GET() {
   if (adminId instanceof NextResponse) return adminId;
 
   try {
-    const [totalIncome, totalExpense, transactionStats, categoryMetrics, recentPlatformActivity] = await Promise.all([
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const [totalIncome, totalExpense, allTransactions, categoryMetrics, recentPlatformActivity] = await Promise.all([
       db.transaction.aggregate({
         where: { type: 'income' },
         _sum: { amount: true },
@@ -18,14 +24,12 @@ export async function GET() {
         _sum: { amount: true },
         _count: true,
       }),
-      db.$queryRaw<Array<{ date: string; type: string; total: bigint; count: bigint }>>`
-        SELECT DATE(date) as date, type, SUM(amount) as total, COUNT(*) as count
-        FROM "Transaction"
-        WHERE date >= NOW() - INTERVAL '30 days'
-        GROUP BY DATE(date), type
-        ORDER BY date ASC
-      `,
-      db.$queryRaw<Array<{ name: string; icon: string; total: bigint; count: bigint }>>`
+      db.transaction.findMany({
+        where: { date: { gte: thirtyDaysAgo } },
+        select: { date: true, type: true, amount: true },
+        orderBy: { date: 'asc' },
+      }),
+      db.$queryRaw<Array<{ name: string; icon: string; total: number; count: number }>>`
         SELECT c.name, c.icon, SUM(t.amount) as total, COUNT(*) as count
         FROM "Transaction" t
         JOIN "Category" c ON t."categoryId" = c.id
@@ -41,15 +45,42 @@ export async function GET() {
       }),
     ]);
 
-    const monthlyData = await db.$queryRaw<Array<{ month: string; income: bigint; expense: bigint }>>`
-      SELECT TO_CHAR(date, 'YYYY-MM') as month,
-             SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
-             SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
-      FROM "Transaction"
-      WHERE date >= NOW() - INTERVAL '6 months'
-      GROUP BY TO_CHAR(date, 'YYYY-MM')
-      ORDER BY month ASC
-    `;
+    // Group daily stats from transaction data (SQLite compatible)
+    const dailyMap = new Map<string, { date: string; type: string; total: number; count: number }>();
+    for (const tx of allTransactions) {
+      const dateStr = tx.date.toISOString().split('T')[0];
+      const key = `${dateStr}-${tx.type}`;
+      const existing = dailyMap.get(key);
+      if (existing) {
+        existing.total += tx.amount;
+        existing.count += 1;
+      } else {
+        dailyMap.set(key, { date: dateStr, type: tx.type, total: tx.amount, count: 1 });
+      }
+    }
+    const dailyStats = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Group monthly aggregates from transaction data (SQLite compatible)
+    const allRecentTx = await db.transaction.findMany({
+      where: { date: { gte: sixMonthsAgo } },
+      select: { date: true, type: true, amount: true },
+    });
+
+    const monthlyMap = new Map<string, { month: string; income: number; expense: number }>();
+    for (const tx of allRecentTx) {
+      const month = tx.date.toISOString().slice(0, 7); // YYYY-MM
+      const existing = monthlyMap.get(month);
+      if (existing) {
+        if (tx.type === 'income') existing.income += tx.amount;
+        else existing.expense += tx.amount;
+      } else {
+        monthlyMap.set(month, { month, income: tx.type === 'income' ? tx.amount : 0, expense: tx.type === 'expense' ? tx.amount : 0 });
+      }
+    }
+    const monthlyAggregates = Array.from(monthlyMap.values()).sort((a, b) => a.month.localeCompare(b.month)).map(m => ({
+      ...m,
+      savings: m.income - m.expense,
+    }));
 
     const totalUsers = await db.user.count({ where: { role: 'user' } });
     const activeUsersThisMonth = await db.user.count({
@@ -78,24 +109,14 @@ export async function GET() {
         incomeTxnCount: totalIncome._count,
         expenseTxnCount: totalExpense._count,
       },
-      dailyStats: transactionStats.map(s => ({
-        date: s.date,
-        type: s.type,
-        total: Number(s.total),
-        count: Number(s.count),
-      })),
+      dailyStats,
       topCategories: categoryMetrics.map(c => ({
         name: c.name,
         icon: c.icon,
         total: Number(c.total),
         count: Number(c.count),
       })),
-      monthlyAggregates: monthlyData.map(m => ({
-        month: m.month,
-        income: Number(m.income),
-        expense: Number(m.expense),
-        savings: Number(m.income) - Number(m.expense),
-      })),
+      monthlyAggregates,
       engagement: {
         totalUsers,
         activeUsersThisMonth,

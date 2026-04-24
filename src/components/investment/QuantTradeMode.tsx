@@ -41,7 +41,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Minus,
-  Scale,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -99,15 +98,6 @@ interface MacroData {
   topGainers: TrendingAsset[];
   topLosers: TrendingAsset[];
   timestamp: string;
-}
-
-interface BacktestMetrics {
-  avgRiskReward: number;
-  bestRiskReward: number;
-  worstRiskReward: number;
-  expectedValue: number;
-  winRate: number;
-  totalTrades: number;
 }
 
 // ── Design Tokens ────────────────────────────────────────────────────────────
@@ -207,106 +197,6 @@ const slideUp = {
 };
 
 // ── Inline Sub-components ────────────────────────────────────────────────────
-
-function RiskRewardCard({ metrics, tf }: { metrics: BacktestMetrics; tf: (key: string, fallback: string) => string }) {
-  const rr = metrics.avgRiskReward;
-  const rrColor = rr >= 1.5 ? '#03DAC6' : rr >= 1 ? '#FFD700' : '#CF6679';
-  const rrLabel = rr >= 1.5 ? tf('biz.favorableRR', 'Favorable R:R') : rr >= 1 ? tf('biz.cautionRR', 'Caution R:R') : tf('biz.poorRR', 'Poor R:R');
-  const evColor = metrics.expectedValue >= 0 ? '#03DAC6' : '#CF6679';
-
-  return (
-    <div className="rounded-xl bg-[#1A1A2E] border border-white/[0.06] p-4 space-y-4">
-      <div className="flex items-center gap-1.5">
-        <Scale className="h-3.5 w-3.5 text-white/40" />
-        <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
-          {tf('biz.riskReward', 'Risk:Reward')}
-        </span>
-      </div>
-
-      {/* Average R:R Hero */}
-      <div className="flex flex-col items-center space-y-2">
-        <span className="text-3xl font-black font-mono tracking-tight" style={{ color: rrColor }}>
-          1:{rr.toFixed(2)}
-        </span>
-        <Badge
-          className="text-[9px] px-2 py-0.5 h-4 font-bold border-0"
-          style={{
-            backgroundColor: `${rrColor}20`,
-            color: rrColor,
-          }}
-        >
-          {rrLabel}
-        </Badge>
-      </div>
-
-      {/* R:R Visual Bar */}
-      <div className="space-y-1">
-        <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden relative">
-          <div
-            className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${Math.min(100, (rr / 3) * 100)}%`,
-              backgroundColor: rrColor,
-              boxShadow: `0 0 8px ${rrColor}40`,
-            }}
-          />
-          {/* Threshold markers */}
-          <div className="absolute top-0 bottom-0 w-px bg-white/30" style={{ left: '33.33%' }} />
-          <div className="absolute top-0 bottom-0 w-px bg-white/30" style={{ left: '66.67%' }} />
-        </div>
-        <div className="flex justify-between text-[8px] text-white/25 font-mono">
-          <span>0</span>
-          <span className="text-[#FFD700]/50">1:1</span>
-          <span className="text-[#03DAC6]/50">1:2</span>
-          <span>1:3</span>
-        </div>
-      </div>
-
-      {/* Detail Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1">
-          <span className="text-[9px] text-white/35 uppercase tracking-wider font-medium">
-            {tf('biz.bestRiskReward', 'Best R:R')}
-          </span>
-          <p className="text-sm font-bold font-mono text-[#03DAC6]">
-            1:{metrics.bestRiskReward.toFixed(2)}
-          </p>
-        </div>
-        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1">
-          <span className="text-[9px] text-white/35 uppercase tracking-wider font-medium">
-            {tf('biz.worstRiskReward', 'Worst R:R')}
-          </span>
-          <p className="text-sm font-bold font-mono text-[#CF6679]">
-            1:{metrics.worstRiskReward.toFixed(2)}
-          </p>
-        </div>
-        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1">
-          <span className="text-[9px] text-white/35 uppercase tracking-wider font-medium">
-            {tf('biz.expectedValue', 'Expected Value')}
-          </span>
-          <p className="text-sm font-bold font-mono" style={{ color: evColor }}>
-            {metrics.expectedValue >= 0 ? '+' : ''}{metrics.expectedValue.toFixed(3)}%
-          </p>
-        </div>
-        <div className="rounded-lg bg-white/[0.03] p-2.5 space-y-1">
-          <span className="text-[9px] text-white/35 uppercase tracking-wider font-medium">
-            {tf('biz.avgRiskReward', 'Avg R:R')}
-          </span>
-          <p className="text-sm font-bold font-mono text-white/80">
-            1:{metrics.avgRiskReward.toFixed(2)}
-          </p>
-        </div>
-      </div>
-
-      {/* Trades count */}
-      <div className="text-center">
-        <span className="text-[9px] text-white/25 font-mono">
-          Based on {metrics.totalTrades} simulated trades
-        </span>
-      </div>
-    </div>
-  );
-}
 
 function RSIGauge({ value }: { value: number | undefined | null }) {
   const safe = typeof value === 'number' && !isNaN(value) ? value : 50;
@@ -615,7 +505,6 @@ export default function QuantTradeMode() {
   const [loadingSignals, setLoadingSignals] = useState(false);
   const [loadingMacro, setLoadingMacro] = useState(true);
   const [analyzingAll, setAnalyzingAll] = useState(false);
-  const [backtestMetrics, setBacktestMetrics] = useState<BacktestMetrics | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // ── Translation helper with fallback ───────────────────────────────────────
@@ -722,36 +611,7 @@ export default function QuantTradeMode() {
     }
   }, [businessId]);
 
-  // ── Fetch backtest metrics when an asset is selected ─────────────────────
-  useEffect(() => {
-    if (!businessId || !selectedAsset) return;
-    let cancelled = false;
-    fetch(`/api/business/${businessId}/backtest?symbol=${encodeURIComponent(selectedAsset.symbol)}&type=${encodeURIComponent(selectedAsset.type)}&strategy=smartmoney&weeks=8`)
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (!cancelled) {
-          if (data?.metrics && data.metrics.totalTrades > 0) {
-            const m = data.metrics;
-            setBacktestMetrics({
-              avgRiskReward: m.avgRiskReward ?? 0,
-              bestRiskReward: m.bestRiskReward ?? 0,
-              worstRiskReward: m.worstRiskReward ?? 0,
-              expectedValue: m.expectedValue ?? 0,
-              winRate: m.winRate ?? 0,
-              totalTrades: m.totalTrades ?? 0,
-            });
-          } else {
-            setBacktestMetrics(null);
-          }
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setBacktestMetrics(null);
-        }
-      });
-    return () => { cancelled = true; };
-  }, [businessId, selectedAsset]);
+
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleAnalyzeAll = useCallback(async () => {
@@ -1421,11 +1281,6 @@ export default function QuantTradeMode() {
                       })}
                     </div>
                   </div>
-
-                  {/* Risk/Reward Analysis */}
-                  {backtestMetrics && backtestMetrics.totalTrades > 0 && (
-                    <RiskRewardCard metrics={backtestMetrics} tf={tf} />
-                  )}
 
                   {/* Last Updated */}
                   <div className="flex items-center justify-center gap-2 text-white/20">

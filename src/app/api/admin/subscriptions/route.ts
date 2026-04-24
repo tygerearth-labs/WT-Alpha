@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID, plan, and duration are required' }, { status: 400 });
     }
 
-    if (!['basic', 'pro'].includes(plan)) {
-      return NextResponse.json({ error: 'Plan must be "basic" or "pro"' }, { status: 400 });
+    if (!['basic', 'pro', 'ultimate'].includes(plan)) {
+      return NextResponse.json({ error: 'Plan must be "basic", "pro", or "ultimate"' }, { status: 400 });
     }
     const numDurationDays = typeof durationDays === 'string' ? parseInt(durationDays) : durationDays;
     if (isNaN(numDurationDays) || numDurationDays <= 0 || numDurationDays > 3650) {
@@ -96,12 +96,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine limits based on plan
-    const maxCategories = plan === 'pro'
-      ? config.defaultMaxCategories * 5
-      : config.defaultMaxCategories;
-    const maxSavings = plan === 'pro'
-      ? config.defaultMaxSavings * 5
-      : config.defaultMaxSavings;
+    const multiplier = plan === 'ultimate' ? 10 : plan === 'pro' ? 5 : 1;
+    const maxCategories = config.defaultMaxCategories * multiplier;
+    const maxSavings = config.defaultMaxSavings * multiplier;
 
     const updatedUser = await db.user.update({
       where: { id: userId },

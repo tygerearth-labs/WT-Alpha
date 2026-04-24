@@ -324,6 +324,16 @@ export function LandingPage() {
     registrationOpen: boolean;
     registrationMessage: string | null;
     availablePlans: string[];
+    landingPageConfig: {
+      showStory: boolean;
+      showFeatures: boolean;
+      showTestimonials: boolean;
+      showPricing: boolean;
+      showFaq: boolean;
+      showStats: boolean;
+      heroSubtitle: string;
+      customFooterText: string;
+    } | null;
   } | null>(null);
 
   // Glassmorphism scroll effect
@@ -356,6 +366,9 @@ export function LandingPage() {
             try { const parsed = new URL(url); return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? url : null; } catch { return null; }
           };
 
+          // Parse landingPageConfig from API response
+          const landingPageConfig = data.landingPageConfig || null;
+
           setPlatformConfig({
             ...data,
             basicPlanFeatures,
@@ -374,11 +387,23 @@ export function LandingPage() {
             registrationOpen: data.registrationOpen ?? true,
             registrationMessage: data.registrationMessage || null,
             availablePlans: Array.isArray(data.availablePlans) ? data.availablePlans : ['basic', 'pro', 'ultimate'],
+            landingPageConfig,
           });
         }
       })
       .catch(() => {});
   }, []);
+
+  /* ---- Landing page section visibility from admin config ---- */
+  const lpConfig = platformConfig?.landingPageConfig;
+  const visibleSections = {
+    story: lpConfig?.showStory ?? true,
+    features: lpConfig?.showFeatures ?? true,
+    testimonials: lpConfig?.showTestimonials ?? true,
+    pricing: lpConfig?.showPricing ?? true,
+    faq: lpConfig?.showFaq ?? true,
+    stats: lpConfig?.showStats ?? true,
+  };
 
   /* ---- Data arrays built inside component for t() access ---- */
   const features = [
@@ -579,10 +604,11 @@ export function LandingPage() {
 
           {/* Desktop nav */}
           <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-            <button onClick={() => scrollTo('story')} className="hover:text-foreground transition-colors">{t('landing.navStory')}</button>
-            <button onClick={() => scrollTo('features')} className="hover:text-foreground transition-colors">{t('landing.navFeatures')}</button>
-            <button onClick={() => scrollTo('pricing')} className="hover:text-foreground transition-colors">{t('landing.navPricing')}</button>
-            <button onClick={() => scrollTo('testimonials')} className="hover:text-foreground transition-colors">{t('landing.navReview')}</button>
+            {visibleSections.story && <button onClick={() => scrollTo('story')} className="hover:text-foreground transition-colors">{t('landing.navStory')}</button>}
+            {visibleSections.features && <button onClick={() => scrollTo('features')} className="hover:text-foreground transition-colors">{t('landing.navFeatures')}</button>}
+            {visibleSections.pricing && <button onClick={() => scrollTo('pricing')} className="hover:text-foreground transition-colors">{t('landing.navPricing')}</button>}
+            {visibleSections.testimonials && <button onClick={() => scrollTo('testimonials')} className="hover:text-foreground transition-colors">{t('landing.navReview')}</button>}
+            {visibleSections.faq && <button onClick={() => scrollTo('faq')} className="hover:text-foreground transition-colors">FAQ</button>}
           </div>
 
           <div className="flex items-center gap-3">
@@ -613,11 +639,11 @@ export function LandingPage() {
           style={{ borderColor: 'rgba(255,255,255,0.06)', maxHeight: mobileMenuOpen ? '240px' : '0px', opacity: mobileMenuOpen ? 1 : 0, background: 'rgba(0,0,0,0.95)' }}
         >
           <div className="px-4 py-3 flex flex-col gap-3 text-sm text-muted-foreground">
-            <button onClick={() => scrollTo('story')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navStory')}</button>
-            <button onClick={() => scrollTo('features')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navFeatures')}</button>
-            <button onClick={() => scrollTo('pricing')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navPricing')}</button>
-            <button onClick={() => scrollTo('testimonials')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navReview')}</button>
-            <button onClick={() => scrollTo('faq')} className="text-left py-1.5 hover:text-foreground transition-colors">FAQ</button>
+            {visibleSections.story && <button onClick={() => scrollTo('story')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navStory')}</button>}
+            {visibleSections.features && <button onClick={() => scrollTo('features')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navFeatures')}</button>}
+            {visibleSections.pricing && <button onClick={() => scrollTo('pricing')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navPricing')}</button>}
+            {visibleSections.testimonials && <button onClick={() => scrollTo('testimonials')} className="text-left py-1.5 hover:text-foreground transition-colors">{t('landing.navReview')}</button>}
+            {visibleSections.faq && <button onClick={() => scrollTo('faq')} className="text-left py-1.5 hover:text-foreground transition-colors">FAQ</button>}
           </div>
         </div>
       </nav>
@@ -661,6 +687,11 @@ export function LandingPage() {
             <p className="mx-auto max-w-xl text-[13px] sm:text-lg text-muted-foreground leading-relaxed mb-5 sm:mb-10">
               {t('landing.heroDesc')}
             </p>
+            {lpConfig?.heroSubtitle && (
+              <p className="mx-auto max-w-lg text-[12px] sm:text-base font-medium leading-relaxed mb-2" style={{ color: '#03DAC6' }}>
+                {lpConfig.heroSubtitle}
+              </p>
+            )}
           </FadeUp>
 
           <FadeUp delay={300}>
@@ -709,7 +740,7 @@ export function LandingPage() {
       </section>
 
       {/* ========== STORY SECTION ========== */}
-      <section id="story" className="relative py-8 sm:py-28 px-4 sm:px-6">
+      {visibleSections.story && <section id="story" className="relative py-8 sm:py-28 px-4 sm:px-6">
         <SectionSeparator color="#CF6679" />
 
         <div className="mx-auto max-w-4xl">
@@ -796,16 +827,16 @@ export function LandingPage() {
           </div>
 
           {/* Statistics */}
-          <StatsSection
+          {visibleSections.stats && <StatsSection
             noTrack={t('landing.noTrack') + ' ' + t('landing.statNoTrack')}
             statMoreSavings={t('landing.statMoreSavings')}
             statAvgSaving={t('landing.statAvgSaving')}
-          />
+          />}
         </div>
-      </section>
+      </section>}
 
       {/* ========== FEATURES SECTION ========== */}
-      <section id="features" className="relative py-8 sm:py-28 px-4 sm:px-6">
+      {visibleSections.features && <section id="features" className="relative py-8 sm:py-28 px-4 sm:px-6">
         <SectionSeparator color="#BB86FC" />
 
         <div className="mx-auto max-w-6xl">
@@ -865,10 +896,10 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ========== TESTIMONIALS ========== */}
-      <section id="testimonials" className="relative py-8 sm:py-28 px-4 sm:px-6">
+      {visibleSections.testimonials && <section id="testimonials" className="relative py-8 sm:py-28 px-4 sm:px-6">
         <SectionSeparator color="#F9A825" />
 
         <div className="mx-auto max-w-4xl">
@@ -916,10 +947,10 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ========== PRICING SECTION ========== */}
-      <section id="pricing" className="relative py-8 sm:py-28 px-4 sm:px-6">
+      {visibleSections.pricing && <section id="pricing" className="relative py-8 sm:py-28 px-4 sm:px-6">
         <SectionSeparator color="#03DAC6" />
 
         <div className="mx-auto max-w-4xl">
@@ -1140,10 +1171,10 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ========== FAQ SECTION ========== */}
-      <section id="faq" className="relative py-8 sm:py-28 px-4 sm:px-6">
+      {visibleSections.faq && <section id="faq" className="relative py-8 sm:py-28 px-4 sm:px-6">
         <SectionSeparator color="#BB86FC" />
 
         <div className="mx-auto max-w-2xl">
@@ -1209,7 +1240,7 @@ export function LandingPage() {
             })}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ========== FINAL CTA ========== */}
       <section className="relative py-8 sm:py-28 px-4 sm:px-6">
@@ -1268,6 +1299,11 @@ export function LandingPage() {
             <p className="text-[11px] sm:text-xs text-muted-foreground text-center">
               Creator: Tyger Earth | Ahtjong Labs
             </p>
+            {lpConfig?.customFooterText && (
+              <p className="text-[11px] sm:text-xs text-muted-foreground text-center max-w-md">
+                {lpConfig.customFooterText}
+              </p>
+            )}
             <p className="text-[11px] sm:text-xs text-muted-foreground">
               &copy; {new Date().getFullYear()} {t('landing.rights')}
             </p>

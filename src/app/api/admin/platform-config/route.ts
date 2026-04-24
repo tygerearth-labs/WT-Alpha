@@ -12,6 +12,7 @@ const JSON_FIELDS = [
   'basicPlanFeatures',
   'proPlanFeatures',
   'ultimatePlanFeatures',
+  'landingPageConfig',
 ] as const;
 
 function validateJsonField(value: unknown, fieldName: string): string | null {
@@ -66,6 +67,7 @@ export async function PUT(request: NextRequest) {
       trialEnabled, trialDurationDays, trialPlan,
       whatsappNumber, registrationOpen, registrationMessage, availablePlans,
       sectionVisibility, exportEnabled,
+      landingPageConfig,
     } = body;
 
     // Validate JSON string fields before saving
@@ -76,6 +78,7 @@ export async function PUT(request: NextRequest) {
       basicPlanFeatures,
       proPlanFeatures,
       ultimatePlanFeatures,
+      landingPageConfig,
     };
 
     for (const fieldName of JSON_FIELDS) {
@@ -118,6 +121,7 @@ export async function PUT(request: NextRequest) {
         availablePlans: availablePlans ?? '["basic","pro","ultimate"]',
         sectionVisibility: sectionVisibility ?? null,
         exportEnabled: exportEnabled ?? null,
+        landingPageConfig: landingPageConfig ?? null,
       },
       update: {
         ...(defaultPlan !== undefined && { defaultPlan }),
@@ -148,6 +152,7 @@ export async function PUT(request: NextRequest) {
         ...(availablePlans !== undefined && { availablePlans }),
         ...(sectionVisibility !== undefined && { sectionVisibility }),
         ...(exportEnabled !== undefined && { exportEnabled }),
+        ...(landingPageConfig !== undefined && { landingPageConfig }),
       },
     });
 

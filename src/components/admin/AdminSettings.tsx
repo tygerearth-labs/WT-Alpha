@@ -163,6 +163,16 @@ export function AdminSettings() {
   const [ultimatePlanDiscount, setUltimatePlanDiscount] = useState('');
   const [ultimatePlanDiscountLabel, setUltimatePlanDiscountLabel] = useState('');
   const [ultimatePurchaseUrl, setUltimatePurchaseUrl] = useState('');
+  const [landingPageConfig, setLandingPageConfig] = useState({
+    showStory: true,
+    showFeatures: true,
+    showTestimonials: true,
+    showPricing: true,
+    showFaq: true,
+    showStats: true,
+    heroSubtitle: '',
+    customFooterText: '',
+  });
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
   const [exportEnabled, setExportEnabled] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
 
@@ -251,6 +261,25 @@ export function AdminSettings() {
             } catch {
               setExportEnabled(defaultExportEnabled);
             }
+            // Parse landingPageConfig
+            const defaultLandingPageConfig = {
+              showStory: true,
+              showFeatures: true,
+              showTestimonials: true,
+              showPricing: true,
+              showFaq: true,
+              showStats: true,
+              heroSubtitle: '',
+              customFooterText: '',
+            };
+            try {
+              const lpc = data.config.landingPageConfig ? JSON.parse(data.config.landingPageConfig) : null;
+              if (lpc && typeof lpc === 'object') {
+                setLandingPageConfig({ ...defaultLandingPageConfig, ...lpc });
+              }
+            } catch {
+              // keep defaults
+            }
             setConfigLoaded(true);
           }
         }
@@ -300,6 +329,7 @@ export function AdminSettings() {
             proPurchaseUrl,
             sectionVisibility: JSON.stringify(sectionVisibility),
             exportEnabled: JSON.stringify(exportEnabled),
+            landingPageConfig: JSON.stringify(landingPageConfig),
           }),
         });
         if (res.ok) {
@@ -316,7 +346,7 @@ export function AdminSettings() {
     // Debounce save
     const timer = setTimeout(saveConfig, 500);
     return () => clearTimeout(timer);
-  }, [defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend, configLoaded, basicPlanPrice, proPlanPrice, basicPlanFeatures, proPlanFeatures, trialEnabled, trialDurationDays, trialPlan, whatsappNumber, registrationOpen, registrationMessage, availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel, basicPurchaseUrl, proPurchaseUrl, ultimatePlanPrice, ultimatePlanFeatures, ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl, sectionVisibility, exportEnabled]);
+  }, [defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend, configLoaded, basicPlanPrice, proPlanPrice, basicPlanFeatures, proPlanFeatures, trialEnabled, trialDurationDays, trialPlan, whatsappNumber, registrationOpen, registrationMessage, availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel, basicPurchaseUrl, proPurchaseUrl, ultimatePlanPrice, ultimatePlanFeatures, ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl, sectionVisibility, exportEnabled, landingPageConfig]);
 
   const handleSaveProfile = () => {
     toast.success('Profile updated (UI only)', {
@@ -1004,6 +1034,83 @@ export function AdminSettings() {
               </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      {/* Animated Divider */}
+      <AnimatedDivider />
+
+      {/* Landing Page Visibility */}
+      <Card className="bg-[#0D0D0D] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Globe className="h-4 w-4 text-[#03DAC6]" />
+            Landing Page
+            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">
+              Visibility
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-5">
+          {/* Section Visibility Toggles */}
+          <div className="space-y-2">
+            <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Section Visibility</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { key: 'showStory' as const, label: 'Story Section', desc: 'Show the story/brand narrative section', color: '#BB86FC' },
+                { key: 'showFeatures' as const, label: 'Features Section', desc: 'Show the feature highlights grid', color: '#03DAC6' },
+                { key: 'showTestimonials' as const, label: 'Testimonials Section', desc: 'Show user reviews/testimonials', color: '#FFD700' },
+                { key: 'showPricing' as const, label: 'Pricing Section', desc: 'Show plan pricing cards', color: '#03DAC6' },
+                { key: 'showFaq' as const, label: 'FAQ Section', desc: 'Show frequently asked questions', color: '#BB86FC' },
+                { key: 'showStats' as const, label: 'Statistics Section', desc: 'Show the animated statistics counters', color: '#CF6679' },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]"
+                >
+                  <div>
+                    <p className="text-[12px] font-semibold text-white/70">{item.label}</p>
+                    <p className="text-[10px] text-white/30 mt-0.5">{item.desc}</p>
+                  </div>
+                  <AnimatedSwitch
+                    checked={landingPageConfig[item.key]}
+                    onCheckedChange={(val) =>
+                      setLandingPageConfig((prev) => ({ ...prev, [item.key]: val }))
+                    }
+                    activeColor={item.color}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Text Fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Hero Subtitle</Label>
+              <Input
+                value={landingPageConfig.heroSubtitle}
+                onChange={(e) =>
+                  setLandingPageConfig((prev) => ({ ...prev, heroSubtitle: e.target.value }))
+                }
+                className="bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15"
+                placeholder="Custom subtitle text below the hero title"
+              />
+              <p className="text-[10px] text-white/20">Custom subtitle text below the hero title</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Custom Footer Text</Label>
+              <Input
+                value={landingPageConfig.customFooterText}
+                onChange={(e) =>
+                  setLandingPageConfig((prev) => ({ ...prev, customFooterText: e.target.value }))
+                }
+                className="bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15"
+                placeholder="Custom text displayed in the footer area"
+              />
+              <p className="text-[10px] text-white/20">Custom text displayed in the footer area</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

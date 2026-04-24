@@ -30,13 +30,41 @@ export async function GET() {
         availablePlans: ['basic', 'pro', 'ultimate'],
         sectionVisibility: null,
         exportEnabled: null,
+        landingPageConfig: {
+          showStory: true,
+          showFeatures: true,
+          showTestimonials: true,
+          showPricing: true,
+          showFaq: true,
+          showStats: true,
+          heroSubtitle: '',
+          customFooterText: '',
+        },
       });
     }
 
     // Parse JSON fields
-    const parsedAvailablePlans = config.availablePlans ? JSON.parse(config.availablePlans) : ['basic', 'pro', 'ultimate'];
-    const parsedSectionVisibility = config.sectionVisibility ? JSON.parse(config.sectionVisibility) : null;
-    const parsedExportEnabled = config.exportEnabled ? JSON.parse(config.exportEnabled) : null;
+    let parsedAvailablePlans = ['basic', 'pro', 'ultimate'];
+    try { parsedAvailablePlans = config.availablePlans ? JSON.parse(config.availablePlans) : parsedAvailablePlans; } catch {}
+    let parsedSectionVisibility = null;
+    try { parsedSectionVisibility = config.sectionVisibility ? JSON.parse(config.sectionVisibility) : null; } catch {}
+    let parsedExportEnabled = null;
+    try { parsedExportEnabled = config.exportEnabled ? JSON.parse(config.exportEnabled) : null; } catch {}
+    let parsedLandingPageConfig = {
+      showStory: true,
+      showFeatures: true,
+      showTestimonials: true,
+      showPricing: true,
+      showFaq: true,
+      showStats: true,
+      heroSubtitle: '',
+      customFooterText: '',
+    };
+    try {
+      if (config.landingPageConfig) {
+        parsedLandingPageConfig = { ...parsedLandingPageConfig, ...JSON.parse(config.landingPageConfig) };
+      }
+    } catch {}
 
     return NextResponse.json({
       basicPlanPrice: config.basicPlanPrice || 'Gratis',
@@ -62,6 +90,7 @@ export async function GET() {
       availablePlans: parsedAvailablePlans,
       sectionVisibility: parsedSectionVisibility,
       exportEnabled: parsedExportEnabled,
+      landingPageConfig: parsedLandingPageConfig,
     });
   } catch (error) {
     console.error('Public platform config error:', error);
@@ -89,6 +118,16 @@ export async function GET() {
       availablePlans: ['basic', 'pro', 'ultimate'],
       sectionVisibility: null,
       exportEnabled: null,
+      landingPageConfig: {
+        showStory: true,
+        showFeatures: true,
+        showTestimonials: true,
+        showPricing: true,
+        showFaq: true,
+        showStats: true,
+        heroSubtitle: '',
+        customFooterText: '',
+      },
     }, { status: 500 });
   }
 }
