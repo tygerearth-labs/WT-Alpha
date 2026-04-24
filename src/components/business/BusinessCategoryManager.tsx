@@ -691,7 +691,6 @@ export default function BusinessCategoryManager() {
                       boxShadow: formData.color === color
                         ? `0 0 16px ${color}40, 0 0 0 2px ${color}`
                         : `0 2px 8px ${color}15`,
-                      ringColor: formData.color === color ? color : 'transparent',
                     }}
                     onClick={() => setFormData((prev) => ({ ...prev, color }))}
                   >
