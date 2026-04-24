@@ -138,11 +138,41 @@ export async function POST(
     const numDP = downPayment ? parseFloat(String(downPayment)) : null;
     const numInstAmount = installmentAmount ? parseFloat(String(installmentAmount)) : null;
 
+    // Auto-generate invoice for installment sales if no invoiceId is provided
+    let finalInvoiceId = invoiceId;
+    const isInstallment = numTempo && numTempo > 0;
+    if (isInstallment && !finalInvoiceId) {
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+      const invoiceDueDate = installmentDueDate
+        ? new Date(installmentDueDate)
+        : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
+
+      const invoiceItems = JSON.stringify([
+        { description, qty: 1, price: numAmount, total: numAmount },
+      ]);
+
+      const invoice = await db.businessInvoice.create({
+        data: {
+          businessId,
+          invoiceNumber,
+          customerId: customerId || null,
+          items: invoiceItems,
+          subtotal: numAmount,
+          tax: 0,
+          discount: 0,
+          total: numAmount,
+          status: 'pending',
+          dueDate: invoiceDueDate,
+        },
+      });
+      finalInvoiceId = invoice.id;
+    }
+
     const sale = await db.businessSale.create({
       data: {
         businessId,
         customerId,
-        invoiceId,
+        invoiceId: finalInvoiceId,
         description,
         amount: numAmount,
         date: date ? new Date(date) : new Date(),

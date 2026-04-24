@@ -74,8 +74,60 @@ const STATUS_STYLES: Record<string, { label: string; className: string; icon?: R
   overdue: { label: 'biz.debtOverdue', className: 'bg-[#CF6679]/20 text-[#CF6679] border-[#CF6679]/30' },
 };
 
-function getDueDateInfo(dueDate: string | null, remaining: number): { color: string; label: string; bg: string } {
-  if (!dueDate || remaining <= 0) return { color: 'text-white/50', label: '', bg: '' };
+function calculateInstallmentLateInfo(debt: Debt): { lateDays: number; currentTempo: number; paidTempo: number; isLate: boolean } {
+  const created = new Date(debt.createdAt);
+  const now = new Date();
+  const period = debt.installmentPeriod || 1;
+  const instAmount = debt.installmentAmount || 0;
+
+  // How many tempos should have been paid by now
+  const monthsElapsed = (now.getFullYear() - created.getFullYear()) * 12 + (now.getMonth() - created.getMonth());
+  const expectedTempo = Math.min(Math.max(0, monthsElapsed), period);
+
+  // How many tempos have been paid (use totalPaid / installmentAmount)
+  const totalPaid = debt.amount - debt.remaining;
+  const paidTempo = instAmount > 0 ? Math.floor(totalPaid / instAmount) : 0;
+
+  // If paid tempo < expected tempo, it's late
+  if (paidTempo < expectedTempo && instAmount > 0 && debt.status !== 'paid') {
+    // Calculate late days from the (paidTempo + 1)th due date
+    const lateDueDate = new Date(created);
+    lateDueDate.setMonth(lateDueDate.getMonth() + paidTempo);
+    const lateDays = Math.ceil((now.getTime() - lateDueDate.getTime()) / (1000 * 60 * 60 * 24));
+    return { lateDays: Math.max(0, lateDays), currentTempo: expectedTempo, paidTempo, isLate: true };
+  }
+
+  return { lateDays: 0, currentTempo: expectedTempo, paidTempo, isLate: false };
+}
+
+function getDueDateInfo(dueDate: string | null, remaining: number, debt?: Debt): { color: string; label: string; bg: string } {
+  if (remaining <= 0) return { color: 'text-white/50', label: '', bg: '' };
+
+  // For installment debts, use chained tempo calculation
+  if (debt && debt.installmentAmount && debt.installmentAmount > 0 && debt.createdAt) {
+    const info = calculateInstallmentLateInfo(debt);
+    if (info.isLate) {
+      return {
+        color: 'text-[#CF6679]',
+        label: `Tempo ${info.paidTempo + 1}/${debt.installmentPeriod} · Lewat ${info.lateDays} hari`,
+        bg: 'bg-[#CF6679]/10',
+      };
+    }
+    if (info.currentTempo < (debt.installmentPeriod || 0) && info.currentTempo > info.paidTempo) {
+      return {
+        color: 'text-[#FFD700]',
+        label: `Tempo ${info.currentTempo}/${debt.installmentPeriod} · ${info.currentTempo - info.paidTempo} tertunggak`,
+        bg: 'bg-[#FFD700]/10',
+      };
+    }
+    if (info.paidTempo >= (debt.installmentPeriod || 0)) {
+      return { color: 'text-[#03DAC6]', label: 'Lunas', bg: 'bg-[#03DAC6]/10' };
+    }
+    return { color: 'text-[#03DAC6]', label: 'Aman', bg: 'bg-[#03DAC6]/10' };
+  }
+
+  // Non-installment logic (original)
+  if (!dueDate) return { color: 'text-white/50', label: '', bg: '' };
   const daysUntilDue = Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   if (daysUntilDue < 0) return { color: 'text-[#CF6679]', label: `Lewat ${Math.abs(daysUntilDue)} hari`, bg: 'bg-[#CF6679]/10' };
   if (daysUntilDue <= 3) return { color: 'text-[#CF6679]', label: `${daysUntilDue} hari lagi`, bg: 'bg-[#CF6679]/10' };
@@ -83,8 +135,8 @@ function getDueDateInfo(dueDate: string | null, remaining: number): { color: str
   return { color: 'text-[#03DAC6]', label: 'Aman', bg: 'bg-[#03DAC6]/10' };
 }
 
-function getDueDateColor(dueDate: string | null, remaining: number): string {
-  return getDueDateInfo(dueDate, remaining).color;
+function getDueDateColor(dueDate: string | null, remaining: number, debt?: Debt): string {
+  return getDueDateInfo(dueDate, remaining, debt).color;
 }
 
 const containerVariants = {
@@ -577,7 +629,7 @@ export default function BusinessDebts() {
                             const statusStyle = STATUS_STYLES[debt.status] || STATUS_STYLES.active;
                             const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
                             const paidPercent = debt.amount > 0 ? Math.round(((debt.amount - debt.remaining) / debt.amount) * 100) : 0;
-                            const dueDateInfo = getDueDateInfo(debt.dueDate, debt.remaining);
+                            const dueDateInfo = getDueDateInfo(debt.dueDate, debt.remaining, debt);
                             const isAlt = index % 2 === 1;
 
                             return (
@@ -668,9 +720,18 @@ export default function BusinessDebts() {
                                 </TableCell>
                                 <TableCell className="text-xs py-3 hidden sm:table-cell">
                                   <div>
-                                    <span className={dueDateInfo.color}>
-                                      {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : '-'}
-                                    </span>
+                                    {isInstallment && debt.installmentPeriod ? (() => {
+                                      const instInfo = calculateInstallmentLateInfo(debt);
+                                      return (
+                                        <span className="text-[#FFD700] text-[10px] font-medium">
+                                          Tempo {instInfo.paidTempo}/{debt.installmentPeriod}
+                                        </span>
+                                      );
+                                    })() : (
+                                      <span className={dueDateInfo.color}>
+                                        {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : '-'}
+                                      </span>
+                                    )}
                                     {/* Due date indicator badge */}
                                     {debt.remaining > 0 && dueDateInfo.label && (
                                       <motion.div

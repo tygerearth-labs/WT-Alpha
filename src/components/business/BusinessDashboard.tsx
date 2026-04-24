@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -24,12 +24,19 @@ import {
   Clock,
   AlertTriangle,
   ArrowUpRight,
+  ArrowDownRight,
   BarChart3,
   Sparkles,
   CalendarDays,
   Inbox,
   ArrowDownLeft,
   HandCoins,
+  Activity,
+  Target,
+  PieChart,
+  Lightbulb,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -45,6 +52,8 @@ interface DashboardData {
   pendingInvoices: number;
   totalHutang: number;
   totalPiutang: number;
+  salesCount: number;
+  averageSaleValue: number;
   debtsDueSoon: Array<{
     id: string;
     counterpart: string;
@@ -128,7 +137,6 @@ const sparkleVariants = {
 
 /* ── Helpers ── */
 function generateSparklineData(value: number): number[] {
-  // Deterministic pseudo-random sparkline based on value
   const seed = Math.abs(value) || 42;
   const points: number[] = [];
   let acc = 30;
@@ -137,7 +145,6 @@ function generateSparklineData(value: number): number[] {
     acc = Math.max(8, Math.min(100, acc));
     points.push(acc);
   }
-  // Normalize so last point roughly reflects value direction
   const maxVal = Math.max(...points, 1);
   return points.map((p) => (p / maxVal) * 100);
 }
@@ -159,6 +166,144 @@ function getDateGroup(dateStr: string): string {
 function getTimeBadge(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ── Business Health Score Calculation ── */
+function calculateHealthScore(data: DashboardData): { score: number; grade: string; color: string } {
+  if (!data || data.totalRevenue === 0 && data.totalExpense === 0) {
+    return { score: 0, grade: 'N/A', color: '#666666' };
+  }
+
+  let score = 50; // Base score
+
+  // Profit margin factor (0-25 points)
+  const margin = data.profitMargin || 0;
+  if (margin >= 20) score += 25;
+  else if (margin >= 10) score += 20;
+  else if (margin >= 5) score += 15;
+  else if (margin > 0) score += 10;
+  else if (margin > -10) score += 2;
+  else score -= 10;
+
+  // Cash flow health (0-25 points)
+  const netCash = data.netCash || 0;
+  if (netCash > data.totalRevenue * 0.3) score += 25;
+  else if (netCash > data.totalRevenue * 0.1) score += 18;
+  else if (netCash > 0) score += 12;
+  else score -= 5;
+
+  // Debt ratio (0-25 points) — debt vs revenue
+  const debtRatio = data.totalRevenue > 0 ? data.totalHutang / data.totalRevenue : 1;
+  if (debtRatio === 0) score += 25;
+  else if (debtRatio < 0.2) score += 20;
+  else if (debtRatio < 0.5) score += 12;
+  else if (debtRatio < 1) score += 5;
+  else score -= 5;
+
+  // Receivables factor (0-25 points)
+  const receivableRatio = data.totalRevenue > 0 ? data.totalPiutang / data.totalRevenue : 1;
+  if (receivableRatio === 0) score += 25;
+  else if (receivableRatio < 0.1) score += 22;
+  else if (receivableRatio < 0.3) score += 15;
+  else if (receivableRatio < 0.5) score += 8;
+  else score -= 3;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  let grade: string;
+  let color: string;
+  if (score >= 80) { grade = 'A'; color = '#03DAC6'; }
+  else if (score >= 60) { grade = 'B'; color = '#4FC3F7'; }
+  else if (score >= 40) { grade = 'C'; color = '#FFD700'; }
+  else { grade = 'D'; color = '#CF6679'; }
+
+  return { score, grade, color };
+}
+
+/* ── Animated Ring Component ── */
+function HealthRing({ score, color, grade }: { score: number; color: string; grade: string }) {
+  const [displayScore, setDisplayScore] = useState(0);
+  const animationRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    startTimeRef.current = performance.now();
+    const duration = 1200;
+
+    const animate = (now: number) => {
+      const elapsed = now - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayScore(Math.round(eased * score));
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [score]);
+
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (displayScore / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg width="110" height="110" viewBox="0 0 110 110" className="-rotate-90">
+        {/* Background ring */}
+        <circle
+          cx="55" cy="55" r={radius}
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth="8"
+          fill="none"
+        />
+        {/* Animated progress ring */}
+        <motion.circle
+          cx="55" cy="55" r={radius}
+          stroke={color}
+          strokeWidth="8"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+          style={{
+            filter: `drop-shadow(0 0 6px ${color}60)`,
+          }}
+        />
+        {/* Glow ring */}
+        <circle
+          cx="55" cy="55" r={radius}
+          stroke={color}
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - (displayScore / 100) * circumference}
+          style={{
+            opacity: 0.3,
+            filter: `blur(4px)`,
+          }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+        <span
+          className="text-2xl font-black tabular-nums"
+          style={{ color }}
+        >
+          {displayScore}
+        </span>
+        <span
+          className="text-[10px] font-bold uppercase tracking-wider mt-0.5"
+          style={{ color: `${color}aa` }}
+        >
+          Grade {grade}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /* ── Mini Sparkline Component ── */
@@ -248,6 +393,108 @@ function EmptyState({
   );
 }
 
+/* ── Mini Revenue Trend (CSS-only bars) ── */
+function MiniRevenueTrend({ recentSales, recentCashEntries }: {
+  recentSales: DashboardData['recentSales'];
+  recentCashEntries: DashboardData['recentCashEntries'];
+}) {
+  const bars = useMemo(() => {
+    const dayMap: Record<string, { revenue: number; expense: number; label: string }> = {};
+
+    // Process recent sales
+    recentSales.forEach((s) => {
+      const d = new Date(s.date);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (!dayMap[key]) {
+        dayMap[key] = { revenue: 0, expense: 0, label: d.toLocaleDateString('id-ID', { weekday: 'short' }) };
+      }
+      dayMap[key].revenue += s.amount;
+    });
+
+    // Process recent cash entries (expenses)
+    recentCashEntries.forEach((e) => {
+      if (e.type === 'kas_keluar') {
+        const d = new Date(e.date);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        if (!dayMap[key]) {
+          dayMap[key] = { revenue: 0, expense: 0, label: d.toLocaleDateString('id-ID', { weekday: 'short' }) };
+        }
+        dayMap[key].expense += e.amount;
+      }
+    });
+
+    const sorted = Object.entries(dayMap)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 7)
+      .reverse();
+
+    const maxVal = Math.max(...sorted.map(([, v]) => Math.max(v.revenue, v.expense)), 1);
+    return sorted.map(([, v]) => ({
+      revenue: (v.revenue / maxVal) * 100,
+      expense: (v.expense / maxVal) * 100,
+      label: v.label,
+    }));
+  }, [recentSales, recentCashEntries]);
+
+  const hasData = bars.length > 0;
+
+  return (
+    <div className="flex items-end gap-1.5 h-[80px] w-full">
+      {hasData ? (
+        bars.map((bar, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1">
+            <div className="flex items-end gap-px w-full h-[56px]">
+              <motion.div
+                className="flex-1 rounded-t-sm origin-bottom min-h-[2px]"
+                style={{ backgroundColor: '#03DAC6', opacity: 0.8 }}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 0.3 + i * 0.06, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                <div
+                  className="w-full rounded-t-sm"
+                  style={{
+                    height: `${Math.max(bar.revenue, 3)}%`,
+                    background: 'linear-gradient(180deg, #03DAC6, #03DAC6aa)',
+                  }}
+                />
+              </motion.div>
+              <motion.div
+                className="flex-1 rounded-t-sm origin-bottom min-h-[2px]"
+                style={{ backgroundColor: '#CF6679', opacity: 0.7 }}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 0.35 + i * 0.06, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                <div
+                  className="w-full rounded-t-sm"
+                  style={{
+                    height: `${Math.max(bar.expense, 3)}%`,
+                    background: 'linear-gradient(180deg, #CF6679, #CF6679aa)',
+                  }}
+                />
+              </motion.div>
+            </div>
+            <span className="text-[8px] text-white/25 font-medium">{bar.label.slice(0, 2)}</span>
+          </div>
+        ))
+      ) : (
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-[10px] text-white/20">Belum ada data</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Insight Tips ── */
+const bizTips = [
+  { title: 'Kelola Piutang', desc: 'Follow up piutang yang sudah lewat tempo untuk menjaga arus kas.', color: '#CF6679', icon: TrendingDown },
+  { title: 'Target Penjualan', desc: 'Tetapkan target harian untuk mencapai target bulanan.', color: '#03DAC6', icon: Target },
+  { title: 'Efisiensi Pengeluaran', desc: 'Review kas keluar mingguan untuk mengidentifikasi penghematan.', color: '#FFD700', icon: PieChart },
+  { title: 'Diversifikasi Produk', desc: 'Tambah variasi produk untuk meningkatkan peluang penjualan.', color: '#BB86FC', icon: Sparkles },
+];
+
 /* ── Main Component ── */
 export default function BusinessDashboard() {
   const { t } = useTranslation();
@@ -256,6 +503,7 @@ export default function BusinessDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchKey, setFetchKey] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
 
   const businessId = activeBusiness?.id;
 
@@ -285,6 +533,14 @@ export default function BusinessDashboard() {
     return () => { cancelled = true; controller.abort(); };
   }, [businessId, fetchKey]);
 
+  // Auto-rotate tips
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % bizTips.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Greeting data
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -313,6 +569,12 @@ export default function BusinessDashboard() {
     return Object.entries(groups).map(([group, items]) => ({ group, items }));
   }, [data]);
 
+  // Health score
+  const healthScore = useMemo(() => {
+    if (!data) return { score: 0, grade: 'N/A', color: '#666666' };
+    return calculateHealthScore(data);
+  }, [data]);
+
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -330,21 +592,31 @@ export default function BusinessDashboard() {
             <Skeleton key={i} className="h-[118px] rounded-xl bg-[#1A1A2E]" />
           ))}
         </div>
-        <Skeleton className="h-[52px] rounded-xl bg-[#1A1A2E]" />
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <Skeleton className="h-[300px] rounded-xl bg-[#1A1A2E] lg:col-span-3" />
-          <Skeleton className="h-[300px] rounded-xl bg-[#1A1A2E] lg:col-span-2" />
+          <Skeleton className="h-[280px] rounded-xl bg-[#1A1A2E] lg:col-span-3" />
+          <Skeleton className="h-[280px] rounded-xl bg-[#1A1A2E] lg:col-span-2" />
         </div>
-        <Skeleton className="h-[260px] rounded-xl bg-[#1A1A2E]" />
+        <Skeleton className="h-[52px] rounded-xl bg-[#1A1A2E]" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Skeleton className="h-[260px] rounded-xl bg-[#1A1A2E]" />
+          <Skeleton className="h-[260px] rounded-xl bg-[#1A1A2E]" />
+          <Skeleton className="h-[260px] rounded-xl bg-[#1A1A2E]" />
+        </div>
+        <Skeleton className="h-[200px] rounded-xl bg-[#1A1A2E]" />
       </div>
     );
   }
 
-  // Derived values
-  const totalCash = (data?.totalKasBesar ?? 0) + (data?.totalKasKecil ?? 0);
-  const netCashValue = data?.netCash ?? totalCash;
+  if (!data) return null;
 
-  // Quick stats definition
+  // Derived values
+  const totalCash = (data.totalKasBesar ?? 0) + (data.totalKasKecil ?? 0);
+  const netCashValue = data.netCash ?? totalCash;
+  const debtToRevenueRatio = data.totalRevenue > 0
+    ? ((data.totalHutang / data.totalRevenue) * 100)
+    : 0;
+
+  // Quick stats definition — enhanced with profit margin and debt ratio
   const quickStats = data
     ? [
         {
@@ -352,7 +624,7 @@ export default function BusinessDashboard() {
           value: data.totalRevenue,
           icon: TrendingUp,
           accentColor: '#03DAC6',
-          subText: data.totalRevenue > 0 ? t('biz.totalPenjualan') : t('biz.noBizData'),
+          subText: `${data.salesCount || 0} transaksi · Avg: ${formatAmount(data.averageSaleValue || 0)}`,
           trend: 'up' as const,
         },
         {
@@ -370,9 +642,7 @@ export default function BusinessDashboard() {
           value: data.profit,
           icon: DollarSign,
           accentColor: data.profit >= 0 ? '#03DAC6' : '#CF6679',
-          subText: (data.profitMargin ?? 0) > 0
-            ? `${t('biz.bizNetIncome')}: ${(data.profitMargin ?? 0).toFixed(1)}%`
-            : t('biz.noBizData'),
+          subText: `Margin: ${(data.profitMargin ?? 0).toFixed(1)}%`,
           badge: (data.profitMargin ?? 0) > 0 ? `+${(data.profitMargin ?? 0).toFixed(1)}%` : null,
           trend: (data.profit ?? 0) > 0 ? ('up' as const) : (data.profit ?? 0) < 0 ? ('down' as const) : ('flat' as const),
         },
@@ -381,7 +651,8 @@ export default function BusinessDashboard() {
           value: netCashValue,
           icon: Wallet,
           accentColor: netCashValue >= 0 ? '#03DAC6' : '#CF6679',
-          subText: `${t('biz.kasBesar')}: ${formatAmount(data.totalKasBesar)} · ${t('biz.kasKecil')}: ${formatAmount(data.totalKasKecil)}`,
+          subText: `Hutang/Revenue: ${debtToRevenueRatio.toFixed(0)}%`,
+          badge: debtToRevenueRatio > 50 ? `${debtToRevenueRatio.toFixed(0)}%` : null,
           trend: netCashValue >= 0 ? ('up' as const) : ('down' as const),
         },
       ]
@@ -449,6 +720,37 @@ export default function BusinessDashboard() {
     data.totalRevenue > 0 || data.totalExpense > 0 || data.recentSales.length > 0
   );
 
+  // Health score breakdown
+  const healthBreakdown = data ? [
+    {
+      label: 'Profit Margin',
+      value: data.profitMargin || 0,
+      color: (data.profitMargin || 0) >= 10 ? '#03DAC6' : (data.profitMargin || 0) > 0 ? '#FFD700' : '#CF6679',
+      suffix: '%',
+    },
+    {
+      label: 'Cash Flow',
+      value: data.totalRevenue > 0 ? Math.min(100, (netCashValue / data.totalRevenue) * 100) : 0,
+      color: netCashValue > 0 ? '#03DAC6' : '#CF6679',
+      suffix: '%',
+    },
+    {
+      label: 'Debt Ratio',
+      value: Math.max(0, 100 - debtToRevenueRatio),
+      color: debtToRevenueRatio < 0.3 ? '#03DAC6' : debtToRevenueRatio < 0.6 ? '#FFD700' : '#CF6679',
+      suffix: '%',
+    },
+    {
+      label: 'Receivables',
+      value: data.totalRevenue > 0 ? Math.max(0, 100 - ((data.totalPiutang / data.totalRevenue) * 100)) : 100,
+      color: data.totalPiutang / (data.totalRevenue || 1) < 0.2 ? '#03DAC6' : data.totalPiutang / (data.totalRevenue || 1) < 0.5 ? '#FFD700' : '#CF6679',
+      suffix: '%',
+    },
+  ] : [];
+
+  const currentTip = bizTips[tipIndex];
+  const TipIcon = currentTip.icon;
+
   return (
     <motion.div
       className="space-y-5"
@@ -459,14 +761,12 @@ export default function BusinessDashboard() {
       {/* ── Welcome Banner ── */}
       <motion.div variants={bannerVariants}>
         <div className="relative overflow-hidden rounded-2xl border border-white/[0.06]">
-          {/* Gradient background */}
           <div
             className="absolute inset-0"
             style={{
               background: 'linear-gradient(135deg, #1A1A2E 0%, #16213E 40%, #1A1A2E 100%)',
             }}
           />
-          {/* Decorative orbs */}
           <motion.div
             className="absolute -top-12 -right-12 h-40 w-40 rounded-full opacity-[0.07]"
             style={{ background: 'radial-gradient(circle, #03DAC6, transparent)' }}
@@ -479,7 +779,6 @@ export default function BusinessDashboard() {
             animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.08, 0.05] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' as const, delay: 1 }}
           />
-          {/* Subtle grid pattern */}
           <div
             className="absolute inset-0 opacity-[0.02]"
             style={{
@@ -512,7 +811,6 @@ export default function BusinessDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Decorative sparkle dots */}
                 {[0, 1, 2].map((i) => (
                   <motion.div
                     key={i}
@@ -533,7 +831,7 @@ export default function BusinessDashboard() {
         </div>
       </motion.div>
 
-      {/* ── Section 1: Quick Stats Row with Sparklines ── */}
+      {/* ── Section 1: Quick Stats Row with Sparklines (Enhanced) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {quickStats.map((stat, idx) => {
           const Icon = stat.icon;
@@ -588,7 +886,6 @@ export default function BusinessDashboard() {
                     <p className="text-[11px] text-white/30 leading-snug truncate flex-1 min-w-0">
                       {stat.subText}
                     </p>
-                    {/* Mini sparkline trend */}
                     <div className="shrink-0" title="Tren Bulanan">
                       <MiniSparkline data={sparkData} color={stat.accentColor} trend={stat.trend} />
                     </div>
@@ -655,15 +952,73 @@ export default function BusinessDashboard() {
         </Card>
       </motion.div>
 
-      {/* ── Section 3: Chart + Status ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Left: Pendapatan vs Pengeluaran */}
-        <motion.div variants={itemVariants} className="lg:col-span-3">
+      {/* ── Section 3: Health Score + Revenue Trend + Chart ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left: Business Health Score */}
+        <motion.div variants={itemVariants} className="lg:col-span-4">
+          <Card className="bg-[#1A1A2E] border-white/[0.06] h-full" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
+                  Skor Kesehatan
+                </CardTitle>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{
+                    color: healthScore.color,
+                    backgroundColor: `${healthScore.color}15`,
+                    boxShadow: `0 0 8px ${healthScore.color}10`,
+                  }}
+                >
+                  Grade {healthScore.grade}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="pb-5">
+              <div className="flex flex-col items-center">
+                <HealthRing score={healthScore.score} color={healthScore.color} grade={healthScore.grade} />
+
+                {/* Health breakdown bars */}
+                <div className="w-full mt-4 space-y-2.5">
+                  {healthBreakdown.map((item, idx) => (
+                    <motion.div
+                      key={item.label}
+                      className="space-y-1"
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + idx * 0.1 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-white/40 font-medium">{item.label}</span>
+                        <span className="text-[10px] font-bold tabular-nums" style={{ color: item.color }}>
+                          {item.value.toFixed(0)}{item.suffix}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: item.color }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(item.value, 100)}%` }}
+                          transition={{ delay: 0.6 + idx * 0.1, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Center: Revenue vs Expense Chart */}
+        <motion.div variants={itemVariants} className="lg:col-span-5">
           <Card className="bg-[#1A1A2E] border-white/[0.06] h-full" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#BB86FC]" />
                   {t('biz.bizRevenue')} vs {t('biz.bizExpense')}
                 </CardTitle>
                 <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">
@@ -715,7 +1070,7 @@ export default function BusinessDashboard() {
                               <div
                                 className="absolute inset-0"
                                 style={{
-                                  background: `linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%)`,
+                                  background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%)',
                                   borderRadius: '12px',
                                 }}
                               />
@@ -726,7 +1081,6 @@ export default function BusinessDashboard() {
                     );
                   })}
 
-                  {/* Profit / Loss indicator */}
                   {data && (
                     <>
                       <Separator className="my-1 bg-white/[0.06]" />
@@ -775,12 +1129,12 @@ export default function BusinessDashboard() {
         </motion.div>
 
         {/* Right: Status Ringkas */}
-        <motion.div variants={itemVariants} className="lg:col-span-2">
+        <motion.div variants={itemVariants} className="lg:col-span-3">
           <Card className="bg-[#1A1A2E] border-white/[0.06] h-full" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#BB86FC]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#FFD700]" />
                   Status Ringkas
                 </CardTitle>
                 <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">
@@ -834,7 +1188,6 @@ export default function BusinessDashboard() {
                 })}
               </AnimatePresence>
 
-              {/* Debts due soon detail */}
               {data && data.debtsDueSoon.length > 0 && (
                 <>
                   <Separator className="bg-white/[0.06]" />
@@ -872,13 +1225,40 @@ export default function BusinessDashboard() {
         </motion.div>
       </div>
 
-      {/* ── Section 4: Enhanced Aktivitas Terbaru ── */}
+      {/* ── Section 4: Mini Revenue Trend ── */}
       <motion.div variants={itemVariants}>
         <Card className="bg-[#1A1A2E] border-white/[0.06]" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#FFD700]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-[#03DAC6]" />
+                Tren Pendapatan Harian
+              </CardTitle>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-sm bg-[#03DAC6]" />
+                  <span className="text-[9px] text-white/30">Pendapatan</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-sm bg-[#CF6679]" />
+                  <span className="text-[9px] text-white/30">Pengeluaran</span>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-5">
+            <MiniRevenueTrend recentSales={data?.recentSales || []} recentCashEntries={data?.recentCashEntries || []} />
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* ── Section 5: Enhanced Aktivitas Terbaru ── */}
+      <motion.div variants={itemVariants}>
+        <Card className="bg-[#1A1A2E] border-white/[0.06]" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-[#BB86FC]" />
                 Aktivitas Terbaru
               </CardTitle>
               {data && data.recentSales.length > 0 && (
@@ -899,7 +1279,6 @@ export default function BusinessDashboard() {
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 + groupIdx * 0.1 }}
                     >
-                      {/* Date group header */}
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-px flex-1 bg-white/[0.04]" />
                         <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider px-2">
@@ -907,8 +1286,6 @@ export default function BusinessDashboard() {
                         </span>
                         <div className="h-px flex-1 bg-white/[0.04]" />
                       </div>
-
-                      {/* Activity items */}
                       <div className="space-y-0.5">
                         {group.items.map((sale, saleIdx) => (
                           <motion.div
@@ -939,7 +1316,6 @@ export default function BusinessDashboard() {
                                 <span className="text-[11px] text-white/30">
                                   {sale.customer?.name || '-'}
                                 </span>
-                                {/* Time badge */}
                                 <span className="text-[10px] font-medium text-[#BB86FC]/60 bg-[#BB86FC]/[0.08] px-1.5 py-px rounded-md">
                                   {getTimeBadge(sale.date)}
                                 </span>
@@ -968,27 +1344,100 @@ export default function BusinessDashboard() {
         </Card>
       </motion.div>
 
-      {/* ── Footer Section: Financial Tips ── */}
+      {/* ── Section 6: Insight Tips (Rotating) ── */}
       <motion.div variants={itemVariants}>
-        <Card className="bg-[#1A1A2E] border-white/[0.06] overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,215,0,0.04))',
-                }}
-              >
-                <HandCoins className="h-4 w-4 text-[#FFD700]" />
+        <Card className="bg-[#1A1A2E] border-white/[0.06] overflow-hidden relative">
+          {/* Animated gradient border effect */}
+          <div
+            className="absolute inset-0 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+            style={{
+              background: `linear-gradient(135deg, ${currentTip.color}15, transparent, ${currentTip.color}10)`,
+            }}
+          />
+          <CardContent className="p-5 relative">
+            <div className="flex items-center gap-4">
+              {/* Tip navigation */}
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <motion.div
+                  key={tipIndex}
+                  className="flex h-12 w-12 items-center justify-center rounded-xl"
+                  style={{
+                    background: `linear-gradient(135deg, ${currentTip.color}20, ${currentTip.color}08)`,
+                    boxShadow: `0 0 20px ${currentTip.color}12`,
+                    border: `1px solid ${currentTip.color}20`,
+                  }}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring' as const, stiffness: 300, damping: 22 }}
+                >
+                  <TipIcon className="h-5 w-5" style={{ color: currentTip.color }} />
+                </motion.div>
+                {/* Navigation dots */}
+                <div className="flex gap-1">
+                  {bizTips.map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="rounded-full cursor-pointer"
+                      style={{
+                        width: i === tipIndex ? 12 : 4,
+                        height: 4,
+                        backgroundColor: i === tipIndex ? currentTip.color : 'rgba(255,255,255,0.15)',
+                      }}
+                      animate={{
+                        width: i === tipIndex ? 12 : 4,
+                        backgroundColor: i === tipIndex ? currentTip.color : 'rgba(255,255,255,0.15)',
+                      }}
+                      transition={{ duration: 0.3 }}
+                      onClick={() => setTipIndex(i)}
+                    />
+                  ))}
+                </div>
               </div>
+
+              {/* Tip content */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-white/50 font-medium">Tips Keuangan</p>
-                <p className="text-[11px] text-white/30 mt-0.5 leading-relaxed">
-                  {hasAnyData
-                    ? 'Pantau arus kas secara rutin untuk menjaga kesehatan keuangan bisnis Anda.'
-                    : 'Mulai catat transaksi pertama Anda untuk mendapatkan insight keuangan.'
-                  }
-                </p>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={tipIndex}
+                    initial={{ opacity: 0, y: 8, x: 10 }}
+                    animate={{ opacity: 1, y: 0, x: 0 }}
+                    exit={{ opacity: 0, y: -8, x: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Lightbulb className="h-3.5 w-3.5" style={{ color: currentTip.color }} />
+                      <span className="text-sm font-semibold text-white">{currentTip.title}</span>
+                      <span
+                        className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+                        style={{
+                          color: currentTip.color,
+                          backgroundColor: `${currentTip.color}12`,
+                        }}
+                      >
+                        Tips Bisnis
+                      </span>
+                    </div>
+                    <p className="text-xs text-white/40 leading-relaxed">{currentTip.desc}</p>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Nav arrows */}
+              <div className="flex flex-col gap-1 shrink-0">
+                <motion.button
+                  className="h-7 w-7 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-colors"
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setTipIndex((prev) => (prev - 1 + bizTips.length) % bizTips.length)}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </motion.button>
+                <motion.button
+                  className="h-7 w-7 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-colors"
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setTipIndex((prev) => (prev + 1) % bizTips.length)}
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </motion.button>
               </div>
             </div>
           </CardContent>

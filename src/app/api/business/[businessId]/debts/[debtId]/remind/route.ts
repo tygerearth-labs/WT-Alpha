@@ -31,7 +31,7 @@ export async function POST(
       return NextResponse.json({ error: 'Debt not found' }, { status: 404 });
     }
 
-    // Resolve phone number: try customer via referenceId first, fallback to business phone
+    // Resolve phone number: try customer via referenceId first, then match by counterpart name, fallback to business phone
     let phone = debt.business.phone || '';
 
     if (debt.referenceId) {
@@ -41,6 +41,21 @@ export async function POST(
       });
       if (sale?.customer?.phone) {
         phone = sale.customer.phone;
+      }
+    }
+
+    // If still no phone, try to find customer by matching counterpart name
+    if (!phone && debt.counterpart) {
+      const customer = await db.businessCustomer.findFirst({
+        where: {
+          businessId,
+          name: debt.counterpart,
+          phone: { not: null },
+        },
+        select: { phone: true },
+      });
+      if (customer?.phone) {
+        phone = customer.phone;
       }
     }
 
@@ -76,26 +91,47 @@ export async function POST(
         year: 'numeric',
       }).format(date);
 
-    // Build WhatsApp message
+    // Build WhatsApp message based on debt type
     const dueDateStr = debt.dueDate
       ? formatDate(new Date(debt.dueDate))
       : 'Belum ditentukan';
 
-    const message = [
-      `*Reminder Pembayaran Utang*`,
-      ``,
-      `Yth. *${debt.counterpart}*,`,
-      ``,
-      `Kami ingin mengingatkan mengenai pembayaran utang Anda dengan rincian sebagai berikut:`,
-      ``,
-      `💰 *Total Utang:* ${formatCurrency(debt.amount)}`,
-      `📉 *Sisa Tagihan:* ${formatCurrency(debt.remaining)}`,
-      `📅 *Jatuh Tempo:* ${dueDateStr}`,
-      ``,
-      `Mohon untuk segera melakukan pembayaran sebelum tanggal jatuh tempo. Jika sudah melakukan pembayaran, mohon konfirmasi kembali.`,
-      ``,
-      `Terima kasih atas kerjasamanya. 🙏`,
-    ].join('\n');
+    let message: string;
+    if (debt.type === 'piutang') {
+      // Friendly tone asking customer to pay their debt to us
+      message = [
+        `*Reminder Pembayaran Piutang*`,
+        ``,
+        `Halo *${debt.counterpart}*, 👋`,
+        ``,
+        `Kami ingin mengingatkan mengenai pembayaran yang belum lunas dengan rincian berikut:`,
+        ``,
+        `💰 *Total Piutang:* ${formatCurrency(debt.amount)}`,
+        `📉 *Sisa yang Harus Dibayar:* ${formatCurrency(debt.remaining)}`,
+        `📅 *Jatuh Tempo:* ${dueDateStr}`,
+        ``,
+        `Mohon untuk segera melakukan pembayaran sebelum tanggal jatuh tempo ya. Jika sudah melakukan pembayaran, mohon konfirmasi kembali agar kami bisa update datanya. 😊`,
+        ``,
+        `Terima kasih atas kepercayaan dan kerjasamanya! 🙏`,
+      ].join('\n');
+    } else {
+      // Hutang - reminding about our own debt to pay
+      message = [
+        `*Reminder Pembayaran Utang*`,
+        ``,
+        `Yth. *${debt.counterpart}*,`,
+        ``,
+        `Kami ingin mengingatkan mengenai pembayaran utang kami dengan rincian sebagai berikut:`,
+        ``,
+        `💰 *Total Utang:* ${formatCurrency(debt.amount)}`,
+        `📉 *Sisa Tagihan:* ${formatCurrency(debt.remaining)}`,
+        `📅 *Jatuh Tempo:* ${dueDateStr}`,
+        ``,
+        `Kami akan segera melakukan pembayaran sebelum tanggal jatuh tempo. Mohon maaf atas keterlambatan jika ada.`,
+        ``,
+        `Terima kasih atas kerjasamanya. 🙏`,
+      ].join('\n');
+    }
 
     const encodedMessage = encodeURIComponent(message);
     const waUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;

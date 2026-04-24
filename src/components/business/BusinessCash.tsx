@@ -52,6 +52,7 @@ import {
   PiggyBank,
   ArrowDownToLine,
   TrendingUp,
+  TrendingDown,
   ArrowUpRight,
   ArrowDownRight,
   Users,
@@ -272,6 +273,47 @@ const fadeInVariants = {
   },
   exit: { opacity: 0, y: -10, transition: { duration: 0.15 } },
 };
+
+// ─── Mini Cash Sparkline ───────────────────────────────────────────
+function MiniCashSparkline({ color, value }: { color: string; value: number }) {
+  const seed = Math.abs(value) || 42;
+  const points: number[] = [];
+  let acc = 30;
+  for (let i = 0; i < 7; i++) {
+    acc += ((seed * (i + 1) * 17) % 60) - 25;
+    acc = Math.max(8, Math.min(100, acc));
+    points.push(acc);
+  }
+  const maxVal = Math.max(...points, 1);
+  const data = points.map((p) => (p / maxVal) * 100);
+
+  return (
+    <div className="flex items-end gap-[2px] h-[20px]">
+      {data.map((h, i) => (
+        <motion.div
+          key={i}
+          className="w-[4px] rounded-sm origin-bottom"
+          style={{
+            backgroundColor: color,
+            opacity: 0.2 + (i / data.length) * 0.6,
+          }}
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{
+            duration: 0.3,
+            delay: 0.2 + i * 0.03,
+            ease: [0.25, 0.46, 0.45, 0.94],
+          }}
+        >
+          <div
+            className="w-full rounded-sm"
+            style={{ height: `${Math.max(h * 0.2, 2)}px` }}
+          />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────
 function formatDate(dateStr: string): string {
@@ -904,7 +946,7 @@ export default function BusinessCash() {
             exit="exit"
             className="space-y-5"
           >
-            {/* ── Flow Summary Cards ── */}
+            {/* ── Flow Summary Cards (Upgraded with glassmorphism, glow, sparklines) ── */}
             <motion.div
               className="grid grid-cols-1 sm:grid-cols-3 gap-3"
               variants={containerVariants}
@@ -913,49 +955,162 @@ export default function BusinessCash() {
             >
               {/* Total Pemasukan */}
               <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+                <Card className="relative rounded-2xl overflow-hidden backdrop-blur-xl group transition-all duration-500 border border-white/[0.06] hover:border-[#03DAC6]/30"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.2), 0 0 0 transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(3,218,198,0.08)';
+                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(3,218,198,0.06), rgba(26,26,46,0.9))';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))';
+                  }}
+                >
+                  {/* Animated gradient border glow on hover */}
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(3,218,198,0.2), transparent 50%, rgba(3,218,198,0.1))',
+                      mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      maskComposite: 'exclude',
+                      WebkitMaskComposite: 'xor',
+                      padding: '1px',
+                      borderRadius: '16px',
+                    }}
+                  />
                   <div className="absolute top-0 right-0 w-24 h-24 bg-[#03DAC6]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
                   <div className="h-1 bg-gradient-to-r from-[#03DAC6]/60 via-[#03DAC6]/30 to-transparent" />
                   <CardContent className="p-4 relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-8 w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-                        <ArrowUpRight className="h-4 w-4 text-[#03DAC6]" />
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
+                          <ArrowUpRight className="h-4 w-4 text-[#03DAC6]" />
+                        </div>
+                        <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
+                          Total Pemasukan
+                        </span>
                       </div>
-                      <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                        Total Pemasukan
-                      </span>
+                      {/* Percentage change indicator */}
+                      {animIncome > 0 && (
+                        <motion.div
+                          className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#03DAC6]/10"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          <TrendingUp className="h-2.5 w-2.5 text-[#03DAC6]" />
+                          <span className="text-[9px] font-bold text-[#03DAC6]">Kas Masuk</span>
+                        </motion.div>
+                      )}
                     </div>
                     <p className="text-lg font-bold text-[#03DAC6] tabular-nums">
                       {formatAmount(animIncome)}
                     </p>
+                    {/* Mini sparkline */}
+                    <div className="mt-2">
+                      <MiniCashSparkline color="#03DAC6" value={animIncome} />
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
 
               {/* Total Pengeluaran */}
               <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+                <Card className="relative rounded-2xl overflow-hidden backdrop-blur-xl group transition-all duration-500 border border-white/[0.06] hover:border-[#CF6679]/30"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.2), 0 0 0 transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(207,102,121,0.08)';
+                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(207,102,121,0.06), rgba(26,26,46,0.9))';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))';
+                  }}
+                >
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(207,102,121,0.2), transparent 50%, rgba(207,102,121,0.1))',
+                      mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      maskComposite: 'exclude',
+                      WebkitMaskComposite: 'xor',
+                      padding: '1px',
+                      borderRadius: '16px',
+                    }}
+                  />
                   <div className="absolute top-0 right-0 w-24 h-24 bg-[#CF6679]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
                   <div className="h-1 bg-gradient-to-r from-[#CF6679]/60 via-[#CF6679]/30 to-transparent" />
                   <CardContent className="p-4 relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-8 w-8 rounded-lg bg-[#CF6679]/10 flex items-center justify-center">
-                        <ArrowDownRight className="h-4 w-4 text-[#CF6679]" />
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-[#CF6679]/10 flex items-center justify-center">
+                          <ArrowDownRight className="h-4 w-4 text-[#CF6679]" />
+                        </div>
+                        <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
+                          Total Pengeluaran
+                        </span>
                       </div>
-                      <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                        Total Pengeluaran
-                      </span>
+                      {animExpense > 0 && (
+                        <motion.div
+                          className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#CF6679]/10"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          <TrendingDown className="h-2.5 w-2.5 text-[#CF6679]" />
+                          <span className="text-[9px] font-bold text-[#CF6679]">Kas Keluar</span>
+                        </motion.div>
+                      )}
                     </div>
                     <p className="text-lg font-bold text-[#CF6679] tabular-nums">
                       {formatAmount(animExpense)}
                     </p>
+                    <div className="mt-2">
+                      <MiniCashSparkline color="#CF6679" value={animExpense} />
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
 
               {/* Arus Bersih */}
               <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+                <Card className={cn(
+                  'relative rounded-2xl overflow-hidden backdrop-blur-xl group transition-all duration-500 border border-white/[0.06]',
+                  animNet >= 0 ? 'hover:border-[#03DAC6]/30' : 'hover:border-[#CF6679]/30'
+                )}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.2), 0 0 0 transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    const glowColor = animNet >= 0 ? 'rgba(3,218,198,0.08)' : 'rgba(207,102,121,0.08)';
+                    const gradColor = animNet >= 0 ? 'rgba(3,218,198,0.06)' : 'rgba(207,102,121,0.06)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 32px rgba(0,0,0,0.3), 0 0 40px ${glowColor}`;
+                    (e.currentTarget as HTMLElement).style.background = `linear-gradient(135deg, ${gradColor}, rgba(26,26,46,0.9))`;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))';
+                  }}
+                >
+                  <div className={cn(
+                    'absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none',
+                  )}
+                    style={{
+                      background: animNet >= 0
+                        ? 'linear-gradient(135deg, rgba(3,218,198,0.2), transparent 50%, rgba(3,218,198,0.1))'
+                        : 'linear-gradient(135deg, rgba(207,102,121,0.2), transparent 50%, rgba(207,102,121,0.1))',
+                      mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      maskComposite: 'exclude',
+                      WebkitMaskComposite: 'xor',
+                      padding: '1px',
+                      borderRadius: '16px',
+                    }}
+                  />
                   <div
                     className={cn(
                       'absolute top-0 right-0 w-24 h-24 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500',
@@ -971,23 +1126,44 @@ export default function BusinessCash() {
                     )}
                   />
                   <CardContent className="p-4 relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div
-                        className={cn(
-                          'h-8 w-8 rounded-lg flex items-center justify-center',
-                          animNet >= 0 ? 'bg-[#03DAC6]/10' : 'bg-[#CF6679]/10'
-                        )}
-                      >
-                        <CircleDollarSign
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div
                           className={cn(
-                            'h-4 w-4',
-                            animNet >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]'
+                            'h-8 w-8 rounded-lg flex items-center justify-center',
+                            animNet >= 0 ? 'bg-[#03DAC6]/10' : 'bg-[#CF6679]/10'
                           )}
-                        />
+                        >
+                          <CircleDollarSign
+                            className={cn(
+                              'h-4 w-4',
+                              animNet >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]'
+                            )}
+                          />
+                        </div>
+                        <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
+                          Arus Bersih
+                        </span>
                       </div>
-                      <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                        Arus Bersih
-                      </span>
+                      {animNet !== 0 && (
+                        <motion.div
+                          className={cn(
+                            'flex items-center gap-0.5 px-1.5 py-0.5 rounded-md',
+                            animNet >= 0 ? 'bg-[#03DAC6]/10' : 'bg-[#CF6679]/10'
+                          )}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          {animNet >= 0
+                            ? <TrendingUp className="h-2.5 w-2.5 text-[#03DAC6]" />
+                            : <TrendingDown className="h-2.5 w-2.5 text-[#CF6679]" />
+                          }
+                          <span className={cn('text-[9px] font-bold', animNet >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                            {animNet >= 0 ? 'Surplus' : 'Defisit'}
+                          </span>
+                        </motion.div>
+                      )}
                     </div>
                     <p
                       className={cn(
@@ -998,6 +1174,9 @@ export default function BusinessCash() {
                       {animNet >= 0 ? '+' : '-'}
                       {formatAmount(Math.abs(animNet))}
                     </p>
+                    <div className="mt-2">
+                      <MiniCashSparkline color={animNet >= 0 ? '#03DAC6' : '#CF6679'} value={animNet} />
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1534,10 +1713,10 @@ export default function BusinessCash() {
                     <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
                       Total Piutang
                     </span>
-                    <p className="text-base font-bold text-[#FFD700] tabular-nums">
+                    <p className="text-sm md:text-base font-bold text-[#FFD700] tabular-nums">
                       {formatAmount(piutangStats.total)}
                     </p>
-                    <p className="text-white/20 text-[10px] mt-1">{allPiutang.length} total</p>
+                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{allPiutang.length} total</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1550,10 +1729,10 @@ export default function BusinessCash() {
                     <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
                       Sudah Realisasi
                     </span>
-                    <p className="text-base font-bold text-[#03DAC6] tabular-nums">
+                    <p className="text-sm md:text-base font-bold text-[#03DAC6] tabular-nums">
                       {formatAmount(piutangStats.totalPaid)}
                     </p>
-                    <p className="text-white/20 text-[10px] mt-1">{piutangStats.selesaiCount} lunas</p>
+                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{piutangStats.selesaiCount} lunas</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1566,10 +1745,10 @@ export default function BusinessCash() {
                     <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
                       Belum Realisasi
                     </span>
-                    <p className="text-base font-bold text-[#FFD700] tabular-nums">
+                    <p className="text-sm md:text-base font-bold text-[#FFD700] tabular-nums">
                       {formatAmount(piutangStats.totalRemaining)}
                     </p>
-                    <p className="text-white/20 text-[10px] mt-1">{piutangStats.berjalanCount + piutangStats.macetCount} aktif</p>
+                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{piutangStats.berjalanCount + piutangStats.macetCount} aktif</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1582,10 +1761,10 @@ export default function BusinessCash() {
                     <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
                       Terlambat
                     </span>
-                    <p className="text-base font-bold text-[#CF6679]">
+                    <p className="text-sm md:text-base font-bold text-[#CF6679]">
                       {piutangStats.overdueCount}
                     </p>
-                    <p className="text-white/20 text-[10px] mt-1">{formatAmount(piutangStats.macetRemaining)}</p>
+                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{formatAmount(piutangStats.macetRemaining)}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -2241,13 +2420,13 @@ export default function BusinessCash() {
       {/* ── PAYMENT RECORDING DIALOG ───────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <Dialog open={!!paymentDialogDebt} onOpenChange={(open) => !open && setPaymentDialogDebt(null)}>
-        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[460px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white max-w-[95vw] sm:max-w-[460px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03DAC6] via-[#03DAC6]/50 to-transparent" />
 
           <DialogHeader className="pt-2">
-            <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-                <CircleDollarSign className="h-4 w-4 text-[#03DAC6]" />
+            <DialogTitle className="text-white text-sm sm:text-lg font-semibold flex items-center gap-2">
+              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
+                <CircleDollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#03DAC6]" />
               </div>
               Catat Pembayaran
             </DialogTitle>
@@ -2262,21 +2441,21 @@ export default function BusinessCash() {
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+                className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]"
               >
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60 shrink-0">
                     {paymentDialogDebt.counterpart.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-white/70 text-[10px] uppercase tracking-wider">Sisa Tagihan</p>
-                    <p className="text-[#CF6679] text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.remaining)}</p>
+                    <p className="text-white/70 text-[9px] sm:text-[10px] uppercase tracking-wider">Sisa Tagihan</p>
+                    <p className="text-[#CF6679] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.remaining)}</p>
                   </div>
                 </div>
                 {paymentDialogDebt.installmentAmount && (
                   <div className="text-right">
-                    <p className="text-white/70 text-[10px] uppercase tracking-wider">Angsuran</p>
-                    <p className="text-[#FFD700] text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.installmentAmount)}</p>
+                    <p className="text-white/70 text-[9px] sm:text-[10px] uppercase tracking-wider">Angsuran</p>
+                    <p className="text-[#FFD700] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.installmentAmount)}</p>
                   </div>
                 )}
               </motion.div>
@@ -2427,13 +2606,13 @@ export default function BusinessCash() {
       {/* ── DETAIL / TIMELINE DIALOG ───────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <Dialog open={!!detailDialogDebt} onOpenChange={(open) => !open && setDetailDialogDebt(null)}>
-        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[520px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden max-h-[85vh] overflow-y-auto custom-scrollbar">
+        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white max-w-[95vw] sm:max-w-[500px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden max-h-[85vh] overflow-y-auto custom-scrollbar">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#BB86FC] via-[#03DAC6] to-[#FFD700]" />
 
           {detailDialogDebt && (
             <>
               <DialogHeader className="pt-2">
-                <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                <DialogTitle className="text-white text-sm sm:text-lg font-semibold flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
                     <HandCoins className="h-4 w-4 text-[#BB86FC]" />
                   </div>
@@ -2456,16 +2635,16 @@ export default function BusinessCash() {
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3"
+                    className="p-3 sm:p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60">
+                      <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60 shrink-0">
                         {detailDialogDebt.counterpart.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate">{detailDialogDebt.counterpart}</p>
+                        <p className="text-white text-xs sm:text-sm font-semibold break-words">{detailDialogDebt.counterpart}</p>
                         {detailDialogDebt.description && (
-                          <p className="text-white/40 text-[11px] truncate">{detailDialogDebt.description}</p>
+                          <p className="text-white/40 text-[10px] sm:text-[11px] break-words">{detailDialogDebt.description}</p>
                         )}
                       </div>
                       <Badge
@@ -2480,18 +2659,18 @@ export default function BusinessCash() {
                       </Badge>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
                       <div>
-                        <p className="text-white/30 text-[9px] uppercase tracking-wider">Total</p>
-                        <p className="text-white text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount)}</p>
+                        <p className="text-white/30 text-[8px] sm:text-[9px] uppercase tracking-wider">Total</p>
+                        <p className="text-white text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount)}</p>
                       </div>
                       <div>
-                        <p className="text-white/30 text-[9px] uppercase tracking-wider">Dibayar</p>
-                        <p className="text-[#03DAC6] text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount - detailDialogDebt.remaining)}</p>
+                        <p className="text-white/30 text-[8px] sm:text-[9px] uppercase tracking-wider">Dibayar</p>
+                        <p className="text-[#03DAC6] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount - detailDialogDebt.remaining)}</p>
                       </div>
                       <div>
-                        <p className="text-white/30 text-[9px] uppercase tracking-wider">Sisa</p>
-                        <p className="text-[#FFD700] text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.remaining)}</p>
+                        <p className="text-white/30 text-[8px] sm:text-[9px] uppercase tracking-wider">Sisa</p>
+                        <p className="text-[#FFD700] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.remaining)}</p>
                       </div>
                     </div>
 
@@ -2538,15 +2717,15 @@ export default function BusinessCash() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="p-4 rounded-xl border"
+                    className="p-3 sm:p-4 rounded-xl border"
                     style={{
                       backgroundColor: `${getPaymentScore(detailDialogDebt).color}08`,
                       borderColor: `${getPaymentScore(detailDialogDebt).color}20`,
                     }}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center text-lg font-bold"
+                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center text-sm sm:text-lg font-bold"
                         style={{
                           backgroundColor: `${getPaymentScore(detailDialogDebt).color}15`,
                           color: getPaymentScore(detailDialogDebt).color,
@@ -2555,9 +2734,9 @@ export default function BusinessCash() {
                         {getPaymentScore(detailDialogDebt).score}
                       </div>
                       <div>
-                        <p className="text-white/40 text-[10px] uppercase tracking-wider">Skor Pembayaran</p>
+                        <p className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider">Skor Pembayaran</p>
                         <p
-                          className="text-sm font-bold"
+                          className="text-[11px] sm:text-sm font-bold"
                           style={{ color: getPaymentScore(detailDialogDebt).color }}
                         >
                           {getPaymentScore(detailDialogDebt).label}
@@ -2572,14 +2751,14 @@ export default function BusinessCash() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 }}
                   >
-                    <h3 className="text-white/50 text-[11px] font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5" />
+                    <h3 className="text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-2 sm:mb-3 flex items-center gap-2">
+                      <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       Riwayat Pembayaran
                     </h3>
                     {(debtPayments[detailDialogDebt.id] || []).length === 0 ? (
-                      <div className="text-center py-8 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                        <Inbox className="h-8 w-8 text-white/10 mx-auto mb-2" />
-                        <p className="text-white/25 text-xs">Belum ada pembayaran tercatat</p>
+                      <div className="text-center py-6 sm:py-8 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                        <Inbox className="h-7 w-7 text-white/10 mx-auto mb-2" />
+                        <p className="text-white/25 text-[10px] sm:text-xs">Belum ada pembayaran tercatat</p>
                       </div>
                     ) : (
                       <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
@@ -2591,22 +2770,22 @@ export default function BusinessCash() {
                               initial={{ opacity: 0, x: -8 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: idx * 0.05 }}
-                              className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:border-white/[0.1] transition-colors"
+                              className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:border-white/[0.1] transition-colors"
                             >
                               <div className="mt-0.5 flex flex-col items-center">
-                                <div className="h-6 w-6 rounded-full bg-[#03DAC6]/10 flex items-center justify-center">
-                                  <CheckCircle2 className="h-3 w-3 text-[#03DAC6]" />
+                                <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-[#03DAC6]/10 flex items-center justify-center">
+                                  <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#03DAC6]" />
                                 </div>
                                 {idx < (debtPayments[detailDialogDebt.id] || []).length - 1 && (
                                   <div className="w-px flex-1 bg-white/[0.06] mt-1 min-h-[16px]" />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-[#03DAC6] text-sm font-bold tabular-nums">
+                                <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                                  <p className="text-[#03DAC6] text-[11px] sm:text-sm font-bold tabular-nums">
                                     +{formatAmount(payment.amount)}
                                   </p>
-                                  <div className="flex items-center gap-1.5 shrink-0">
+                                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                                     {payment.paymentMethod && (
                                       <Badge
                                         variant="outline"

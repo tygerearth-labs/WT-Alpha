@@ -41,6 +41,7 @@ export async function GET(
     // Run all queries in parallel for performance
     const [
       salesResult,
+      salesCountResult,
       kasBesarResult,
       kasKecilResult,
       kasKeluarResult,
@@ -54,6 +55,11 @@ export async function GET(
       // Total revenue from sales
       db.businessSale.aggregate({
         _sum: { amount: true },
+        where: { businessId, ...(dateFilter ? { date: dateFilter } : {}) },
+      }),
+
+      // Sales count
+      db.businessSale.count({
         where: { businessId, ...(dateFilter ? { date: dateFilter } : {}) },
       }),
 
@@ -148,6 +154,8 @@ export async function GET(
     ]);
 
     const totalRevenue = salesResult._sum.amount || 0;
+    const salesCount = salesCountResult || 0;
+    const averageSaleValue = salesCount > 0 ? totalRevenue / salesCount : 0;
     const totalKasBesar = kasBesarResult._sum.amount || 0;
     const totalKasKecil = kasKecilResult._sum.amount || 0;
     const totalExpense = kasKeluarResult._sum.amount || 0;
@@ -170,6 +178,8 @@ export async function GET(
       totalHutang,
       totalPiutang,
       debtsDueSoon: debtsDueSoonResult,
+      salesCount,
+      averageSaleValue,
       recentSales,
       recentCashEntries,
     });

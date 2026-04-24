@@ -652,17 +652,30 @@ export default function BusinessSales() {
                     ))}
                   </div>
                 ) : filteredSales.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 px-6">
+                  <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-6">
                     <motion.div
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ type: 'spring' as const, stiffness: 200, damping: 20 }}
                       className="relative mb-6"
                     >
-                      {/* Decorative circles */}
-                      <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-[#03DAC6]/5 to-[#BB86FC]/5 animate-pulse" />
-                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] flex items-center justify-center">
-                        <PackageOpen className="h-9 w-9 text-white/20" />
+                      {/* Animated gradient glow backdrop */}
+                      <motion.div
+                        className="absolute -inset-6 rounded-full opacity-30"
+                        style={{
+                          background: 'conic-gradient(from 0deg, #03DAC620, #BB86FC20, #FFD70020, #CF667920, #03DAC620)',
+                        }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 12, repeat: Infinity, ease: 'linear' as const }}
+                      />
+                      <div className="absolute -inset-3 rounded-full bg-gradient-to-br from-[#03DAC6]/5 to-[#BB86FC]/5 animate-pulse" />
+                      <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] flex items-center justify-center backdrop-blur-xl">
+                        <motion.div
+                          animate={{ y: [0, -4, 0] }}
+                          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' as const }}
+                        >
+                          <PackageOpen className="h-9 w-9 text-white/20" />
+                        </motion.div>
                       </div>
                     </motion.div>
                     <motion.p
@@ -708,19 +721,19 @@ export default function BusinessSales() {
                       <Table>
                         <TableHeader>
                           <TableRow className="border-white/[0.06] hover:bg-transparent">
-                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider w-[110px]">
+                            <TableHead className="text-white/40 text-[10px] font-medium uppercase tracking-wider w-[80px] sm:w-[110px] py-2.5">
                               {t('biz.cashDate')}
                             </TableHead>
-                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider">
+                            <TableHead className="text-white/40 text-[10px] font-medium uppercase tracking-wider py-2.5">
                               {t('biz.saleDescription')}
                             </TableHead>
-                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider hidden sm:table-cell">
+                            <TableHead className="text-white/40 text-[10px] font-medium uppercase tracking-wider hidden sm:table-cell py-2.5">
                               {t('biz.saleCustomer')}
                             </TableHead>
-                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider hidden lg:table-cell w-[120px]">
+                            <TableHead className="text-white/40 text-[10px] font-medium uppercase tracking-wider hidden lg:table-cell w-[120px] py-2.5">
                               Status
                             </TableHead>
-                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider text-right w-[140px]">
+                            <TableHead className="text-white/40 text-[10px] font-medium uppercase tracking-wider text-right w-[110px] sm:w-[140px] py-2.5">
                               {t('biz.saleAmount')}
                             </TableHead>
                             <TableHead className="w-24" />
@@ -747,18 +760,18 @@ export default function BusinessSales() {
                                   animate="visible"
                                   exit="exit"
                                   layout
-                                  className={`border-white/[0.04] transition-colors duration-150 group cursor-default ${
+                                  className={`border-white/[0.04] transition-all duration-200 group cursor-default ${
                                     i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]'
-                                  } hover:bg-white/[0.04]`}
+                                  } hover:bg-white/[0.04] hover:shadow-[inset_0_0_0_1px_rgba(3,218,198,0.06)]`}
                                 >
-                                  <TableCell className="text-white/50 text-xs py-3.5 font-mono">
+                                  <TableCell className="text-white/50 text-[11px] sm:text-xs py-2 sm:py-2.5 font-mono">
                                     {new Date(sale.date).toLocaleDateString('id-ID', {
                                       day: 'numeric',
                                       month: 'short',
                                       year: 'numeric',
                                     })}
                                   </TableCell>
-                                  <TableCell className="py-3.5">
+                                  <TableCell className="py-2 sm:py-2.5">
                                     <div className="flex flex-col gap-1">
                                       <span className="text-white/90 text-xs font-medium max-w-[200px] truncate group-hover:text-white transition-colors">
                                         {sale.description}
@@ -803,13 +816,13 @@ export default function BusinessSales() {
                                       </div>
                                     </div>
                                   </TableCell>
-                                  <TableCell className="py-3.5 hidden sm:table-cell">
+                                  <TableCell className="py-2 sm:py-2.5 hidden sm:table-cell">
                                     <span className="text-white/50 text-xs">
                                       {sale.customer?.name || '—'}
                                     </span>
                                   </TableCell>
                                   {/* Status column */}
-                                  <TableCell className="py-3.5 hidden lg:table-cell">
+                                  <TableCell className="py-2 sm:py-2.5 hidden lg:table-cell">
                                     <div className="flex flex-col gap-1.5">
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                         {isInstallment && (
@@ -870,10 +883,10 @@ export default function BusinessSales() {
                                       )}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-xs text-right font-semibold py-3.5 text-[#03DAC6] tabular-nums">
+                                  <TableCell className="text-xs text-right font-semibold py-2 sm:py-2.5 text-[#03DAC6] tabular-nums">
                                     +{formatAmount(sale.amount)}
                                   </TableCell>
-                                  <TableCell className="py-3.5 text-right">
+                                  <TableCell className="py-2 sm:py-2.5 text-right">
                                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                       <Button
                                         variant="ghost"
