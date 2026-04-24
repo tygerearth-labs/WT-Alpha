@@ -143,7 +143,7 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: 'spring', stiffness: 300, damping: 24 },
+    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
   },
 };
 
@@ -152,7 +152,7 @@ const rowVariants = {
   visible: (i: number) => ({
     opacity: 1,
     x: 0,
-    transition: { delay: i * 0.04, type: 'spring', stiffness: 260, damping: 20 },
+    transition: { delay: i * 0.04, type: 'spring' as const, stiffness: 260, damping: 20 },
   }),
   exit: { opacity: 0, x: 12, transition: { duration: 0.2 } },
 };
@@ -351,7 +351,7 @@ export default function BusinessSales() {
             width: 'calc(50% - 6px)',
             left: activeTab === 'sales' ? '4px' : 'calc(50% + 2px)',
           }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
         />
         <Button
           variant="ghost"
@@ -539,7 +539,7 @@ export default function BusinessSales() {
                     <motion.div
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                      transition={{ type: 'spring' as const, stiffness: 200, damping: 20 }}
                       className="relative mb-6"
                     >
                       {/* Decorative circles */}

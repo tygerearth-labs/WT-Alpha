@@ -239,7 +239,7 @@ function EmptyState({
           className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full"
           style={{ background: gradientTo, boxShadow: `0 0 8px ${gradientTo}60` }}
           animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' as const }}
         />
       </div>
       <p className="text-sm font-medium text-white/40 mb-1">{title}</p>
@@ -471,13 +471,13 @@ export default function BusinessDashboard() {
             className="absolute -top-12 -right-12 h-40 w-40 rounded-full opacity-[0.07]"
             style={{ background: 'radial-gradient(circle, #03DAC6, transparent)' }}
             animate={{ scale: [1, 1.15, 1], opacity: [0.07, 0.1, 0.07] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' as const }}
           />
           <motion.div
             className="absolute -bottom-8 -left-8 h-28 w-28 rounded-full opacity-[0.05]"
             style={{ background: 'radial-gradient(circle, #BB86FC, transparent)' }}
             animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.08, 0.05] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' as const, delay: 1 }}
           />
           {/* Subtle grid pattern */}
           <div
@@ -497,7 +497,7 @@ export default function BusinessDashboard() {
                     boxShadow: '0 0 20px #03DAC610',
                   }}
                   animate={{ rotate: [0, 2, -2, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' as const }}
                 >
                   <Sparkles className="h-5 w-5 text-[#03DAC6]" />
                 </motion.div>
@@ -620,7 +620,7 @@ export default function BusinessDashboard() {
                       key={action.label}
                       whileHover={{ scale: 1.04, y: -1 }}
                       whileTap={{ scale: 0.97 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                      transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
                     >
                       <Button
                         variant="ghost"
@@ -799,7 +799,7 @@ export default function BusinessDashboard() {
                       className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 border border-transparent hover:border-white/[0.06]"
                       style={{ backgroundColor: item.bgColor }}
                       whileHover={{ x: 2 }}
-                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      transition={{ type: 'spring' as const, stiffness: 300, damping: 20 }}
                     >
                       <div
                         className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-transform duration-200"

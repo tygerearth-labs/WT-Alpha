@@ -791,7 +791,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${barWidth}%` }}
-                              transition={{ duration: 0.6, ease: 'easeOut' }}
+                              transition={{ duration: 0.6, ease: 'easeOut' as const }}
                               className={cn(
                                 'absolute top-0 h-full rounded-sm',
                                 returnPct >= 0 ? 'left-0' : 'right-0',
@@ -1194,7 +1194,7 @@ export default function BacktestingPanel({ assets, businessId }: BacktestingPane
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' as const }}
                         className="overflow-hidden"
                       >
                         {/* Weekly Bar Chart */}
@@ -1489,7 +1489,7 @@ function EquityCurveChart({
             strokeLinejoin="round"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
+            transition={{ duration: 1, ease: 'easeOut' as const }}
           />
         )}
 

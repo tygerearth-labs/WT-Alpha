@@ -97,19 +97,19 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 25 } },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 25 } },
 };
 
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.92, y: 12 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+  show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } },
 };
 
 const DebtEmptyState = ({ type }: { type: string }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5, ease: 'easeOut' }}
+    transition={{ duration: 0.5, ease: 'easeOut' as const }}
     className="flex flex-col items-center justify-center py-16 px-4"
   >
     <div className="relative mb-6">
@@ -125,7 +125,7 @@ const DebtEmptyState = ({ type }: { type: string }) => (
       </div>
       <motion.div
         animate={{ y: [0, -4, 0] }}
-        transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+        transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' as const }}
         className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center"
       >
         <CreditCard className="h-4 w-4 text-white/40" />
@@ -572,8 +572,7 @@ export default function BusinessDebts() {
                           <TableHead className="text-white/50 text-xs w-28" />
                         </TableRow>
                       </TableHeader>
-                      <TableBody asChild>
-                        <motion.tbody variants={containerVariants} initial="hidden" animate="show">
+                      <motion.tbody variants={containerVariants} initial="hidden" animate="show" className="[&_tr:last-child]:border-0">
                           {filtered.map((debt, index) => {
                             const statusStyle = STATUS_STYLES[debt.status] || STATUS_STYLES.active;
                             const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
@@ -751,8 +750,7 @@ export default function BusinessDebts() {
                               </motion.tr>
                             );
                           })}
-                        </motion.tbody>
-                      </TableBody>
+                      </motion.tbody>
                     </Table>
                   </div>
                 )}

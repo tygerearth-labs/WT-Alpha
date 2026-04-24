@@ -392,7 +392,7 @@ export default function NewsAnalysis() {
                               style={{ backgroundColor: actionColor }}
                               initial={{ width: '0%' }}
                               animate={{ width: `${impact.confidence}%` }}
-                              transition={{ duration: 0.8, ease: 'easeOut' }}
+                              transition={{ duration: 0.8, ease: 'easeOut' as const }}
                             />
                           </div>
                         </div>

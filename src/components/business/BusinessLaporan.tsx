@@ -142,7 +142,7 @@ function ExpenseBreakdownChart({ expenses, formatAmount }: {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' }}
+                transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' as const }}
                 className="h-full rounded-full"
                 style={{ backgroundColor: barColors[i % barColors.length] }}
               />

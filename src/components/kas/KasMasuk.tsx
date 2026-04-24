@@ -128,7 +128,7 @@ function DonutRing({ segments, total, size = 140, thickness = 22, centerLabel }:
         style={{ width: '100%', height: '100%', background: `conic-gradient(${fullGradient})` }}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        transition={{ duration: 0.6, ease: 'easeOut' as const }}
       />
       <div
         className="absolute rounded-full flex flex-col items-center justify-center"
@@ -721,7 +721,7 @@ export function KasMasuk() {
                               style={{ background: `linear-gradient(90deg, ${cat.color}, ${cat.color}AA)` }}
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.max(pct, 3)}%` }}
-                              transition={{ duration: 0.7, delay: 0.2 + i * 0.08, ease: 'easeOut' }}
+                              transition={{ duration: 0.7, delay: 0.2 + i * 0.08, ease: 'easeOut' as const }}
                             />
                           </div>
                           <motion.span
@@ -934,7 +934,7 @@ export function KasMasuk() {
                   style={{ background: `linear-gradient(90deg, ${T.accent}, ${T.primary})` }}
                   initial={{ width: 0 }}
                   animate={{ width: `${monthlyProgress}%` }}
-                  transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
+                  transition={{ duration: 1.2, ease: 'easeOut' as const, delay: 0.3 }}
                 />
               </div>
             </div>

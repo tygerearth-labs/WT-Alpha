@@ -991,7 +991,7 @@ export default function InvestmentDashboard() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                transition={{ duration: 0.3, ease: 'easeInOut' as const }}
                 className="overflow-hidden"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-4 pt-3">

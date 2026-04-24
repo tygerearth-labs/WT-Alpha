@@ -781,7 +781,7 @@ export default function BusinessInvoiceSettings() {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${completionPct}%` }}
-                      transition={{ duration: 0.6, ease: 'easeOut' }}
+                      transition={{ duration: 0.6, ease: 'easeOut' as const }}
                       className="h-full rounded-full bg-[#03DAC6]"
                     />
                   </div>

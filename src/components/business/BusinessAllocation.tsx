@@ -103,7 +103,7 @@ function AllocationBar({ allocations, totalSales }: { allocations: Allocation[];
             key={i}
             initial={{ width: 0 }}
             animate={{ width: `${seg.width}%` }}
-            transition={{ duration: 0.6, delay: i * 0.15, ease: 'easeOut' }}
+            transition={{ duration: 0.6, delay: i * 0.15, ease: 'easeOut' as const }}
             className="h-full"
             style={{ backgroundColor: seg.color, opacity: 0.8 }}
           />

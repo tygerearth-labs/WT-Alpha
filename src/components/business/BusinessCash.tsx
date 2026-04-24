@@ -115,12 +115,12 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } },
 };
 
 const cardPopVariants = {
   hidden: { opacity: 0, scale: 0.92, y: 12 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 22 } },
+  show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 22 } },
 };
 
 function formatDate(dateStr: string): string {
@@ -290,7 +290,7 @@ export default function BusinessCash() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
+        transition={{ duration: 0.4, ease: 'easeOut' as const }}
         className="flex flex-col items-center justify-center min-h-[400px] gap-3"
       >
         <div className="h-16 w-16 rounded-2xl bg-white/[0.04] flex items-center justify-center">
@@ -456,7 +456,7 @@ export default function BusinessCash() {
                     <motion.div
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 0.1 }}
+                      transition={{ type: 'spring' as const, stiffness: 200, damping: 18, delay: 0.1 }}
                     >
                       <div className="relative mb-4">
                         <div className="h-20 w-20 rounded-2xl bg-white/[0.03] flex items-center justify-center">
@@ -465,7 +465,7 @@ export default function BusinessCash() {
                         <motion.div
                           className={cn('absolute -top-1 -right-1 h-3 w-3 rounded-full', typeConfig.accentDot)}
                           animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' as const }}
                         />
                       </div>
                     </motion.div>

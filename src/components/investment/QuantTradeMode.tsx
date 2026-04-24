@@ -341,7 +341,7 @@ function RSIGauge({ value }: { value: number | undefined | null }) {
           style={{ backgroundColor: zoneColor, boxShadow: `0 0 6px ${zoneColor}80` }}
           initial={{ left: '0%' }}
           animate={{ left: `${pct}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={{ duration: 0.8, ease: 'easeOut' as const }}
         />
       </div>
       <div className="flex justify-between text-[9px] text-white/25 font-mono">
@@ -398,7 +398,7 @@ function SignalBar({ strength }: { strength: number }) {
             width: strength >= 0 ? `${Math.abs(pct - 50)}%` : `${Math.abs(50 - pct)}%`,
             left: strength >= 0 ? '50%' : `${pct}%`,
           }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+          transition={{ duration: 0.6, ease: 'easeOut' as const }}
         />
       </div>
       <div className="flex justify-between text-[9px] text-white/25 font-mono">
