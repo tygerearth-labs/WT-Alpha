@@ -41,8 +41,29 @@ export async function GET(
       orderBy: { createdAt: 'desc' },
     });
 
-    // Check for debts due soon (within 3 days) and create notifications
+    // Auto-detect overdue: if active/partially_paid piutang past dueDate → mark overdue
     const now = new Date();
+    const overduePiutang = debts.filter(
+      (d) =>
+        d.type === 'piutang' &&
+        (d.status === 'active' || d.status === 'partially_paid') &&
+        d.dueDate &&
+        new Date(d.dueDate) < now
+    );
+    if (overduePiutang.length > 0) {
+      await db.businessDebt.updateMany({
+        where: { id: { in: overduePiutang.map((d) => d.id) } },
+        data: { status: 'overdue' },
+      });
+      // Update local array to reflect new status
+      for (const d of debts) {
+        if (overduePiutang.some((o) => o.id === d.id)) {
+          d.status = 'overdue';
+        }
+      }
+    }
+
+    // Check for debts due soon (within 3 days) and create notifications
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
 
     const dueSoonDebts = debts.filter(

@@ -67,6 +67,9 @@ import {
   CheckCircle2,
   Clock,
   Search,
+  CalendarDays,
+  MessageCircle,
+  ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -142,6 +145,16 @@ interface Debt {
   downPayment: number | null;
   installmentAmount: number | null;
   installmentPeriod: number | null;
+}
+
+interface DebtPayment {
+  id: string;
+  debtId: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string | null;
+  notes: string | null;
+  createdAt: string;
 }
 
 interface Category {
@@ -325,6 +338,20 @@ export default function BusinessCash() {
   const [allDebts, setAllDebts] = useState<Debt[]>([]);
   const [piutangLoading, setPiutangLoading] = useState(true);
 
+  // ── Piutang Enhanced State ──
+  const [paymentDialogDebt, setPaymentDialogDebt] = useState<Debt | null>(null);
+  const [detailDialogDebt, setDetailDialogDebt] = useState<Debt | null>(null);
+  const [debtPayments, setDebtPayments] = useState<Record<string, DebtPayment[]>>({});
+  const [paymentForm, setPaymentForm] = useState({
+    amount: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentMethod: 'transfer' as 'transfer' | 'cash' | 'qris',
+    notes: '',
+  });
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [piutangSearch, setPiutangSearch] = useState('');
+
   // ── Animated Counters (Arus Kas) ──
   const animIncome = useAnimatedCounter(incomeTotal);
   const animExpense = useAnimatedCounter(expenseTotal);
@@ -414,6 +441,85 @@ export default function BusinessCash() {
       .finally(() => setPiutangLoading(false));
   }, [businessId]);
 
+  // Fetch payments for a specific debt
+  const fetchDebtPayments = useCallback(async (debtId: string) => {
+    if (!businessId) return;
+    try {
+      const res = await fetch(`/api/business/${businessId}/debts/${debtId}/payments`);
+      if (res.ok) {
+        const data = await res.json();
+        setDebtPayments((prev) => ({ ...prev, [debtId]: data.payments || [] }));
+        return data.payments || [];
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  }, [businessId]);
+
+  // Record a payment
+  const recordPayment = async () => {
+    if (!businessId || !paymentDialogDebt || !paymentForm.amount) return;
+    const numAmount = parseFloat(paymentForm.amount);
+    if (isNaN(numAmount) || numAmount <= 0) return;
+    setPaymentSaving(true);
+    try {
+      const res = await fetch(`/api/business/${businessId}/debts/${paymentDialogDebt.id}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: numAmount,
+          paymentDate: paymentForm.paymentDate,
+          paymentMethod: paymentForm.paymentMethod,
+          notes: paymentForm.notes || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Pembayaran berhasil dicatat');
+      setPaymentDialogDebt(null);
+      setPaymentForm({
+        amount: '',
+        paymentDate: new Date().toISOString().split('T')[0],
+        paymentMethod: 'transfer',
+        notes: '',
+      });
+      fetchDebts();
+    } catch {
+      toast.error(t('common.error'));
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
+
+  // Send WhatsApp reminder
+  const sendReminder = async (debt: Debt) => {
+    if (!businessId) return;
+    try {
+      const res = await fetch(`/api/business/${businessId}/debts/${debt.id}/remind`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Gagal mengirim pengingat');
+      }
+      const data = await res.json();
+      if (data.message) {
+        window.open(data.message, '_blank');
+      }
+      toast.success('Pengingat WhatsApp berhasil dibuat');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
+    }
+  };
+
+  // Open detail dialog
+  const openDetailDialog = async (debt: Debt) => {
+    setDetailDialogDebt(debt);
+    setDetailLoading(true);
+    await fetchDebtPayments(debt.id);
+    setDetailLoading(false);
+  };
+
   // Fetch on mount and tab change
   useEffect(() => {
     if (businessId) {
@@ -459,12 +565,21 @@ export default function BusinessCash() {
 
   // Piutang (debts filtered by type=piutang)
   const piutangDebts = useMemo(() => {
-    return allDebts.filter(
+    let debts = allDebts.filter(
       (d) =>
         d.type === 'piutang' &&
         PIUTANG_STATUS_CONFIG[piutangSubTab].statuses.includes(d.status as never)
     );
-  }, [allDebts, piutangSubTab]);
+    if (piutangSearch.trim()) {
+      const q = piutangSearch.toLowerCase();
+      debts = debts.filter(
+        (d) =>
+          d.counterpart.toLowerCase().includes(q) ||
+          (d.description && d.description.toLowerCase().includes(q))
+      );
+    }
+    return debts;
+  }, [allDebts, piutangSubTab, piutangSearch]);
 
   const allPiutang = useMemo(() => allDebts.filter((d) => d.type === 'piutang'), [allDebts]);
 
@@ -474,8 +589,14 @@ export default function BusinessCash() {
     );
     const macet = allPiutang.filter((d) => d.status === 'overdue');
     const selesai = allPiutang.filter((d) => d.status === 'paid');
+    const totalPaid = allPiutang.reduce((s, d) => s + (d.amount - d.remaining), 0);
+    const totalRemaining = berjalan.reduce((s, d) => s + d.remaining, 0);
+    const overdueCount = macet.length;
     return {
       total: allPiutang.reduce((s, d) => s + d.amount, 0),
+      totalPaid,
+      totalRemaining,
+      overdueCount,
       berjalanCount: berjalan.length,
       berjalanRemaining: berjalan.reduce((s, d) => s + d.remaining, 0),
       macetCount: macet.length,
@@ -484,6 +605,65 @@ export default function BusinessCash() {
       selesaiAmount: selesai.reduce((s, d) => s + d.amount, 0),
     };
   }, [allPiutang]);
+
+  // Compute per-debt paid amount from payment cache
+  const getDebtPaidAmount = useCallback((debtId: string): number => {
+    const payments = debtPayments[debtId];
+    if (!payments || payments.length === 0) {
+      // Fallback: compute from debt.amount - debt.remaining
+      const debt = allDebts.find((d) => d.id === debtId);
+      return debt ? (debt.amount - debt.remaining) : 0;
+    }
+    return payments.reduce((sum, p) => sum + p.amount, 0);
+  }, [debtPayments, allDebts]);
+
+  // Compute payment score for detail dialog
+  const getPaymentScore = useCallback((debt: Debt): { score: number; label: string; color: string } => {
+    const payments = debtPayments[debt.id] || [];
+    if (payments.length === 0) {
+      if (debt.dueDate && debt.status !== 'paid') {
+        const days = differenceInDays(new Date(), parseISO(debt.dueDate));
+        if (days > 0) {
+          return { score: 0, label: 'Belum Bayar', color: '#CF6679' };
+        }
+      }
+      return { score: 50, label: 'Menunggu Pembayaran', color: '#FFD700' };
+    }
+
+    // Check latest payment timeliness
+    const sortedPayments = [...payments].sort(
+      (a, b) => new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime()
+    );
+    const latestPayment = sortedPayments[sortedPayments.length - 1];
+
+    if (!debt.dueDate) {
+      return { score: 75, label: 'Agak Terlambat', color: '#FFD700' };
+    }
+
+    const dueDate = parseISO(debt.dueDate);
+    const payDate = new Date(latestPayment.paymentDate);
+    const diffDays = differenceInDays(payDate, dueDate);
+
+    if (diffDays <= 0) {
+      return { score: 100, label: 'Tepat Waktu', color: '#03DAC6' };
+    } else if (diffDays <= 7) {
+      return { score: 75, label: 'Agak Terlambat', color: '#FFD700' };
+    } else {
+      return { score: 50, label: 'Terlambat', color: '#CF6679' };
+    }
+  }, [debtPayments]);
+
+  // Cashflow realization data for Arus Kas tab
+  const cashflowRealization = useMemo(() => {
+    const totalPiutangRemaining = allPiutang
+      .filter((d) => d.status !== 'paid')
+      .reduce((s, d) => s + d.remaining, 0);
+    return {
+      pendapatanTercatat: piutangStats.total,
+      sudahDiterima: piutangStats.totalPaid,
+      belumDiterima: totalPiutangRemaining,
+    };
+  }, [allPiutang, piutangStats]);
 
   // ── Cash CRUD ──
   const openCashCreate = () => {
@@ -592,6 +772,17 @@ export default function BusinessCash() {
     }
   };
 
+  // ── Payment dialog open ──
+  const openPaymentDialog = (debt: Debt) => {
+    setPaymentDialogDebt(debt);
+    setPaymentForm({
+      amount: debt.installmentAmount ? debt.installmentAmount.toString() : debt.remaining.toString(),
+      paymentDate: new Date().toISOString().split('T')[0],
+      paymentMethod: 'transfer',
+      notes: '',
+    });
+  };
+
   // ── Cash form nominal preview ──
   const formattedCashNominal = useMemo(() => {
     const num = parseFloat(cashForm.amount);
@@ -605,6 +796,13 @@ export default function BusinessCash() {
     if (isNaN(num) || num <= 0) return '';
     return formatAmount(num);
   }, [investorForm.totalInvestment, formatAmount]);
+
+  // ── Payment form nominal preview ──
+  const formattedPaymentNominal = useMemo(() => {
+    const num = parseFloat(paymentForm.amount);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [paymentForm.amount, formatAmount]);
 
   // ══════════════════════════════════════════════════════════════════
   // ── No Business Guard ─────────────────────────────────────────────
@@ -804,6 +1002,62 @@ export default function BusinessCash() {
                 </Card>
               </motion.div>
             </motion.div>
+
+            {/* ── Cashflow Realization Info Card ── */}
+            {allPiutang.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <Card className="bg-gradient-to-br from-[#1A1A2E]/80 to-[#1A1A2E]/60 border border-[#BB86FC]/15 rounded-2xl overflow-hidden">
+                  <div className="h-0.5 bg-gradient-to-r from-[#BB86FC]/40 via-[#03DAC6]/20 to-[#FFD700]/20" />
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-7 w-7 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
+                        <TrendingUp className="h-3.5 w-3.5 text-[#BB86FC]" />
+                      </div>
+                      <span className="text-white/50 text-[10px] font-semibold uppercase tracking-wider">
+                        Realisasi Pendapatan
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-white/30 text-[9px] uppercase tracking-wider mb-1">Pendapatan Tercatat</p>
+                        <p className="text-[#BB86FC] text-sm font-bold tabular-nums">{formatAmount(cashflowRealization.pendapatanTercatat)}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/30 text-[9px] uppercase tracking-wider mb-1">Sudah Diterima</p>
+                        <p className="text-[#03DAC6] text-sm font-bold tabular-nums">{formatAmount(cashflowRealization.sudahDiterima)}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/30 text-[9px] uppercase tracking-wider mb-1">Belum Diterima (Piutang)</p>
+                        <p className="text-[#FFD700] text-sm font-bold tabular-nums">{formatAmount(cashflowRealization.belumDiterima)}</p>
+                      </div>
+                    </div>
+                    {cashflowRealization.pendapatanTercatat > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/[0.05]">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full rounded-full bg-gradient-to-r from-[#03DAC6] to-[#03DAC6]/60"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(100, (cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}%` }}
+                              transition={{ duration: 0.8, ease: 'easeOut' as const }}
+                            />
+                          </div>
+                          <span className="text-white/30 text-[10px] tabular-nums min-w-[36px] text-right">
+                            {cashflowRealization.pendapatanTercatat > 0
+                              ? Math.round((cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)
+                              : 0}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
             {/* ── Sub-tab toggle + Search + Add Button ── */}
             <motion.div
@@ -1254,7 +1508,7 @@ export default function BusinessCash() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════ */}
-        {/* ── TAB 3: PIUTANG ───────────────────────────────────────── */}
+        {/* ── TAB 3: PIUTANG (Enhanced) ────────────────────────────── */}
         {/* ══════════════════════════════════════════════════════════════ */}
         {mainTab === 'piutang' && (
           <motion.div
@@ -1265,7 +1519,7 @@ export default function BusinessCash() {
             exit="exit"
             className="space-y-5"
           >
-            {/* ── Piutang Summary Cards ── */}
+            {/* ── Piutang Summary Cards (Enhanced) ── */}
             <motion.div
               className="grid grid-cols-2 sm:grid-cols-4 gap-3"
               variants={containerVariants}
@@ -1288,116 +1542,121 @@ export default function BusinessCash() {
                 </Card>
               </motion.div>
 
-              {/* Berjalan */}
+              {/* Sudah Realisasi */}
               <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group cursor-pointer hover:border-[#03DAC6]/20 transition-all duration-300"
-                  onClick={() => setPiutangSubTab('berjalan')}
-                >
+                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
                   <div className="h-1 bg-gradient-to-r from-[#03DAC6]/60 via-[#03DAC6]/30 to-transparent" />
                   <CardContent className="p-4">
                     <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                      Berjalan
+                      Sudah Realisasi
                     </span>
                     <p className="text-base font-bold text-[#03DAC6] tabular-nums">
-                      {formatAmount(piutangStats.berjalanRemaining)}
-                    </p>
-                    <p className="text-white/20 text-[10px] mt-1">{piutangStats.berjalanCount} aktif</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Macet */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group cursor-pointer hover:border-[#CF6679]/20 transition-all duration-300"
-                  onClick={() => setPiutangSubTab('macet')}
-                >
-                  <div className="h-1 bg-gradient-to-r from-[#CF6679]/60 via-[#CF6679]/30 to-transparent" />
-                  <CardContent className="p-4">
-                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                      Macet
-                    </span>
-                    <p className="text-base font-bold text-[#CF6679] tabular-nums">
-                      {formatAmount(piutangStats.macetRemaining)}
-                    </p>
-                    <p className="text-white/20 text-[10px] mt-1">{piutangStats.macetCount} overdue</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Selesai */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group cursor-pointer hover:border-[#BB86FC]/20 transition-all duration-300"
-                  onClick={() => setPiutangSubTab('selesai')}
-                >
-                  <div className="h-1 bg-gradient-to-r from-[#BB86FC]/60 via-[#BB86FC]/30 to-transparent" />
-                  <CardContent className="p-4">
-                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                      Selesai
-                    </span>
-                    <p className="text-base font-bold text-[#BB86FC] tabular-nums">
-                      {formatAmount(piutangStats.selesaiAmount)}
+                      {formatAmount(piutangStats.totalPaid)}
                     </p>
                     <p className="text-white/20 text-[10px] mt-1">{piutangStats.selesaiCount} lunas</p>
                   </CardContent>
                 </Card>
               </motion.div>
+
+              {/* Belum Realisasi */}
+              <motion.div variants={cardPopVariants}>
+                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+                  <div className="h-1 bg-gradient-to-r from-[#FFD700]/60 via-[#FFD700]/30 to-transparent" />
+                  <CardContent className="p-4">
+                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
+                      Belum Realisasi
+                    </span>
+                    <p className="text-base font-bold text-[#FFD700] tabular-nums">
+                      {formatAmount(piutangStats.totalRemaining)}
+                    </p>
+                    <p className="text-white/20 text-[10px] mt-1">{piutangStats.berjalanCount + piutangStats.macetCount} aktif</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Terlambat */}
+              <motion.div variants={cardPopVariants}>
+                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+                  <div className="h-1 bg-gradient-to-r from-[#CF6679]/60 via-[#CF6679]/30 to-transparent" />
+                  <CardContent className="p-4">
+                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
+                      Terlambat
+                    </span>
+                    <p className="text-base font-bold text-[#CF6679]">
+                      {piutangStats.overdueCount}
+                    </p>
+                    <p className="text-white/20 text-[10px] mt-1">{formatAmount(piutangStats.macetRemaining)}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </motion.div>
 
-            {/* ── Sub-tabs for Piutang ── */}
+            {/* ── Sub-tabs + Search for Piutang ── */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
-              {(Object.keys(PIUTANG_STATUS_CONFIG) as PiutangSubTab[]).map((key) => {
-                const cfg = PIUTANG_STATUS_CONFIG[key];
-                const Icon = cfg.icon;
-                const isActive = piutangSubTab === key;
-                const count = key === 'berjalan'
-                  ? piutangStats.berjalanCount
-                  : key === 'macet'
-                    ? piutangStats.macetCount
-                    : piutangStats.selesaiCount;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setPiutangSubTab(key)}
-                    className={cn(
-                      'relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
-                      isActive
-                        ? 'shadow-sm'
-                        : 'text-white/40 hover:text-white/70'
-                    )}
-                    style={
-                      isActive
-                        ? {
-                            backgroundColor: `${cfg.color}15`,
-                            color: cfg.color,
-                          }
-                        : undefined
-                    }
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span>{cfg.label}</span>
-                    {count > 0 && (
-                      <span
-                        className={cn(
-                          'ml-1 h-4 min-w-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center',
-                          isActive
-                            ? 'bg-white/15 text-current'
-                            : 'bg-white/[0.06] text-white/30'
-                        )}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              <div className="flex gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+                {(Object.keys(PIUTANG_STATUS_CONFIG) as PiutangSubTab[]).map((key) => {
+                  const cfg = PIUTANG_STATUS_CONFIG[key];
+                  const Icon = cfg.icon;
+                  const isActive = piutangSubTab === key;
+                  const count = key === 'berjalan'
+                    ? piutangStats.berjalanCount
+                    : key === 'macet'
+                      ? piutangStats.macetCount
+                      : piutangStats.selesaiCount;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setPiutangSubTab(key)}
+                      className={cn(
+                        'relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                        isActive
+                          ? 'shadow-sm'
+                          : 'text-white/40 hover:text-white/70'
+                      )}
+                      style={
+                        isActive
+                          ? {
+                              backgroundColor: `${cfg.color}15`,
+                              color: cfg.color,
+                            }
+                          : undefined
+                      }
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{cfg.label}</span>
+                      {count > 0 && (
+                        <span
+                          className={cn(
+                            'ml-1 h-4 min-w-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center',
+                            isActive
+                              ? 'bg-white/15 text-current'
+                              : 'bg-white/[0.06] text-white/30'
+                          )}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
+                <Input
+                  value={piutangSearch}
+                  onChange={(e) => setPiutangSearch(e.target.value)}
+                  placeholder={t('common.search') + '...'}
+                  className="bg-white/[0.05] border-white/[0.08] text-white placeholder:text-white/25 pl-9 rounded-lg h-9 text-xs focus:border-white/20 transition-all"
+                />
+              </div>
             </motion.div>
 
-            {/* ── Piutang Table ── */}
+            {/* ── Enhanced Piutang Table ── */}
             <motion.div
               key={piutangSubTab}
               initial={{ opacity: 0, y: 12 }}
@@ -1440,17 +1699,23 @@ export default function BusinessCash() {
                             <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider hidden sm:table-cell">
                               Deskripsi
                             </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[110px]">
-                              {t('biz.debtAmount')}
+                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[100px]">
+                              Total
                             </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[110px]">
-                              {t('biz.debtRemaining')}
+                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[100px]">
+                              Dibayar
+                            </TableHead>
+                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[100px]">
+                              Sisa
                             </TableHead>
                             <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider hidden md:table-cell w-[100px]">
                               {t('biz.debtDueDate')}
                             </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider w-[90px]">
-                              {t('biz.debtStatus')}
+                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider w-[80px]">
+                              Status
+                            </TableHead>
+                            <TableHead className="w-[120px] text-center">
+                              Aksi
                             </TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1458,9 +1723,11 @@ export default function BusinessCash() {
                           <AnimatePresence mode="popLayout">
                             {piutangDebts.map((debt, index) => {
                               const statusCfg = getStatusConfig(debt.status);
+                              const paidAmount = getDebtPaidAmount(debt.id);
                               const overdueDays = debt.dueDate && debt.status !== 'paid'
                                 ? differenceInDays(new Date(), parseISO(debt.dueDate))
                                 : null;
+                              const isOverdue = overdueDays !== null && overdueDays > 0;
                               return (
                                 <motion.tr
                                   key={debt.id}
@@ -1477,32 +1744,41 @@ export default function BusinessCash() {
                                   )}
                                 >
                                   <TableCell className="text-white/90 text-xs py-3 font-medium">
-                                    {debt.counterpart}
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60 shrink-0">
+                                        {debt.counterpart.charAt(0).toUpperCase()}
+                                      </div>
+                                      <span className="truncate max-w-[120px]">{debt.counterpart}</span>
+                                    </div>
                                   </TableCell>
-                                  <TableCell className="text-white/50 text-xs py-3 hidden sm:table-cell max-w-[180px] truncate">
+                                  <TableCell className="text-white/50 text-xs py-3 hidden sm:table-cell max-w-[160px] truncate">
                                     {debt.description || '—'}
                                   </TableCell>
                                   <TableCell className="text-white/70 text-xs text-right py-3 font-semibold tabular-nums">
                                     {formatAmount(debt.amount)}
+                                  </TableCell>
+                                  <TableCell className="text-[#03DAC6]/80 text-xs text-right py-3 font-semibold tabular-nums">
+                                    {formatAmount(paidAmount)}
                                   </TableCell>
                                   <TableCell className={cn('text-xs text-right py-3 font-bold tabular-nums', statusCfg.textClass)}>
                                     {formatAmount(debt.remaining)}
                                   </TableCell>
                                   <TableCell className="text-xs py-3 hidden md:table-cell">
                                     {debt.dueDate ? (
-                                      <span className={cn(
-                                        'flex items-center gap-1',
-                                        overdueDays && overdueDays > 0 && debt.status !== 'paid'
-                                          ? 'text-[#CF6679]'
-                                          : 'text-white/50'
-                                      )}>
-                                        {formatDate(debt.dueDate)}
-                                        {overdueDays && overdueDays > 0 && debt.status !== 'paid' && (
-                                          <span className="text-[9px] bg-[#CF6679]/15 text-[#CF6679] px-1.5 py-0.5 rounded-full font-medium">
-                                            +{overdueDays}h
+                                      <div className="flex flex-col gap-1">
+                                        <span className={cn(
+                                          'font-mono',
+                                          isOverdue ? 'text-[#CF6679]' : 'text-white/50'
+                                        )}>
+                                          {formatDate(debt.dueDate)}
+                                        </span>
+                                        {isOverdue && (
+                                          <span className="text-[9px] bg-[#CF6679]/15 text-[#CF6679] px-1.5 py-0.5 rounded-full font-bold inline-flex items-center gap-1 w-fit">
+                                            <AlertTriangle className="h-2.5 w-2.5" />
+                                            TERLAMBAT {overdueDays} HARI
                                           </span>
                                         )}
-                                      </span>
+                                      </div>
                                     ) : (
                                       <span className="text-white/20">—</span>
                                     )}
@@ -1518,6 +1794,46 @@ export default function BusinessCash() {
                                     >
                                       {statusCfg.label}
                                     </Badge>
+                                  </TableCell>
+                                  <TableCell className="py-3">
+                                    <div className="flex items-center justify-center gap-1">
+                                      {debt.status !== 'paid' && (
+                                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 px-2 text-[10px] font-medium text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-lg gap-1"
+                                            onClick={() => openPaymentDialog(debt)}
+                                            title="Bayar"
+                                          >
+                                            <CircleDollarSign className="h-3 w-3" />
+                                            <span className="hidden lg:inline">Bayar</span>
+                                          </Button>
+                                        </motion.div>
+                                      )}
+                                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 px-2 text-white/40 hover:text-[#25D366] hover:bg-[#25D366]/10 rounded-lg"
+                                          onClick={() => sendReminder(debt)}
+                                          title="Ingatkan via WhatsApp"
+                                        >
+                                          <MessageCircle className="h-3 w-3" />
+                                        </Button>
+                                      </motion.div>
+                                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 px-2 text-white/40 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 rounded-lg"
+                                          onClick={() => openDetailDialog(debt)}
+                                          title="Detail"
+                                        >
+                                          <ChevronRight className="h-3 w-3" />
+                                        </Button>
+                                      </motion.div>
+                                    </div>
                                   </TableCell>
                                 </motion.tr>
                               );
@@ -1918,6 +2234,452 @@ export default function BusinessCash() {
               </motion.div>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ── PAYMENT RECORDING DIALOG ───────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Dialog open={!!paymentDialogDebt} onOpenChange={(open) => !open && setPaymentDialogDebt(null)}>
+        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[460px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03DAC6] via-[#03DAC6]/50 to-transparent" />
+
+          <DialogHeader className="pt-2">
+            <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
+                <CircleDollarSign className="h-4 w-4 text-[#03DAC6]" />
+              </div>
+              Catat Pembayaran
+            </DialogTitle>
+            <DialogDescription className="text-white/50 pl-10">
+              {paymentDialogDebt?.counterpart} — {paymentDialogDebt?.description || 'Piutang'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {paymentDialogDebt && (
+            <div className="space-y-4 mt-2">
+              {/* Debt summary mini */}
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60">
+                    {paymentDialogDebt.counterpart.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-white/70 text-[10px] uppercase tracking-wider">Sisa Tagihan</p>
+                    <p className="text-[#CF6679] text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.remaining)}</p>
+                  </div>
+                </div>
+                {paymentDialogDebt.installmentAmount && (
+                  <div className="text-right">
+                    <p className="text-white/70 text-[10px] uppercase tracking-wider">Angsuran</p>
+                    <p className="text-[#FFD700] text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.installmentAmount)}</p>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Amount */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="space-y-2"
+              >
+                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                  Jumlah Bayar <span className="text-[#CF6679]">*</span>
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-sm font-medium pointer-events-none">Rp</span>
+                  <Input
+                    type="number"
+                    value={paymentForm.amount}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                    max={paymentDialogDebt.remaining}
+                    className="bg-white/[0.04] border-white/[0.08] text-white text-lg font-semibold placeholder:text-white/20 pl-9 pr-4 rounded-xl focus:border-[#03DAC6]/40 transition-all tabular-nums"
+                  />
+                </div>
+                <AnimatePresence mode="wait">
+                  {formattedPaymentNominal && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#03DAC6]/5 border border-[#03DAC6]/10"
+                    >
+                      <CircleDollarSign className="h-4 w-4 text-[#03DAC6]" />
+                      <span className="text-sm text-[#03DAC6] font-semibold tabular-nums">
+                        {formattedPaymentNominal}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Payment Date */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="space-y-2"
+              >
+                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                  <CalendarDays className="h-3 w-3 inline mr-1" />
+                  Tanggal Bayar
+                </Label>
+                <Input
+                  type="date"
+                  value={paymentForm.paymentDate}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+                  className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 transition-all"
+                />
+              </motion.div>
+
+              {/* Payment Method */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="space-y-2"
+              >
+                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                  Metode Pembayaran
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'transfer' as const, label: 'Transfer', color: '#03DAC6' },
+                    { value: 'cash' as const, label: 'Cash', color: '#FFD700' },
+                    { value: 'qris' as const, label: 'QRIS', color: '#BB86FC' },
+                  ]).map((method) => (
+                    <button
+                      key={method.value}
+                      onClick={() => setPaymentForm({ ...paymentForm, paymentMethod: method.value })}
+                      className={cn(
+                        'py-2 rounded-xl text-xs font-medium border transition-all duration-200',
+                        paymentForm.paymentMethod === method.value
+                          ? 'border-current shadow-sm'
+                          : 'border-white/[0.06] text-white/40 hover:text-white/70 hover:border-white/15'
+                      )}
+                      style={
+                        paymentForm.paymentMethod === method.value
+                          ? { backgroundColor: `${method.color}15`, color: method.color, borderColor: `${method.color}40` }
+                          : undefined
+                      }
+                    >
+                      {method.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Notes */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-2"
+              >
+                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                  Catatan
+                </Label>
+                <Textarea
+                  value={paymentForm.notes}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                  placeholder="Catatan pembayaran (opsional)"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#03DAC6]/40 transition-all text-xs min-h-[60px] resize-none"
+                />
+              </motion.div>
+
+              <DialogFooter className="gap-2 pt-2">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setPaymentDialogDebt(null)}
+                    className="border-white/[0.08] text-white/60 hover:bg-white/[0.05] hover:text-white transition-colors"
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={recordPayment}
+                    disabled={paymentSaving || !paymentForm.amount}
+                    className="text-white border-0 shadow-md shadow-black/20 disabled:opacity-40 bg-[#03DAC6] hover:bg-[#03DAC6]/90 transition-all duration-200"
+                  >
+                    {paymentSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <CircleDollarSign className="h-4 w-4 mr-1.5" />
+                    Simpan Pembayaran
+                  </Button>
+                </motion.div>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ── DETAIL / TIMELINE DIALOG ───────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Dialog open={!!detailDialogDebt} onOpenChange={(open) => !open && setDetailDialogDebt(null)}>
+        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[520px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden max-h-[85vh] overflow-y-auto custom-scrollbar">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#BB86FC] via-[#03DAC6] to-[#FFD700]" />
+
+          {detailDialogDebt && (
+            <>
+              <DialogHeader className="pt-2">
+                <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
+                    <HandCoins className="h-4 w-4 text-[#BB86FC]" />
+                  </div>
+                  Detail Piutang
+                </DialogTitle>
+                <DialogDescription className="text-white/50 pl-10">
+                  {detailDialogDebt.counterpart}
+                </DialogDescription>
+              </DialogHeader>
+
+              {detailLoading ? (
+                <div className="space-y-3 py-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 rounded-xl bg-white/[0.06]" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4 mt-2">
+                  {/* ── Summary Card ── */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60">
+                        {detailDialogDebt.counterpart.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{detailDialogDebt.counterpart}</p>
+                        {detailDialogDebt.description && (
+                          <p className="text-white/40 text-[11px] truncate">{detailDialogDebt.description}</p>
+                        )}
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] font-medium border-0 rounded-full px-2.5 py-0.5 shrink-0"
+                        style={{
+                          backgroundColor: `${getStatusConfig(detailDialogDebt.status).color}15`,
+                          color: getStatusConfig(detailDialogDebt.status).color,
+                        }}
+                      >
+                        {getStatusConfig(detailDialogDebt.status).label}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-white/30 text-[9px] uppercase tracking-wider">Total</p>
+                        <p className="text-white text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/30 text-[9px] uppercase tracking-wider">Dibayar</p>
+                        <p className="text-[#03DAC6] text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount - detailDialogDebt.remaining)}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/30 text-[9px] uppercase tracking-wider">Sisa</p>
+                        <p className="text-[#FFD700] text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.remaining)}</p>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white/25 text-[10px]">Progress</span>
+                        <span className="text-white/25 text-[10px] tabular-nums">
+                          {detailDialogDebt.amount > 0
+                            ? Math.round(((detailDialogDebt.amount - detailDialogDebt.remaining) / detailDialogDebt.amount) * 100)
+                            : 0}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-[#03DAC6] to-[#03DAC6]/60"
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${detailDialogDebt.amount > 0 ? Math.min(100, ((detailDialogDebt.amount - detailDialogDebt.remaining) / detailDialogDebt.amount) * 100) : 0}%`,
+                          }}
+                          transition={{ duration: 0.8, ease: 'easeOut' as const }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Due date info */}
+                    {detailDialogDebt.dueDate && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <CalendarDays className="h-3.5 w-3.5 text-white/30" />
+                        <span className="text-white/40 text-xs">
+                          Jatuh tempo: <span className={cn(
+                            'font-mono',
+                            detailDialogDebt.status !== 'paid' && differenceInDays(new Date(), parseISO(detailDialogDebt.dueDate)) > 0
+                              ? 'text-[#CF6679] font-semibold'
+                              : ''
+                          )}>{formatDate(detailDialogDebt.dueDate)}</span>
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
+
+                  {/* ── Payment Score ── */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="p-4 rounded-xl border"
+                    style={{
+                      backgroundColor: `${getPaymentScore(detailDialogDebt).color}08`,
+                      borderColor: `${getPaymentScore(detailDialogDebt).color}20`,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-10 w-10 rounded-xl flex items-center justify-center text-lg font-bold"
+                        style={{
+                          backgroundColor: `${getPaymentScore(detailDialogDebt).color}15`,
+                          color: getPaymentScore(detailDialogDebt).color,
+                        }}
+                      >
+                        {getPaymentScore(detailDialogDebt).score}
+                      </div>
+                      <div>
+                        <p className="text-white/40 text-[10px] uppercase tracking-wider">Skor Pembayaran</p>
+                        <p
+                          className="text-sm font-bold"
+                          style={{ color: getPaymentScore(detailDialogDebt).color }}
+                        >
+                          {getPaymentScore(detailDialogDebt).label}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* ── Payment Timeline ── */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                  >
+                    <h3 className="text-white/50 text-[11px] font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5" />
+                      Riwayat Pembayaran
+                    </h3>
+                    {(debtPayments[detailDialogDebt.id] || []).length === 0 ? (
+                      <div className="text-center py-8 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                        <Inbox className="h-8 w-8 text-white/10 mx-auto mb-2" />
+                        <p className="text-white/25 text-xs">Belum ada pembayaran tercatat</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
+                        {[...(debtPayments[detailDialogDebt.id] || [])]
+                          .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())
+                          .map((payment, idx) => (
+                            <motion.div
+                              key={payment.id}
+                              initial={{ opacity: 0, x: -8 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:border-white/[0.1] transition-colors"
+                            >
+                              <div className="mt-0.5 flex flex-col items-center">
+                                <div className="h-6 w-6 rounded-full bg-[#03DAC6]/10 flex items-center justify-center">
+                                  <CheckCircle2 className="h-3 w-3 text-[#03DAC6]" />
+                                </div>
+                                {idx < (debtPayments[detailDialogDebt.id] || []).length - 1 && (
+                                  <div className="w-px flex-1 bg-white/[0.06] mt-1 min-h-[16px]" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-[#03DAC6] text-sm font-bold tabular-nums">
+                                    +{formatAmount(payment.amount)}
+                                  </p>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {payment.paymentMethod && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[9px] font-medium border-0 rounded-full px-2 py-0"
+                                        style={{
+                                          backgroundColor: payment.paymentMethod === 'transfer' ? '#03DAC615' : payment.paymentMethod === 'cash' ? '#FFD70015' : '#BB86FC15',
+                                          color: payment.paymentMethod === 'transfer' ? '#03DAC6' : payment.paymentMethod === 'cash' ? '#FFD700' : '#BB86FC',
+                                        }}
+                                      >
+                                        {payment.paymentMethod === 'transfer' ? 'Transfer' : payment.paymentMethod === 'cash' ? 'Cash' : 'QRIS'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-white/30 text-[10px] font-mono">
+                                    {formatDate(payment.paymentDate)}
+                                  </span>
+                                  {detailDialogDebt.dueDate && (() => {
+                                    const diff = differenceInDays(new Date(payment.paymentDate), parseISO(detailDialogDebt.dueDate));
+                                    if (diff <= 0) return <span className="text-[9px] text-[#03DAC6]/60">Tepat waktu</span>;
+                                    if (diff <= 7) return <span className="text-[9px] text-[#FFD700]/60">+{diff} hari</span>;
+                                    return <span className="text-[9px] text-[#CF6679]/60">+{diff} hari</span>;
+                                  })()}
+                                </div>
+                                {payment.notes && (
+                                  <p className="text-white/20 text-[10px] mt-1 truncate">{payment.notes}</p>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                      </div>
+                    )}
+                  </motion.div>
+
+                  {/* ── Action Buttons ── */}
+                  {detailDialogDebt.status !== 'paid' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex gap-2 pt-1"
+                    >
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                        <Button
+                          onClick={() => {
+                            setDetailDialogDebt(null);
+                            openPaymentDialog(detailDialogDebt);
+                          }}
+                          className="w-full text-white border-0 bg-[#03DAC6] hover:bg-[#03DAC6]/90 transition-all duration-200"
+                          size="sm"
+                        >
+                          <CircleDollarSign className="h-4 w-4 mr-1.5" />
+                          Catat Pembayaran
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                        <Button
+                          onClick={() => sendReminder(detailDialogDebt)}
+                          variant="outline"
+                          className="w-full border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-200"
+                          size="sm"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-1.5" />
+                          Ingatkan WA
+                        </Button>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

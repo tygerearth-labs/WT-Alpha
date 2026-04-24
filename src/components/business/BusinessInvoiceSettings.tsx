@@ -12,6 +12,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Settings,
   Palette,
@@ -34,6 +53,10 @@ import {
   Layout,
   CheckCircle2,
   Sparkles,
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -551,6 +574,18 @@ function SectionHeader({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Mask Account Number                                                 */
+/* ------------------------------------------------------------------ */
+
+function maskAccountNumber(accountNumber: string): string {
+  if (!accountNumber || accountNumber.length <= 6) return accountNumber;
+  const first = accountNumber.slice(0, 3);
+  const last = accountNumber.slice(-3);
+  const middle = '*'.repeat(Math.min(accountNumber.length - 6, 10));
+  return `${first}${middle}${last}`;
+}
+
 /* ================================================================== */
 /*  Main Component                                                     */
 /* ================================================================== */
@@ -566,7 +601,115 @@ export default function BusinessInvoiceSettings() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const sigInputRef = useRef<HTMLInputElement>(null);
 
+  /* ---- Bank Accounts State ---- */
+  interface BankAccount {
+    id: string;
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+    isDefault: boolean;
+    displayOrder: number;
+  }
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [bankDialogOpen, setBankDialogOpen] = useState(false);
+  const [editingBank, setEditingBank] = useState<BankAccount | null>(null);
+  const [deleteBankId, setDeleteBankId] = useState<string | null>(null);
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankForm, setBankForm] = useState({
+    bankName: '',
+    accountNumber: '',
+    accountHolder: '',
+    isDefault: false,
+  });
+
   const businessId = activeBusiness?.id;
+  const MAX_BANK_ACCOUNTS = 5;
+
+  /* ---- Bank Accounts CRUD ---- */
+  const fetchBankAccounts = useCallback(() => {
+    if (!businessId) return;
+    fetch(`/api/business/${businessId}/bank-accounts`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setBankAccounts(data.bankAccounts || []))
+      .catch(() => setBankAccounts([]));
+  }, [businessId]);
+
+  useEffect(() => {
+    if (businessId) fetchBankAccounts();
+  }, [businessId, fetchBankAccounts]);
+
+  const openAddBankDialog = () => {
+    setEditingBank(null);
+    const shouldBeDefault = bankAccounts.length === 0;
+    setBankForm({ bankName: '', accountNumber: '', accountHolder: '', isDefault: shouldBeDefault });
+    setBankDialogOpen(true);
+  };
+
+  const openEditBankDialog = (acc: BankAccount) => {
+    setEditingBank(acc);
+    setBankForm({ bankName: acc.bankName, accountNumber: acc.accountNumber, accountHolder: acc.accountHolder, isDefault: acc.isDefault });
+    setBankDialogOpen(true);
+  };
+
+  const handleSaveBank = async () => {
+    if (!businessId || !bankForm.bankName.trim() || !bankForm.accountNumber.trim() || !bankForm.accountHolder.trim()) return;
+    setBankSaving(true);
+    try {
+      if (editingBank) {
+        const res = await fetch(`/api/business/${businessId}/bank-accounts/${editingBank.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bankForm),
+        });
+        if (!res.ok) throw new Error();
+        toast.success('Rekening berhasil diperbarui');
+      } else {
+        const res = await fetch(`/api/business/${businessId}/bank-accounts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...bankForm, displayOrder: bankAccounts.length }),
+        });
+        if (!res.ok) throw new Error();
+        toast.success('Rekening berhasil ditambahkan');
+      }
+      setBankDialogOpen(false);
+      fetchBankAccounts();
+    } catch {
+      toast.error('Gagal menyimpan rekening');
+    } finally {
+      setBankSaving(false);
+    }
+  };
+
+  const handleDeleteBank = async () => {
+    if (!businessId || !deleteBankId) return;
+    try {
+      const res = await fetch(`/api/business/${businessId}/bank-accounts/${deleteBankId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast.success('Rekening berhasil dihapus');
+      fetchBankAccounts();
+    } catch {
+      toast.error('Gagal menghapus rekening');
+    } finally {
+      setDeleteBankId(null);
+    }
+  };
+
+  const handleSetDefault = async (acc: BankAccount) => {
+    if (!businessId || acc.isDefault) return;
+    try {
+      const res = await fetch(`/api/business/${businessId}/bank-accounts/${acc.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...acc, isDefault: true }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Rekening utama berhasil diubah');
+      fetchBankAccounts();
+    } catch {
+      toast.error('Gagal mengubah rekening utama');
+    }
+  };
 
   const fetchSettings = useCallback(() => {
     if (!businessId) return;
@@ -996,7 +1139,132 @@ export default function BusinessInvoiceSettings() {
                 </CardContent>
               </Card>
 
-              {/* 4. Payment Information */}
+              {/* 4. Rekening Pembayaran */}
+              <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#03DAC618' }}>
+                        <Building2 className="h-4 w-4" style={{ color: '#03DAC6' }} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">Rekening Pembayaran</h3>
+                        <p className="text-[10px] text-white/40">
+                          {bankAccounts.length} dari {MAX_BANK_ACCOUNTS} rekening
+                        </p>
+                      </div>
+                    </div>
+                    <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        onClick={openAddBankDialog}
+                        disabled={bankAccounts.length >= MAX_BANK_ACCOUNTS}
+                        size="sm"
+                        className={cn(
+                          'rounded-xl shadow-lg transition-all',
+                          bankAccounts.length >= MAX_BANK_ACCOUNTS
+                            ? 'bg-white/[0.06] text-white/30 cursor-not-allowed shadow-none'
+                            : 'bg-gradient-to-r from-[#03DAC6] to-[#03DAC6]/80 text-black hover:opacity-90 shadow-[#03DAC6]/20'
+                        )}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Tambah Rekening
+                      </Button>
+                    </motion.div>
+                  </div>
+
+                  {bankAccounts.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col items-center justify-center py-8 rounded-xl border border-dashed border-white/[0.08] bg-white/[0.01]"
+                    >
+                      <div className="h-12 w-12 rounded-xl bg-white/[0.03] flex items-center justify-center mb-3">
+                        <Building2 className="h-6 w-6 text-white/20" />
+                      </div>
+                      <p className="text-xs text-white/40">Belum ada rekening pembayaran</p>
+                      <p className="text-[10px] text-white/25 mt-0.5">Tambahkan rekening bank untuk ditampilkan di invoice</p>
+                    </motion.div>
+                  ) : (
+                    <div className="space-y-2.5 max-h-[400px] overflow-y-auto">
+                      <AnimatePresence>
+                        {bankAccounts.map((acc, idx) => (
+                          <motion.div
+                            key={acc.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ delay: idx * 0.04, duration: 0.3, ease: 'easeOut' as const }}
+                            className={cn(
+                              'group relative flex items-center gap-3 p-3 rounded-xl border transition-all duration-200',
+                              'hover:bg-white/[0.03]',
+                              acc.isDefault
+                                ? 'border-[#03DAC6]/20 bg-[#03DAC6]/[0.04]'
+                                : 'border-white/[0.06] bg-white/[0.015]'
+                            )}
+                          >
+                            {/* Bank icon */}
+                            <div className={cn(
+                              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+                              acc.isDefault ? 'bg-[#03DAC6]/20' : 'bg-white/[0.06]'
+                            )}>
+                              <Landmark className={cn('h-4 w-4', acc.isDefault ? 'text-[#03DAC6]' : 'text-white/40')} />
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-white truncate">{acc.bankName}</p>
+                                {acc.isDefault && (
+                                  <Badge className="bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20 text-[9px] px-1.5 py-0 shrink-0">
+                                    <Star className="h-2.5 w-2.5 mr-0.5" />
+                                    Utama
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-white/50 font-mono mt-0.5">{maskAccountNumber(acc.accountNumber)}</p>
+                              <p className="text-[11px] text-white/40 mt-0.5">a.n. {acc.accountHolder}</p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                              {!acc.isDefault && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-white/40 hover:text-[#FFD700] hover:bg-[#FFD700]/10 rounded-lg"
+                                  onClick={() => handleSetDefault(acc)}
+                                  title="Jadikan utama"
+                                >
+                                  <Star className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-white/40 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 rounded-lg"
+                                onClick={() => openEditBankDialog(acc)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-white/40 hover:text-[#CF6679] hover:bg-[#CF6679]/10 rounded-lg"
+                                onClick={() => setDeleteBankId(acc.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 5. Payment Information */}
               <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
                 <CardContent className="p-4 sm:p-6">
                   <SectionHeader icon={CreditCard} title="Payment Information" color="#FFD700" />
@@ -1135,6 +1403,122 @@ export default function BusinessInvoiceSettings() {
             </div>
           </motion.div>
         )}
+        {/* Bank Account Dialog */}
+        <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
+          <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[460px] rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <div className={cn('h-7 w-7 rounded-lg flex items-center justify-center', editingBank ? 'bg-[#FFD700]/20' : 'bg-[#03DAC6]/20')}>
+                  {editingBank ? <Pencil className="h-3.5 w-3.5 text-[#FFD700]" /> : <Plus className="h-3.5 w-3.5 text-[#03DAC6]" />}
+                </div>
+                {editingBank ? 'Edit Rekening' : 'Tambah Rekening'}
+              </DialogTitle>
+              <DialogDescription className="text-white/60">
+                {editingBank ? 'Perbarui informasi rekening pembayaran' : 'Tambahkan rekening bank baru untuk invoice'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs flex items-center gap-1.5">
+                  <Landmark className="h-3 w-3" />
+                  Nama Bank *
+                </Label>
+                <Input
+                  value={bankForm.bankName}
+                  onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
+                  placeholder="e.g. BCA, Mandiri, BNI"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#03DAC6]/40"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs flex items-center gap-1.5">
+                  <Hash className="h-3 w-3" />
+                  Nomor Rekening *
+                </Label>
+                <Input
+                  value={bankForm.accountNumber}
+                  onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })}
+                  placeholder="1234567890"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 font-mono rounded-xl focus:border-[#03DAC6]/40"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs flex items-center gap-1.5">
+                  <User className="h-3 w-3" />
+                  Nama Pemilik *
+                </Label>
+                <Input
+                  value={bankForm.accountHolder}
+                  onChange={(e) => setBankForm({ ...bankForm, accountHolder: e.target.value })}
+                  placeholder="Nama pemilik rekening"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#03DAC6]/40"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <div className="space-y-0.5">
+                  <Label className="text-white/80 text-xs">Jadikan Rekening Utama</Label>
+                  <p className="text-[10px] text-white/40">Rekening utama akan ditampilkan pertama di invoice</p>
+                </div>
+                <Switch
+                  checked={bankForm.isDefault}
+                  onCheckedChange={(checked) => setBankForm({ ...bankForm, isDefault: checked })}
+                  className="data-[state=checked]:bg-[#03DAC6]"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setBankDialogOpen(false)}
+                className="border-white/[0.1] text-white hover:bg-white/10 rounded-xl"
+              >
+                Batal
+              </Button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="button"
+                  disabled={bankSaving || !bankForm.bankName.trim() || !bankForm.accountNumber.trim() || !bankForm.accountHolder.trim()}
+                  onClick={handleSaveBank}
+                  className="bg-gradient-to-r from-[#03DAC6] to-[#03DAC6]/80 text-black hover:opacity-90 rounded-xl shadow-lg shadow-[#03DAC6]/20"
+                >
+                  {bankSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingBank ? 'Simpan' : 'Tambah'}
+                </Button>
+              </motion.div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Bank Account Confirmation */}
+        <AlertDialog open={!!deleteBankId} onOpenChange={(open) => !open && setDeleteBankId(null)}>
+          <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white flex items-center gap-2">
+                <div className="h-7 w-7 rounded-lg bg-[#CF6679]/20 flex items-center justify-center">
+                  <Trash2 className="h-3.5 w-3.5 text-[#CF6679]" />
+                </div>
+                Hapus Rekening
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-white/60">
+                Apakah Anda yakin ingin menghapus rekening ini? Tindakan ini tidak dapat dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10 rounded-xl">
+                Batal
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteBank}
+                className="bg-gradient-to-r from-[#CF6679] to-[#B04060] hover:opacity-90 text-white border-0 rounded-xl"
+              >
+                Hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </motion.div>
     </div>
   );

@@ -248,6 +248,8 @@ model Business {
   investors        BusinessInvestor[]
   portfolios       InvestmentPortfolio[]
   watchlist        WatchlistItem[]
+  bankAccounts     BusinessBankAccount[]
+  debtPayments     BusinessDebtPayment[]
   invoiceSettings  InvoiceSettings?
   products         Product[]
 
@@ -394,6 +396,7 @@ model BusinessDebt {
   installmentPeriod Int?      // Number of installments (months)
   nextInstallmentDate DateTime? // Next installment due date
   referenceId   String?  // optional link to sale/invoice that created this debt
+  payments      BusinessDebtPayment[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -529,4 +532,43 @@ model InvoiceSettings {
   bankHolder    String?                      // account holder name
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// ============================================
+// BANK ACCOUNTS (multi-account support)
+// ============================================
+
+model BusinessBankAccount {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bankName      String   // e.g. "BCA", "Mandiri", "BRI"
+  accountNumber String
+  accountHolder String
+  isDefault     Boolean  @default(false)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+// ============================================
+// DEBT PAYMENT TRACKING
+// ============================================
+
+model BusinessDebtPayment {
+  id            String   @id @default(cuid())
+  debtId        String
+  debt          BusinessDebt @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentDate   DateTime @default(now())
+  paymentMethod String?  // "transfer", "cash", "qris"
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([debtId])
+  @@index([businessId])
 }

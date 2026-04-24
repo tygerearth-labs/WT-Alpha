@@ -48,6 +48,7 @@ import {
   Plus, Pencil, Trash2, FileText, Download,
   PlusCircle, MinusCircle, Eye, Receipt,
   Clock, CheckCircle2, AlertTriangle, TrendingUp,
+  Landmark, Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -127,7 +128,30 @@ export default function BusinessInvoice() {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  /* ---- Bank Accounts ---- */
+  interface BankAccountInfo {
+    id: string;
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+    isDefault: boolean;
+    displayOrder: number;
+  }
+  const [bankAccounts, setBankAccounts] = useState<BankAccountInfo[]>([]);
+
   const businessId = activeBusiness?.id;
+
+  const fetchBankAccounts = useCallback(() => {
+    if (!businessId) return;
+    fetch(`/api/business/${businessId}/bank-accounts`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setBankAccounts(data.bankAccounts || []))
+      .catch(() => setBankAccounts([]));
+  }, [businessId]);
+
+  useEffect(() => {
+    if (businessId) fetchBankAccounts();
+  }, [businessId, fetchBankAccounts]);
 
   const fetchInvoices = useCallback(() => {
     if (!businessId) return;
@@ -587,6 +611,56 @@ export default function BusinessInvoice() {
               </div>
               {viewInvoice.notes && (
                 <p className="text-xs text-white/40 italic">{viewInvoice.notes}</p>
+              )}
+
+              {/* Bank Accounts Display */}
+              {bankAccounts.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' as const }}
+                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center">
+                      <Landmark className="h-3 w-3 text-[#03DAC6]" />
+                    </div>
+                    <p className="text-xs font-semibold text-white/70">Rekening Pembayaran</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {bankAccounts.map((acc) => (
+                      <div
+                        key={acc.id}
+                        className={cn(
+                          'flex items-start gap-2.5 p-2.5 rounded-lg border transition-colors',
+                          acc.isDefault
+                            ? 'border-[#03DAC6]/20 bg-[#03DAC6]/[0.04]'
+                            : 'border-white/[0.06] bg-white/[0.015]'
+                        )}
+                      >
+                        <div className={cn(
+                          'h-8 w-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
+                          acc.isDefault ? 'bg-[#03DAC6]/20' : 'bg-white/[0.06]'
+                        )}>
+                          <Landmark className={cn('h-3.5 w-3.5', acc.isDefault ? 'text-[#03DAC6]' : 'text-white/40')} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-medium text-white truncate">{acc.bankName}</p>
+                            {acc.isDefault && (
+                              <Badge className="bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20 text-[8px] px-1 py-0 shrink-0">
+                                <Star className="h-2 w-2 mr-0.5" />
+                                Utama
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-white/50 font-mono mt-0.5">{acc.accountNumber}</p>
+                          <p className="text-[10px] text-white/40 mt-0.5">a.n. {acc.accountHolder}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
               )}
             </motion.div>
           )}

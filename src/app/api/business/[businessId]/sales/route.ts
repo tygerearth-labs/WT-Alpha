@@ -91,7 +91,7 @@ export async function POST(
 
     const body = await request.json();
     const { customerId, invoiceId, description, amount, date, paymentMethod, notes,
-        downPayment, downPaymentPct, installmentTempo, installmentAmount, investorSharePct } = body;
+        downPayment, downPaymentPct, installmentTempo, installmentAmount, investorSharePct, installmentDueDate } = body;
 
     if (!description || amount === undefined || amount === null) {
       return NextResponse.json(
@@ -171,9 +171,9 @@ export async function POST(
           const cust = await db.businessCustomer.findUnique({ where: { id: customerId } });
           if (cust) counterpart = cust.name;
         }
-        // Calculate next installment date (1 month from now)
-        const nextDate = new Date();
-        nextDate.setMonth(nextDate.getMonth() + 1);
+        // Use the installment due date or fallback to 1 month from now
+        const piutangDueDate = installmentDueDate ? new Date(installmentDueDate) : (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d; })();
+        const nextDate = new Date(piutangDueDate.getTime());
 
         await db.businessDebt.create({
           data: {
@@ -188,6 +188,7 @@ export async function POST(
             installmentAmount: numInstAmount || (numTempo > 0 ? remaining / numTempo : 0),
             installmentPeriod: numTempo,
             nextInstallmentDate: nextDate,
+            dueDate: piutangDueDate,
           },
         });
       } catch (piutangErr) {

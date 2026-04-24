@@ -66,6 +66,8 @@ import {
   Percent,
   ArrowDownToLine,
   Layers,
+  CalendarDays,
+  CheckCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -100,6 +102,7 @@ interface Sale {
   installmentTempo?: number | null;
   installmentAmount?: number | null;
   investorSharePct?: number | null;
+  installmentDueDate?: string | null;
 }
 
 const PAYMENT_METHODS = [
@@ -228,10 +231,12 @@ export default function BusinessSales() {
     downPaymentPct: '',
     installmentTempo: '',
     investorSharePct: '',
+    installmentDueDate: '',
   });
   const [saving, setSaving] = useState(false);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showInvoicePrompt, setShowInvoicePrompt] = useState(false);
 
   const businessId = activeBusiness?.id;
 
@@ -314,6 +319,7 @@ export default function BusinessSales() {
       notes: '',
       categoryId: '',
       isInstallment: false,
+      installmentDueDate: '',
       downPayment: '',
       downPaymentPct: '',
       installmentTempo: '',
@@ -337,6 +343,7 @@ export default function BusinessSales() {
       downPaymentPct: sale.downPaymentPct?.toString() || '',
       installmentTempo: sale.installmentTempo?.toString() || '',
       investorSharePct: sale.investorSharePct?.toString() || '',
+      installmentDueDate: (sale as unknown as Record<string, unknown>).installmentDueDate ? String((sale as unknown as Record<string, unknown>).installmentDueDate) : '',
     });
     setDialogOpen(true);
   };
@@ -357,6 +364,7 @@ export default function BusinessSales() {
         ? (amt - (parseFloat(formData.downPayment) || 0)) / tenor
         : null;
       const invPct = formData.isInstallment ? parseFloat(formData.investorSharePct) || null : null;
+      const instDueDate = formData.isInstallment && formData.installmentDueDate ? formData.installmentDueDate : null;
       const body: Record<string, unknown> = {
         description: formData.description,
         amount: amt,
@@ -368,6 +376,7 @@ export default function BusinessSales() {
         installmentTempo: tenor,
         installmentAmount: instAmount,
         investorSharePct: invPct,
+        installmentDueDate: instDueDate,
       };
       if (formData.customerId) body.customerId = formData.customerId;
       if (formData.categoryId) body.categoryId = formData.categoryId;
@@ -380,6 +389,7 @@ export default function BusinessSales() {
       toast.success(editingSale ? t('biz.businessUpdated') : t('biz.businessCreated'));
       setDialogOpen(false);
       fetchSales();
+      setShowInvoicePrompt(true);
     } catch {
       toast.error(t('common.error'));
     } finally {
@@ -1155,6 +1165,26 @@ export default function BusinessSales() {
                           />
                         </div>
 
+                        {/* Tanggal Jatuh Tempo Cicilan */}
+                        <div className="space-y-1.5">
+                          <Label className="text-white/60 text-[10px] font-medium uppercase tracking-wider flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3 text-[#CF6679]" />
+                            Tanggal Jatuh Tempo
+                          </Label>
+                          <Input
+                            type="date"
+                            value={formData.installmentDueDate}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, installmentDueDate: e.target.value }))}
+                            className="bg-white/[0.04] border-white/[0.08] text-white text-sm placeholder:text-white/15 rounded-lg focus:border-[#CF6679]/40 focus:ring-1 focus:ring-[#CF6679]/20 transition-all w-full sm:w-1/2"
+                          />
+                          {formData.installmentDueDate && computedTenor > 0 && (
+                            <p className="text-[10px] text-white/30">
+                              Cicilan {computedTenor}× mulai{' '}
+                              <span className="text-[#CF6679]/70">{new Date(formData.installmentDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </p>
+                          )}
+                        </div>
+
                         {/* Investor Share */}
                         <div className="space-y-1.5">
                           <Label className="text-white/60 text-[10px] font-medium uppercase tracking-wider flex items-center gap-1">
@@ -1378,6 +1408,55 @@ export default function BusinessSales() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {/* Post-Sale Invoice Prompt */}
+          <Dialog open={showInvoicePrompt} onOpenChange={(open) => !open && setShowInvoicePrompt(false)}>
+            <DialogContent className="bg-gradient-to-b from-[#0D0D0D] to-[#1A1A2E]/95 border border-white/[0.08] text-white rounded-2xl shadow-2xl shadow-black/40 sm:max-w-[400px]">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03DAC6] to-[#BB86FC]" />
+              <DialogHeader className="text-center sm:text-center">
+                <div className="flex flex-col items-center gap-4 pt-2">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring' as const, stiffness: 260, damping: 20, delay: 0.1 }}
+                    className="relative"
+                  >
+                    <div className="absolute -inset-3 rounded-full bg-gradient-to-br from-[#03DAC6]/20 to-[#03DAC6]/5 animate-pulse" />
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#03DAC6]/20 to-[#03DAC6]/5 flex items-center justify-center border border-[#03DAC6]/20">
+                      <CheckCircle className="h-8 w-8 text-[#03DAC6]" />
+                    </div>
+                  </motion.div>
+                  <div>
+                    <DialogTitle className="text-white text-lg font-bold flex items-center justify-center gap-2">
+                      <Receipt className="h-5 w-5 text-[#BB86FC]" />
+                      Kirim Invoice?
+                    </DialogTitle>
+                    <DialogDescription className="text-white/50 mt-2 text-sm">
+                      Penjualan berhasil disimpan. Kirim invoice ke pelanggan?
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+              <DialogFooter className="flex flex-col sm:flex-col gap-3 mt-2">
+                <Button
+                  onClick={() => {
+                    setShowInvoicePrompt(false);
+                    toast.info('Silakan buat invoice dari halaman Invoice');
+                  }}
+                  className="w-full bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:from-[#9B6FDB] hover:to-[#7B5FBB] rounded-xl shadow-lg shadow-[#BB86FC]/20 transition-all duration-200 hover:shadow-[#BB86FC]/30 font-semibold"
+                >
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Buat Invoice
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowInvoicePrompt(false)}
+                  className="w-full border border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
+                >
+                  Nanti Saja
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </motion.div>
       )}
     </div>
