@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -48,8 +47,22 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+
+const THEME = {
+  bg: '#000000',
+  surface: '#121212',
+  primary: '#BB86FC',
+  secondary: '#03DAC6',
+  destructive: '#CF6679',
+  warning: '#F9A825',
+  muted: '#9E9E9E',
+  border: 'rgba(255,255,255,0.08)',
+  borderHover: 'rgba(255,255,255,0.15)',
+  text: '#FFFFFF',
+  textSecondary: '#B3B3B3',
+};
 
 interface Debt {
   id: string;
@@ -67,11 +80,11 @@ interface Debt {
   nextInstallmentDate?: string | null;
 }
 
-const STATUS_STYLES: Record<string, { label: string; className: string; icon?: React.ReactNode }> = {
-  active: { label: 'biz.debtActive', className: 'bg-[#BB86FC]/20 text-[#BB86FC] border-[#BB86FC]/30' },
-  partially_paid: { label: 'biz.debtActive', className: 'bg-[#FFD700]/20 text-[#FFD700] border-[#FFD700]/30' },
-  paid: { label: 'biz.debtPaid', className: 'bg-[#03DAC6]/20 text-[#03DAC6] border-[#03DAC6]/30' },
-  overdue: { label: 'biz.debtOverdue', className: 'bg-[#CF6679]/20 text-[#CF6679] border-[#CF6679]/30' },
+const STATUS_STYLES: Record<string, { label: string; style: React.CSSProperties }> = {
+  active: { label: 'biz.debtActive', style: { background: `${THEME.primary}20`, color: THEME.primary, borderWidth: '1px', borderColor: `${THEME.primary}30` } },
+  partially_paid: { label: 'biz.debtActive', style: { background: `${THEME.warning}20`, color: THEME.warning, borderWidth: '1px', borderColor: `${THEME.warning}30` } },
+  paid: { label: 'biz.debtPaid', style: { background: `${THEME.secondary}20`, color: THEME.secondary, borderWidth: '1px', borderColor: `${THEME.secondary}30` } },
+  overdue: { label: 'biz.debtOverdue', style: { background: `${THEME.destructive}20`, color: THEME.destructive, borderWidth: '1px', borderColor: `${THEME.destructive}30` } },
 };
 
 function calculateInstallmentLateInfo(debt: Debt): { lateDays: number; currentTempo: number; paidTempo: number; isLate: boolean } {
@@ -101,95 +114,63 @@ function calculateInstallmentLateInfo(debt: Debt): { lateDays: number; currentTe
 }
 
 function getDueDateInfo(dueDate: string | null, remaining: number, debt?: Debt): { color: string; label: string; bg: string } {
-  if (remaining <= 0) return { color: 'text-white/50', label: '', bg: '' };
+  if (remaining <= 0) return { color: THEME.muted, label: '', bg: '' };
 
   // For installment debts, use chained tempo calculation
   if (debt && debt.installmentAmount && debt.installmentAmount > 0 && debt.createdAt) {
     const info = calculateInstallmentLateInfo(debt);
     if (info.isLate) {
       return {
-        color: 'text-[#CF6679]',
+        color: THEME.destructive,
         label: `Tempo ${info.paidTempo + 1}/${debt.installmentPeriod} · Lewat ${info.lateDays} hari`,
-        bg: 'bg-[#CF6679]/10',
+        bg: `${THEME.destructive}1A`,
       };
     }
     if (info.currentTempo < (debt.installmentPeriod || 0) && info.currentTempo > info.paidTempo) {
       return {
-        color: 'text-[#FFD700]',
+        color: THEME.warning,
         label: `Tempo ${info.currentTempo}/${debt.installmentPeriod} · ${info.currentTempo - info.paidTempo} tertunggak`,
-        bg: 'bg-[#FFD700]/10',
+        bg: `${THEME.warning}1A`,
       };
     }
     if (info.paidTempo >= (debt.installmentPeriod || 0)) {
-      return { color: 'text-[#03DAC6]', label: 'Lunas', bg: 'bg-[#03DAC6]/10' };
+      return { color: THEME.secondary, label: 'Lunas', bg: `${THEME.secondary}1A` };
     }
-    return { color: 'text-[#03DAC6]', label: 'Aman', bg: 'bg-[#03DAC6]/10' };
+    return { color: THEME.secondary, label: 'Aman', bg: `${THEME.secondary}1A` };
   }
 
   // Non-installment logic (original)
-  if (!dueDate) return { color: 'text-white/50', label: '', bg: '' };
+  if (!dueDate) return { color: THEME.muted, label: '', bg: '' };
   const daysUntilDue = Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  if (daysUntilDue < 0) return { color: 'text-[#CF6679]', label: `Lewat ${Math.abs(daysUntilDue)} hari`, bg: 'bg-[#CF6679]/10' };
-  if (daysUntilDue <= 3) return { color: 'text-[#CF6679]', label: `${daysUntilDue} hari lagi`, bg: 'bg-[#CF6679]/10' };
-  if (daysUntilDue <= 7) return { color: 'text-[#FFD700]', label: `${daysUntilDue} hari lagi`, bg: 'bg-[#FFD700]/10' };
-  return { color: 'text-[#03DAC6]', label: 'Aman', bg: 'bg-[#03DAC6]/10' };
+  if (daysUntilDue < 0) return { color: THEME.destructive, label: `Lewat ${Math.abs(daysUntilDue)} hari`, bg: `${THEME.destructive}1A` };
+  if (daysUntilDue <= 3) return { color: THEME.destructive, label: `${daysUntilDue} hari lagi`, bg: `${THEME.destructive}1A` };
+  if (daysUntilDue <= 7) return { color: THEME.warning, label: `${daysUntilDue} hari lagi`, bg: `${THEME.warning}1A` };
+  return { color: THEME.secondary, label: 'Aman', bg: `${THEME.secondary}1A` };
 }
 
 function getDueDateColor(dueDate: string | null, remaining: number, debt?: Debt): string {
   return getDueDateInfo(dueDate, remaining, debt).color;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 25 } },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, scale: 0.92, y: 12 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } },
-};
-
 const DebtEmptyState = ({ type }: { type: string }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.5, ease: 'easeOut' as const }}
-    className="flex flex-col items-center justify-center py-16 px-4"
-  >
-    <div className="relative mb-6">
-      <div className={cn(
-        'w-20 h-20 rounded-2xl flex items-center justify-center',
-        type === 'hutang' ? 'bg-gradient-to-br from-[#CF6679]/20 to-[#CF6679]/5' : 'bg-gradient-to-br from-[#03DAC6]/20 to-[#03DAC6]/5'
-      )}>
-        {type === 'hutang' ? (
-          <ArrowDownCircle className="h-10 w-10 text-[#CF6679]/60" />
-        ) : (
-          <ArrowUpCircle className="h-10 w-10 text-[#03DAC6]/60" />
-        )}
-      </div>
-      <motion.div
-        animate={{ y: [0, -4, 0] }}
-        transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' as const }}
-        className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center"
-      >
-        <CreditCard className="h-4 w-4 text-white/40" />
-      </motion.div>
+  <div className="flex flex-col items-center justify-center py-12 px-4">
+    <div
+      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+      style={{ background: type === 'hutang' ? `${THEME.destructive}15` : `${THEME.secondary}15` }}
+    >
+      {type === 'hutang' ? (
+        <ArrowDownCircle className="h-8 w-8" style={{ color: THEME.destructive, opacity: 0.6 }} />
+      ) : (
+        <ArrowUpCircle className="h-8 w-8" style={{ color: THEME.secondary, opacity: 0.6 }} />
+      )}
     </div>
-    <p className="text-white/40 text-sm font-medium">
+    <p style={{ color: THEME.muted }} className="text-sm font-medium">
       {type === 'hutang' ? 'Belum ada hutang' : 'Belum ada piutang'}
     </p>
-    <p className="text-white/25 text-xs mt-1">
+    <p style={{ color: THEME.muted, opacity: 0.6 }} className="text-xs mt-1">
       {type === 'hutang' ? 'Kelola hutang Anda di sini' : 'Kelola piutang Anda di sini'}
     </p>
-  </motion.div>
+  </div>
 );
 
 export default function BusinessDebts() {
@@ -416,37 +397,36 @@ export default function BusinessDebts() {
   }, [filtered]);
 
   const getHealthLabel = (score: number) => {
-    if (score >= 80) return { text: 'Sehat', color: '#03DAC6', icon: HeartPulse };
-    if (score >= 50) return { text: 'Cukup', color: '#FFD700', icon: TrendingUp };
-    return { text: 'Berisiko', color: '#CF6679', icon: AlertTriangle };
+    if (score >= 80) return { text: 'Sehat', color: THEME.secondary, icon: HeartPulse };
+    if (score >= 50) return { text: 'Cukup', color: THEME.warning, icon: TrendingUp };
+    return { text: 'Berisiko', color: THEME.destructive, icon: AlertTriangle };
   };
 
-  const accentColor = activeTab === 'hutang' ? '#CF6679' : '#03DAC6';
+  const accentColor = activeTab === 'hutang' ? THEME.destructive : THEME.secondary;
 
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-white/50 text-center">{t('biz.registerFirst')}</p>
+        <p style={{ color: THEME.muted }} className="text-center">{t('biz.registerFirst')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4"
-        >
-          <TabsList className="bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <TabsList
+            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+            className="rounded-lg"
+          >
             <TabsTrigger
               value="hutang"
               className={cn(
-                'text-white/60 data-[state=active]:shadow-none transition-all duration-200',
-                activeTab === 'hutang' && 'bg-[#CF6679]/20 text-[#CF6679]'
+                'data-[state=active]:shadow-none transition-colors duration-200',
+                activeTab === 'hutang' ? 'text-white' : 'text-white/60'
               )}
+              style={activeTab === 'hutang' ? { background: `${THEME.destructive}20`, color: THEME.destructive } : undefined}
             >
               <ArrowDownCircle className="h-4 w-4 mr-1" />
               {t('biz.hutang')}
@@ -454,402 +434,402 @@ export default function BusinessDebts() {
             <TabsTrigger
               value="piutang"
               className={cn(
-                'text-white/60 data-[state=active]:shadow-none transition-all duration-200',
-                activeTab === 'piutang' && 'bg-[#03DAC6]/20 text-[#03DAC6]'
+                'data-[state=active]:shadow-none transition-colors duration-200',
+                activeTab === 'piutang' ? 'text-white' : 'text-white/60'
               )}
+              style={activeTab === 'piutang' ? { background: `${THEME.secondary}20`, color: THEME.secondary } : undefined}
             >
               <ArrowUpCircle className="h-4 w-4 mr-1" />
               {t('biz.piutang')}
             </TabsTrigger>
           </TabsList>
 
-          <Button onClick={openCreateDialog} size="sm" className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB] transition-colors duration-200">
+          <Button
+            onClick={openCreateDialog}
+            size="sm"
+            className="text-black transition-colors duration-200"
+            style={{ background: THEME.primary }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#9B6FDB'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = THEME.primary; }}
+          >
             <Plus className="h-4 w-4 mr-1" />
             {t('biz.addDebt')}
           </Button>
-        </motion.div>
+        </div>
 
-        {/* Summary Cards with Progress */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"
-        >
-          <motion.div variants={cardVariants}>
-            <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] transition-all duration-300">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${accentColor}15` }}>
-                  <DollarSign className="h-4 w-4" style={{ color: accentColor }} />
-                </div>
-                <span className="text-xs text-white/50">{t('biz.debtAmount')}</span>
-              </div>
-              <p className="text-lg font-bold text-white">{formatAmount(totalAmount)}</p>
-              <div className="mt-2 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3">
+          {/* Total Amount */}
+          <Card
+            className="rounded-xl p-3 sm:p-4"
+            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <DollarSign className="h-4 w-4" style={{ color: accentColor }} />
+              <span className="text-[11px]" style={{ color: THEME.muted }}>{t('biz.debtAmount')}</span>
+            </div>
+            <p className="text-sm font-bold" style={{ color: THEME.text }}>{formatAmount(totalAmount)}</p>
+            <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+              <div
+                className="h-full rounded-full"
+                style={{ width: '100%', background: accentColor, opacity: 0.3, transition: 'width 0.8s ease' }}
+              />
+            </div>
+          </Card>
+
+          {/* Remaining */}
+          <Card
+            className="rounded-xl p-3 sm:p-4"
+            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <Clock className="h-4 w-4" style={{ color: THEME.warning }} />
+              <span className="text-[11px]" style={{ color: THEME.muted }}>{t('biz.debtRemaining')}</span>
+            </div>
+            <p className="text-sm font-bold" style={{ color: THEME.text }}>{formatAmount(totalRemaining)}</p>
+            <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: totalAmount > 0 ? `${(totalRemaining / totalAmount) * 100}%` : '0%',
+                  background: THEME.warning,
+                  transition: 'width 0.8s ease',
+                }}
+              />
+            </div>
+          </Card>
+
+          {/* Paid */}
+          <Card
+            className="rounded-xl p-3 sm:p-4"
+            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <CheckCircle2 className="h-4 w-4" style={{ color: THEME.secondary }} />
+              <span className="text-[11px]" style={{ color: THEME.muted }}>Dibayar</span>
+            </div>
+            <p className="text-sm font-bold" style={{ color: THEME.secondary }}>{formatAmount(totalPaid)}</p>
+            <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: totalAmount > 0 ? `${(totalPaid / totalAmount) * 100}%` : '0%',
+                  background: THEME.secondary,
+                  transition: 'width 0.8s ease',
+                }}
+              />
+            </div>
+          </Card>
+
+          {/* Health Score */}
+          <Card
+            className="rounded-xl p-3 sm:p-4"
+            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              {(() => {
+                const HIcon = getHealthLabel(healthData.score).icon;
+                return <HIcon className="h-4 w-4" style={{ color: getHealthLabel(healthData.score).color }} />;
+              })()}
+              <span className="text-[11px]" style={{ color: THEME.muted }}>Skor Kesehatan</span>
+            </div>
+            <div className="flex items-end gap-1.5">
+              <p className="text-xl font-bold" style={{ color: getHealthLabel(healthData.score).color }}>
+                {healthData.score}
+              </p>
+              <span className="text-[10px] mb-0.5" style={{ color: THEME.muted }}>/100</span>
+            </div>
+            <div className="flex items-center gap-1 mt-1.5">
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                <div
                   className="h-full rounded-full"
-                  style={{ background: accentColor, opacity: 0.3 }}
+                  style={{
+                    width: `${healthData.score}%`,
+                    background: getHealthLabel(healthData.score).color,
+                    transition: 'width 1s ease',
+                  }}
                 />
               </div>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={cardVariants}>
-            <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] transition-all duration-300">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-[#FFD700]/15 flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-[#FFD700]" />
-                </div>
-                <span className="text-xs text-white/50">{t('biz.debtRemaining')}</span>
-              </div>
-              <p className="text-lg font-bold text-white">{formatAmount(totalRemaining)}</p>
-              <div className="mt-2 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: totalAmount > 0 ? `${(totalRemaining / totalAmount) * 100}%` : '0%' }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                  className="h-full rounded-full bg-[#FFD700]"
-                />
-              </div>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={cardVariants}>
-            <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-4 hover:border-[#03DAC6]/30 transition-all duration-300">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center">
-                  <CheckCircle2 className="h-4 w-4 text-[#03DAC6]" />
-                </div>
-                <span className="text-xs text-white/50">Dibayar</span>
-              </div>
-              <p className="text-lg font-bold text-[#03DAC6]">{formatAmount(totalPaid)}</p>
-              <div className="mt-2 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: totalAmount > 0 ? `${(totalPaid / totalAmount) * 100}%` : '0%' }}
-                  transition={{ duration: 0.8, delay: 0.5 }}
-                  className="h-full rounded-full bg-[#03DAC6]"
-                />
-              </div>
-            </Card>
-          </motion.div>
-
-          {/* Health Score Card */}
-          <motion.div variants={cardVariants}>
-            <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] transition-all duration-300">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${getHealthLabel(healthData.score).color}15` }}>
-                  {(() => {
-                    const HIcon = getHealthLabel(healthData.score).icon;
-                    return <HIcon className="h-4 w-4" style={{ color: getHealthLabel(healthData.score).color }} />;
-                  })()}
-                </div>
-                <span className="text-xs text-white/50">Skor Kesehatan</span>
-              </div>
-              <div className="flex items-end gap-2">
-                <motion.p
-                  className="text-2xl font-bold"
-                  style={{ color: getHealthLabel(healthData.score).color }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  {healthData.score}
-                </motion.p>
-                <span className="text-xs text-white/40 mb-1">/100</span>
-              </div>
-              <div className="flex items-center gap-1 mt-2">
-                <div className="flex-1 h-2 rounded-full bg-white/[0.06] overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${healthData.score}%` }}
-                    transition={{ duration: 1, delay: 0.6 }}
-                    className="h-full rounded-full"
-                    style={{ background: getHealthLabel(healthData.score).color }}
-                  />
-                </div>
-                <span className="text-[10px] font-medium" style={{ color: getHealthLabel(healthData.score).color }}>
-                  {getHealthLabel(healthData.score).text}
+              <span className="text-[10px] font-medium" style={{ color: getHealthLabel(healthData.score).color }}>
+                {getHealthLabel(healthData.score).text}
+              </span>
+            </div>
+            {healthData.total > 0 && (
+              <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: THEME.muted, opacity: 0.6 }}>
+                <span className="flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: THEME.secondary }} />
+                  {healthData.paidCount} lunas
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: THEME.primary }} />
+                  {healthData.activeCount} aktif
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: THEME.destructive }} />
+                  {healthData.overdueCount} lewat
                 </span>
               </div>
-              {healthData.total > 0 && (
-                <div className="flex items-center gap-2 mt-2 text-[10px] text-white/30">
-                  <span className="flex items-center gap-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#03DAC6]" />
-                    {healthData.paidCount} lunas
-                  </span>
-                  <span className="flex items-center gap-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#BB86FC]" />
-                    {healthData.activeCount} aktif
-                  </span>
-                  <span className="flex items-center gap-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#CF6679]" />
-                    {healthData.overdueCount} lewat
-                  </span>
-                </div>
-              )}
-            </Card>
-          </motion.div>
-        </motion.div>
+            )}
+          </Card>
+        </div>
 
         <TabsContent value={activeTab} className="mt-0">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
+          <Card
+            className="rounded-xl overflow-hidden"
+            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
           >
-            <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
-              <CardContent className="p-0">
-                {loading ? (
-                  <div className="space-y-3 p-4">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
-                    ))}
-                  </div>
-                ) : filtered.length === 0 ? (
-                  <DebtEmptyState type={activeTab} />
-                ) : (
-                  <div className="max-h-[500px] overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-white/[0.06] hover:bg-transparent">
-                          <TableHead className="text-white/50 text-xs">{t('biz.debtCounterpart')}</TableHead>
-                          <TableHead className="text-white/50 text-xs">{t('biz.debtAmount')}</TableHead>
-                          <TableHead className="text-white/50 text-xs">{t('biz.debtRemaining')}</TableHead>
-                          <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.debtDueDate')}</TableHead>
-                          <TableHead className="text-white/50 text-xs">{t('biz.debtStatus')}</TableHead>
-                          <TableHead className="text-white/50 text-xs w-28" />
-                        </TableRow>
-                      </TableHeader>
-                      <motion.tbody variants={containerVariants} initial="hidden" animate="show" className="[&_tr:last-child]:border-0">
-                          {filtered.map((debt, index) => {
-                            const statusStyle = STATUS_STYLES[debt.status] || STATUS_STYLES.active;
-                            const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
-                            const paidPercent = debt.amount > 0 ? Math.round(((debt.amount - debt.remaining) / debt.amount) * 100) : 0;
-                            const dueDateInfo = getDueDateInfo(debt.dueDate, debt.remaining, debt);
-                            const isAlt = index % 2 === 1;
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-3 p-3 sm:p-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                  ))}
+                </div>
+              ) : filtered.length === 0 ? (
+                <DebtEmptyState type={activeTab} />
+              ) : (
+                <div className="max-h-[500px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow style={{ borderBottom: `1px solid ${THEME.border}` }} className="hover:bg-transparent">
+                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtCounterpart')}</TableHead>
+                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtAmount')}</TableHead>
+                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtRemaining')}</TableHead>
+                        <TableHead className="text-xs hidden sm:table-cell" style={{ color: THEME.muted }}>{t('biz.debtDueDate')}</TableHead>
+                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtStatus')}</TableHead>
+                        <TableHead className="text-xs w-28" style={{ color: THEME.muted }} />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <AnimatePresence>
+                        {filtered.map((debt, index) => {
+                          const statusStyle = STATUS_STYLES[debt.status] || STATUS_STYLES.active;
+                          const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
+                          const paidPercent = debt.amount > 0 ? Math.round(((debt.amount - debt.remaining) / debt.amount) * 100) : 0;
+                          const dueDateInfo = getDueDateInfo(debt.dueDate, debt.remaining, debt);
+                          const isAlt = index % 2 === 1;
 
-                            return (
-                              <motion.tr
-                                key={debt.id}
-                                variants={itemVariants}
-                                className={cn(
-                                  'border-white/[0.04] hover:bg-white/[0.04] transition-colors duration-200 cursor-default',
-                                  isAlt && 'bg-white/[0.015]'
-                                )}
-                              >
-                                <TableCell className="py-3">
-                                  <div>
-                                    <div className="flex items-center gap-1.5">
-                                      <p className="text-white text-xs font-medium">{debt.counterpart}</p>
-                                      {isInstallment && (
-                                        <Badge className="text-[9px] font-bold px-1.5 py-0 h-4 bg-[#FFD700]/20 text-[#FFD700] border-[#FFD700]/30 leading-none">
-                                          {t('biz.installmentBadge')}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    {debt.description && (
-                                      <p className="text-white/30 text-[10px] mt-0.5 max-w-[150px] truncate">{debt.description}</p>
+                          return (
+                            <motion.tr
+                              key={debt.id}
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className={cn(isAlt && 'bg-white/[0.015]')}
+                              style={isAlt ? { background: 'rgba(255,255,255,0.015)' } : undefined}
+                            >
+                              <TableCell className="py-2">
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-xs font-medium" style={{ color: THEME.text }}>{debt.counterpart}</p>
+                                    {isInstallment && (
+                                      <Badge
+                                        className="text-[9px] font-bold px-1.5 py-0 h-4 leading-none"
+                                        style={{ background: `${THEME.warning}20`, color: THEME.warning, borderWidth: '1px', borderColor: `${THEME.warning}30` }}
+                                      >
+                                        {t('biz.installmentBadge')}
+                                      </Badge>
                                     )}
                                   </div>
-                                </TableCell>
-                                <TableCell className={cn('text-xs font-medium py-3', activeTab === 'hutang' ? 'text-[#CF6679]' : 'text-[#03DAC6]')}>
-                                  {formatAmount(debt.amount)}
-                                  {isInstallment && debt.downPayment && debt.downPayment > 0 && (
-                                    <p className="text-[10px] text-white/40 mt-0.5">
-                                      DP: {formatAmount(debt.downPayment)}
-                                    </p>
+                                  {debt.description && (
+                                    <p className="text-[10px] mt-0.5 max-w-[150px] truncate" style={{ color: THEME.muted, opacity: 0.6 }}>{debt.description}</p>
                                   )}
-                                </TableCell>
-                                <TableCell className="text-white text-xs py-3">
-                                  {debt.remaining > 0 ? (
-                                    <div>
-                                      {formatAmount(debt.remaining)}
-                                      {isInstallment && (
-                                        <div className="mt-1.5">
-                                          {/* Visual Progress Bar */}
-                                          <div className="flex items-center gap-2">
-                                            <div className="flex-1 h-2 rounded-full bg-white/[0.06] overflow-hidden">
-                                              <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${paidPercent}%` }}
-                                                transition={{ duration: 0.6, delay: index * 0.05 }}
-                                                className={cn(
-                                                  'h-full rounded-full',
-                                                  paidPercent >= 75 ? 'bg-[#03DAC6]' : paidPercent >= 40 ? 'bg-[#FFD700]' : 'bg-[#CF6679]'
-                                                )}
-                                              />
-                                            </div>
-                                            <span className="text-[10px] text-white/40 w-7 text-right">{paidPercent}%</span>
-                                          </div>
-                                          {/* Timeline dots */}
-                                          <div className="flex items-center gap-1 mt-1">
-                                            {Array.from({ length: Math.min(debt.installmentPeriod || 1, 8) }).map((_, i) => {
-                                              const filled = i < Math.round((paidPercent / 100) * (debt.installmentPeriod || 1));
-                                              return (
-                                                <motion.div
-                                                  key={i}
-                                                  initial={{ scale: 0 }}
-                                                  animate={{ scale: 1 }}
-                                                  transition={{ delay: 0.3 + i * 0.05 }}
-                                                  className={cn(
-                                                    'flex-1 h-1 rounded-full',
-                                                    filled
-                                                      ? paidPercent >= 75 ? 'bg-[#03DAC6]' : 'bg-[#FFD700]'
-                                                      : 'bg-white/[0.08]'
-                                                  )}
-                                                />
-                                              );
-                                            })}
-                                            {(debt.installmentPeriod || 0) > 8 && (
-                                              <span className="text-[8px] text-white/30">...</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-[#03DAC6] flex items-center gap-1">
-                                      <CheckCircle2 className="h-3 w-3" />
-                                      {t('biz.debtPaid')}
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-xs py-3 hidden sm:table-cell">
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-xs font-medium py-2" style={{ color: activeTab === 'hutang' ? THEME.destructive : THEME.secondary }}>
+                                {formatAmount(debt.amount)}
+                                {isInstallment && debt.downPayment && debt.downPayment > 0 && (
+                                  <p className="text-[10px] mt-0.5" style={{ color: THEME.muted, opacity: 0.6 }}>
+                                    DP: {formatAmount(debt.downPayment)}
+                                  </p>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs py-2" style={{ color: THEME.text }}>
+                                {debt.remaining > 0 ? (
                                   <div>
-                                    {isInstallment && debt.installmentPeriod ? (() => {
-                                      const instInfo = calculateInstallmentLateInfo(debt);
-                                      return (
-                                        <span className="text-[#FFD700] text-[10px] font-medium">
-                                          Tempo {instInfo.paidTempo}/{debt.installmentPeriod}
-                                        </span>
-                                      );
-                                    })() : (
-                                      <span className={dueDateInfo.color}>
-                                        {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : '-'}
-                                      </span>
-                                    )}
-                                    {/* Due date indicator badge */}
-                                    {debt.remaining > 0 && dueDateInfo.label && (
-                                      <motion.div
-                                        initial={{ opacity: 0, x: -4 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.2 }}
-                                        className={cn(
-                                          'mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium',
-                                          dueDateInfo.bg
-                                        )}
-                                      >
-                                        {debt.status === 'overdue' || dueDateInfo.label.includes('Lewat') ? (
-                                          <AlertTriangle className="h-2.5 w-2.5" style={{ color: dueDateInfo.color }} />
-                                        ) : (
-                                          <Clock className="h-2.5 w-2.5" style={{ color: dueDateInfo.color }} />
-                                        )}
-                                        <span style={{ color: dueDateInfo.color }}>{dueDateInfo.label}</span>
-                                      </motion.div>
-                                    )}
-                                    {isInstallment && debt.nextInstallmentDate && debt.remaining > 0 && (
-                                      <div className="flex items-center gap-1 mt-1">
-                                        <CalendarDays className="h-3 w-3 text-[#FFD700]" />
-                                        <span className="text-[#FFD700] text-[10px]">
-                                          {new Date(debt.nextInstallmentDate).toLocaleDateString()}
-                                        </span>
+                                    {formatAmount(debt.remaining)}
+                                    {isInstallment && (
+                                      <div className="mt-1">
+                                        {/* Visual Progress Bar */}
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                                            <div
+                                              className="h-full rounded-full"
+                                              style={{
+                                                width: `${paidPercent}%`,
+                                                background: paidPercent >= 75 ? THEME.secondary : paidPercent >= 40 ? THEME.warning : THEME.destructive,
+                                                transition: 'width 0.6s ease',
+                                              }}
+                                            />
+                                          </div>
+                                          <span className="text-[10px] w-7 text-right" style={{ color: THEME.muted }}>{paidPercent}%</span>
+                                        </div>
+                                        {/* Timeline dots */}
+                                        <div className="flex items-center gap-1 mt-1">
+                                          {Array.from({ length: Math.min(debt.installmentPeriod || 1, 8) }).map((_, i) => {
+                                            const filled = i < Math.round((paidPercent / 100) * (debt.installmentPeriod || 1));
+                                            return (
+                                              <div
+                                                key={i}
+                                                className="flex-1 h-1 rounded-full"
+                                                style={{
+                                                  background: filled
+                                                    ? paidPercent >= 75 ? THEME.secondary : THEME.warning
+                                                    : THEME.border,
+                                                }}
+                                              />
+                                            );
+                                          })}
+                                          {(debt.installmentPeriod || 0) > 8 && (
+                                            <span className="text-[8px]" style={{ color: THEME.muted, opacity: 0.5 }}>...</span>
+                                          )}
+                                        </div>
                                       </div>
                                     )}
                                   </div>
-                                </TableCell>
-                                <TableCell className="py-3">
-                                  <Badge variant="outline" className={cn('text-xs font-normal', statusStyle.className)}>
-                                    {t(statusStyle.label)}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="py-3 text-right">
-                                  {debt.remaining > 0 && (
-                                    <>
-                                      {isInstallment && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 text-[#FFD700]/60 hover:text-[#FFD700] hover:bg-[#FFD700]/10 transition-colors duration-200"
-                                          onClick={() => openPaymentDialog(debt, true)}
-                                          title={t('biz.payInstallment')}
-                                        >
-                                          <CreditCard className="h-3.5 w-3.5" />
-                                        </Button>
+                                ) : (
+                                  <span className="flex items-center gap-1" style={{ color: THEME.secondary }}>
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    {t('biz.debtPaid')}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs py-2 hidden sm:table-cell">
+                                <div>
+                                  {isInstallment && debt.installmentPeriod ? (() => {
+                                    const instInfo = calculateInstallmentLateInfo(debt);
+                                    return (
+                                      <span className="text-[10px] font-medium" style={{ color: THEME.warning }}>
+                                        Tempo {instInfo.paidTempo}/{debt.installmentPeriod}
+                                      </span>
+                                    );
+                                  })() : (
+                                    <span style={{ color: dueDateInfo.color }}>
+                                      {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : '-'}
+                                    </span>
+                                  )}
+                                  {/* Due date indicator badge */}
+                                  {debt.remaining > 0 && dueDateInfo.label && (
+                                    <div
+                                      className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium"
+                                      style={{ backgroundColor: dueDateInfo.bg }}
+                                    >
+                                      {debt.status === 'overdue' || dueDateInfo.label.includes('Lewat') ? (
+                                        <AlertTriangle className="h-2.5 w-2.5" style={{ color: dueDateInfo.color }} />
+                                      ) : (
+                                        <Clock className="h-2.5 w-2.5" style={{ color: dueDateInfo.color }} />
                                       )}
+                                      <span style={{ color: dueDateInfo.color }}>{dueDateInfo.label}</span>
+                                    </div>
+                                  )}
+                                  {isInstallment && debt.nextInstallmentDate && debt.remaining > 0 && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <CalendarDays className="h-3 w-3" style={{ color: THEME.warning }} />
+                                      <span className="text-[10px]" style={{ color: THEME.warning }}>
+                                        {new Date(debt.nextInstallmentDate).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <Badge variant="outline" style={statusStyle.style}>
+                                  {t(statusStyle.label)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="py-2 text-right">
+                                {debt.remaining > 0 && (
+                                  <>
+                                    {isInstallment && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 transition-colors duration-200"
-                                        onClick={() => openPaymentDialog(debt)}
-                                        title={t('biz.payDebt')}
+                                        className="h-8 w-8 p-0 hover:bg-white/5"
+                                        style={{ color: `${THEME.warning}99` }}
+                                        onClick={() => openPaymentDialog(debt, true)}
+                                        title={t('biz.payInstallment')}
                                       >
                                         <CreditCard className="h-3.5 w-3.5" />
                                       </Button>
-                                    </>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10 transition-colors duration-200"
-                                    onClick={() => openEditDialog(debt)}
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-colors duration-200"
-                                    onClick={() => setDeleteId(debt.id)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </TableCell>
-                              </motion.tr>
-                            );
-                          })}
-                      </motion.tbody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 hover:bg-white/5"
+                                      style={{ color: THEME.muted }}
+                                      onClick={() => openPaymentDialog(debt)}
+                                      title={t('biz.payDebt')}
+                                    >
+                                      <CreditCard className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-white/5"
+                                  style={{ color: THEME.muted }}
+                                  onClick={() => openEditDialog(debt)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-white/5"
+                                  style={{ color: THEME.muted }}
+                                  onClick={() => setDeleteId(debt.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </TableCell>
+                            </motion.tr>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto"
+          style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+        >
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#BB86FC]/15 flex items-center justify-center">
-                {editingDebt ? <Pencil className="h-4 w-4 text-[#BB86FC]" /> : <Plus className="h-4 w-4 text-[#BB86FC]" />}
+            <DialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
+                {editingDebt ? <Pencil className="h-4 w-4" style={{ color: THEME.primary }} /> : <Plus className="h-4 w-4" style={{ color: THEME.primary }} />}
               </div>
               {editingDebt ? t('common.edit') : t('biz.addDebt')}
             </DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogDescription style={{ color: THEME.textSecondary }}>
               {t('biz.hutangPiutang')}
             </DialogDescription>
           </DialogHeader>
 
-          <Separator className="bg-white/[0.06]" />
+          <Separator style={{ backgroundColor: THEME.border }} />
 
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave} className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-white/80 text-xs font-medium">{t('biz.hutangPiutang')}</Label>
+              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.hutangPiutang')}</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant={formData.type === 'hutang' ? 'default' : 'outline'}
                   onClick={() => setFormData({ ...formData, type: 'hutang' })}
                   className={cn(
-                    'flex-1 border-0 transition-all duration-200',
-                    formData.type === 'hutang' ? 'bg-[#CF6679] text-white' : 'border-white/[0.1] text-white/60 hover:bg-white/10'
+                    'flex-1 transition-colors duration-200',
+                    formData.type === 'hutang' ? 'text-white border-0' : ''
                   )}
+                  style={formData.type === 'hutang' ? { background: THEME.destructive } : { color: THEME.muted, borderColor: THEME.borderHover }}
                 >
                   <ArrowDownCircle className="h-4 w-4 mr-1" />
                   {t('biz.hutang')}
@@ -859,9 +839,10 @@ export default function BusinessDebts() {
                   variant={formData.type === 'piutang' ? 'default' : 'outline'}
                   onClick={() => setFormData({ ...formData, type: 'piutang' })}
                   className={cn(
-                    'flex-1 border-0 transition-all duration-200',
-                    formData.type === 'piutang' ? 'bg-[#03DAC6] text-black' : 'border-white/[0.1] text-white/60 hover:bg-white/10'
+                    'flex-1 transition-colors duration-200',
+                    formData.type === 'piutang' ? 'text-black border-0' : ''
                   )}
+                  style={formData.type === 'piutang' ? { background: THEME.secondary } : { color: THEME.muted, borderColor: THEME.borderHover }}
                 >
                   <ArrowUpCircle className="h-4 w-4 mr-1" />
                   {t('biz.piutang')}
@@ -870,170 +851,171 @@ export default function BusinessDebts() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-white/80 text-xs font-medium">{t('biz.debtCounterpart')} *</Label>
+              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtCounterpart')} *</Label>
               <Input
                 value={formData.counterpart}
                 onChange={(e) => setFormData({ ...formData, counterpart: e.target.value })}
                 placeholder={t('biz.debtCounterpart')}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 focus:border-[#BB86FC]/40 focus:ring-1 focus:ring-[#BB86FC]/20 transition-all duration-200"
+                className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
+                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-white/80 text-xs font-medium">{t('biz.debtAmount')} *</Label>
+              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtAmount')} *</Label>
               <Input
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="0"
                 min="0"
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 focus:border-[#BB86FC]/40 focus:ring-1 focus:ring-[#BB86FC]/20 transition-all duration-200"
+                className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
+                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
               />
             </div>
 
             {/* Installment Toggle */}
             {!editingDebt && (
-              <div className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+              <div
+                className="flex items-center justify-between py-2 px-3 rounded-lg"
+                style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}
+              >
                 <div>
-                  <Label className="text-white/80 text-sm">{t('biz.isInstallment')}</Label>
-                  <p className="text-[10px] text-white/40">DP + cicilan bulanan</p>
+                  <Label className="text-sm" style={{ color: THEME.textSecondary }}>{t('biz.isInstallment')}</Label>
+                  <p className="text-[10px]" style={{ color: THEME.muted }}>DP + cicilan bulanan</p>
                 </div>
                 <Switch
                   checked={formData.isInstallment}
                   onCheckedChange={(checked) => setFormData({ ...formData, isInstallment: checked })}
-                  className="data-[state=checked]:bg-[#FFD700]"
                 />
               </div>
             )}
 
             {/* Installment Fields */}
             {!editingDebt && formData.isInstallment && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-3 p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/[0.12] overflow-hidden"
+              <div
+                className="space-y-3 p-3 rounded-xl overflow-hidden"
+                style={{ background: `${THEME.warning}08`, border: `1px solid ${THEME.warning}1F` }}
               >
-                <p className="text-xs font-medium text-[#FFD700]">{t('biz.installmentInfo')}</p>
+                <p className="text-xs font-medium" style={{ color: THEME.warning }}>{t('biz.installmentInfo')}</p>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-white/60 text-xs">{t('biz.downPayment')}</Label>
+                    <Label className="text-xs" style={{ color: THEME.muted }}>{t('biz.downPayment')}</Label>
                     <Input
                       type="number"
                       value={formData.downPayment}
                       onChange={(e) => setFormData({ ...formData, downPayment: e.target.value })}
                       placeholder="0"
                       min="0"
-                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-sm h-9 focus:border-[#FFD700]/40 focus:ring-1 focus:ring-[#FFD700]/20 transition-all duration-200"
+                      className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
+                      style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-white/60 text-xs">{t('biz.installmentAmount')} *</Label>
+                    <Label className="text-xs" style={{ color: THEME.muted }}>{t('biz.installmentAmount')} *</Label>
                     <Input
                       type="number"
                       value={formData.installmentAmount}
                       onChange={(e) => setFormData({ ...formData, installmentAmount: e.target.value })}
                       placeholder="0"
                       min="0"
-                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-sm h-9 focus:border-[#FFD700]/40 focus:ring-1 focus:ring-[#FFD700]/20 transition-all duration-200"
+                      className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
+                      style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-white/60 text-xs">{t('biz.installmentPeriod')} *</Label>
+                  <Label className="text-xs" style={{ color: THEME.muted }}>{t('biz.installmentPeriod')} *</Label>
                   <Input
                     type="number"
                     value={formData.installmentPeriod}
                     onChange={(e) => setFormData({ ...formData, installmentPeriod: e.target.value })}
                     placeholder="12"
                     min="1"
-                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-sm h-9 w-1/2 focus:border-[#FFD700]/40 focus:ring-1 focus:ring-[#FFD700]/20 transition-all duration-200"
+                    className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 w-1/2 focus:ring-1 transition-colors duration-200"
+                    style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
                   />
                 </div>
 
                 {/* Installment Preview with Visual Timeline */}
                 {formData.amount && installmentPreview.numInstallment > 0 && installmentPreview.numPeriod > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="mt-3 space-y-3 p-3 rounded-lg bg-white/[0.03]"
-                  >
+                  <div className="mt-3 space-y-3 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
                     <div className="space-y-2">
                       <div className="flex justify-between text-[11px]">
-                        <span className="text-white/50">{t('biz.downPayment')}</span>
-                        <span className="text-white font-medium">{formatAmount(parseFloat(formData.downPayment) || 0)}</span>
+                        <span style={{ color: THEME.muted }}>{t('biz.downPayment')}</span>
+                        <span className="font-medium" style={{ color: THEME.text }}>{formatAmount(parseFloat(formData.downPayment) || 0)}</span>
                       </div>
                       <div className="flex justify-between text-[11px]">
-                        <span className="text-white/50">{t('biz.remainingAfterDP')}</span>
-                        <span className="text-white font-medium">{formatAmount(installmentPreview.remainingAfterDP)}</span>
+                        <span style={{ color: THEME.muted }}>{t('biz.remainingAfterDP')}</span>
+                        <span className="font-medium" style={{ color: THEME.text }}>{formatAmount(installmentPreview.remainingAfterDP)}</span>
                       </div>
                       <div className="flex justify-between text-[11px]">
-                        <span className="text-white/50">
+                        <span style={{ color: THEME.muted }}>
                           {t('biz.installmentSchedule')} ({installmentPreview.numPeriod}x)
                         </span>
-                        <span className="text-[#FFD700] font-medium">{formatAmount(installmentPreview.totalInstallments)}</span>
+                        <span className="font-medium" style={{ color: THEME.warning }}>{formatAmount(installmentPreview.totalInstallments)}</span>
                       </div>
-                      <div className="border-t border-white/[0.06] pt-2 flex justify-between text-[11px]">
-                        <span className="text-white/50">Total</span>
-                        <span className="text-white font-bold">{formatAmount(installmentPreview.totalDPPlusInstallments)}</span>
+                      <div className="pt-2 flex justify-between text-[11px]" style={{ borderTop: `1px solid ${THEME.border}` }}>
+                        <span style={{ color: THEME.muted }}>Total</span>
+                        <span className="font-bold" style={{ color: THEME.text }}>{formatAmount(installmentPreview.totalDPPlusInstallments)}</span>
                       </div>
                     </div>
 
                     {/* Visual Timeline */}
                     <div>
-                      <p className="text-[10px] text-white/40 mb-1.5">Timeline cicilan</p>
+                      <p className="text-[10px] mb-1.5" style={{ color: THEME.muted, opacity: 0.6 }}>Timeline cicilan</p>
                       <div className="flex items-center gap-0.5">
-                        <div className="w-2 h-2 rounded-full bg-[#FFD700]" />
-                        <div className="flex-1 h-0.5 bg-[#FFD700]/30" />
+                        <div className="w-2 h-2 rounded-full" style={{ background: THEME.warning }} />
+                        <div className="flex-1 h-0.5" style={{ background: `${THEME.warning}4D` }} />
                         {Array.from({ length: Math.min(installmentPreview.numPeriod - 1, 10) }).map((_, i) => (
                           <React.Fragment key={i}>
-                            <div className="w-2 h-2 rounded-full bg-white/[0.1]" />
+                            <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
                             {i < Math.min(installmentPreview.numPeriod - 2, 9) && (
-                              <div className="flex-1 h-0.5 bg-white/[0.06]" />
+                              <div className="flex-1 h-0.5" style={{ background: THEME.border }} />
                             )}
                           </React.Fragment>
                         ))}
-                        <div className="w-2 h-2 rounded-full bg-white/[0.1]" />
+                        <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
                       </div>
-                      <div className="flex justify-between mt-1 text-[8px] text-white/30">
+                      <div className="flex justify-between mt-1 text-[8px]" style={{ color: THEME.muted, opacity: 0.5 }}>
                         <span>DP</span>
                         <span>Bulan {installmentPreview.numPeriod}</span>
                       </div>
                     </div>
 
                     {installmentPreview.totalDPPlusInstallments !== parseFloat(formData.amount) && (
-                      <p className="text-[9px] text-white/30">
+                      <p className="text-[9px]" style={{ color: THEME.muted, opacity: 0.6 }}>
                         {installmentPreview.totalDPPlusInstallments > parseFloat(formData.amount)
                           ? `⚠️ ${formatAmount(installmentPreview.totalDPPlusInstallments - parseFloat(formData.amount))} lebih dari jumlah`
                           : `ℹ️ ${formatAmount(parseFloat(formData.amount) - installmentPreview.totalDPPlusInstallments)} kurang dari jumlah`}
                       </p>
                     )}
-                  </motion.div>
+                  </div>
                 )}
-              </motion.div>
+              </div>
             )}
 
             <div className="space-y-2">
-              <Label className="text-white/80 text-xs font-medium">{t('biz.debtDueDate')}</Label>
+              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtDueDate')}</Label>
               <Input
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="bg-white/[0.05] border-white/[0.1] text-white focus:border-[#BB86FC]/40 focus:ring-1 focus:ring-[#BB86FC]/20 transition-all duration-200"
+                className="bg-white/[0.05] focus:ring-1 transition-colors duration-200"
+                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-white/80 text-xs font-medium">{t('biz.debtDescription')}</Label>
+              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtDescription')}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder={t('biz.debtDescription')}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px] focus:border-[#BB86FC]/40 focus:ring-1 focus:ring-[#BB86FC]/20 transition-all duration-200 resize-none"
+                className="bg-white/[0.05] placeholder:text-white/30 min-h-[60px] focus:ring-1 resize-none transition-colors duration-200"
+                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
               />
             </div>
 
@@ -1042,14 +1024,16 @@ export default function BusinessDebts() {
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
-                className="border-white/[0.1] text-white hover:bg-white/10"
+                className="hover:bg-white/5"
+                style={{ borderColor: THEME.borderHover, color: THEME.text }}
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !formData.counterpart || !formData.amount}
-                className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB] transition-colors duration-200"
+                className="text-black transition-colors duration-200"
+                style={{ background: THEME.primary }}
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('common.save')}
@@ -1061,103 +1045,97 @@ export default function BusinessDebts() {
 
       {/* Partial Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[420px]">
+        <DialogContent
+          className="sm:max-w-[420px]"
+          style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+        >
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center">
-                <CreditCard className="h-4 w-4 text-[#03DAC6]" />
+            <DialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${THEME.secondary}15` }}>
+                <CreditCard className="h-4 w-4" style={{ color: THEME.secondary }} />
               </div>
               {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
             </DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogDescription style={{ color: THEME.textSecondary }}>
               {paymentDebt?.counterpart}
             </DialogDescription>
           </DialogHeader>
 
           {/* Visual Balance Preview */}
           {paymentDebt && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3"
-            >
+            <div className="p-3 rounded-xl space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}>
               {/* Balance Bar */}
               <div>
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-white/50">Total</span>
-                  <span className="text-white font-medium">{formatAmount(paymentDebt.amount)}</span>
+                  <span style={{ color: THEME.muted }}>Total</span>
+                  <span className="font-medium" style={{ color: THEME.text }}>{formatAmount(paymentDebt.amount)}</span>
                 </div>
-                <div className="h-3 rounded-full bg-white/[0.06] overflow-hidden relative">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{
-                      width: `${paymentDebt.amount > 0 ? ((paymentDebt.amount - paymentDebt.remaining) / paymentDebt.amount) * 100 : 0}%`
+                <div className="h-3 rounded-full overflow-hidden relative" style={{ background: THEME.border }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${paymentDebt.amount > 0 ? ((paymentDebt.amount - paymentDebt.remaining) / paymentDebt.amount) * 100 : 0}%`,
+                      background: THEME.secondary,
+                      transition: 'width 0.6s ease',
                     }}
-                    transition={{ duration: 0.6 }}
-                    className="h-full rounded-full bg-[#03DAC6]"
                   />
                   {payAmount && parseFloat(payAmount) > 0 && parseFloat(payAmount) <= paymentDebt.remaining && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="absolute top-0 h-full bg-[#BB86FC]/40 rounded-full"
+                    <div
+                      className="absolute top-0 h-full rounded-full"
                       style={{
+                        background: `${THEME.primary}66`,
                         left: `${paymentDebt.amount > 0 ? ((paymentDebt.amount - paymentDebt.remaining) / paymentDebt.amount) * 100 : 0}%`,
                         width: `${(parseFloat(payAmount) / paymentDebt.amount) * 100}%`,
+                        transition: 'opacity 0.3s ease',
                       }}
                     />
                   )}
                 </div>
                 <div className="flex justify-between mt-1.5 text-[10px]">
-                  <span className="text-[#03DAC6]">Dibayar: {formatAmount(paymentDebt.amount - paymentDebt.remaining)}</span>
-                  <span className="text-white/50">Sisa: {formatAmount(paymentDebt.remaining)}</span>
+                  <span style={{ color: THEME.secondary }}>Dibayar: {formatAmount(paymentDebt.amount - paymentDebt.remaining)}</span>
+                  <span style={{ color: THEME.muted }}>Sisa: {formatAmount(paymentDebt.remaining)}</span>
                 </div>
               </div>
 
-              <Separator className="bg-white/[0.06]" />
+              <Separator style={{ backgroundColor: THEME.border }} />
 
               {/* New Balance Preview */}
               {payAmount && parseFloat(payAmount) > 0 && parseFloat(payAmount) <= paymentDebt.remaining && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center justify-between"
-                >
-                  <span className="text-xs text-white/50">Sisa setelah bayar</span>
-                  <span className="text-sm font-bold text-[#03DAC6]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs" style={{ color: THEME.muted }}>Sisa setelah bayar</span>
+                  <span className="text-sm font-bold" style={{ color: THEME.secondary }}>
                     {formatAmount(paymentDebt.remaining - parseFloat(payAmount))}
                   </span>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Installment Info */}
-          {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
-            <div className="p-3 rounded-lg bg-[#FFD700]/[0.04] border border-[#FFD700]/[0.12]">
-              <div className="flex justify-between text-xs">
-                <span className="text-white/50">{t('biz.installmentAmount')}</span>
-                <span className="text-[#FFD700] font-medium">{formatAmount(paymentDebt.installmentAmount)}</span>
-              </div>
-              {paymentDebt.nextInstallmentDate && paymentDebt.remaining > 0 && (
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-white/50">{t('biz.nextDueDate')}</span>
-                  <span className="text-white/80">{new Date(paymentDebt.nextInstallmentDate).toLocaleDateString()}</span>
-                </div>
-              )}
-              {paymentDebt.installmentPeriod && (
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-white/50">{t('biz.installmentPeriod')}</span>
-                  <span className="text-white/80">{paymentDebt.installmentPeriod} bulan</span>
                 </div>
               )}
             </div>
           )}
 
-          <form onSubmit={handlePay} className="space-y-4">
+          {/* Installment Info */}
+          {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
+            <div className="p-3 rounded-lg" style={{ background: `${THEME.warning}08`, border: `1px solid ${THEME.warning}1F` }}>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: THEME.muted }}>{t('biz.installmentAmount')}</span>
+                <span className="font-medium" style={{ color: THEME.warning }}>{formatAmount(paymentDebt.installmentAmount)}</span>
+              </div>
+              {paymentDebt.nextInstallmentDate && paymentDebt.remaining > 0 && (
+                <div className="flex justify-between text-xs mt-1">
+                  <span style={{ color: THEME.muted }}>{t('biz.nextDueDate')}</span>
+                  <span style={{ color: THEME.textSecondary }}>{new Date(paymentDebt.nextInstallmentDate).toLocaleDateString()}</span>
+                </div>
+              )}
+              {paymentDebt.installmentPeriod && (
+                <div className="flex justify-between text-xs mt-1">
+                  <span style={{ color: THEME.muted }}>{t('biz.installmentPeriod')}</span>
+                  <span style={{ color: THEME.textSecondary }}>{paymentDebt.installmentPeriod} bulan</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handlePay} className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-white/80 text-xs font-medium">{t('biz.debtAmount')} *</Label>
+              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtAmount')} *</Label>
               <Input
                 type="number"
                 value={payAmount}
@@ -1165,17 +1143,19 @@ export default function BusinessDebts() {
                 placeholder="0"
                 min="0"
                 max={paymentDebt?.remaining || 0}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all duration-200"
+                className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
+                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
               />
               <div className="flex items-center justify-between">
-                <p className="text-[10px] text-white/30">
+                <p className="text-[10px]" style={{ color: THEME.muted, opacity: 0.6 }}>
                   Maks: {formatAmount(paymentDebt?.remaining || 0)}
                 </p>
                 {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
                   <button
                     type="button"
                     onClick={() => setPayAmount(paymentDebt.installmentAmount!.toString())}
-                    className="text-[10px] text-[#FFD700] hover:text-[#FFD700]/80 transition-colors"
+                    className="text-[10px] transition-colors"
+                    style={{ color: THEME.warning }}
                   >
                     Gunakan jumlah cicilan
                   </button>
@@ -1188,14 +1168,16 @@ export default function BusinessDebts() {
                 type="button"
                 variant="outline"
                 onClick={() => setPaymentDialogOpen(false)}
-                className="border-white/[0.1] text-white hover:bg-white/10"
+                className="hover:bg-white/5"
+                style={{ borderColor: THEME.borderHover, color: THEME.text }}
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={paying || !payAmount || parseFloat(payAmount) <= 0 || parseFloat(payAmount) > (paymentDebt?.remaining || 0)}
-                className="bg-[#03DAC6] text-black hover:bg-[#02B8A8] transition-colors duration-200"
+                className="text-black transition-colors duration-200"
+                style={{ background: THEME.secondary }}
               >
                 {paying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
@@ -1207,15 +1189,15 @@ export default function BusinessDebts() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white">
+        <AlertDialogContent style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
-            <AlertDialogDescription className="text-white/60">
+            <AlertDialogTitle style={{ color: THEME.text }}>{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogDescription style={{ color: THEME.textSecondary }}>
               {t('kas.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
+            <AlertDialogCancel className="hover:bg-white/5" style={{ borderColor: THEME.borderHover, color: THEME.text }}>
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction

@@ -79,6 +79,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
+// ─── THEME ─────────────────────────────────────────────────────
+const THEME = {
+  bg: '#000000',
+  surface: '#121212',
+  primary: '#BB86FC',
+  secondary: '#03DAC6',
+  destructive: '#CF6679',
+  warning: '#F9A825',
+  muted: '#9E9E9E',
+  border: 'rgba(255,255,255,0.08)',
+  borderHover: 'rgba(255,255,255,0.15)',
+  text: '#FFFFFF',
+  textSecondary: '#B3B3B3',
+};
+
+const inputCls = 'bg-transparent border text-white placeholder:text-white/30 rounded-lg focus:ring-1';
+const inputBorder = `1px solid ${THEME.border}`;
+
 // ─── Animated Counter Hook ──────────────────────────────────────────
 function useAnimatedCounter(target: number, duration: number = 800) {
   const [count, setCount] = useState(0);
@@ -169,27 +187,18 @@ interface Category {
 const CASH_SUB_TYPES = {
   kas_besar: {
     label: 'biz.kasBesar',
-    color: '#03DAC6',
+    color: THEME.secondary,
     icon: Wallet,
-    gradient: 'from-[#03DAC6]/20 via-[#03DAC6]/5 to-transparent',
-    bg: 'bg-[#03DAC6]/15',
-    textClass: 'text-[#03DAC6]',
   },
   kas_kecil: {
     label: 'biz.kasKecil',
-    color: '#BB86FC',
+    color: THEME.primary,
     icon: PiggyBank,
-    gradient: 'from-[#BB86FC]/20 via-[#BB86FC]/5 to-transparent',
-    bg: 'bg-[#BB86FC]/15',
-    textClass: 'text-[#BB86FC]',
   },
   kas_keluar: {
     label: 'biz.kasKeluar',
-    color: '#CF6679',
+    color: THEME.destructive,
     icon: ArrowDownToLine,
-    gradient: 'from-[#CF6679]/20 via-[#CF6679]/5 to-transparent',
-    bg: 'bg-[#CF6679]/15',
-    textClass: 'text-[#CF6679]',
   },
 } as const;
 
@@ -199,82 +208,26 @@ const PIUTANG_STATUS_CONFIG = {
   berjalan: {
     label: 'Berjalan',
     statuses: ['active', 'partially_paid'],
-    color: '#03DAC6',
-    bg: 'bg-[#03DAC6]/15',
+    color: THEME.secondary,
     icon: Clock,
   },
   macet: {
     label: 'Macet',
     statuses: ['overdue'],
-    color: '#CF6679',
-    bg: 'bg-[#CF6679]/15',
+    color: THEME.destructive,
     icon: AlertTriangle,
   },
   selesai: {
     label: 'Selesai',
     statuses: ['paid'],
-    color: '#BB86FC',
-    bg: 'bg-[#BB86FC]/15',
+    color: THEME.primary,
     icon: CheckCircle2,
   },
 } as const;
 
 type PiutangSubTab = keyof typeof PIUTANG_STATUS_CONFIG;
 
-// ─── Animation Variants ─────────────────────────────────────────────
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.07, delayChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
-  },
-};
-
-const cardPopVariants = {
-  hidden: { opacity: 0, scale: 0.92, y: 12 },
-  show: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { type: 'spring' as const, stiffness: 260, damping: 22 },
-  },
-};
-
-const rowVariants = {
-  hidden: { opacity: 0, x: -12 },
-  show: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: {
-      delay: i * 0.04,
-      type: 'spring' as const,
-      stiffness: 260,
-      damping: 20,
-    },
-  }),
-  exit: { opacity: 0, x: 12, transition: { duration: 0.2 } },
-};
-
-const fadeInVariants = {
-  hidden: { opacity: 0, y: 10 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: 'spring' as const, stiffness: 280, damping: 22 },
-  },
-  exit: { opacity: 0, y: -10, transition: { duration: 0.15 } },
-};
-
-// ─── Mini Cash Sparkline ───────────────────────────────────────────
+// ─── Mini Cash Sparkline (CSS transitions, no framer-motion) ──────
 function MiniCashSparkline({ color, value }: { color: string; value: number }) {
   const seed = Math.abs(value) || 42;
   const points: number[] = [];
@@ -288,28 +241,18 @@ function MiniCashSparkline({ color, value }: { color: string; value: number }) {
   const data = points.map((p) => (p / maxVal) * 100);
 
   return (
-    <div className="flex items-end gap-[2px] h-[20px]">
+    <div className="flex items-end gap-[2px] h-[16px]">
       {data.map((h, i) => (
-        <motion.div
+        <div
           key={i}
-          className="w-[4px] rounded-sm origin-bottom"
+          className="w-[3px] rounded-sm origin-bottom transition-all duration-500"
           style={{
             backgroundColor: color,
-            opacity: 0.2 + (i / data.length) * 0.6,
+            opacity: 0.2 + (i / data.length) * 0.5,
+            height: `${Math.max(h * 0.16, 2)}px`,
+            transitionDelay: `${0.1 + i * 0.03}s`,
           }}
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{
-            duration: 0.3,
-            delay: 0.2 + i * 0.03,
-            ease: [0.25, 0.46, 0.45, 0.94],
-          }}
-        >
-          <div
-            className="w-full rounded-sm"
-            style={{ height: `${Math.max(h * 0.2, 2)}px` }}
-          />
-        </motion.div>
+        />
       ))}
     </div>
   );
@@ -323,6 +266,62 @@ function formatDate(dateStr: string): string {
   } catch {
     return new Date(dateStr).toLocaleDateString();
   }
+}
+
+function getStatusConfig(status: string): { label: string; color: string; textClass: string } {
+  switch (status) {
+    case 'active':
+      return { label: 'Aktif', color: THEME.secondary, textClass: '' };
+    case 'partially_paid':
+      return { label: 'Sebagian', color: THEME.warning, textClass: '' };
+    case 'paid':
+      return { label: 'Lunas', color: THEME.primary, textClass: '' };
+    case 'overdue':
+      return { label: 'Jatuh Tempo', color: THEME.destructive, textClass: '' };
+    default:
+      return { label: status, color: '#999', textClass: '' };
+  }
+}
+
+// ─── Empty State ──────────────────────────────────────────────────
+function EmptyState({
+  icon,
+  accentColor,
+  title,
+  description,
+  onAction,
+  actionLabel,
+}: {
+  icon: React.ReactNode;
+  accentColor: string;
+  title: string;
+  description: string;
+  onAction?: () => void;
+  actionLabel?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-6">
+      <div
+        className="relative mb-4 w-16 h-16 rounded-xl flex items-center justify-center"
+        style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+      >
+        {icon}
+      </div>
+      <p className="text-sm font-medium" style={{ color: THEME.textSecondary }}>{title}</p>
+      <p className="text-xs mt-1 text-center max-w-[220px]" style={{ color: THEME.muted }}>{description}</p>
+      {onAction && actionLabel && (
+        <Button
+          onClick={onAction}
+          size="sm"
+          className="mt-4 rounded-lg h-8"
+          style={{ backgroundColor: `${accentColor}15`, color: accentColor, border: `1px solid ${accentColor}30` }}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          {actionLabel}
+        </Button>
+      )}
+    </div>
+  );
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
@@ -407,12 +406,9 @@ export default function BusinessCash() {
   // ── Data Fetching ─────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════
 
-  // Fetch cash entries for all types simultaneously
   const fetchAllCashData = useCallback(() => {
     if (!businessId) return;
     setCashLoading(true);
-
-    // Determine category type for dropdown
     const catType = cashSubTab === 'kas_keluar' ? 'pengeluaran' : 'pemasukan';
 
     Promise.all([
@@ -433,17 +429,12 @@ export default function BusinessCash() {
         const besarEntries: CashEntry[] = besarData?.cashEntries || [];
         const kecilEntries: CashEntry[] = kecilData?.cashEntries || [];
         const keluarEntries: CashEntry[] = keluarData?.cashEntries || [];
-
         const allEntries = [...besarEntries, ...kecilEntries, ...keluarEntries];
         setCashEntries(allEntries);
-
-        const inc =
-          (besarData?.total || 0) + (kecilData?.total || 0);
+        const inc = (besarData?.total || 0) + (kecilData?.total || 0);
         const exp = keluarData?.total || 0;
-
         setIncomeTotal(inc);
         setExpenseTotal(exp);
-
         setCashCategories(catData?.categories || []);
       })
       .catch(() => {
@@ -483,7 +474,6 @@ export default function BusinessCash() {
       .finally(() => setPiutangLoading(false));
   }, [businessId]);
 
-  // Fetch payments for a specific debt
   const fetchDebtPayments = useCallback(async (debtId: string) => {
     if (!businessId) return;
     try {
@@ -499,7 +489,6 @@ export default function BusinessCash() {
     return [];
   }, [businessId]);
 
-  // Record a payment
   const recordPayment = async () => {
     if (!businessId || !paymentDialogDebt || !paymentForm.amount) return;
     const numAmount = parseFloat(paymentForm.amount);
@@ -533,7 +522,6 @@ export default function BusinessCash() {
     }
   };
 
-  // Send WhatsApp reminder
   const sendReminder = async (debt: Debt) => {
     if (!businessId) return;
     try {
@@ -554,7 +542,6 @@ export default function BusinessCash() {
     }
   };
 
-  // Open detail dialog
   const openDetailDialog = async (debt: Debt) => {
     setDetailDialogDebt(debt);
     setDetailLoading(true);
@@ -575,7 +562,6 @@ export default function BusinessCash() {
     }
   }, [businessId, mainTab]);
 
-  // Re-fetch cash data when sub-tab changes
   useEffect(() => {
     if (businessId && mainTab === 'arus_kas') {
       fetchAllCashData();
@@ -586,7 +572,6 @@ export default function BusinessCash() {
   // ── Derived Data ──────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════
 
-  // Filtered cash entries by sub-tab
   const filteredCashEntries = useMemo(() => {
     let entries = cashEntries.filter((e) => e.type === cashSubTab);
     if (cashSearch.trim()) {
@@ -605,7 +590,6 @@ export default function BusinessCash() {
     return filteredCashEntries.reduce((sum, e) => sum + e.amount, 0);
   }, [filteredCashEntries]);
 
-  // Piutang (debts filtered by type=piutang)
   const piutangDebts = useMemo(() => {
     let debts = allDebts.filter(
       (d) =>
@@ -648,54 +632,45 @@ export default function BusinessCash() {
     };
   }, [allPiutang]);
 
-  // Compute per-debt paid amount from payment cache
   const getDebtPaidAmount = useCallback((debtId: string): number => {
     const payments = debtPayments[debtId];
     if (!payments || payments.length === 0) {
-      // Fallback: compute from debt.amount - debt.remaining
       const debt = allDebts.find((d) => d.id === debtId);
       return debt ? (debt.amount - debt.remaining) : 0;
     }
     return payments.reduce((sum, p) => sum + p.amount, 0);
   }, [debtPayments, allDebts]);
 
-  // Compute payment score for detail dialog
   const getPaymentScore = useCallback((debt: Debt): { score: number; label: string; color: string } => {
     const payments = debtPayments[debt.id] || [];
     if (payments.length === 0) {
       if (debt.dueDate && debt.status !== 'paid') {
         const days = differenceInDays(new Date(), parseISO(debt.dueDate));
         if (days > 0) {
-          return { score: 0, label: 'Belum Bayar', color: '#CF6679' };
+          return { score: 0, label: 'Belum Bayar', color: THEME.destructive };
         }
       }
-      return { score: 50, label: 'Menunggu Pembayaran', color: '#FFD700' };
+      return { score: 50, label: 'Menunggu Pembayaran', color: THEME.warning };
     }
-
-    // Check latest payment timeliness
     const sortedPayments = [...payments].sort(
       (a, b) => new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime()
     );
     const latestPayment = sortedPayments[sortedPayments.length - 1];
-
     if (!debt.dueDate) {
-      return { score: 75, label: 'Agak Terlambat', color: '#FFD700' };
+      return { score: 75, label: 'Agak Terlambat', color: THEME.warning };
     }
-
     const dueDate = parseISO(debt.dueDate);
     const payDate = new Date(latestPayment.paymentDate);
     const diffDays = differenceInDays(payDate, dueDate);
-
     if (diffDays <= 0) {
-      return { score: 100, label: 'Tepat Waktu', color: '#03DAC6' };
+      return { score: 100, label: 'Tepat Waktu', color: THEME.secondary };
     } else if (diffDays <= 7) {
-      return { score: 75, label: 'Agak Terlambat', color: '#FFD700' };
+      return { score: 75, label: 'Agak Terlambat', color: THEME.warning };
     } else {
-      return { score: 50, label: 'Terlambat', color: '#CF6679' };
+      return { score: 50, label: 'Terlambat', color: THEME.destructive };
     }
   }, [debtPayments]);
 
-  // Cashflow realization data for Arus Kas tab
   const cashflowRealization = useMemo(() => {
     const totalPiutangRemaining = allPiutang
       .filter((d) => d.status !== 'paid')
@@ -825,21 +800,19 @@ export default function BusinessCash() {
     });
   };
 
-  // ── Cash form nominal preview ──
+  // ── Nominal previews ──
   const formattedCashNominal = useMemo(() => {
     const num = parseFloat(cashForm.amount);
     if (isNaN(num) || num <= 0) return '';
     return formatAmount(num);
   }, [cashForm.amount, formatAmount]);
 
-  // ── Investor form nominal preview ──
   const formattedInvestorNominal = useMemo(() => {
     const num = parseFloat(investorForm.totalInvestment);
     if (isNaN(num) || num <= 0) return '';
     return formatAmount(num);
   }, [investorForm.totalInvestment, formatAmount]);
 
-  // ── Payment form nominal preview ──
   const formattedPaymentNominal = useMemo(() => {
     const num = parseFloat(paymentForm.amount);
     if (isNaN(num) || num <= 0) return '';
@@ -851,32 +824,25 @@ export default function BusinessCash() {
   // ══════════════════════════════════════════════════════════════════
   if (!businessId) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut' as const }}
-        className="flex flex-col items-center justify-center min-h-[400px] gap-3"
-      >
-        <div className="h-16 w-16 rounded-2xl bg-white/[0.04] flex items-center justify-center">
-          <Banknote className="h-8 w-8 text-white/20" />
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <div className="h-12 w-12 rounded-xl flex items-center justify-center" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <Banknote className="h-6 w-6" style={{ color: THEME.muted }} />
         </div>
-        <p className="text-white/40 text-center text-sm">{t('biz.registerFirst')}</p>
-      </motion.div>
+        <p className="text-sm text-center" style={{ color: THEME.textSecondary }}>{t('biz.registerFirst')}</p>
+      </div>
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════
-  // ── Main Tab Configuration ────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════
+  // ── Tab configs ──
   const mainTabs: Array<{
     key: MainTab;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     color: string;
   }> = [
-    { key: 'arus_kas', label: 'Arus Kas', icon: TrendingUp, color: '#03DAC6' },
-    { key: 'investor', label: 'Investor', icon: Users, color: '#BB86FC' },
-    { key: 'piutang', label: 'Piutang', icon: HandCoins, color: '#FFD700' },
+    { key: 'arus_kas', label: 'Arus Kas', icon: TrendingUp, color: THEME.secondary },
+    { key: 'investor', label: 'Investor', icon: Users, color: THEME.primary },
+    { key: 'piutang', label: 'Piutang', icon: HandCoins, color: THEME.warning },
   ];
 
   const subTypeConfig = CASH_SUB_TYPES[cashSubTab];
@@ -885,29 +851,12 @@ export default function BusinessCash() {
   // ── RENDER ────────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* ── Main Tab Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative flex gap-1 bg-white/[0.04] rounded-2xl p-1 w-fit border border-white/[0.06]"
+      <div
+        className="flex gap-1 rounded-xl p-1 w-fit"
+        style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={mainTab}
-            className="absolute top-1 bottom-1 rounded-xl"
-            style={{
-              backgroundColor: `${mainTabs.find((mt) => mt.key === mainTab)?.color}18`,
-              borderColor: `${mainTabs.find((mt) => mt.key === mainTab)?.color}40`,
-            }}
-            animate={{
-              width: `calc(${(100 / mainTabs.length)}% - 6px)`,
-              left: `${(mainTabs.findIndex((mt) => mt.key === mainTab) * 100) / mainTabs.length + 2}%`,
-            }}
-            transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
-          />
-        </AnimatePresence>
         {mainTabs.map((mt) => {
           const Icon = mt.icon;
           const isActive = mainTab === mt.key;
@@ -918,336 +867,178 @@ export default function BusinessCash() {
               size="sm"
               onClick={() => setMainTab(mt.key)}
               className={cn(
-                'relative z-10 rounded-xl px-4 sm:px-5 transition-colors duration-200',
-                isActive
-                  ? 'font-semibold'
-                  : 'text-white/40 hover:text-white/70'
+                'rounded-lg px-3 sm:px-4 transition-colors duration-200 text-xs',
+                isActive ? 'font-semibold' : '',
               )}
-              style={isActive ? { color: mt.color } : undefined}
+              style={isActive ? { color: mt.color, background: `${mt.color}15` } : { color: THEME.muted }}
             >
-              <Icon className="h-4 w-4 mr-1.5" />
+              <Icon className="h-3.5 w-3.5 mr-1" />
               <span className="hidden sm:inline">{mt.label}</span>
               <span className="sm:hidden">{mt.label.split(' ')[0]}</span>
             </Button>
           );
         })}
-      </motion.div>
+      </div>
 
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* ── TAB 1: ARUS KAS ───────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence mode="wait">
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── TAB 1: ARUS KAS ─────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
         {mainTab === 'arus_kas' && (
-          <motion.div
-            key="arus_kas"
-            variants={fadeInVariants}
-            initial="hidden"
-            animate="show"
-            exit="exit"
-            className="space-y-5"
-          >
-            {/* ── Flow Summary Cards (Upgraded with glassmorphism, glow, sparklines) ── */}
-            <motion.div
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-            >
+          <div key="arus_kas" className="space-y-4">
+            {/* ── Flow Summary Cards ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               {/* Total Pemasukan */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="relative rounded-2xl overflow-hidden backdrop-blur-xl group transition-all duration-500 border border-white/[0.06] hover:border-[#03DAC6]/30"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.2), 0 0 0 transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(3,218,198,0.08)';
-                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(3,218,198,0.06), rgba(26,26,46,0.9))';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
-                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))';
-                  }}
-                >
-                  {/* Animated gradient border glow on hover */}
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(3,218,198,0.2), transparent 50%, rgba(3,218,198,0.1))',
-                      mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                      maskComposite: 'exclude',
-                      WebkitMaskComposite: 'xor',
-                      padding: '1px',
-                      borderRadius: '16px',
-                    }}
-                  />
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#03DAC6]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
-                  <div className="h-1 bg-gradient-to-r from-[#03DAC6]/60 via-[#03DAC6]/30 to-transparent" />
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-                          <ArrowUpRight className="h-4 w-4 text-[#03DAC6]" />
-                        </div>
-                        <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                          Total Pemasukan
-                        </span>
-                      </div>
-                      {/* Percentage change indicator */}
-                      {animIncome > 0 && (
-                        <motion.div
-                          className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#03DAC6]/10"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          <TrendingUp className="h-2.5 w-2.5 text-[#03DAC6]" />
-                          <span className="text-[9px] font-bold text-[#03DAC6]">Kas Masuk</span>
-                        </motion.div>
-                      )}
+              <Card
+                className="rounded-xl overflow-hidden transition-colors duration-200 cursor-default"
+                style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = `${THEME.secondary}40`;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = THEME.border;
+                }}
+              >
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}15` }}>
+                      <ArrowUpRight className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
                     </div>
-                    <p className="text-lg font-bold text-[#03DAC6] tabular-nums">
-                      {formatAmount(animIncome)}
-                    </p>
-                    {/* Mini sparkline */}
-                    <div className="mt-2">
-                      <MiniCashSparkline color="#03DAC6" value={animIncome} />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+                      Total Pemasukan
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: THEME.secondary }}>
+                    {formatAmount(animIncome)}
+                  </p>
+                  <div className="mt-2">
+                    <MiniCashSparkline color={THEME.secondary} value={animIncome} />
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Total Pengeluaran */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="relative rounded-2xl overflow-hidden backdrop-blur-xl group transition-all duration-500 border border-white/[0.06] hover:border-[#CF6679]/30"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.2), 0 0 0 transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), 0 0 40px rgba(207,102,121,0.08)';
-                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(207,102,121,0.06), rgba(26,26,46,0.9))';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
-                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))';
-                  }}
-                >
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(207,102,121,0.2), transparent 50%, rgba(207,102,121,0.1))',
-                      mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                      maskComposite: 'exclude',
-                      WebkitMaskComposite: 'xor',
-                      padding: '1px',
-                      borderRadius: '16px',
-                    }}
-                  />
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#CF6679]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
-                  <div className="h-1 bg-gradient-to-r from-[#CF6679]/60 via-[#CF6679]/30 to-transparent" />
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-[#CF6679]/10 flex items-center justify-center">
-                          <ArrowDownRight className="h-4 w-4 text-[#CF6679]" />
-                        </div>
-                        <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                          Total Pengeluaran
-                        </span>
-                      </div>
-                      {animExpense > 0 && (
-                        <motion.div
-                          className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#CF6679]/10"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          <TrendingDown className="h-2.5 w-2.5 text-[#CF6679]" />
-                          <span className="text-[9px] font-bold text-[#CF6679]">Kas Keluar</span>
-                        </motion.div>
-                      )}
+              <Card
+                className="rounded-xl overflow-hidden transition-colors duration-200 cursor-default"
+                style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = `${THEME.destructive}40`;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = THEME.border;
+                }}
+              >
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.destructive}15` }}>
+                      <ArrowDownRight className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
                     </div>
-                    <p className="text-lg font-bold text-[#CF6679] tabular-nums">
-                      {formatAmount(animExpense)}
-                    </p>
-                    <div className="mt-2">
-                      <MiniCashSparkline color="#CF6679" value={animExpense} />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+                      Total Pengeluaran
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: THEME.destructive }}>
+                    {formatAmount(animExpense)}
+                  </p>
+                  <div className="mt-2">
+                    <MiniCashSparkline color={THEME.destructive} value={animExpense} />
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Arus Bersih */}
-              <motion.div variants={cardPopVariants}>
-                <Card className={cn(
-                  'relative rounded-2xl overflow-hidden backdrop-blur-xl group transition-all duration-500 border border-white/[0.06]',
-                  animNet >= 0 ? 'hover:border-[#03DAC6]/30' : 'hover:border-[#CF6679]/30'
-                )}
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.2), 0 0 0 transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    const glowColor = animNet >= 0 ? 'rgba(3,218,198,0.08)' : 'rgba(207,102,121,0.08)';
-                    const gradColor = animNet >= 0 ? 'rgba(3,218,198,0.06)' : 'rgba(207,102,121,0.06)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 32px rgba(0,0,0,0.3), 0 0 40px ${glowColor}`;
-                    (e.currentTarget as HTMLElement).style.background = `linear-gradient(135deg, ${gradColor}, rgba(26,26,46,0.9))`;
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
-                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(26,26,46,0.9), rgba(26,26,46,0.6))';
-                  }}
-                >
-                  <div className={cn(
-                    'absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none',
-                  )}
-                    style={{
-                      background: animNet >= 0
-                        ? 'linear-gradient(135deg, rgba(3,218,198,0.2), transparent 50%, rgba(3,218,198,0.1))'
-                        : 'linear-gradient(135deg, rgba(207,102,121,0.2), transparent 50%, rgba(207,102,121,0.1))',
-                      mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                      maskComposite: 'exclude',
-                      WebkitMaskComposite: 'xor',
-                      padding: '1px',
-                      borderRadius: '16px',
-                    }}
-                  />
-                  <div
-                    className={cn(
-                      'absolute top-0 right-0 w-24 h-24 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500',
-                      animNet >= 0 ? 'bg-[#03DAC6]/5' : 'bg-[#CF6679]/5'
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      'h-1 bg-gradient-to-r',
-                      animNet >= 0
-                        ? 'from-[#03DAC6]/60 via-[#03DAC6]/30 to-transparent'
-                        : 'from-[#CF6679]/60 via-[#CF6679]/30 to-transparent'
-                    )}
-                  />
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={cn(
-                            'h-8 w-8 rounded-lg flex items-center justify-center',
-                            animNet >= 0 ? 'bg-[#03DAC6]/10' : 'bg-[#CF6679]/10'
-                          )}
-                        >
-                          <CircleDollarSign
-                            className={cn(
-                              'h-4 w-4',
-                              animNet >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]'
-                            )}
-                          />
-                        </div>
-                        <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                          Arus Bersih
-                        </span>
-                      </div>
-                      {animNet !== 0 && (
-                        <motion.div
-                          className={cn(
-                            'flex items-center gap-0.5 px-1.5 py-0.5 rounded-md',
-                            animNet >= 0 ? 'bg-[#03DAC6]/10' : 'bg-[#CF6679]/10'
-                          )}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          {animNet >= 0
-                            ? <TrendingUp className="h-2.5 w-2.5 text-[#03DAC6]" />
-                            : <TrendingDown className="h-2.5 w-2.5 text-[#CF6679]" />
-                          }
-                          <span className={cn('text-[9px] font-bold', animNet >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                            {animNet >= 0 ? 'Surplus' : 'Defisit'}
-                          </span>
-                        </motion.div>
-                      )}
-                    </div>
-                    <p
-                      className={cn(
-                        'text-lg font-bold tabular-nums',
-                        animNet >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]'
-                      )}
+              <Card
+                className="rounded-xl overflow-hidden transition-colors duration-200 cursor-default"
+                style={{
+                  background: THEME.surface,
+                  border: `1px solid ${animNet >= 0 ? `${THEME.secondary}30` : THEME.border}`,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = `${(animNet >= 0 ? THEME.secondary : THEME.destructive)}50`;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = THEME.border;
+                }}
+              >
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className="h-7 w-7 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${(animNet >= 0 ? THEME.secondary : THEME.destructive)}15` }}
                     >
-                      {animNet >= 0 ? '+' : '-'}
-                      {formatAmount(Math.abs(animNet))}
-                    </p>
-                    <div className="mt-2">
-                      <MiniCashSparkline color={animNet >= 0 ? '#03DAC6' : '#CF6679'} value={animNet} />
+                      <CircleDollarSign className="h-3.5 w-3.5" style={{ color: animNet >= 0 ? THEME.secondary : THEME.destructive }} />
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </motion.div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+                      Arus Bersih
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: animNet >= 0 ? THEME.secondary : THEME.destructive }}>
+                    {animNet >= 0 ? '+' : '-'}
+                    {formatAmount(Math.abs(animNet))}
+                  </p>
+                  <div className="mt-2">
+                    <MiniCashSparkline color={animNet >= 0 ? THEME.secondary : THEME.destructive} value={animNet} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* ── Cashflow Realization Info Card ── */}
             {allPiutang.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
+              <Card
+                className="rounded-xl overflow-hidden"
+                style={{ background: THEME.surface, border: `1px solid ${THEME.primary}20` }}
               >
-                <Card className="bg-gradient-to-br from-[#1A1A2E]/80 to-[#1A1A2E]/60 border border-[#BB86FC]/15 rounded-2xl overflow-hidden">
-                  <div className="h-0.5 bg-gradient-to-r from-[#BB86FC]/40 via-[#03DAC6]/20 to-[#FFD700]/20" />
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-7 w-7 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
-                        <TrendingUp className="h-3.5 w-3.5 text-[#BB86FC]" />
-                      </div>
-                      <span className="text-white/50 text-[10px] font-semibold uppercase tracking-wider">
-                        Realisasi Pendapatan
-                      </span>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
+                      <TrendingUp className="h-3 w-3" style={{ color: THEME.primary }} />
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <p className="text-white/30 text-[9px] uppercase tracking-wider mb-1">Pendapatan Tercatat</p>
-                        <p className="text-[#BB86FC] text-sm font-bold tabular-nums">{formatAmount(cashflowRealization.pendapatanTercatat)}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/30 text-[9px] uppercase tracking-wider mb-1">Sudah Diterima</p>
-                        <p className="text-[#03DAC6] text-sm font-bold tabular-nums">{formatAmount(cashflowRealization.sudahDiterima)}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/30 text-[9px] uppercase tracking-wider mb-1">Belum Diterima (Piutang)</p>
-                        <p className="text-[#FFD700] text-sm font-bold tabular-nums">{formatAmount(cashflowRealization.belumDiterima)}</p>
-                      </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+                      Realisasi Pendapatan
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>Pendapatan Tercatat</p>
+                      <p className="text-sm font-bold tabular-nums" style={{ color: THEME.primary }}>{formatAmount(cashflowRealization.pendapatanTercatat)}</p>
                     </div>
-                    {cashflowRealization.pendapatanTercatat > 0 && (
-                      <div className="mt-3 pt-3 border-t border-white/[0.05]">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                            <motion.div
-                              className="h-full rounded-full bg-gradient-to-r from-[#03DAC6] to-[#03DAC6]/60"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(100, (cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}%` }}
-                              transition={{ duration: 0.8, ease: 'easeOut' as const }}
-                            />
-                          </div>
-                          <span className="text-white/30 text-[10px] tabular-nums min-w-[36px] text-right">
-                            {cashflowRealization.pendapatanTercatat > 0
-                              ? Math.round((cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)
-                              : 0}%
-                          </span>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>Sudah Diterima</p>
+                      <p className="text-sm font-bold tabular-nums" style={{ color: THEME.secondary }}>{formatAmount(cashflowRealization.sudahDiterima)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>Belum Diterima</p>
+                      <p className="text-sm font-bold tabular-nums" style={{ color: THEME.warning }}>{formatAmount(cashflowRealization.belumDiterima)}</p>
+                    </div>
+                  </div>
+                  {cashflowRealization.pendapatanTercatat > 0 && (
+                    <div style={{ borderTop: `1px solid ${THEME.border}`, marginTop: '12px', paddingTop: '12px' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: THEME.border }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${Math.min(100, (cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}%`,
+                              backgroundColor: THEME.secondary,
+                            }}
+                          />
                         </div>
+                        <span className="text-[10px] tabular-nums min-w-[32px] text-right" style={{ color: THEME.muted }}>
+                          {Math.round((cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}%
+                        </span>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {/* ── Sub-tab toggle + Search + Add Button ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            >
-              <div className="flex items-center gap-3 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 flex-1">
                 {/* Sub-tabs */}
-                <div className="flex gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+                <div className="flex gap-1 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}>
                   {(Object.keys(CASH_SUB_TYPES) as CashSubType[]).map((key) => {
                     const cfg = CASH_SUB_TYPES[key];
                     const Icon = cfg.icon;
@@ -1257,11 +1048,15 @@ export default function BusinessCash() {
                         key={key}
                         onClick={() => setCashSubTab(key)}
                         className={cn(
-                          'relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
-                          isActive ? `${cfg.bg} ${cfg.textClass} shadow-sm` : 'text-white/40 hover:text-white/70'
+                          'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200',
                         )}
+                        style={
+                          isActive
+                            ? { backgroundColor: `${cfg.color}15`, color: cfg.color }
+                            : { color: THEME.muted }
+                        }
                       >
-                        <Icon className="h-3.5 w-3.5" />
+                        <Icon className="h-3 w-3" />
                         <span className="hidden sm:inline">{t(cfg.label)}</span>
                         <span className="sm:hidden">{t(cfg.label).replace('Kas ', '')}</span>
                       </button>
@@ -1270,514 +1065,351 @@ export default function BusinessCash() {
                 </div>
 
                 {/* Search */}
-                <div className="relative flex-1 max-w-xs hidden sm:block">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
+                <div className="relative flex-1 max-w-[200px] hidden sm:block">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: THEME.muted }} />
                   <Input
                     value={cashSearch}
                     onChange={(e) => setCashSearch(e.target.value)}
                     placeholder={t('common.search') + '...'}
-                    className="bg-white/[0.05] border-white/[0.08] text-white placeholder:text-white/25 pl-9 rounded-lg h-9 text-xs focus:border-white/20 transition-all"
+                    className="pl-8 rounded-lg h-8 text-xs"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, color: THEME.text }}
                   />
                 </div>
               </div>
 
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <Button
-                  onClick={openCashCreate}
-                  size="sm"
-                  className="text-white border-0 shadow-lg shadow-black/20 bg-[#03DAC6] hover:bg-[#03DAC6]/90 transition-all duration-200"
-                >
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  {t('biz.addCashEntry')}
-                </Button>
-              </motion.div>
-            </motion.div>
+              <Button
+                onClick={openCashCreate}
+                size="sm"
+                className="rounded-lg h-8"
+                style={{ backgroundColor: THEME.secondary, color: '#fff' }}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                {t('biz.addCashEntry')}
+              </Button>
+            </div>
 
             {/* ── Sub-total indicator ── */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.25 }}
-              className="flex items-center gap-2"
-            >
-              <div
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: subTypeConfig.color }}
-              />
-              <span className="text-white/50 text-xs">{t('common.total')}:</span>
-              <span className={cn('text-base font-bold', subTypeConfig.textClass)}>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: subTypeConfig.color }} />
+              <span className="text-xs" style={{ color: THEME.muted }}>{t('common.total')}:</span>
+              <span className="text-sm font-bold" style={{ color: subTypeConfig.color }}>
                 {formatAmount(currentCashSubTotal)}
               </span>
-              <span className="text-white/20 text-xs">({filteredCashEntries.length} transaksi)</span>
-            </motion.div>
+              <span className="text-[10px]" style={{ color: THEME.muted }}>({filteredCashEntries.length} transaksi)</span>
+            </div>
 
             {/* ── Cash Entries Table ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
+            <Card
+              className="rounded-xl overflow-hidden"
+              style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
             >
-              <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/90 border border-white/[0.06] rounded-2xl shadow-xl shadow-black/20 overflow-hidden">
-                <div
-                  className={cn('h-0.5 bg-gradient-to-r', subTypeConfig.gradient)}
-                />
-                <CardContent className="p-0">
-                  {cashLoading ? (
-                    <div className="space-y-3 p-5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
-                      ))}
-                    </div>
-                  ) : filteredCashEntries.length === 0 ? (
-                    <EmptyState
-                      icon={<Inbox className="h-9 w-9 text-white/15" />}
-                      accentColor={subTypeConfig.color}
-                      title="Belum ada transaksi"
-                      description={`Mulai tambahkan catatan ${t(subTypeConfig.label).toLowerCase()} pertama Anda`}
-                      onAction={openCashCreate}
-                      actionLabel={t('biz.addCashEntry')}
-                    />
-                  ) : (
-                    <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-white/[0.06] hover:bg-transparent">
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider w-[100px]">
-                              {t('biz.cashDate')}
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider">
-                              {t('biz.cashDescription')}
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider hidden sm:table-cell">
-                              {t('biz.cashCategory')}
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[130px]">
-                              {t('biz.cashAmount')}
-                            </TableHead>
-                            <TableHead className="w-20" />
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          <AnimatePresence mode="popLayout">
-                            {filteredCashEntries.map((entry, index) => {
-                              const isExpense = entry.type === 'kas_keluar';
-                              const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
-                              return (
-                                <motion.tr
-                                  key={entry.id}
-                                  custom={index}
-                                  variants={rowVariants}
-                                  initial="hidden"
-                                  animate="show"
-                                  exit="exit"
-                                  layout
-                                  className={cn(
-                                    'border-white/[0.04] transition-colors duration-150 group cursor-default',
-                                    index % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]',
-                                    'hover:bg-white/[0.04]'
-                                  )}
-                                >
-                                  <TableCell className="text-white/50 text-xs py-3 font-mono">
-                                    {formatDate(entry.date)}
-                                  </TableCell>
-                                  <TableCell className="text-white/90 text-xs py-3 font-medium max-w-[200px] truncate group-hover:text-white transition-colors">
-                                    <span className="flex items-center gap-2">
-                                      {isExpense ? (
-                                        <ArrowDownRight className="h-3.5 w-3.5 text-[#CF6679]/50 shrink-0" />
-                                      ) : (
-                                        <ArrowUpRight className="h-3.5 w-3.5 text-[#03DAC6]/50 shrink-0" />
-                                      )}
-                                      <span className="truncate">{entry.description}</span>
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="py-3 hidden sm:table-cell">
-                                    {entry.category ? (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[10px] font-medium border-0 rounded-full px-2.5 py-0.5"
-                                        style={{
-                                          backgroundColor: `${entryColor.color}15`,
-                                          color: entryColor.color,
-                                        }}
-                                      >
-                                        {entry.category}
-                                      </Badge>
+              <CardContent className="p-0">
+                {cashLoading ? (
+                  <div className="space-y-2 p-3 sm:p-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                    ))}
+                  </div>
+                ) : filteredCashEntries.length === 0 ? (
+                  <EmptyState
+                    icon={<Inbox className="h-8 w-8" style={{ color: THEME.muted }} />}
+                    accentColor={subTypeConfig.color}
+                    title="Belum ada transaksi"
+                    description={`Mulai tambahkan catatan ${t(subTypeConfig.label).toLowerCase()} pertama Anda`}
+                    onAction={openCashCreate}
+                    actionLabel={t('biz.addCashEntry')}
+                  />
+                ) : (
+                  <div className="max-h-[500px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow style={{ borderBottom: `1px solid ${THEME.border}` }} className="hover:bg-transparent">
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted, width: '90px' }}>
+                            {t('biz.cashDate')}
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+                            {t('biz.cashDescription')}
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: THEME.muted }}>
+                            {t('biz.cashCategory')}
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted, width: '120px' }}>
+                            {t('biz.cashAmount')}
+                          </TableHead>
+                          <TableHead className="w-16" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <AnimatePresence mode="popLayout">
+                          {filteredCashEntries.map((entry, index) => {
+                            const isExpense = entry.type === 'kas_keluar';
+                            const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
+                            return (
+                              <motion.tr
+                                key={entry.id}
+                                custom={index}
+                                variants={{
+                                  hidden: { opacity: 0, x: -8 },
+                                  show: (i: number) => ({
+                                    opacity: 1, x: 0,
+                                    transition: { delay: i * 0.02, duration: 0.2 },
+                                  }),
+                                  exit: { opacity: 0, x: 8, transition: { duration: 0.15 } },
+                                }}
+                                initial="hidden"
+                                animate="show"
+                                layout
+                                className="transition-colors duration-150 group cursor-default"
+                                style={{ borderBottom: `1px solid ${THEME.border}` }}
+                              >
+                                <TableCell className="text-xs py-2 font-mono" style={{ color: THEME.textSecondary }}>
+                                  {formatDate(entry.date)}
+                                </TableCell>
+                                <TableCell className="text-xs py-2 font-medium max-w-[180px] truncate" style={{ color: THEME.text }}>
+                                  <span className="flex items-center gap-1.5">
+                                    {isExpense ? (
+                                      <ArrowDownRight className="h-3 w-3 shrink-0" style={{ color: THEME.destructive }} />
                                     ) : (
-                                      <span className="text-white/20 text-xs">—</span>
+                                      <ArrowUpRight className="h-3 w-3 shrink-0" style={{ color: THEME.secondary }} />
                                     )}
-                                  </TableCell>
-                                  <TableCell
-                                    className={cn(
-                                      'text-xs text-right font-semibold py-3 tabular-nums',
-                                      isExpense ? 'text-[#CF6679]' : 'text-[#03DAC6]'
-                                    )}
-                                  >
-                                    {isExpense ? '-' : '+'}
-                                    {formatAmount(entry.amount)}
-                                  </TableCell>
-                                  <TableCell className="py-3 text-right">
-                                    <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-7 w-7 p-0 text-white/30 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 rounded-lg"
-                                          onClick={() => openCashEdit(entry)}
-                                        >
-                                          <Pencil className="h-3 w-3" />
-                                        </Button>
-                                      </motion.div>
-                                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-7 w-7 p-0 text-white/30 hover:text-[#CF6679] hover:bg-[#CF6679]/10 rounded-lg"
-                                          onClick={() => setCashDeleteId(entry.id)}
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                      </motion.div>
-                                    </div>
-                                  </TableCell>
-                                </motion.tr>
-                              );
-                            })}
-                          </AnimatePresence>
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════ */}
-        {/* ── TAB 2: INVESTOR ──────────────────────────────────────── */}
-        {/* ══════════════════════════════════════════════════════════════ */}
-        {mainTab === 'investor' && (
-          <motion.div
-            key="investor"
-            variants={fadeInVariants}
-            initial="hidden"
-            animate="show"
-            exit="exit"
-            className="space-y-5"
-          >
-            {/* ── Investor Summary Cards ── */}
-            <motion.div
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-            >
-              {/* Total Modal Investor */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#BB86FC]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
-                  <div className="h-1 bg-gradient-to-r from-[#BB86FC]/60 via-[#BB86FC]/30 to-transparent" />
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-8 w-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
-                        <HandCoins className="h-4 w-4 text-[#BB86FC]" />
-                      </div>
-                      <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                        Total Modal Investor
-                      </span>
-                    </div>
-                    <p className="text-lg font-bold text-[#BB86FC] tabular-nums">
-                      {formatAmount(animTotalInvestment)}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Jumlah Investor */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#03DAC6]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
-                  <div className="h-1 bg-gradient-to-r from-[#03DAC6]/60 via-[#03DAC6]/30 to-transparent" />
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-8 w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-                        <Users className="h-4 w-4 text-[#03DAC6]" />
-                      </div>
-                      <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                        Jumlah Investor
-                      </span>
-                    </div>
-                    <p className="text-lg font-bold text-[#03DAC6]">
-                      {investorSummary.activeCount}
-                      <span className="text-white/30 text-xs font-normal ml-2">aktif</span>
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Rata-rata Bagi Hasil */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD700]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
-                  <div className="h-1 bg-gradient-to-r from-[#FFD700]/60 via-[#FFD700]/30 to-transparent" />
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-8 w-8 rounded-lg bg-[#FFD700]/10 flex items-center justify-center">
-                        <Percent className="h-4 w-4 text-[#FFD700]" />
-                      </div>
-                      <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">
-                        Rata-rata Bagi Hasil
-                      </span>
-                    </div>
-                    <p className="text-lg font-bold text-[#FFD700]">
-                      {animAvgShare.toFixed(1)}%
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </motion.div>
-
-            {/* ── Header with Add Button ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center justify-between"
-            >
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="h-4 w-4 text-[#BB86FC]" />
-                Daftar Investor
-              </h2>
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <Button
-                  onClick={openInvestorCreate}
-                  size="sm"
-                  className="text-white border-0 shadow-lg shadow-black/20 bg-[#BB86FC] hover:bg-[#BB86FC]/90 transition-all duration-200"
-                >
-                  <UserPlus className="h-4 w-4 mr-1.5" />
-                  Tambah Investor
-                </Button>
-              </motion.div>
-            </motion.div>
-
-            {/* ── Investor Cards ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              {investorLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-28 rounded-2xl bg-white/[0.06]" />
-                  ))}
-                </div>
-              ) : investors.length === 0 ? (
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/90 border border-white/[0.06] rounded-2xl shadow-xl overflow-hidden">
-                  <CardContent className="p-0">
-                    <EmptyState
-                      icon={<Users className="h-9 w-9 text-white/15" />}
-                      accentColor="#BB86FC"
-                      title="Belum ada investor"
-                      description="Tambahkan investor untuk mulai mengelola modal dan bagi hasil"
-                      onAction={openInvestorCreate}
-                      actionLabel="Tambah Investor"
-                    />
-                  </CardContent>
-                </Card>
-              ) : (
-                <motion.div
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="show"
-                >
-                  <AnimatePresence mode="popLayout">
-                    {investors.map((inv) => (
-                      <motion.div
-                        key={inv.id}
-                        variants={cardPopVariants}
-                        layout
-                        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                      >
-                        <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group hover:border-[#BB86FC]/20 transition-all duration-300 hover:shadow-lg hover:shadow-[#BB86FC]/5">
-                          <div className="h-0.5 bg-gradient-to-r from-[#BB86FC]/40 via-[#BB86FC]/20 to-transparent" />
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="h-9 w-9 rounded-xl bg-[#BB86FC]/10 flex items-center justify-center text-sm font-bold text-[#BB86FC]">
-                                  {inv.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                  <p className="text-white text-sm font-semibold truncate max-w-[140px]">
-                                    {inv.name}
-                                  </p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="truncate">{entry.description}</span>
+                                  </span>
+                                </TableCell>
+                                <TableCell className="py-2 hidden sm:table-cell">
+                                  {entry.category ? (
                                     <Badge
                                       variant="outline"
-                                      className="text-[9px] font-medium border-0 rounded-full px-2 py-0"
-                                      style={{
-                                        backgroundColor:
-                                          inv.status === 'active'
-                                            ? '#03DAC620'
-                                            : '#CF667920',
-                                        color:
-                                          inv.status === 'active'
-                                            ? '#03DAC6'
-                                            : '#CF6679',
-                                      }}
+                                      className="text-[10px] font-medium border-0 rounded-full px-2 py-0"
+                                      style={{ backgroundColor: `${entryColor.color}15`, color: entryColor.color }}
                                     >
-                                      {inv.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                                      {entry.category}
                                     </Badge>
+                                  ) : (
+                                    <span className="text-xs" style={{ color: THEME.muted }}>—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell
+                                  className="text-xs text-right font-semibold py-2 tabular-nums"
+                                  style={{ color: isExpense ? THEME.destructive : THEME.secondary }}
+                                >
+                                  {isExpense ? '-' : '+'}
+                                  {formatAmount(entry.amount)}
+                                </TableCell>
+                                <TableCell className="py-2 text-right">
+                                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md" style={{ color: THEME.muted }} onClick={() => openCashEdit(entry)}>
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md" style={{ color: THEME.muted }} onClick={() => setCashDeleteId(entry.id)}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
                                   </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-white/40 text-[10px] uppercase tracking-wider">
-                                  Modal
-                                </span>
-                                <span className="text-[#BB86FC] text-sm font-bold tabular-nums">
-                                  {formatAmount(inv.totalInvestment)}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-white/40 text-[10px] uppercase tracking-wider">
-                                  Bagi Hasil
-                                </span>
-                                <span className="text-[#FFD700] text-sm font-bold">
-                                  {inv.profitSharePct}%
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Contact row */}
-                            {(inv.phone || inv.email) && (
-                              <div className="mt-3 pt-3 border-t border-white/[0.05] flex items-center gap-3 text-white/25">
-                                {inv.phone && (
-                                  <span className="flex items-center gap-1 text-[10px]">
-                                    <Phone className="h-2.5 w-2.5" />
-                                    {inv.phone}
-                                  </span>
-                                )}
-                                {inv.email && (
-                                  <span className="flex items-center gap-1 text-[10px] truncate">
-                                    <Mail className="h-2.5 w-2.5" />
-                                    {inv.email}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Join date */}
-                            <p className="text-white/15 text-[10px] mt-2">
-                              Bergabung {formatDate(inv.joinDate)}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
-              )}
-            </motion.div>
-          </motion.div>
+                                </TableCell>
+                              </motion.tr>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════ */}
-        {/* ── TAB 3: PIUTANG (Enhanced) ────────────────────────────── */}
-        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* ════════════════════════════════════════════════════════════ */}
+        {/* ── TAB 2: INVESTOR ─────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        {mainTab === 'investor' && (
+          <div key="investor" className="space-y-4">
+            {/* ── Investor Summary Cards ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+              <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.primary}20` }}>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
+                      <HandCoins className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>Total Modal Investor</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: THEME.primary }}>{formatAmount(animTotalInvestment)}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.secondary}20` }}>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}15` }}>
+                      <Users className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>Jumlah Investor</span>
+                  </div>
+                  <p className="text-sm font-bold" style={{ color: THEME.secondary }}>
+                    {investorSummary.activeCount}
+                    <span className="text-xs font-normal ml-1.5" style={{ color: THEME.muted }}>aktif</span>
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.warning}20` }}>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.warning}15` }}>
+                      <Percent className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>Rata-rata Bagi Hasil</span>
+                  </div>
+                  <p className="text-sm font-bold" style={{ color: THEME.warning }}>{animAvgShare.toFixed(1)}%</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ── Header with Add Button ── */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold flex items-center gap-2" style={{ color: THEME.text }}>
+                <Users className="h-4 w-4" style={{ color: THEME.primary }} />
+                Daftar Investor
+              </h2>
+              <Button
+                onClick={openInvestorCreate}
+                size="sm"
+                className="rounded-lg h-8"
+                style={{ backgroundColor: THEME.primary, color: '#fff' }}
+              >
+                <UserPlus className="h-3.5 w-3.5 mr-1" />
+                Tambah Investor
+              </Button>
+            </div>
+
+            {/* ── Investor Cards ── */}
+            {investorLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24 rounded-xl" style={{ background: THEME.surface }} />
+                ))}
+              </div>
+            ) : investors.length === 0 ? (
+              <Card className="rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+                <CardContent className="p-0">
+                  <EmptyState
+                    icon={<Users className="h-8 w-8" style={{ color: THEME.muted }} />}
+                    accentColor={THEME.primary}
+                    title="Belum ada investor"
+                    description="Tambahkan investor untuk mulai mengelola modal dan bagi hasil"
+                    onAction={openInvestorCreate}
+                    actionLabel="Tambah Investor"
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                <AnimatePresence mode="popLayout">
+                  {investors.map((inv) => (
+                    <motion.div
+                      key={inv.id}
+                      layout
+                      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                    >
+                      <Card
+                        className="rounded-xl overflow-hidden transition-colors duration-200 hover:border-opacity-100"
+                        style={{ background: THEME.surface, border: `1px solid ${THEME.primary}20` }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.borderColor = `${THEME.primary}50`;
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.borderColor = `${THEME.primary}20`;
+                        }}
+                      >
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ backgroundColor: `${THEME.primary}15`, color: THEME.primary }}>
+                                {inv.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold truncate max-w-[140px]" style={{ color: THEME.text }}>{inv.name}</p>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
+                                  style={{
+                                    backgroundColor: inv.status === 'active' ? `${THEME.secondary}20` : `${THEME.destructive}20`,
+                                    color: inv.status === 'active' ? THEME.secondary : THEME.destructive,
+                                  }}
+                                >
+                                  {inv.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] uppercase tracking-wider" style={{ color: THEME.muted }}>Modal</span>
+                              <span className="text-sm font-bold tabular-nums" style={{ color: THEME.primary }}>{formatAmount(inv.totalInvestment)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] uppercase tracking-wider" style={{ color: THEME.muted }}>Bagi Hasil</span>
+                              <span className="text-sm font-bold" style={{ color: THEME.warning }}>{inv.profitSharePct}%</span>
+                            </div>
+                          </div>
+
+                          {(inv.phone || inv.email) && (
+                            <div style={{ borderTop: `1px solid ${THEME.border}`, marginTop: '8px', paddingTop: '8px' }} className="flex items-center gap-3">
+                              {inv.phone && (
+                                <span className="flex items-center gap-1 text-[10px]" style={{ color: THEME.muted }}>
+                                  <Phone className="h-2.5 w-2.5" />
+                                  {inv.phone}
+                                </span>
+                              )}
+                              {inv.email && (
+                                <span className="flex items-center gap-1 text-[10px] truncate" style={{ color: THEME.muted }}>
+                                  <Mail className="h-2.5 w-2.5" />
+                                  {inv.email}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <p className="text-[10px] mt-1" style={{ color: THEME.muted }}>
+                            Bergabung {formatDate(inv.joinDate)}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ── TAB 3: PIUTANG ──────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'piutang' && (
-          <motion.div
-            key="piutang"
-            variants={fadeInVariants}
-            initial="hidden"
-            animate="show"
-            exit="exit"
-            className="space-y-5"
-          >
-            {/* ── Piutang Summary Cards (Enhanced) ── */}
-            <motion.div
-              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-            >
-              {/* Total Piutang */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-                  <div className="h-1 bg-gradient-to-r from-[#FFD700]/60 via-[#FFD700]/30 to-transparent" />
-                  <CardContent className="p-4">
-                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                      Total Piutang
-                    </span>
-                    <p className="text-sm md:text-base font-bold text-[#FFD700] tabular-nums">
-                      {formatAmount(piutangStats.total)}
-                    </p>
-                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{allPiutang.length} total</p>
+          <div key="piutang" className="space-y-4">
+            {/* ── Piutang Summary Cards ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              {[
+                { label: 'Total Piutang', value: piutangStats.total, color: THEME.warning },
+                { label: 'Sudah Realisasi', value: piutangStats.totalPaid, color: THEME.secondary },
+                { label: 'Belum Realisasi', value: piutangStats.totalRemaining, color: THEME.warning },
+                { label: 'Terlambat', value: piutangStats.overdueCount, color: THEME.destructive },
+              ].map((item, idx) => (
+                <Card key={idx} className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${item.color}20` }}>
+                  <CardContent className="p-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1" style={{ color: THEME.muted }}>{item.label}</span>
+                    <p className="text-sm font-bold tabular-nums" style={{ color: item.color }}>{item.value}</p>
+                    <p className="text-[9px] mt-0.5" style={{ color: THEME.muted }}>{idx === 3 ? `${piutangStats.macetCount} aktif` : idx === 2 ? `${piutangStats.berjalanCount + piutangStats.macetCount} aktif` : idx === 1 ? `${piutangStats.selesaiCount} lunas` : ''}</p>
                   </CardContent>
                 </Card>
-              </motion.div>
+              ))}
+            </div>
 
-              {/* Sudah Realisasi */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-                  <div className="h-1 bg-gradient-to-r from-[#03DAC6]/60 via-[#03DAC6]/30 to-transparent" />
-                  <CardContent className="p-4">
-                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                      Sudah Realisasi
-                    </span>
-                    <p className="text-sm md:text-base font-bold text-[#03DAC6] tabular-nums">
-                      {formatAmount(piutangStats.totalPaid)}
-                    </p>
-                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{piutangStats.selesaiCount} lunas</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Belum Realisasi */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-                  <div className="h-1 bg-gradient-to-r from-[#FFD700]/60 via-[#FFD700]/30 to-transparent" />
-                  <CardContent className="p-4">
-                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                      Belum Realisasi
-                    </span>
-                    <p className="text-sm md:text-base font-bold text-[#FFD700] tabular-nums">
-                      {formatAmount(piutangStats.totalRemaining)}
-                    </p>
-                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{piutangStats.berjalanCount + piutangStats.macetCount} aktif</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Terlambat */}
-              <motion.div variants={cardPopVariants}>
-                <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
-                  <div className="h-1 bg-gradient-to-r from-[#CF6679]/60 via-[#CF6679]/30 to-transparent" />
-                  <CardContent className="p-4">
-                    <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                      Terlambat
-                    </span>
-                    <p className="text-sm md:text-base font-bold text-[#CF6679]">
-                      {piutangStats.overdueCount}
-                    </p>
-                    <p className="text-white/20 text-[9px] md:text-[10px] mt-1">{formatAmount(piutangStats.macetRemaining)}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </motion.div>
-
-            {/* ── Sub-tabs + Search for Piutang ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            >
-              <div className="flex gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+            {/* ── Sub-tabs + Search ── */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+              <div className="flex gap-1 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}>
                 {(Object.keys(PIUTANG_STATUS_CONFIG) as PiutangSubTab[]).map((key) => {
                   const cfg = PIUTANG_STATUS_CONFIG[key];
                   const Icon = cfg.icon;
@@ -1791,31 +1423,18 @@ export default function BusinessCash() {
                     <button
                       key={key}
                       onClick={() => setPiutangSubTab(key)}
-                      className={cn(
-                        'relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
-                        isActive
-                          ? 'shadow-sm'
-                          : 'text-white/40 hover:text-white/70'
-                      )}
-                      style={
-                        isActive
-                          ? {
-                              backgroundColor: `${cfg.color}15`,
-                              color: cfg.color,
-                            }
-                          : undefined
-                      }
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200"
+                      style={isActive ? { backgroundColor: `${cfg.color}15`, color: cfg.color } : { color: THEME.muted }}
                     >
-                      <Icon className="h-3.5 w-3.5" />
+                      <Icon className="h-3 w-3" />
                       <span>{cfg.label}</span>
                       {count > 0 && (
                         <span
-                          className={cn(
-                            'ml-1 h-4 min-w-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center',
-                            isActive
-                              ? 'bg-white/15 text-current'
-                              : 'bg-white/[0.06] text-white/30'
-                          )}
+                          className="ml-0.5 h-4 min-w-[16px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)',
+                            color: isActive ? 'current' : THEME.muted,
+                          }}
                         >
                           {count}
                         </span>
@@ -1824,263 +1443,211 @@ export default function BusinessCash() {
                   );
                 })}
               </div>
-              <div className="relative flex-1 max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
+              <div className="relative flex-1 max-w-[200px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: THEME.muted }} />
                 <Input
                   value={piutangSearch}
                   onChange={(e) => setPiutangSearch(e.target.value)}
                   placeholder={t('common.search') + '...'}
-                  className="bg-white/[0.05] border-white/[0.08] text-white placeholder:text-white/25 pl-9 rounded-lg h-9 text-xs focus:border-white/20 transition-all"
+                  className="pl-8 rounded-lg h-8 text-xs"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, color: THEME.text }}
                 />
               </div>
-            </motion.div>
+            </div>
 
-            {/* ── Enhanced Piutang Table ── */}
-            <motion.div
-              key={piutangSubTab}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+            {/* ── Piutang Table ── */}
+            <Card
+              className="rounded-xl overflow-hidden"
+              style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
             >
-              <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/90 border border-white/[0.06] rounded-2xl shadow-xl shadow-black/20 overflow-hidden">
-                <div
-                  className={cn(
-                    'h-0.5 bg-gradient-to-r',
-                    PIUTANG_STATUS_CONFIG[piutangSubTab].color === '#03DAC6'
-                      ? 'from-[#03DAC6]/40 via-[#03DAC6]/20 to-transparent'
-                      : PIUTANG_STATUS_CONFIG[piutangSubTab].color === '#CF6679'
-                        ? 'from-[#CF6679]/40 via-[#CF6679]/20 to-transparent'
-                        : 'from-[#BB86FC]/40 via-[#BB86FC]/20 to-transparent'
-                  )}
-                />
-                <CardContent className="p-0">
-                  {piutangLoading ? (
-                    <div className="space-y-3 p-5">
-                      {Array.from({ length: 4 }).map((_, i) => (
-                        <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
-                      ))}
-                    </div>
-                  ) : piutangDebts.length === 0 ? (
-                    <EmptyState
-                      icon={<HandCoins className="h-9 w-9 text-white/15" />}
-                      accentColor={PIUTANG_STATUS_CONFIG[piutangSubTab].color}
-                      title={`Tidak ada piutang ${PIUTANG_STATUS_CONFIG[piutangSubTab].label.toLowerCase()}`}
-                      description="Semua piutang dalam kategori ini sudah bersih"
-                    />
-                  ) : (
-                    <div className="max-h-[480px] overflow-y-auto custom-scrollbar">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-white/[0.06] hover:bg-transparent">
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider">
-                              {t('biz.debtCounterpart')}
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider hidden sm:table-cell">
-                              Deskripsi
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[100px]">
-                              Total
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[100px]">
-                              Dibayar
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider text-right w-[100px]">
-                              Sisa
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider hidden md:table-cell w-[100px]">
-                              {t('biz.debtDueDate')}
-                            </TableHead>
-                            <TableHead className="text-white/40 text-[11px] font-semibold uppercase tracking-wider w-[80px]">
-                              Status
-                            </TableHead>
-                            <TableHead className="w-[120px] text-center">
-                              Aksi
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          <AnimatePresence mode="popLayout">
-                            {piutangDebts.map((debt, index) => {
-                              const statusCfg = getStatusConfig(debt.status);
-                              const paidAmount = getDebtPaidAmount(debt.id);
-                              const overdueDays = debt.dueDate && debt.status !== 'paid'
-                                ? differenceInDays(new Date(), parseISO(debt.dueDate))
-                                : null;
-                              const isOverdue = overdueDays !== null && overdueDays > 0;
-                              return (
-                                <motion.tr
-                                  key={debt.id}
-                                  custom={index}
-                                  variants={rowVariants}
-                                  initial="hidden"
-                                  animate="show"
-                                  exit="exit"
-                                  layout
-                                  className={cn(
-                                    'border-white/[0.04] transition-colors duration-150 group cursor-default',
-                                    index % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]',
-                                    'hover:bg-white/[0.04]'
-                                  )}
-                                >
-                                  <TableCell className="text-white/90 text-xs py-3 font-medium">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60 shrink-0">
-                                        {debt.counterpart.charAt(0).toUpperCase()}
-                                      </div>
-                                      <span className="truncate max-w-[120px]">{debt.counterpart}</span>
+              <CardContent className="p-0">
+                {piutangLoading ? (
+                  <div className="space-y-2 p-3 sm:p-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                    ))}
+                  </div>
+                ) : piutangDebts.length === 0 ? (
+                  <EmptyState
+                    icon={<HandCoins className="h-8 w-8" style={{ color: THEME.muted }} />}
+                    accentColor={PIUTANG_STATUS_CONFIG[piutangSubTab].color}
+                    title={`Tidak ada piutang ${PIUTANG_STATUS_CONFIG[piutangSubTab].label.toLowerCase()}`}
+                    description="Semua piutang dalam kategori ini sudah bersih"
+                  />
+                ) : (
+                  <div className="max-h-[480px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow style={{ borderBottom: `1px solid ${THEME.border}` }} className="hover:bg-transparent">
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+                            {t('biz.debtCounterpart')}
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell">
+                            Deskripsi
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>
+                            Total
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>
+                            Dibayar
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>
+                            Sisa
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden md:table-cell" style={{ color: THEME.muted, width: '90px' }}>
+                            {t('biz.debtDueDate')}
+                          </TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted, width: '70px' }}>
+                            Status
+                          </TableHead>
+                          <TableHead className="w-[100px] text-center" style={{ color: THEME.muted }}>
+                            Aksi
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <AnimatePresence mode="popLayout">
+                          {piutangDebts.map((debt, index) => {
+                            const statusCfg = getStatusConfig(debt.status);
+                            const paidAmount = getDebtPaidAmount(debt.id);
+                            const overdueDays = debt.dueDate && debt.status !== 'paid'
+                              ? differenceInDays(new Date(), parseISO(debt.dueDate))
+                              : null;
+                            const isOverdue = overdueDays !== null && overdueDays > 0;
+                            return (
+                              <motion.tr
+                                key={debt.id}
+                                custom={index}
+                                variants={{
+                                  hidden: { opacity: 0, x: -8 },
+                                  show: (i: number) => ({
+                                    opacity: 1, x: 0,
+                                    transition: { delay: i * 0.02, duration: 0.2 },
+                                  }),
+                                  exit: { opacity: 0, x: 8, transition: { duration: 0.15 } },
+                                }}
+                                initial="hidden"
+                                animate="show"
+                                layout
+                                className="transition-colors duration-150 group cursor-default"
+                                style={{ borderBottom: `1px solid ${THEME.border}` }}
+                              >
+                                <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center text-[10px] font-bold shrink-0" style={{ color: THEME.textSecondary }}>
+                                      {debt.counterpart.charAt(0).toUpperCase()}
                                     </div>
-                                  </TableCell>
-                                  <TableCell className="text-white/50 text-xs py-3 hidden sm:table-cell max-w-[160px] truncate">
-                                    {debt.description || '—'}
-                                  </TableCell>
-                                  <TableCell className="text-white/70 text-xs text-right py-3 font-semibold tabular-nums">
-                                    {formatAmount(debt.amount)}
-                                  </TableCell>
-                                  <TableCell className="text-[#03DAC6]/80 text-xs text-right py-3 font-semibold tabular-nums">
-                                    {formatAmount(paidAmount)}
-                                  </TableCell>
-                                  <TableCell className={cn('text-xs text-right py-3 font-bold tabular-nums', statusCfg.textClass)}>
-                                    {formatAmount(debt.remaining)}
-                                  </TableCell>
-                                  <TableCell className="text-xs py-3 hidden md:table-cell">
-                                    {debt.dueDate ? (
-                                      <div className="flex flex-col gap-1">
-                                        <span className={cn(
-                                          'font-mono',
-                                          isOverdue ? 'text-[#CF6679]' : 'text-white/50'
-                                        )}>
-                                          {formatDate(debt.dueDate)}
+                                    <span className="truncate max-w-[120px]">{debt.counterpart}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-xs py-2 hidden sm:table-cell max-w-[140px] truncate" style={{ color: THEME.textSecondary }}>
+                                  {debt.description || '—'}
+                                </TableCell>
+                                <TableCell className="text-xs text-right py-2 font-semibold tabular-nums" style={{ color: THEME.textSecondary }}>
+                                  {formatAmount(debt.amount)}
+                                </TableCell>
+                                <TableCell className="text-xs text-right py-2 font-bold tabular-nums" style={{ color: statusCfg.color }}>
+                                  {formatAmount(paidAmount)}
+                                </TableCell>
+                                <TableCell className="text-xs text-right py-2 font-bold tabular-nums" style={{ color: statusCfg.color }}>
+                                  {formatAmount(debt.remaining)}
+                                </TableCell>
+                                <TableCell className="text-xs py-2 hidden md:table-cell">
+                                  {debt.dueDate ? (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="font-mono" style={{ color: isOverdue ? THEME.destructive : THEME.textSecondary }}>
+                                        {formatDate(debt.dueDate)}
+                                      </span>
+                                      {isOverdue && (
+                                        <span className="text-[9px] px-1.5 py-0 rounded-full inline-flex items-center gap-1 w-fit" style={{ backgroundColor: `${THEME.destructive}15`, color: THEME.destructive }}>
+                                          <AlertTriangle className="h-2.5 w-2.5" />
+                                          TERLAMBAT {overdueDays} HARI
                                         </span>
-                                        {isOverdue && (
-                                          <span className="text-[9px] bg-[#CF6679]/15 text-[#CF6679] px-1.5 py-0.5 rounded-full font-bold inline-flex items-center gap-1 w-fit">
-                                            <AlertTriangle className="h-2.5 w-2.5" />
-                                            TERLAMBAT {overdueDays} HARI
-                                          </span>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <span className="text-white/20">—</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="py-3">
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[10px] font-medium border-0 rounded-full px-2.5 py-0.5"
-                                      style={{
-                                        backgroundColor: `${statusCfg.color}15`,
-                                        color: statusCfg.color,
-                                      }}
-                                    >
-                                      {statusCfg.label}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="py-3">
-                                    <div className="flex items-center justify-center gap-1">
-                                      {debt.status !== 'paid' && (
-                                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 px-2 text-[10px] font-medium text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-lg gap-1"
-                                            onClick={() => openPaymentDialog(debt)}
-                                            title="Bayar"
-                                          >
-                                            <CircleDollarSign className="h-3 w-3" />
-                                            <span className="hidden lg:inline">Bayar</span>
-                                          </Button>
-                                        </motion.div>
                                       )}
-                                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-7 px-2 text-white/40 hover:text-[#25D366] hover:bg-[#25D366]/10 rounded-lg"
-                                          onClick={() => sendReminder(debt)}
-                                          title="Ingatkan via WhatsApp"
-                                        >
-                                          <MessageCircle className="h-3 w-3" />
-                                        </Button>
-                                      </motion.div>
-                                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-7 px-2 text-white/40 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 rounded-lg"
-                                          onClick={() => openDetailDialog(debt)}
-                                          title="Detail"
-                                        >
-                                          <ChevronRight className="h-3 w-3" />
-                                        </Button>
-                                      </motion.div>
                                     </div>
-                                  </TableCell>
-                                </motion.tr>
-                              );
-                            })}
-                          </AnimatePresence>
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
+                                  ) : (
+                                    <span style={{ color: THEME.muted }}>—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-2">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-medium border-0 rounded-full px-2 py-0"
+                                    style={{
+                                      backgroundColor: `${statusCfg.color}15`,
+                                      color: statusCfg.color,
+                                    }}
+                                  >
+                                    {statusCfg.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="py-2">
+                                  <div className="flex items-center justify-center gap-1">
+                                    {debt.status !== 'paid' && (
+                                      <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium rounded-md" style={{ color: THEME.secondary }} onClick={() => openPaymentDialog(debt)} title="Bayar">
+                                        <CircleDollarSign className="h-3 w-3" />
+                                        <span className="hidden lg:inline">Bayar</span>
+                                      </Button>
+                                    )}
+                                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium rounded-md" style={{ color: '#25D366' }} onClick={() => sendReminder(debt)} title="Ingatkan via WhatsApp">
+                                      <MessageCircle className="h-3 w-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium rounded-md" style={{ color: THEME.muted }} onClick={() => openDetailDialog(debt)} title="Detail">
+                                      <ChevronRight className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </motion.tr>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* ── CASH ENTRY DIALOG ──────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════ */}
+      {/* ── CASH ENTRY DIALOG ──────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════ */}
       <Dialog open={cashDialogOpen} onOpenChange={setCashDialogOpen}>
-        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[480px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03DAC6] via-[#BB86FC] to-[#FFD700]" />
-
-          <DialogHeader className="pt-2">
-            <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
+        <DialogContent className="rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
               <div
-                className="h-8 w-8 rounded-lg flex items-center justify-center"
+                className="h-7 w-7 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: `${subTypeConfig.color}15` }}
               >
-                {editingCashEntry ? (
-                  <Pencil className="h-4 w-4" style={{ color: subTypeConfig.color }} />
-                ) : (
-                  <Plus className="h-4 w-4" style={{ color: subTypeConfig.color }} />
-                )}
+                {editingCashEntry ? <Pencil className="h-3.5 w-3.5" style={{ color: subTypeConfig.color }} /> : <Plus className="h-3.5 w-3.5" style={{ color: subTypeConfig.color }} />}
               </div>
               {editingCashEntry ? t('common.edit') : t('biz.addCashEntry')}
             </DialogTitle>
-            <DialogDescription className="text-white/50 pl-10">
+            <DialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
               {t(CASH_SUB_TYPES[cashForm.type]?.label || 'biz.kasBesar')}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCashSave} className="space-y-4 mt-2">
+          <form onSubmit={handleCashSave} className="space-y-3 mt-1">
             {/* Type selector */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                Tipe Kas
-              </Label>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>Tipe Kas</Label>
               <Select
                 value={cashForm.type}
-                onValueChange={(v) =>
-                  setCashForm({ ...cashForm, type: v as CashSubType })
-                }
+                onValueChange={(v) => setCashForm({ ...cashForm, type: v as CashSubType })}
               >
-                <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-white/20 transition-all">
+                <SelectTrigger className="text-sm h-9 rounded-lg" style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08] rounded-xl">
+                <SelectContent style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
                   {(Object.keys(CASH_SUB_TYPES) as CashSubType[]).map((key) => {
                     const cfg = CASH_SUB_TYPES[key];
                     const Icon = cfg.icon;
                     return (
-                      <SelectItem key={key} value={key} className="text-white rounded-lg focus:bg-white/[0.06]">
+                      <SelectItem key={key} value={key} className="rounded-lg">
                         <span className="flex items-center gap-2">
                           <Icon className="h-3.5 w-3.5" style={{ color: cfg.color }} />
                           {t(cfg.label)}
@@ -2090,114 +1657,84 @@ export default function BusinessCash() {
                   })}
                 </SelectContent>
               </Select>
-            </motion.div>
+            </div>
 
             {/* Description */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                {t('biz.cashDescription')} <span className="text-[#CF6679]">*</span>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                {t('biz.cashDescription')} <span style={{ color: THEME.destructive }}>*</span>
               </Label>
               <Input
                 value={cashForm.description}
                 onChange={(e) => setCashForm({ ...cashForm, description: e.target.value })}
                 placeholder={t('biz.cashDescription')}
-                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-white/20 transition-all"
+                className="text-sm rounded-lg"
+                style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
               />
-            </motion.div>
+            </div>
 
             {/* Amount with Preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                {t('biz.cashAmount')} <span className="text-[#CF6679]">*</span>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                {t('biz.cashAmount')} <span style={{ color: THEME.destructive }}>*</span>
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-sm font-medium pointer-events-none">
-                  Rp
-                </span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none" style={{ color: THEME.muted }}>Rp</span>
                 <Input
                   type="number"
                   value={cashForm.amount}
                   onChange={(e) => setCashForm({ ...cashForm, amount: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="bg-white/[0.04] border-white/[0.08] text-white text-lg font-semibold placeholder:text-white/20 pl-9 pr-4 rounded-xl focus:border-white/20 transition-all tabular-nums"
+                  className="text-sm font-semibold pl-8 pr-3 rounded-lg tabular-nums"
+                  style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
                 />
               </div>
               <AnimatePresence mode="wait">
                 {formattedCashNominal && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg"
                     style={{
                       backgroundColor: `${CASH_SUB_TYPES[cashForm.type].color}08`,
                       borderColor: `${CASH_SUB_TYPES[cashForm.type].color}20`,
+                      color: CASH_SUB_TYPES[cashForm.type].color,
                     }}
                   >
-                    <CircleDollarSign className="h-4 w-4" style={{ color: CASH_SUB_TYPES[cashForm.type].color }} />
-                    <span className="text-sm font-semibold tabular-nums" style={{ color: CASH_SUB_TYPES[cashForm.type].color }}>
-                      {formattedCashNominal}
-                    </span>
-                  </motion.div>
+                    <CircleDollarSign className="h-3.5 w-3.5" />
+                    <span className="text-sm font-semibold tabular-nums">{formattedCashNominal}</span>
+                  </div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
 
             {/* Date */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
                 {t('biz.cashDate')}
               </Label>
               <Input
                 type="date"
                 value={cashForm.date}
                 onChange={(e) => setCashForm({ ...cashForm, date: e.target.value })}
-                className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-white/20 transition-all"
+                className="text-sm rounded-lg"
+                style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
               />
-            </motion.div>
+            </div>
 
             {/* Category */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
                 {t('biz.cashCategory')}
               </Label>
-              <Select
-                value={cashForm.category}
-                onValueChange={(v) => setCashForm({ ...cashForm, category: v })}
-              >
-                <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-white/20 transition-all">
+              <Select value={cashForm.category} onValueChange={(v) => setCashForm({ ...cashForm, category: v })}>
+                <SelectTrigger className="text-sm h-9 rounded-lg" style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}>
                   <SelectValue placeholder={t('biz.cashCategory')} />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08] rounded-xl">
+                <SelectContent style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
                   {cashCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.name} className="text-white rounded-lg focus:bg-white/[0.06]">
+                    <SelectItem key={cat.id} value={cat.name} className="rounded-lg">
                       <span className="flex items-center gap-2">
-                        <div
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: cat.color || '#03DAC6' }}
-                        />
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.color || THEME.secondary }} />
                         {cat.name}
                       </span>
                     </SelectItem>
@@ -2208,175 +1745,131 @@ export default function BusinessCash() {
                 value={cashForm.category}
                 onChange={(e) => setCashForm({ ...cashForm, category: e.target.value })}
                 placeholder="Atau ketik kategori manual..."
-                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-white/20 transition-all text-xs h-9"
+                className="text-xs h-8 rounded-lg"
+                style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
               />
-            </motion.div>
+            </div>
 
             {/* Notes */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
                 Catatan
               </Label>
               <Textarea
                 value={cashForm.notes}
                 onChange={(e) => setCashForm({ ...cashForm, notes: e.target.value })}
                 placeholder="Catatan tambahan (opsional)"
-                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-white/20 transition-all text-xs min-h-[60px] resize-none"
+                className="text-xs min-h-[52px] resize-none rounded-lg"
+                style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
               />
-            </motion.div>
+            </div>
 
-            <DialogFooter className="gap-2 pt-2">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCashDialogOpen(false)}
-                  className="border-white/[0.08] text-white/60 hover:bg-white/[0.05] hover:text-white transition-colors"
-                >
-                  {t('common.cancel')}
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  type="submit"
-                  disabled={cashSaving || !cashForm.description || !cashForm.amount}
-                  className="text-white border-0 shadow-md shadow-black/20 disabled:opacity-40 bg-[#03DAC6] hover:bg-[#03DAC6]/90 transition-all duration-200"
-                >
-                  {cashSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {t('common.save')}
-                </Button>
-              </motion.div>
+            <DialogFooter className="gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCashDialogOpen(false)}
+                className="rounded-lg"
+                style={{ borderColor: THEME.border, color: THEME.textSecondary }}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                disabled={cashSaving || !cashForm.description || !cashForm.amount}
+                className="rounded-lg disabled:opacity-40"
+                style={{ backgroundColor: THEME.secondary, color: '#fff' }}
+              >
+                {cashSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t('common.save')}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* ── INVESTOR DIALOG ────────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════ */}
+      {/* ── INVESTOR DIALOG ────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════ */}
       <Dialog open={investorDialogOpen} onOpenChange={setInvestorDialogOpen}>
-        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[460px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#BB86FC] via-[#03DAC6] to-[#FFD700]" />
-
-          <DialogHeader className="pt-2">
-            <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
-                <UserPlus className="h-4 w-4 text-[#BB86FC]" />
+        <DialogContent className="rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}10` }}>
+                <UserPlus className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
               </div>
               Tambah Investor
             </DialogTitle>
-            <DialogDescription className="text-white/50 pl-10">
+            <DialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
               Tambahkan investor baru untuk modal bisnis
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleInvestorSave} className="space-y-4 mt-2">
+          <form onSubmit={handleInvestorSave} className="space-y-3 mt-1">
             {/* Name */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                Nama Investor <span className="text-[#CF6679]">*</span>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                Nama Investor <span style={{ color: THEME.destructive }}>*</span>
               </Label>
               <Input
                 value={investorForm.name}
                 onChange={(e) => setInvestorForm({ ...investorForm, name: e.target.value })}
                 placeholder="Nama lengkap investor"
-                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#BB86FC]/40 focus:ring-1 focus:ring-[#BB86FC]/20 transition-all"
+                className="text-sm rounded-lg"
+                style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
               />
-            </motion.div>
+            </div>
 
             {/* Phone & Email */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="grid grid-cols-2 gap-3"
-            >
-              <div className="space-y-2">
-                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                  <Phone className="h-3 w-3 inline mr-1" />
-                  Telepon
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                  <Phone className="h-3 w-3 inline mr-1" />Telepon
                 </Label>
-                <Input
-                  value={investorForm.phone}
-                  onChange={(e) => setInvestorForm({ ...investorForm, phone: e.target.value })}
-                  placeholder="08xx"
-                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#BB86FC]/40 transition-all"
-                />
+                <Input value={investorForm.phone} onChange={(e) => setInvestorForm({ ...investorForm, phone: e.target.value })} placeholder="08xx" className="text-sm rounded-lg" style={{ background: THEME.surface, border: inputBorder, color: THEME.text }} />
               </div>
-              <div className="space-y-2">
-                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                  <Mail className="h-3 w-3 inline mr-1" />
-                  Email
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                  <Mail className="h-3 w-3 inline mr-1" />Email
                 </Label>
-                <Input
-                  type="email"
-                  value={investorForm.email}
-                  onChange={(e) => setInvestorForm({ ...investorForm, email: e.target.value })}
-                  placeholder="email@contoh.com"
-                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#BB86FC]/40 transition-all"
-                />
+                <Input type="email" value={investorForm.email} onChange={(e) => setInvestorForm({ ...investorForm, email: e.target.value })} placeholder="email@contoh.com" className="text-sm rounded-lg" style={{ background: THEME.surface, border: inputBorder, color: THEME.text }} />
               </div>
-            </motion.div>
+            </div>
 
             {/* Investment Amount */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                Total Modal (Rp) <span className="text-[#CF6679]">*</span>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                Total Modal (Rp) <span style={{ color: THEME.destructive }}>*</span>
               </Label>
               <div className="relative">
-                <HandCoins className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                <HandCoins className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: THEME.muted }} />
                 <Input
                   type="number"
                   value={investorForm.totalInvestment}
                   onChange={(e) => setInvestorForm({ ...investorForm, totalInvestment: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="bg-white/[0.04] border-white/[0.08] text-white text-lg font-semibold placeholder:text-white/20 pl-10 pr-4 rounded-xl focus:border-[#BB86FC]/40 transition-all tabular-nums"
+                  className="text-sm font-semibold pl-9 pr-3 rounded-lg tabular-nums"
+                  style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
                 />
               </div>
               <AnimatePresence mode="wait">
                 {formattedInvestorNominal && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#BB86FC]/5 border border-[#BB86FC]/10"
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: `${THEME.primary}08`, borderColor: `${THEME.primary}15`, color: THEME.primary }}
                   >
-                    <CircleDollarSign className="h-4 w-4 text-[#BB86FC]" />
-                    <span className="text-sm text-[#BB86FC] font-semibold tabular-nums">
-                      {formattedInvestorNominal}
-                    </span>
-                  </motion.div>
+                    <CircleDollarSign className="h-3.5 w-3.5" />
+                    <span className="text-sm font-semibold tabular-nums">{formattedInvestorNominal}</span>
+                  </div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
 
             {/* Profit Share % */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-2"
-            >
-              <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                <Percent className="h-3 w-3 inline mr-1" />
-                Bagi Hasil (%)
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                <Percent className="h-3 w-3 inline mr-1" />Bagi Hasil (%)
               </Label>
               <Input
                 type="number"
@@ -2386,92 +1879,83 @@ export default function BusinessCash() {
                 min="0"
                 max="100"
                 step="0.1"
-                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#BB86FC]/40 transition-all tabular-nums"
+                className="text-sm rounded-lg tabular-nums"
+                style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
               />
-            </motion.div>
+            </div>
 
-            <DialogFooter className="gap-2 pt-2">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setInvestorDialogOpen(false)}
-                  className="border-white/[0.08] text-white/60 hover:bg-white/[0.05] hover:text-white transition-colors"
-                >
-                  {t('common.cancel')}
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  type="submit"
-                  disabled={investorSaving || !investorForm.name}
-                  className="text-white border-0 shadow-md shadow-black/20 disabled:opacity-40 bg-[#BB86FC] hover:bg-[#BB86FC]/90 transition-all duration-200"
-                >
-                  {investorSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {t('common.save')}
-                </Button>
-              </motion.div>
+            <DialogFooter className="gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setInvestorDialogOpen(false)}
+                className="rounded-lg"
+                style={{ borderColor: THEME.border, color: THEME.textSecondary }}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                disabled={investorSaving || !investorForm.name}
+                className="rounded-lg disabled:opacity-40"
+                style={{ backgroundColor: THEME.primary, color: '#fff' }}
+              >
+                {investorSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t('common.save')}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════ */}
       {/* ── PAYMENT RECORDING DIALOG ───────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════════ */}
       <Dialog open={!!paymentDialogDebt} onOpenChange={(open) => !open && setPaymentDialogDebt(null)}>
-        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white max-w-[95vw] sm:max-w-[460px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03DAC6] via-[#03DAC6]/50 to-transparent" />
-
-          <DialogHeader className="pt-2">
-            <DialogTitle className="text-white text-sm sm:text-lg font-semibold flex items-center gap-2">
-              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-                <CircleDollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#03DAC6]" />
+        <DialogContent className="max-w-[95vw] sm:max-w-[440px] rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <DialogHeader>
+            <DialogTitle className="text-sm sm:text-lg font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
+              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}15` }}>
+                <CircleDollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: THEME.secondary }} />
               </div>
               Catat Pembayaran
             </DialogTitle>
-            <DialogDescription className="text-white/50 pl-10">
+            <DialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
               {paymentDialogDebt?.counterpart} — {paymentDialogDebt?.description || 'Piutang'}
             </DialogDescription>
           </DialogHeader>
 
           {paymentDialogDebt && (
-            <div className="space-y-4 mt-2">
+            <div className="space-y-3 mt-1">
               {/* Debt summary mini */}
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              <div
+                className="flex items-center justify-between p-2.5 rounded-lg"
+                style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}
               >
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60 shrink-0">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold shrink-0" style={{ color: THEME.textSecondary }}>
                     {paymentDialogDebt.counterpart.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-white/70 text-[9px] sm:text-[10px] uppercase tracking-wider">Sisa Tagihan</p>
-                    <p className="text-[#CF6679] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.remaining)}</p>
+                    <p className="text-[9px] sm:text-[10px] uppercase tracking-wider" style={{ color: THEME.muted }}>Sisa Tagihan</p>
+                    <p className="text-[11px] sm:text-sm font-bold tabular-nums" style={{ color: THEME.destructive }}>{formatAmount(paymentDialogDebt.remaining)}</p>
                   </div>
                 </div>
                 {paymentDialogDebt.installmentAmount && (
                   <div className="text-right">
-                    <p className="text-white/70 text-[9px] sm:text-[10px] uppercase tracking-wider">Angsuran</p>
-                    <p className="text-[#FFD700] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(paymentDialogDebt.installmentAmount)}</p>
+                    <p className="text-[9px] sm:text-[10px] uppercase tracking-wider" style={{ color: THEME.muted }}>Angsuran</p>
+                    <p className="text-[11px] sm:text-sm font-bold tabular-nums" style={{ color: THEME.warning }}>{formatAmount(paymentDialogDebt.installmentAmount)}</p>
                   </div>
                 )}
-              </motion.div>
+              </div>
 
               {/* Amount */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="space-y-2"
-              >
-                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                  Jumlah Bayar <span className="text-[#CF6679]">*</span>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                  Jumlah Bayar <span style={{ color: THEME.destructive }}>*</span>
                 </Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-sm font-medium pointer-events-none">Rp</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium pointer-events-none" style={{ color: THEME.muted }}>Rp</span>
                   <Input
                     type="number"
                     value={paymentForm.amount}
@@ -2479,181 +1963,147 @@ export default function BusinessCash() {
                     placeholder="0"
                     min="0"
                     max={paymentDialogDebt.remaining}
-                    className="bg-white/[0.04] border-white/[0.08] text-white text-lg font-semibold placeholder:text-white/20 pl-9 pr-4 rounded-xl focus:border-[#03DAC6]/40 transition-all tabular-nums"
+                    className="text-sm font-semibold pl-8 pr-3 rounded-lg tabular-nums"
+                    style={{ background: THEME.surface, border: `1px solid ${THEME.secondary}40`, color: THEME.text }}
                   />
                 </div>
                 <AnimatePresence mode="wait">
                   {formattedPaymentNominal && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.15 }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#03DAC6]/5 border border-[#03DAC6]/10"
+                    <div
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                      style={{ backgroundColor: `${THEME.secondary}08`, borderColor: `${THEME.secondary}15`, color: THEME.secondary }}
                     >
-                      <CircleDollarSign className="h-4 w-4 text-[#03DAC6]" />
-                      <span className="text-sm text-[#03DAC6] font-semibold tabular-nums">
-                        {formattedPaymentNominal}
-                      </span>
-                    </motion.div>
+                      <CircleDollarSign className="h-4 w-4" />
+                      <span className="text-sm font-semibold tabular-nums">{formattedPaymentNominal}</span>
+                    </div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
 
               {/* Payment Date */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="space-y-2"
-              >
-                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
-                  <CalendarDays className="h-3 w-3 inline mr-1" />
-                  Tanggal Bayar
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+                  <CalendarDays className="h-3 w-3 inline mr-1" />Tanggal Bayar
                 </Label>
                 <Input
                   type="date"
                   value={paymentForm.paymentDate}
                   onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
-                  className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 transition-all"
+                  className="text-sm rounded-lg"
+                  style={{ background: THEME.surface, border: `1px solid ${THEME.secondary}40`, color: THEME.text }}
                 />
-              </motion.div>
+              </div>
 
               {/* Payment Method */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="space-y-2"
-              >
-                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
                   Metode Pembayaran
                 </Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5">
                   {([
-                    { value: 'transfer' as const, label: 'Transfer', color: '#03DAC6' },
-                    { value: 'cash' as const, label: 'Cash', color: '#FFD700' },
-                    { value: 'qris' as const, label: 'QRIS', color: '#BB86FC' },
+                    { value: 'transfer' as const, label: 'Transfer', color: THEME.secondary },
+                    { value: 'cash' as const, label: 'Cash', color: THEME.warning },
+                    { value: 'qris' as const, label: 'QRIS', color: THEME.primary },
                   ]).map((method) => (
                     <button
                       key={method.value}
                       onClick={() => setPaymentForm({ ...paymentForm, paymentMethod: method.value })}
-                      className={cn(
-                        'py-2 rounded-xl text-xs font-medium border transition-all duration-200',
-                        paymentForm.paymentMethod === method.value
-                          ? 'border-current shadow-sm'
-                          : 'border-white/[0.06] text-white/40 hover:text-white/70 hover:border-white/15'
-                      )}
+                      className="py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-200"
                       style={
                         paymentForm.paymentMethod === method.value
                           ? { backgroundColor: `${method.color}15`, color: method.color, borderColor: `${method.color}40` }
-                          : undefined
+                          : { borderColor: THEME.border, color: THEME.muted }
                       }
                     >
                       {method.label}
                     </button>
                   ))}
                 </div>
-              </motion.div>
+              </div>
 
               {/* Notes */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="space-y-2"
-              >
-                <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
                   Catatan
                 </Label>
                 <Textarea
                   value={paymentForm.notes}
                   onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                   placeholder="Catatan pembayaran (opsional)"
-                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#03DAC6]/40 transition-all text-xs min-h-[60px] resize-none"
+                  className="text-xs min-h-[52px] resize-none rounded-lg"
+                  style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
                 />
-              </motion.div>
+              </div>
 
-              <DialogFooter className="gap-2 pt-2">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setPaymentDialogDebt(null)}
-                    className="border-white/[0.08] text-white/60 hover:bg-white/[0.05] hover:text-white transition-colors"
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    onClick={recordPayment}
-                    disabled={paymentSaving || !paymentForm.amount}
-                    className="text-white border-0 shadow-md shadow-black/20 disabled:opacity-40 bg-[#03DAC6] hover:bg-[#03DAC6]/90 transition-all duration-200"
-                  >
-                    {paymentSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    <CircleDollarSign className="h-4 w-4 mr-1.5" />
-                    Simpan Pembayaran
-                  </Button>
-                </motion.div>
+              <DialogFooter className="gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPaymentDialogDebt(null)}
+                  className="rounded-lg"
+                  style={{ borderColor: THEME.border, color: THEME.textSecondary }}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={recordPayment}
+                  disabled={paymentSaving || !paymentForm.amount}
+                  className="rounded-lg disabled:opacity-40"
+                  style={{ backgroundColor: THEME.secondary, color: '#fff' }}
+                >
+                  {paymentSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <CircleDollarSign className="h-4 w-4 mr-1.5" />
+                  Simpan Pembayaran
+                </Button>
               </DialogFooter>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════ */}
       {/* ── DETAIL / TIMELINE DIALOG ───────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={!!detailDialogDebt} onOpenChange={(open) => !open && setDetailDialogDebt(null)}>
-        <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white max-w-[95vw] sm:max-w-[500px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden max-h-[85vh] overflow-y-auto custom-scrollbar">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#BB86FC] via-[#03DAC6] to-[#FFD700]" />
-
+        <DialogContent className="max-w-[95vw] sm:max-w-[480px] rounded-xl max-h-[85vh] overflow-y-auto" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
           {detailDialogDebt && (
             <>
-              <DialogHeader className="pt-2">
-                <DialogTitle className="text-white text-sm sm:text-lg font-semibold flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
-                    <HandCoins className="h-4 w-4 text-[#BB86FC]" />
+              <DialogHeader>
+                <DialogTitle className="text-sm sm:text-lg font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}10` }}>
+                    <HandCoins className="h-4 w-4" style={{ color: THEME.primary }} />
                   </div>
                   Detail Piutang
                 </DialogTitle>
-                <DialogDescription className="text-white/50 pl-10">
+                <DialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
                   {detailDialogDebt.counterpart}
                 </DialogDescription>
               </DialogHeader>
 
               {detailLoading ? (
-                <div className="space-y-3 py-4">
+                <div className="space-y-2 py-3">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 rounded-xl bg-white/[0.06]" />
+                    <Skeleton key={i} className="h-14 rounded-xl" style={{ background: THEME.surface }} />
                   ))}
                 </div>
               ) : (
-                <div className="space-y-4 mt-2">
+                <div className="space-y-3 mt-1">
                   {/* ── Summary Card ── */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 sm:p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3"
-                  >
+                  <div className="p-3 rounded-xl space-y-3" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold text-white/60 shrink-0">
+                      <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-bold shrink-0" style={{ color: THEME.textSecondary }}>
                         {detailDialogDebt.counterpart.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs sm:text-sm font-semibold break-words">{detailDialogDebt.counterpart}</p>
+                        <p className="text-xs sm:text-sm font-semibold break-words" style={{ color: THEME.text }}>{detailDialogDebt.counterpart}</p>
                         {detailDialogDebt.description && (
-                          <p className="text-white/40 text-[10px] sm:text-[11px] break-words">{detailDialogDebt.description}</p>
+                          <p className="text-[10px] sm:text-[11px] break-words" style={{ color: THEME.textSecondary }}>{detailDialogDebt.description}</p>
                         )}
                       </div>
                       <Badge
                         variant="outline"
                         className="text-[10px] font-medium border-0 rounded-full px-2.5 py-0.5 shrink-0"
-                        style={{
-                          backgroundColor: `${getStatusConfig(detailDialogDebt.status).color}15`,
-                          color: getStatusConfig(detailDialogDebt.status).color,
-                        }}
+                        style={{ backgroundColor: `${getStatusConfig(detailDialogDebt.status).color}15`, color: getStatusConfig(detailDialogDebt.status).color }}
                       >
                         {getStatusConfig(detailDialogDebt.status).label}
                       </Badge>
@@ -2662,15 +2112,15 @@ export default function BusinessCash() {
                     <div className="grid grid-cols-3 gap-2 sm:gap-3">
                       <div>
                         <p className="text-white/30 text-[8px] sm:text-[9px] uppercase tracking-wider">Total</p>
-                        <p className="text-white text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount)}</p>
+                        <p className="text-[11px] sm:text-sm font-bold tabular-nums" style={{ color: THEME.text }}>{formatAmount(detailDialogDebt.amount)}</p>
                       </div>
                       <div>
                         <p className="text-white/30 text-[8px] sm:text-[9px] uppercase tracking-wider">Dibayar</p>
-                        <p className="text-[#03DAC6] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.amount - detailDialogDebt.remaining)}</p>
+                        <p className="text-[11px] sm:text-sm font-bold tabular-nums" style={{ color: THEME.secondary }}>{formatAmount(detailDialogDebt.amount - detailDialogDebt.remaining)}</p>
                       </div>
                       <div>
                         <p className="text-white/30 text-[8px] sm:text-[9px] uppercase tracking-wider">Sisa</p>
-                        <p className="text-[#FFD700] text-[11px] sm:text-sm font-bold tabular-nums">{formatAmount(detailDialogDebt.remaining)}</p>
+                        <p className="text-[11px] sm:text-sm font-bold tabular-nums" style={{ color: THEME.warning }}>{formatAmount(detailDialogDebt.remaining)}</p>
                       </div>
                     </div>
 
@@ -2684,45 +2134,42 @@ export default function BusinessCash() {
                             : 0}%
                         </span>
                       </div>
-                      <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full bg-gradient-to-r from-[#03DAC6] to-[#03DAC6]/60"
-                          initial={{ width: 0 }}
-                          animate={{
+                      <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
                             width: `${detailDialogDebt.amount > 0 ? Math.min(100, ((detailDialogDebt.amount - detailDialogDebt.remaining) / detailDialogDebt.amount) * 100) : 0}%`,
+                            backgroundColor: THEME.secondary,
                           }}
-                          transition={{ duration: 0.8, ease: 'easeOut' as const }}
                         />
                       </div>
                     </div>
+                  </div>
 
                     {/* Due date info */}
                     {detailDialogDebt.dueDate && (
                       <div className="flex items-center gap-2 pt-1">
-                        <CalendarDays className="h-3.5 w-3.5 text-white/30" />
-                        <span className="text-white/40 text-xs">
-                          Jatuh tempo: <span className={cn(
-                            'font-mono',
-                            detailDialogDebt.status !== 'paid' && differenceInDays(new Date(), parseISO(detailDialogDebt.dueDate)) > 0
-                              ? 'text-[#CF6679] font-semibold'
+                        <CalendarDays className="h-3.5 w-3.5" style={{ color: THEME.muted }} />
+                        <span className="text-xs">
+                          Jatuh tempo:{' '}
+                          <span
+                            className="font-mono"
+                            style={{ color: detailDialogDebt.status !== 'paid' && differenceInDays(new Date(), parseISO(detailDialogDebt.dueDate)) > 0
+                              ? 'font-semibold text-[#CF6679]'
                               : ''
-                          )}>{formatDate(detailDialogDebt.dueDate)}</span>
+                            }}
+                          >
+                            {formatDate(detailDialogDebt.dueDate)}
+                          </span>
                         </span>
                       </div>
                     )}
-                  </motion.div>
 
                   {/* ── Payment Score ── */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="p-3 sm:p-4 rounded-xl border"
-                    style={{
-                      backgroundColor: `${getPaymentScore(detailDialogDebt).color}08`,
-                      borderColor: `${getPaymentScore(detailDialogDebt).color}20`,
-                    }}
-                  >
+                  <div className="p-3 rounded-xl" style={{
+                    backgroundColor: `${getPaymentScore(detailDialogDebt).color}08`,
+                    borderColor: `${getPaymentScore(detailDialogDebt).color}20`,
+                  }}>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div
                         className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center text-sm sm:text-lg font-bold"
@@ -2735,125 +2182,103 @@ export default function BusinessCash() {
                       </div>
                       <div>
                         <p className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider">Skor Pembayaran</p>
-                        <p
-                          className="text-[11px] sm:text-sm font-bold"
-                          style={{ color: getPaymentScore(detailDialogDebt).color }}
-                        >
+                        <p className="text-[11px] sm:text-sm font-bold" style={{ color: getPaymentScore(detailDialogDebt).color }}>
                           {getPaymentScore(detailDialogDebt).label}
                         </p>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* ── Payment Timeline ── */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                  >
-                    <h3 className="text-white/50 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-2 sm:mb-3 flex items-center gap-2">
+                  <div>
+                    <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: THEME.muted }}>
                       <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       Riwayat Pembayaran
                     </h3>
                     {(debtPayments[detailDialogDebt.id] || []).length === 0 ? (
-                      <div className="text-center py-6 sm:py-8 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                        <Inbox className="h-7 w-7 text-white/10 mx-auto mb-2" />
-                        <p className="text-white/25 text-[10px] sm:text-xs">Belum ada pembayaran tercatat</p>
+                      <div className="text-center py-6 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}>
+                        <Inbox className="h-6 w-6 mx-auto mb-2" style={{ color: THEME.muted }} />
+                        <p className="text-[10px]" style={{ color: THEME.muted }}>Belum ada pembayaran tercatat</p>
                       </div>
                     ) : (
-                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
+                      <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
                         {[...(debtPayments[detailDialogDebt.id] || [])]
                           .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())
                           .map((payment, idx) => (
-                            <motion.div
+                            <div
                               key={payment.id}
-                              initial={{ opacity: 0, x: -8 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.05 }}
-                              className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:border-white/[0.1] transition-colors"
+                              className="flex items-start gap-2 p-2.5 rounded-xl hover:border-opacity-100 transition-colors"
+                              style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}
                             >
                               <div className="mt-0.5 flex flex-col items-center">
-                                <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-[#03DAC6]/10 flex items-center justify-center">
-                                  <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#03DAC6]" />
+                                <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}15` }}>
+                                  <CheckCircle2 className="h-2.5 w-2.5" style={{ color: THEME.secondary }} />
                                 </div>
                                 {idx < (debtPayments[detailDialogDebt.id] || []).length - 1 && (
-                                  <div className="w-px flex-1 bg-white/[0.06] mt-1 min-h-[16px]" />
+                                  <div className="w-px flex-1 mt-1 min-h-[14px]" style={{ backgroundColor: THEME.border }} />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-1.5 sm:gap-2">
-                                  <p className="text-[#03DAC6] text-[11px] sm:text-sm font-bold tabular-nums">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <p className="text-[11px] font-bold tabular-nums" style={{ color: THEME.secondary }}>
                                     +{formatAmount(payment.amount)}
                                   </p>
-                                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                  <div className="flex items-center gap-1 shrink-0">
                                     {payment.paymentMethod && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[9px] font-medium border-0 rounded-full px-2 py-0"
-                                        style={{
-                                          backgroundColor: payment.paymentMethod === 'transfer' ? '#03DAC615' : payment.paymentMethod === 'cash' ? '#FFD70015' : '#BB86FC15',
-                                          color: payment.paymentMethod === 'transfer' ? '#03DAC6' : payment.paymentMethod === 'cash' ? '#FFD700' : '#BB86FC',
-                                        }}
-                                      >
+                                      <Badge variant="outline" className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0" style={{
+                                        backgroundColor: payment.paymentMethod === 'transfer' ? `${THEME.secondary}15` : payment.paymentMethod === 'cash' ? `${THEME.warning}15` : `${THEME.primary}15`,
+                                        color: payment.paymentMethod === 'transfer' ? THEME.secondary : payment.paymentMethod === 'cash' ? THEME.warning : THEME.primary,
+                                      }}>
                                         {payment.paymentMethod === 'transfer' ? 'Transfer' : payment.paymentMethod === 'cash' ? 'Cash' : 'QRIS'}
                                       </Badge>
                                     )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-white/30 text-[10px] font-mono">
+                                  <span className="text-[10px] font-mono" style={{ color: THEME.muted }}>
                                     {formatDate(payment.paymentDate)}
                                   </span>
                                   {detailDialogDebt.dueDate && (() => {
                                     const diff = differenceInDays(new Date(payment.paymentDate), parseISO(detailDialogDebt.dueDate));
-                                    if (diff <= 0) return <span className="text-[9px] text-[#03DAC6]/60">Tepat waktu</span>;
-                                    if (diff <= 7) return <span className="text-[9px] text-[#FFD700]/60">+{diff} hari</span>;
-                                    return <span className="text-[9px] text-[#CF6679]/60">+{diff} hari</span>;
+                                    if (diff <= 0) return <span className="text-[9px]" style={{ color: `${THEME.secondary}80` }}>Tepat waktu</span>;
+                                    if (diff <= 7) return <span className="text-[9px]" style={{ color: `${THEME.warning}80` }}>+{diff} hari</span>;
+                                    return <span className="text-[9px]" style={{ color: `${THEME.destructive}80` }}>+{diff} hari</span>;
                                   })()}
                                 </div>
                                 {payment.notes && (
-                                  <p className="text-white/20 text-[10px] mt-1 truncate">{payment.notes}</p>
+                                  <p className="text-[10px] mt-1 truncate" style={{ color: THEME.muted }}>{payment.notes}</p>
                                 )}
                               </div>
-                            </motion.div>
+                            </div>
                           ))}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
 
                   {/* ── Action Buttons ── */}
                   {detailDialogDebt.status !== 'paid' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="flex gap-2 pt-1"
-                    >
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                        <Button
-                          onClick={() => {
-                            setDetailDialogDebt(null);
-                            openPaymentDialog(detailDialogDebt);
-                          }}
-                          className="w-full text-white border-0 bg-[#03DAC6] hover:bg-[#03DAC6]/90 transition-all duration-200"
-                          size="sm"
-                        >
-                          <CircleDollarSign className="h-4 w-4 mr-1.5" />
-                          Catat Pembayaran
-                        </Button>
-                      </motion.div>
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                        <Button
-                          onClick={() => sendReminder(detailDialogDebt)}
-                          variant="outline"
-                          className="w-full border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-200"
-                          size="sm"
-                        >
-                          <MessageCircle className="h-4 w-4 mr-1.5" />
-                          Ingatkan WA
-                        </Button>
-                      </motion.div>
-                    </motion.div>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        onClick={() => {
+                          setDetailDialogDebt(null);
+                          openPaymentDialog(detailDialogDebt);
+                        }}
+                        className="flex-1 text-white border-0 rounded-lg h-9"
+                        style={{ backgroundColor: THEME.secondary }}
+                      >
+                        <CircleDollarSign className="h-4 w-4 mr-1.5" />
+                        Catat Pembayaran
+                      </Button>
+                      <Button
+                        onClick={() => sendReminder(detailDialogDebt)}
+                        variant="outline"
+                        className="flex-1 text-white border-0 rounded-lg h-9"
+                        style={{ borderColor: `${'#25D366'}40`, color: '#25D366' }}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-1.5" />
+                        Ingatkan WA
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
@@ -2862,149 +2287,36 @@ export default function BusinessCash() {
         </DialogContent>
       </Dialog>
 
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════════ */}
       {/* ── DELETE CONFIRMATION ────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════ */}
       <AlertDialog open={!!cashDeleteId} onOpenChange={(open) => !open && setCashDeleteId(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white rounded-2xl overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#CF6679]/30 via-[#CF6679]/10 to-transparent" />
-          <AlertDialogHeader className="pt-2">
-            <AlertDialogTitle className="text-white flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-[#CF6679]/10 flex items-center justify-center">
-                <Trash2 className="h-4 w-4 text-[#CF6679]" />
+        <AlertDialogContent className="rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.destructive}10` }}>
+                <Trash2 className="h-4 w-4" style={{ color: THEME.destructive }} />
               </div>
               {t('common.delete')}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-white/50 pl-10">
+            <AlertDialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
               Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 pt-2">
-            <AlertDialogCancel className="border-white/[0.08] text-white/60 hover:bg-white/[0.05] hover:text-white transition-colors">
+            <AlertDialogCancel className="rounded-lg" style={{ borderColor: THEME.border, color: THEME.textSecondary }}>
               {t('common.cancel')}
             </AlertDialogCancel>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <AlertDialogAction
-                onClick={handleCashDelete}
-                className="bg-[#CF6679] hover:bg-[#CF6679]/90 text-white border-0 shadow-md shadow-[#CF6679]/20 transition-colors"
-              >
-                {t('common.delete')}
-              </AlertDialogAction>
-            </motion.div>
+            <AlertDialogAction
+              onClick={handleCashDelete}
+              className="rounded-lg text-white border-0"
+              style={{ backgroundColor: THEME.destructive, color: THEME.text }}
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* ── Custom Scrollbar Styles ── */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.08);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255,255,255,0.15);
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// ── Helper: Status Config for Debts ────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════
-function getStatusConfig(status: string): { label: string; color: string; textClass: string } {
-  switch (status) {
-    case 'active':
-      return { label: 'Aktif', color: '#03DAC6', textClass: 'text-[#03DAC6]' };
-    case 'partially_paid':
-      return { label: 'Sebagian', color: '#FFD700', textClass: 'text-[#FFD700]' };
-    case 'paid':
-      return { label: 'Lunas', color: '#BB86FC', textClass: 'text-[#BB86FC]' };
-    case 'overdue':
-      return { label: 'Jatuh Tempo', color: '#CF6679', textClass: 'text-[#CF6679]' };
-    default:
-      return { label: status, color: '#999', textClass: 'text-white/50' };
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// ── Reusable Empty State Component ─────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════
-function EmptyState({
-  icon,
-  accentColor,
-  title,
-  description,
-  onAction,
-  actionLabel,
-}: {
-  icon: React.ReactNode;
-  accentColor: string;
-  title: string;
-  description: string;
-  onAction?: () => void;
-  actionLabel?: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-6">
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring' as const, stiffness: 200, damping: 20, delay: 0.1 }}
-        className="relative mb-5"
-      >
-        <div
-          className="absolute -inset-4 rounded-full animate-pulse"
-          style={{ backgroundColor: `${accentColor}08` }}
-        />
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] flex items-center justify-center relative">
-          {icon}
-          <motion.div
-            className="absolute -top-1 -right-1 h-3 w-3 rounded-full"
-            style={{ backgroundColor: accentColor }}
-            animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' as const }}
-          />
-        </div>
-      </motion.div>
-      <motion.p
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="text-white/40 text-sm font-medium"
-      >
-        {title}
-      </motion.p>
-      <motion.p
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="text-white/20 text-xs mt-1.5 text-center max-w-[240px]"
-      >
-        {description}
-      </motion.p>
-      {onAction && actionLabel && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Button
-            onClick={onAction}
-            size="sm"
-            className="mt-5 bg-gradient-to-r from-white/10 to-white/5 border border-white/[0.1] text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {actionLabel}
-          </Button>
-        </motion.div>
-      )}
     </div>
   );
 }
