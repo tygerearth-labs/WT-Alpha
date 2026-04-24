@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 /**
  * Session data stored in the signed session cookie.
@@ -95,18 +96,42 @@ export async function verifySessionToken(token: string): Promise<string | null> 
 }
 
 /**
- * Create a session by setting a signed cookie.
+ * Generate a signed session token for a user.
+ * Returns the signed token string (userId.hmacSignature).
+ * Use `attachSessionCookie()` to set it on a NextResponse.
  */
-export async function createSession(userId: string): Promise<void> {
+export async function createSession(userId: string): Promise<string> {
+  return signSessionToken(userId);
+}
+
+/**
+ * Cookie options for the session cookie.
+ */
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 24 * 7, // 7 days
+  path: '/',
+};
+
+/**
+ * Attach a signed session token to a NextResponse object.
+ * This is the correct way to set cookies when using NextResponse.json().
+ */
+export function attachSessionCookie(response: NextResponse, token: string): void {
+  response.cookies.set(SESSION_COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
+}
+
+/**
+ * Create a session by setting a signed cookie via the headers API.
+ * WARNING: Only use this in Server Components, NOT in route handlers that return NextResponse.
+ * In route handlers, use createSession() + attachSessionCookie() instead.
+ */
+export async function createSessionViaHeaders(userId: string): Promise<void> {
   const cookieStore = await cookies();
   const signedToken = await signSessionToken(userId);
-  cookieStore.set(SESSION_COOKIE_NAME, signedToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
-  });
+  cookieStore.set(SESSION_COOKIE_NAME, signedToken, SESSION_COOKIE_OPTIONS);
 }
 
 /**

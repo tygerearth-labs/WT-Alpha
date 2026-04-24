@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { createSession } from '@/lib/session';
+import { createSession, attachSessionCookie } from '@/lib/session';
 import { notifySubscriptionExpiry, notifyUpgradeOffer } from '@/lib/notificationHelpers';
 
 // In-memory rate limiter: max 5 attempts per email per 15 minutes
@@ -136,10 +136,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Use signed session cookie
-    await createSession(user.id);
-
-    return NextResponse.json({
+    // Use signed session cookie — attach directly to response
+    const sessionToken = await createSession(user.id);
+    const response = NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
@@ -150,6 +149,8 @@ export async function POST(request: NextRequest) {
         status: user.status
       }
     });
+    attachSessionCookie(response, sessionToken);
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);
