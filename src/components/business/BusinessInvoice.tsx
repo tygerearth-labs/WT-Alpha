@@ -46,11 +46,31 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, Pencil, Trash2, FileText, Download,
-  PlusCircle, MinusCircle, Eye,
+  PlusCircle, MinusCircle, Eye, Receipt,
+  Clock, CheckCircle2, AlertTriangle, TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
+
+const cardHover = {
+  rest: { scale: 1 },
+  hover: { scale: 1.02, transition: { duration: 0.2 } },
+};
 
 interface InvoiceItem {
   description: string;
@@ -74,11 +94,11 @@ interface Invoice {
   customerId?: string | null;
 }
 
-const STATUS_STYLES: Record<string, { label: string; className: string }> = {
-  pending: { label: 'biz.invoicePending', className: 'bg-[#FFD700]/20 text-[#FFD700]' },
-  paid: { label: 'biz.invoicePaid', className: 'bg-[#03DAC6]/20 text-[#03DAC6]' },
-  cancelled: { label: 'biz.invoiceCancelled', className: 'bg-white/10 text-white/50' },
-  overdue: { label: 'biz.invoiceOverdue', className: 'bg-[#CF6679]/20 text-[#CF6679]' },
+const STATUS_STYLES: Record<string, { label: string; className: string; dotColor: string; icon: React.ComponentType<{ className?: string }> }> = {
+  pending: { label: 'biz.invoicePending', className: 'bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/20', dotColor: '#FFD700', icon: Clock },
+  paid: { label: 'biz.invoicePaid', className: 'bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20', dotColor: '#03DAC6', icon: CheckCircle2 },
+  cancelled: { label: 'biz.invoiceCancelled', className: 'bg-white/[0.05] text-white/40 border-white/10', dotColor: '#666', icon: AlertTriangle },
+  overdue: { label: 'biz.invoiceOverdue', className: 'bg-[#CF6679]/15 text-[#CF6679] border-[#CF6679]/20', dotColor: '#CF6679', icon: AlertTriangle },
 };
 
 export default function BusinessInvoice() {
@@ -274,6 +294,20 @@ export default function BusinessInvoice() {
       inv.customer?.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  /* ---- Summary Stats ---- */
+  const totalInvoices = invoices.length;
+  const paidInvoices = invoices.filter((i) => i.status === 'paid').length;
+  const pendingInvoices = invoices.filter((i) => i.status === 'pending').length;
+  const overdueInvoices = invoices.filter((i) => i.status === 'overdue').length;
+  const totalRevenue = invoices.reduce((s, i) => s + i.total, 0);
+
+  const statCards = [
+    { label: t('biz.invoices'), value: totalInvoices, icon: Receipt, color: '#BB86FC', gradient: 'from-[#BB86FC]/20 to-[#BB86FC]/5' },
+    { label: t('biz.invoicePaid'), value: paidInvoices, icon: CheckCircle2, color: '#03DAC6', gradient: 'from-[#03DAC6]/20 to-[#03DAC6]/5' },
+    { label: t('biz.invoicePending'), value: pendingInvoices, icon: Clock, color: '#FFD700', gradient: 'from-[#FFD700]/20 to-[#FFD700]/5' },
+    { label: t('biz.bizRevenue'), value: formatAmount(totalRevenue), icon: TrendingUp, color: '#CF6679', gradient: 'from-[#CF6679]/20 to-[#CF6679]/5' },
+  ];
+
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -283,146 +317,234 @@ export default function BusinessInvoice() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <FileText className="h-5 w-5 text-[#FFD700]" />
-          {t('biz.invoices')}
-        </h2>
-        <Button onClick={openCreateDialog} size="sm" className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]">
-          <Plus className="h-4 w-4 mr-1" />
-          {t('biz.addInvoice')}
-        </Button>
-      </div>
-
-      {/* Search */}
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('common.search') + '...'}
-        className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 max-w-sm"
-      />
-
-      {/* Table */}
-      <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-3 p-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
-              ))}
+    <div className="space-y-5">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
+        {/* Header */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-[#FFD700]/15 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-[#FFD700]" />
             </div>
-          ) : filteredInvoices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-white/40">
-              <FileText className="h-10 w-10 mb-2 opacity-40" />
-              <p className="text-sm">{t('biz.noBizData')}</p>
-            </div>
-          ) : (
-            <div className="max-h-[500px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/[0.06] hover:bg-transparent">
-                    <TableHead className="text-white/50 text-xs">{t('biz.invoiceNumber')}</TableHead>
-                    <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.invoiceCustomer')}</TableHead>
-                    <TableHead className="text-white/50 text-xs">{t('biz.invoiceStatus')}</TableHead>
-                    <TableHead className="text-white/50 text-xs hidden md:table-cell">{t('biz.invoiceDueDate')}</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">{t('biz.invoiceTotal')}</TableHead>
-                    <TableHead className="text-white/50 text-xs w-32" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredInvoices.map((inv) => {
-                    const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
-                    return (
-                      <TableRow key={inv.id} className="border-white/[0.04] hover:bg-white/[0.02]">
-                        <TableCell className="text-white text-xs py-3 font-medium">
-                          {inv.invoiceNumber}
-                        </TableCell>
-                        <TableCell className="py-3 hidden sm:table-cell">
-                          <span className="text-white/60 text-xs">{inv.customer?.name || '-'}</span>
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <Badge variant="outline" className={cn('text-xs font-normal border-0', statusStyle.className)}>
-                            {t(statusStyle.label)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-white/60 text-xs py-3 hidden md:table-cell">
-                          {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '-'}
-                        </TableCell>
-                        <TableCell className="text-xs text-right font-medium py-3 text-white">
-                          {formatAmount(inv.total)}
-                        </TableCell>
-                        <TableCell className="py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
-                            onClick={() => setViewInvoice(inv)}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-white/40 hover:text-[#BB86FC] hover:bg-white/10"
-                            onClick={() => handleDownloadPDF(inv.id)}
-                            disabled={downloading === inv.id}
-                          >
-                            {downloading === inv.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Download className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
-                            onClick={() => openEditDialog(inv)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
-                            onClick={() => setDeleteId(inv.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TableCell>
+            {t('biz.invoices')}
+          </h2>
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+            <Button onClick={openCreateDialog} size="sm" className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 shadow-lg shadow-[#BB86FC]/20">
+              <Plus className="h-4 w-4 mr-1" />
+              {t('biz.addInvoice')}
+            </Button>
+          </motion.div>
+        </motion.div>
+
+        {/* Summary Stat Cards */}
+        {!loading && (
+          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+            {statCards.map((card, idx) => (
+              <motion.div
+                key={idx}
+                variants={cardHover}
+                initial="rest"
+                whileHover="hover"
+              >
+                <Card className={cn('relative overflow-hidden rounded-2xl border-white/[0.06] bg-gradient-to-br', card.gradient)}>
+                  <div className="absolute top-0 right-0 h-20 w-20 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: card.color }} />
+                  <CardContent className="p-4 relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}20` }}>
+                        <card.icon className="h-4 w-4" style={{ color: card.color }} />
+                      </div>
+                      {idx === 3 && overdueInvoices > 0 && (
+                        <Badge className="bg-[#CF6679]/20 text-[#CF6679] border-[#CF6679]/20 text-[10px]">
+                          {overdueInvoices} {t('biz.invoiceOverdue')}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-white/50">{card.label}</p>
+                    <p className="text-xl font-bold text-white mt-0.5">{card.value}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Search */}
+        <motion.div variants={itemVariants} className="mt-4">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('common.search') + '...'}
+            className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 max-w-sm focus:border-[#BB86FC]/40 focus:ring-[#BB86FC]/10 rounded-xl"
+          />
+        </motion.div>
+
+        {/* Table */}
+        <motion.div variants={itemVariants} className="mt-4">
+          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-3 p-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
+                  ))}
+                </div>
+              ) : filteredInvoices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-white/40">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative"
+                  >
+                    <div className="h-20 w-20 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                      <FileText className="h-10 w-10 opacity-30" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-[#BB86FC]/20 flex items-center justify-center">
+                      <Plus className="h-3 w-3 text-[#BB86FC]" />
+                    </div>
+                  </motion.div>
+                  <p className="text-sm mt-4 text-white/40">{t('biz.noBizData')}</p>
+                  <p className="text-xs mt-1 text-white/25">Create your first invoice to get started</p>
+                </div>
+              ) : (
+                <div className="max-h-[500px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/[0.06] hover:bg-transparent">
+                        <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceNumber')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">{t('biz.invoiceCustomer')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceStatus')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium hidden md:table-cell">{t('biz.invoiceDueDate')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.invoiceTotal')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium w-36" />
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </TableHeader>
+                    <TableBody>
+                      <AnimatePresence>
+                        {filteredInvoices.map((inv, idx) => {
+                          const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
+                          const StatusIcon = statusStyle.icon;
+                          return (
+                            <motion.tr
+                              key={inv.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.03, duration: 0.3 }}
+                              className={cn(
+                                'border-white/[0.04] transition-colors duration-150 group',
+                                idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]',
+                                'hover:bg-white/[0.04]'
+                              )}
+                            >
+                              <TableCell className="text-white text-xs py-3.5 font-medium">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.dotColor }} />
+                                  {inv.invoiceNumber}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-3.5 hidden sm:table-cell">
+                                <span className="text-white/60 text-xs">{inv.customer?.name || '-'}</span>
+                              </TableCell>
+                              <TableCell className="py-3.5">
+                                <Badge variant="outline" className={cn('text-[10px] font-medium gap-1 px-2 py-0.5', statusStyle.className)}>
+                                  <StatusIcon className="h-3 w-3" />
+                                  {t(statusStyle.label)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-white/60 text-xs py-3.5 hidden md:table-cell">
+                                {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '-'}
+                              </TableCell>
+                              <TableCell className="text-xs text-right font-semibold py-3.5 text-white">
+                                {formatAmount(inv.total)}
+                              </TableCell>
+                              <TableCell className="py-3.5 text-right">
+                                <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10 rounded-lg"
+                                    onClick={() => setViewInvoice(inv)}
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-lg"
+                                    onClick={() => handleDownloadPDF(inv.id)}
+                                    disabled={downloading === inv.id}
+                                  >
+                                    {downloading === inv.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <Download className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 rounded-lg"
+                                    onClick={() => openEditDialog(inv)}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-[#CF6679] hover:bg-[#CF6679]/10 rounded-lg"
+                                    onClick={() => setDeleteId(inv.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </motion.tr>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       {/* View Invoice Dialog */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[600px]">
+        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[620px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white">{viewInvoice?.invoiceNumber}</DialogTitle>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#BB86FC]/20 flex items-center justify-center">
+                <Receipt className="h-3.5 w-3.5 text-[#BB86FC]" />
+              </div>
+              {viewInvoice?.invoiceNumber}
+            </DialogTitle>
             <DialogDescription className="text-white/60">
               {viewInvoice?.customer?.name || '-'}
             </DialogDescription>
           </DialogHeader>
           {viewInvoice && (
-            <div className="space-y-4">
-              <div className="flex gap-4 text-xs text-white/60">
-                <span>{t('biz.invoiceDate')}: {new Date(viewInvoice.date).toLocaleDateString()}</span>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="outline" className={cn('text-xs gap-1', STATUS_STYLES[viewInvoice.status]?.className)}>
+                  {(() => { const S = STATUS_STYLES[viewInvoice.status]; const Ic = S?.icon; return Ic ? <Ic className="h-3 w-3" /> : null; })()}
+                  {t(STATUS_STYLES[viewInvoice.status]?.label || 'biz.invoicePending')}
+                </Badge>
+                <span className="text-xs text-white/40">{t('biz.invoiceDate')}: {new Date(viewInvoice.date).toLocaleDateString()}</span>
                 {viewInvoice.dueDate && (
-                  <span>{t('biz.invoiceDueDate')}: {new Date(viewInvoice.dueDate).toLocaleDateString()}</span>
+                  <span className="text-xs text-white/40">{t('biz.invoiceDueDate')}: {new Date(viewInvoice.dueDate).toLocaleDateString()}</span>
                 )}
               </div>
-              <div className="max-h-48 overflow-y-auto">
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-white/[0.06]">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/[0.06] hover:bg-transparent">
+                    <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.02]">
                       <TableHead className="text-white/50 text-xs">{t('biz.invoiceItems')}</TableHead>
                       <TableHead className="text-white/50 text-xs text-center">Qty</TableHead>
                       <TableHead className="text-white/50 text-xs text-right">Harga</TableHead>
@@ -431,7 +553,7 @@ export default function BusinessInvoice() {
                   </TableHeader>
                   <TableBody>
                     {viewInvoice.items.map((item, i) => (
-                      <TableRow key={i} className="border-white/[0.04] hover:bg-transparent">
+                      <TableRow key={i} className={cn('border-white/[0.04] hover:bg-white/[0.02]', i % 2 === 1 && 'bg-white/[0.015]')}>
                         <TableCell className="text-white text-xs py-2">{item.description}</TableCell>
                         <TableCell className="text-white/70 text-xs text-center py-2">{item.qty}</TableCell>
                         <TableCell className="text-white/70 text-xs text-right py-2">{formatAmount(item.price)}</TableCell>
@@ -441,7 +563,7 @@ export default function BusinessInvoice() {
                   </TableBody>
                 </Table>
               </div>
-              <div className="space-y-1 text-xs text-right">
+              <div className="bg-white/[0.03] rounded-xl p-4 space-y-1.5 text-xs border border-white/[0.04]">
                 <div className="flex justify-between text-white/60">
                   <span>{t('biz.invoiceSubtotal')}</span>
                   <span>{formatAmount(viewInvoice.subtotal)}</span>
@@ -458,7 +580,7 @@ export default function BusinessInvoice() {
                     <span>-{formatAmount(viewInvoice.discount * viewInvoice.subtotal / 100)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-white font-bold text-sm pt-2 border-t border-white/[0.06]">
+                <div className="flex justify-between text-white font-bold text-base pt-3 border-t border-white/[0.06]">
                   <span>{t('biz.invoiceTotal')}</span>
                   <span>{formatAmount(viewInvoice.total)}</span>
                 </div>
@@ -466,12 +588,12 @@ export default function BusinessInvoice() {
               {viewInvoice.notes && (
                 <p className="text-xs text-white/40 italic">{viewInvoice.notes}</p>
               )}
-            </div>
+            </motion.div>
           )}
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-white/[0.1] text-white hover:bg-white/10"
+              className="border-[#03DAC6]/20 text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-xl"
               onClick={() => viewInvoice && handleDownloadPDF(viewInvoice.id)}
               disabled={!viewInvoice || downloading === viewInvoice.id}
             >
@@ -488,9 +610,12 @@ export default function BusinessInvoice() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[660px] max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white">
+            <DialogTitle className="text-white flex items-center gap-2">
+              <div className={cn('h-7 w-7 rounded-lg flex items-center justify-center', editingInvoice ? 'bg-[#FFD700]/20' : 'bg-[#03DAC6]/20')}>
+                {editingInvoice ? <Pencil className="h-3.5 w-3.5 text-[#FFD700]" /> : <Plus className="h-3.5 w-3.5 text-[#03DAC6]" />}
+              </div>
               {editingInvoice ? t('common.edit') : t('biz.addInvoice')}
             </DialogTitle>
             <DialogDescription className="text-white/60">
@@ -498,21 +623,21 @@ export default function BusinessInvoice() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.invoiceNumber')} *</Label>
+                <Label className="text-white/80 text-xs">{t('biz.invoiceNumber')} *</Label>
                 <Input
                   value={formData.invoiceNumber}
                   onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
                   placeholder="INV-001"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.invoiceCustomer')}</Label>
+                <Label className="text-white/80 text-xs">{t('biz.invoiceCustomer')}</Label>
                 <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
-                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                  <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl">
                     <SelectValue placeholder={t('biz.invoiceCustomer')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -525,12 +650,12 @@ export default function BusinessInvoice() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.invoiceDueDate')}</Label>
+                <Label className="text-white/80 text-xs">{t('biz.invoiceDueDate')}</Label>
                 <Input
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="bg-white/[0.05] border-white/[0.1] text-white"
+                  className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
             </div>
@@ -538,20 +663,26 @@ export default function BusinessInvoice() {
             {/* Line Items */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-white/80">{t('biz.invoiceItems')} *</Label>
-                <Button type="button" variant="ghost" size="sm" onClick={addItem} className="text-[#BB86FC] hover:text-[#9B6FDB] hover:bg-white/[0.05]">
-                  <PlusCircle className="h-4 w-4 mr-1" />
+                <Label className="text-white/80 text-xs">{t('biz.invoiceItems')} *</Label>
+                <Button type="button" variant="ghost" size="sm" onClick={addItem} className="text-[#03DAC6] hover:text-[#03DAC6]/80 hover:bg-[#03DAC6]/10 text-xs">
+                  <PlusCircle className="h-3.5 w-3.5 mr-1" />
                   {t('common.add')}
                 </Button>
               </div>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                 {formData.items.map((item, idx) => (
-                  <div key={idx} className="flex gap-2 items-start">
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex gap-2 items-start"
+                  >
                     <Input
                       value={item.description}
                       onChange={(e) => updateItem(idx, 'description', e.target.value)}
                       placeholder="Item"
-                      className="flex-1 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-xs h-9"
+                      className="flex-1 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 text-xs h-9 rounded-lg"
                     />
                     <Input
                       type="number"
@@ -559,7 +690,7 @@ export default function BusinessInvoice() {
                       onChange={(e) => updateItem(idx, 'qty', parseInt(e.target.value) || 0)}
                       placeholder="Qty"
                       min="1"
-                      className="w-16 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-xs h-9"
+                      className="w-16 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 text-xs h-9 rounded-lg"
                     />
                     <Input
                       type="number"
@@ -567,14 +698,14 @@ export default function BusinessInvoice() {
                       onChange={(e) => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
                       placeholder="Harga"
                       min="0"
-                      className="w-28 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 text-xs h-9"
+                      className="w-28 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 text-xs h-9 rounded-lg"
                     />
                     {formData.items.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(idx)} className="h-9 w-9 p-0 text-white/40 hover:text-red-400 shrink-0">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(idx)} className="h-9 w-9 p-0 text-white/30 hover:text-[#CF6679] hover:bg-[#CF6679]/10 shrink-0 rounded-lg">
                         <MinusCircle className="h-4 w-4" />
                       </Button>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -582,31 +713,34 @@ export default function BusinessInvoice() {
             {/* Tax, Discount */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.invoiceTax')} (%)</Label>
+                <Label className="text-white/80 text-xs">{t('biz.invoiceTax')} (%)</Label>
                 <Input
                   type="number"
                   value={formData.tax}
                   onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.invoiceDiscount')} (%)</Label>
+                <Label className="text-white/80 text-xs">{t('biz.invoiceDiscount')} (%)</Label>
                 <Input
                   type="number"
                   value={formData.discount}
                   onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
             </div>
 
             {/* Totals Preview */}
-            <div className="bg-white/[0.03] rounded-xl p-3 space-y-1 text-xs">
+            <motion.div
+              layout
+              className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] rounded-xl p-4 space-y-1.5 text-xs border border-white/[0.06]"
+            >
               <div className="flex justify-between text-white/60">
                 <span>{t('biz.invoiceSubtotal')}</span>
                 <span>{formatAmount(getSubtotal())}</span>
@@ -619,20 +753,27 @@ export default function BusinessInvoice() {
                 <span>{t('biz.invoiceDiscount')}</span>
                 <span>-{formatAmount(getDiscountAmount())}</span>
               </div>
-              <div className="flex justify-between text-white font-bold text-sm pt-2 border-t border-white/[0.06]">
+              <div className="flex justify-between text-white font-bold text-base pt-3 border-t border-white/[0.08]">
                 <span>{t('biz.invoiceTotal')}</span>
-                <span>{formatAmount(getTotal())}</span>
+                <motion.span
+                  key={getTotal()}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  className="text-[#BB86FC]"
+                >
+                  {formatAmount(getTotal())}
+                </motion.span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.customerNotes')}</Label>
+              <Label className="text-white/80 text-xs">{t('biz.customerNotes')}</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder={t('biz.customerNotes')}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px]"
+                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 min-h-[60px] rounded-xl focus:border-[#BB86FC]/40"
               />
             </div>
 
@@ -641,18 +782,20 @@ export default function BusinessInvoice() {
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
-                className="border-white/[0.1] text-white hover:bg-white/10"
+                className="border-white/[0.1] text-white hover:bg-white/10 rounded-xl"
               >
                 {t('common.cancel')}
               </Button>
-              <Button
-                type="submit"
-                disabled={saving || !formData.invoiceNumber || formData.items.every((i) => !i.description.trim())}
-                className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
-              >
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingInvoice ? t('common.save') : t('biz.generateInvoice')}
-              </Button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="submit"
+                  disabled={saving || !formData.invoiceNumber || formData.items.every((i) => !i.description.trim())}
+                  className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 rounded-xl shadow-lg shadow-[#BB86FC]/20"
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingInvoice ? t('common.save') : t('biz.generateInvoice')}
+                </Button>
+              </motion.div>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -660,20 +803,25 @@ export default function BusinessInvoice() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white">
+        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#CF6679]/20 flex items-center justify-center">
+                <Trash2 className="h-3.5 w-3.5 text-[#CF6679]" />
+              </div>
+              {t('common.delete')}
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-white/60">
               {t('kas.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
+            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10 rounded-xl">
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600 text-white border-0"
+              className="bg-gradient-to-r from-[#CF6679] to-[#B04060] hover:opacity-90 text-white border-0 rounded-xl"
             >
               {t('common.delete')}
             </AlertDialogAction>

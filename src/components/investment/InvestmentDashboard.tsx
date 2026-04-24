@@ -77,7 +77,6 @@ import {
 } from 'lucide-react';
 import InvestmentChart from '@/components/investment/InvestmentChart';
 import AssetSearchInput, { type SelectedAsset } from '@/components/investment/AssetSearchInput';
-import BacktestingPanel from '@/components/investment/BacktestingPanel';
 import { cn } from '@/lib/utils';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -922,24 +921,6 @@ export default function InvestmentDashboard() {
       : activeChartAsset.key;
     return signals.get(key) || null;
   }, [activeChartAsset, signals]);
-
-  // Build backtesting asset list from portfolio + watchlist (deduplicated)
-  const backtestAssets = useMemo(() => {
-    const list: Array<{ key: string; symbol: string; type: string; name?: string }> = [];
-    openPortfolios.forEach((p) => {
-      list.push({ key: `${p.type}:${p.symbol}`, symbol: p.symbol, type: p.type, name: p.name });
-    });
-    watchlist.forEach((w) => {
-      list.push({ key: `wl:${w.type}:${w.symbol}`, symbol: w.symbol, type: w.type, name: w.name });
-    });
-    const seen = new Set<string>();
-    return list.filter((a) => {
-      const k = `${a.type}:${a.symbol}`;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
-  }, [openPortfolios, watchlist]);
 
   const pnlColor = (val: number) => (val >= 0 ? UP_COLOR : DOWN_COLOR);
 
@@ -2268,14 +2249,6 @@ export default function InvestmentDashboard() {
           </motion.div>
         );
       })()}
-
-      {/* ── BACKTESTING ── */}
-      <motion.div variants={cardVariants} custom={8.5}>
-        <BacktestingPanel
-          businessId={businessId}
-          assets={backtestAssets}
-        />
-      </motion.div>
 
       {/* ── ALLOCATION + POSITIONS ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

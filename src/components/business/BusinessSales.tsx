@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -44,9 +44,26 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, TrendingUp, ShoppingBag } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  TrendingUp,
+  ShoppingBag,
+  Search,
+  CreditCard,
+  Banknote,
+  QrCode,
+  Receipt,
+  BarChart3,
+  Calculator,
+  PackageOpen,
+  CircleDollarSign,
+  Wallet,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ProductList from './ProductList';
 
 interface Customer {
@@ -67,10 +84,78 @@ interface Sale {
 }
 
 const PAYMENT_METHODS = [
-  { value: 'cash', labelKey: 'biz.paymentCash' },
-  { value: 'transfer', labelKey: 'biz.paymentTransfer' },
-  { value: 'qris', labelKey: 'biz.paymentQRIS' },
+  { value: 'cash', labelKey: 'biz.paymentCash', icon: Banknote, color: '#03DAC6' },
+  { value: 'transfer', labelKey: 'biz.paymentTransfer', icon: CreditCard, color: '#BB86FC' },
+  { value: 'qris', labelKey: 'biz.paymentQRIS', icon: QrCode, color: '#FFD700' },
 ];
+
+const paymentIconMap: Record<string, string> = {
+  cash: '#03DAC6',
+  transfer: '#BB86FC',
+  qris: '#FFD700',
+};
+
+// Animated counter hook
+function useAnimatedCounter(target: number, duration: number = 800) {
+  const [count, setCount] = useState(0);
+  const prevTarget = useRef(0);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const start = prevTarget.current;
+    const diff = target - start;
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(start + diff * eased);
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    prevTarget.current = target;
+
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target, duration]);
+
+  return count;
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16, scale: 0.97 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 300, damping: 24 },
+  },
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, x: -12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.04, type: 'spring', stiffness: 260, damping: 20 },
+  }),
+  exit: { opacity: 0, x: 12, transition: { duration: 0.2 } },
+};
 
 export default function BusinessSales() {
   const { t } = useTranslation();
@@ -79,10 +164,13 @@ export default function BusinessSales() {
   const [activeTab, setActiveTab] = useState<'sales' | 'products'>('sales');
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [products, setProducts] = useState<Array<{id: string; name: string; price: number; stock: number; sku: string | null}>>([]);
+  const [products, setProducts] = useState<
+    Array<{ id: string; name: string; price: number; stock: number; sku: string | null }>
+  >([]);
   const [selectedProductId, setSelectedProductId] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState<string>('all');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
@@ -133,9 +221,9 @@ export default function BusinessSales() {
 
   const handleProductSelect = (productId: string) => {
     setSelectedProductId(productId);
-    const product = products.find(p => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (product) {
-      setFormData(prev => ({ ...prev, description: product.name, amount: product.price.toString() }));
+      setFormData((prev) => ({ ...prev, description: product.name, amount: product.price.toString() }));
     }
   };
 
@@ -212,13 +300,32 @@ export default function BusinessSales() {
     }
   };
 
-  const filteredSales = sales.filter(
-    (s) =>
-      s.description.toLowerCase().includes(search.toLowerCase()) ||
-      s.customer?.name.toLowerCase().includes(search.toLowerCase())
+  const filteredSales = useMemo(
+    () =>
+      sales.filter((s) => {
+        const matchesSearch =
+          s.description.toLowerCase().includes(search.toLowerCase()) ||
+          s.customer?.name.toLowerCase().includes(search.toLowerCase());
+        const matchesPayment = paymentFilter === 'all' || s.paymentMethod === paymentFilter;
+        return matchesSearch && matchesPayment;
+      }),
+    [sales, search, paymentFilter]
   );
 
   const total = filteredSales.reduce((sum, s) => sum + s.amount, 0);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaySales = sales.filter((s) => s.date.startsWith(todayStr));
+  const todayTotal = todaySales.reduce((sum, s) => sum + s.amount, 0);
+  const avgPerTransaction = filteredSales.length > 0 ? total / filteredSales.length : 0;
+
+  const animatedTotal = useAnimatedCounter(total);
+  const animatedToday = useAnimatedCounter(todayTotal);
+  const animatedAvg = useAnimatedCounter(avgPerTransaction);
+
+  // Selected product info for dialog
+  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const isProductAutoFill = selectedProductId && selectedProduct;
 
   if (!businessId) {
     return (
@@ -229,17 +336,31 @@ export default function BusinessSales() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Tab Toggle */}
-      <div className="flex gap-2">
+    <div className="space-y-6">
+      {/* Tab Toggle with slide indicator */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="relative flex gap-1 bg-white/[0.04] rounded-xl p-1 w-fit border border-white/[0.06]"
+      >
+        <motion.div
+          className="absolute top-1 bottom-1 rounded-lg bg-gradient-to-r from-[#BB86FC]/25 to-[#BB86FC]/10 border border-[#BB86FC]/30"
+          animate={{
+            x: activeTab === 'sales' ? 4 : 0,
+            width: 'calc(50% - 6px)',
+            left: activeTab === 'sales' ? '4px' : 'calc(50% + 2px)',
+          }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        />
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setActiveTab('sales')}
-          className={`rounded-lg px-4 ${
+          className={`relative z-10 rounded-lg px-5 transition-colors duration-200 ${
             activeTab === 'sales'
-              ? 'bg-[#BB86FC]/20 text-[#BB86FC] hover:bg-[#BB86FC]/30'
-              : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+              ? 'text-[#BB86FC] font-semibold'
+              : 'text-white/40 hover:text-white/70'
           }`}
         >
           <ShoppingBag className="h-4 w-4 mr-1.5" />
@@ -249,243 +370,571 @@ export default function BusinessSales() {
           variant="ghost"
           size="sm"
           onClick={() => setActiveTab('products')}
-          className={`rounded-lg px-4 ${
+          className={`relative z-10 rounded-lg px-5 transition-colors duration-200 ${
             activeTab === 'products'
-              ? 'bg-[#BB86FC]/20 text-[#BB86FC] hover:bg-[#BB86FC]/30'
-              : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+              ? 'text-[#BB86FC] font-semibold'
+              : 'text-white/40 hover:text-white/70'
           }`}
         >
           <TrendingUp className="h-4 w-4 mr-1.5" />
           {t('biz.products')}
         </Button>
-      </div>
+      </motion.div>
 
       {/* Products Tab */}
       {activeTab === 'products' ? (
-        <ProductList />
+        <motion.div
+          key="products"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <ProductList />
+        </motion.div>
       ) : (
-        <>
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <motion.div key="sales" variants={containerVariants} initial="hidden" animate="visible">
+          {/* Summary Cards */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {/* Total Penjualan */}
+            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#03DAC6]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
+              <CardContent className="p-5 relative">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#03DAC6]/10 flex items-center justify-center">
+                    <CircleDollarSign className="h-5 w-5 text-[#03DAC6]" />
+                  </div>
+                  <span className="text-white/50 text-xs font-medium uppercase tracking-wider">
+                    {t('biz.totalPenjualan')}
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {formatAmount(animatedTotal)}
+                </p>
+                <p className="text-xs text-white/30 mt-1">
+                  {filteredSales.length} {t('biz.penjualan').toLowerCase()}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Transaksi Hari Ini */}
+            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#BB86FC]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
+              <CardContent className="p-5 relative">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#BB86FC]/10 flex items-center justify-center">
+                    <Receipt className="h-5 w-5 text-[#BB86FC]" />
+                  </div>
+                  <span className="text-white/50 text-xs font-medium uppercase tracking-wider">
+                    {t('biz.cashDate')}
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {formatAmount(animatedToday)}
+                </p>
+                <p className="text-xs text-white/30 mt-1">
+                  {todaySales.length} transaksi
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Rata-rata per Transaksi */}
+            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/80 border border-white/[0.06] rounded-2xl overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD700]/5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
+              <CardContent className="p-5 relative">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#FFD700]/10 flex items-center justify-center">
+                    <Calculator className="h-5 w-5 text-[#FFD700]" />
+                  </div>
+                  <span className="text-white/50 text-xs font-medium uppercase tracking-wider">
+                    Rata-rata
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {formatAmount(animatedAvg)}
+                </p>
+                <p className="text-xs text-white/30 mt-1">
+                  per transaksi
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Header with Search & Filters */}
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <ShoppingBag className="h-5 w-5 text-[#03DAC6]" />
                 {t('biz.penjualan')}
               </h2>
-              <p className="text-sm text-white/50 mt-1">
-                {t('biz.totalPenjualan')}: <span className="text-[#03DAC6] font-semibold">{formatAmount(total)}</span>
-              </p>
             </div>
-            <Button onClick={openCreateDialog} size="sm" className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]">
+            <Button
+              onClick={openCreateDialog}
+              size="sm"
+              className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:from-[#9B6FDB] hover:to-[#7B5FBB] rounded-xl shadow-lg shadow-[#BB86FC]/20 transition-all duration-200 hover:shadow-[#BB86FC]/30"
+            >
               <Plus className="h-4 w-4 mr-1" />
               {t('biz.addSale')}
             </Button>
-          </div>
+          </motion.div>
 
-          {/* Search */}
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('common.search') + '...'}
-            className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 max-w-sm"
-          />
+          {/* Search + Filter Row */}
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('common.search') + '...'}
+                className="bg-white/[0.05] border-white/[0.08] text-white placeholder:text-white/25 pl-10 rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all duration-200"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setPaymentFilter('all')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+                  paymentFilter === 'all'
+                    ? 'bg-white/10 border-white/20 text-white'
+                    : 'border-transparent text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
+                }`}
+              >
+                Semua
+              </button>
+              {PAYMENT_METHODS.map((m) => {
+                const Icon = m.icon;
+                return (
+                  <button
+                    key={m.value}
+                    onClick={() => setPaymentFilter(m.value)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+                      paymentFilter === m.value
+                        ? 'border-white/20 text-white'
+                        : 'border-transparent text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
+                    }`}
+                    style={
+                      paymentFilter === m.value
+                        ? { backgroundColor: `${m.color}15`, borderColor: `${m.color}30`, color: m.color }
+                        : {}
+                    }
+                  >
+                    <Icon className="h-3 w-3" />
+                    {t(m.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
 
           {/* Table */}
-          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="space-y-3 p-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
-                  ))}
-                </div>
-              ) : filteredSales.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-white/40">
-                  <TrendingUp className="h-10 w-10 mb-2 opacity-40" />
-                  <p className="text-sm">{t('biz.noBizData')}</p>
-                </div>
-              ) : (
-                <div className="max-h-[500px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-white/[0.06] hover:bg-transparent">
-                        <TableHead className="text-white/50 text-xs">{t('biz.cashDate')}</TableHead>
-                        <TableHead className="text-white/50 text-xs">{t('biz.saleDescription')}</TableHead>
-                        <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.saleCustomer')}</TableHead>
-                        <TableHead className="text-white/50 text-xs hidden md:table-cell">{t('biz.salePaymentMethod')}</TableHead>
-                        <TableHead className="text-white/50 text-xs text-right">{t('biz.saleAmount')}</TableHead>
-                        <TableHead className="text-white/50 text-xs w-24" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredSales.map((sale) => (
-                        <TableRow key={sale.id} className="border-white/[0.04] hover:bg-white/[0.02]">
-                          <TableCell className="text-white/70 text-xs py-3">
-                            {new Date(sale.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-white text-xs py-3 font-medium max-w-[180px] truncate">
-                            {sale.description}
-                          </TableCell>
-                          <TableCell className="py-3 hidden sm:table-cell">
-                            <span className="text-white/60 text-xs">{sale.customer?.name || '-'}</span>
-                          </TableCell>
-                          <TableCell className="py-3 hidden md:table-cell">
-                            {sale.paymentMethod && (
-                              <Badge variant="outline" className="text-xs font-normal border-0 bg-[#BB86FC]/20 text-[#BB86FC]">
-                                {PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod)
-                                  ? t(PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod)!.labelKey)
-                                  : sale.paymentMethod}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-medium py-3 text-[#03DAC6]">
-                            +{formatAmount(sale.amount)}
-                          </TableCell>
-                          <TableCell className="py-3 text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
-                              onClick={() => openEditDialog(sale)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
-                              onClick={() => setDeleteId(sale.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="bg-gradient-to-br from-[#1A1A2E] to-[#1A1A2E]/90 border border-white/[0.06] rounded-2xl overflow-hidden shadow-xl shadow-black/20">
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="space-y-3 p-6">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-14 rounded-xl bg-white/[0.06]" />
+                    ))}
+                  </div>
+                ) : filteredSales.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 px-6">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                      className="relative mb-6"
+                    >
+                      {/* Decorative circles */}
+                      <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-[#03DAC6]/5 to-[#BB86FC]/5 animate-pulse" />
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] flex items-center justify-center">
+                        <PackageOpen className="h-9 w-9 text-white/20" />
+                      </div>
+                    </motion.div>
+                    <motion.p
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                      className="text-white/40 text-sm font-medium"
+                    >
+                      {search || paymentFilter !== 'all'
+                        ? 'Tidak ada penjualan yang cocok'
+                        : t('biz.noBizData')}
+                    </motion.p>
+                    <motion.p
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                      className="text-white/20 text-xs mt-1.5"
+                    >
+                      {search || paymentFilter !== 'all'
+                        ? 'Coba ubah filter pencarian Anda'
+                        : 'Mulai catat penjualan pertama Anda'}
+                    </motion.p>
+                    {!search && paymentFilter === 'all' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.35 }}
+                      >
+                        <Button
+                          onClick={openCreateDialog}
+                          size="sm"
+                          className="mt-5 bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:from-[#9B6FDB] hover:to-[#7B5FBB] rounded-xl shadow-lg shadow-[#BB86FC]/20"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          {t('biz.addSale')}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="max-h-[500px] overflow-y-auto">
+                    <div className="scrollbar-thin">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-white/[0.06] hover:bg-transparent">
+                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider w-[110px]">
+                              {t('biz.cashDate')}
+                            </TableHead>
+                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider">
+                              {t('biz.saleDescription')}
+                            </TableHead>
+                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider hidden sm:table-cell">
+                              {t('biz.saleCustomer')}
+                            </TableHead>
+                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider hidden md:table-cell w-[130px]">
+                              {t('biz.salePaymentMethod')}
+                            </TableHead>
+                            <TableHead className="text-white/40 text-xs font-medium uppercase tracking-wider text-right w-[140px]">
+                              {t('biz.saleAmount')}
+                            </TableHead>
+                            <TableHead className="w-24" />
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <AnimatePresence mode="popLayout">
+                            {filteredSales.map((sale, i) => {
+                              const pColor = sale.paymentMethod
+                                ? paymentIconMap[sale.paymentMethod] || '#BB86FC'
+                                : '#BB86FC';
+                              return (
+                                <motion.tr
+                                  key={sale.id}
+                                  custom={i}
+                                  variants={rowVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  exit="exit"
+                                  layout
+                                  className={`border-white/[0.04] transition-colors duration-150 group cursor-default ${
+                                    i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]'
+                                  } hover:bg-white/[0.04]`}
+                                >
+                                  <TableCell className="text-white/50 text-xs py-3.5 font-mono">
+                                    {new Date(sale.date).toLocaleDateString('id-ID', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                  </TableCell>
+                                  <TableCell className="text-white/90 text-xs py-3.5 font-medium max-w-[200px] truncate group-hover:text-white transition-colors">
+                                    {sale.description}
+                                  </TableCell>
+                                  <TableCell className="py-3.5 hidden sm:table-cell">
+                                    <span className="text-white/50 text-xs">
+                                      {sale.customer?.name || '—'}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="py-3.5 hidden md:table-cell">
+                                    {sale.paymentMethod && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] font-medium border-0 rounded-full px-2.5 py-0.5"
+                                        style={{
+                                          backgroundColor: `${pColor}15`,
+                                          color: pColor,
+                                        }}
+                                      >
+                                        {(() => {
+                                          const M = PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod);
+                                          if (!M) return sale.paymentMethod;
+                                          const Icon = M.icon;
+                                          return (
+                                            <span className="flex items-center gap-1">
+                                              <Icon className="h-2.5 w-2.5" />
+                                              {t(M.labelKey)}
+                                            </span>
+                                          );
+                                        })()}
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-right font-semibold py-3.5 text-[#03DAC6] tabular-nums">
+                                    +{formatAmount(sale.amount)}
+                                  </TableCell>
+                                  <TableCell className="py-3.5 text-right">
+                                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-white/30 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 rounded-lg transition-colors duration-150"
+                                        onClick={() => openEditDialog(sale)}
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-white/30 hover:text-[#CF6679] hover:bg-[#CF6679]/10 rounded-lg transition-colors duration-150"
+                                        onClick={() => setDeleteId(sale.id)}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </motion.tr>
+                              );
+                            })}
+                          </AnimatePresence>
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {/* Table footer */}
+                    <div className="px-6 py-3 border-t border-white/[0.06] flex items-center justify-between bg-white/[0.01]">
+                      <span className="text-xs text-white/30">
+                        {filteredSales.length} transaksi
+                      </span>
+                      <span className="text-sm font-bold text-[#03DAC6] tabular-nums">
+                        Total: {formatAmount(total)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Add/Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[480px]">
-              <DialogHeader>
-                <DialogTitle className="text-white">
+            <DialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white sm:max-w-[520px] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+              {/* Gradient accent line at top */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#03DAC6] via-[#BB86FC] to-[#FFD700]" />
+              <DialogHeader className="pt-2">
+                <DialogTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
+                    {editingSale ? (
+                      <Pencil className="h-4 w-4 text-[#BB86FC]" />
+                    ) : (
+                      <Plus className="h-4 w-4 text-[#BB86FC]" />
+                    )}
+                  </div>
                   {editingSale ? t('common.edit') : t('biz.addSale')}
                 </DialogTitle>
-                <DialogDescription className="text-white/60">
+                <DialogDescription className="text-white/50 pl-10">
                   {t('biz.saleDescription')}
                 </DialogDescription>
               </DialogHeader>
 
-              <form onSubmit={handleSave} className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-white/80">{t('biz.selectProduct')}</Label>
+              <form onSubmit={handleSave} className="space-y-5 mt-2">
+                {/* Product Quick Select */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  className="space-y-2"
+                >
+                  <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                    {t('biz.selectProduct')}
+                  </Label>
                   <Select value={selectedProductId} onValueChange={(v) => handleProductSelect(v)}>
-                    <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                    <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all">
                       <SelectValue placeholder={t('biz.selectProduct')} />
                     </SelectTrigger>
-                    <SelectContent>
-                      {products.filter(p => p.stock > 0).map((p) => (
-                        <SelectItem key={p.id} value={p.id} className="text-white">
-                          {p.name} — {formatAmount(p.price)}
-                          <span className="ml-2 text-xs text-[#03DAC6]">({p.stock})</span>
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="bg-[#1A1A2E] border-white/[0.08] rounded-xl">
+                      {products
+                        .filter((p) => p.stock > 0)
+                        .map((p) => (
+                          <SelectItem key={p.id} value={p.id} className="text-white rounded-lg focus:bg-white/[0.06]">
+                            <div className="flex items-center justify-between w-full gap-4">
+                              <span className="truncate">{p.name}</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-xs text-[#03DAC6] font-medium">{formatAmount(p.price)}</span>
+                                <span className="text-[10px] text-white/30 bg-white/[0.06] rounded-full px-2 py-0.5">
+                                  stok {p.stock}
+                                </span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
-                </div>
+                  {isProductAutoFill && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="text-[10px] text-[#03DAC6]/70 flex items-center gap-1"
+                    >
+                      <BarChart3 className="h-3 w-3" />
+                      Harga & deskripsi terisi otomatis dari produk
+                    </motion.p>
+                  )}
+                </motion.div>
 
-                <div className="space-y-2">
-                  <Label className="text-white/80">{t('biz.saleDescription')} *</Label>
+                {/* Description */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="space-y-2"
+                >
+                  <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                    {t('biz.saleDescription')} <span className="text-[#CF6679]">*</span>
+                  </Label>
                   <Input
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder={t('biz.saleDescription')}
-                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                    className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all"
                   />
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
-                  <Label className="text-white/80">{t('biz.saleAmount')} *</Label>
-                  <Input
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    placeholder="0"
-                    min="0"
-                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                  />
-                </div>
+                {/* Amount with Live Preview */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="space-y-2"
+                >
+                  <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                    {t('biz.saleAmount')} <span className="text-[#CF6679]">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                    <Input
+                      type="number"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                      className="bg-white/[0.04] border-white/[0.08] text-white text-lg font-semibold placeholder:text-white/20 pl-10 pr-4 rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all tabular-nums"
+                    />
+                  </div>
+                  {formData.amount && parseFloat(formData.amount) > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#03DAC6]/5 border border-[#03DAC6]/10"
+                    >
+                      <CircleDollarSign className="h-4 w-4 text-[#03DAC6]" />
+                      <span className="text-sm text-[#03DAC6] font-semibold tabular-nums">
+                        {formatAmount(parseFloat(formData.amount))}
+                      </span>
+                    </motion.div>
+                  )}
+                </motion.div>
 
-                <div className="space-y-2">
-                  <Label className="text-white/80">{t('biz.saleCustomer')}</Label>
-                  <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
-                    <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                {/* Customer */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-2"
+                >
+                  <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                    {t('biz.saleCustomer')}
+                  </Label>
+                  <Select
+                    value={formData.customerId}
+                    onValueChange={(v) => setFormData({ ...formData, customerId: v })}
+                  >
+                    <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all">
                       <SelectValue placeholder={t('biz.saleCustomer')} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-[#1A1A2E] border-white/[0.08] rounded-xl">
                       {customers.map((c) => (
-                        <SelectItem key={c.id} value={c.id} className="text-white">
+                        <SelectItem key={c.id} value={c.id} className="text-white rounded-lg focus:bg-white/[0.06]">
                           {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </motion.div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Date & Payment Method */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="grid grid-cols-2 gap-4"
+                >
                   <div className="space-y-2">
-                    <Label className="text-white/80">{t('biz.saleDate')}</Label>
+                    <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                      {t('biz.saleDate')}
+                    </Label>
                     <Input
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="bg-white/[0.05] border-white/[0.1] text-white"
+                      className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-white/80">{t('biz.salePaymentMethod')}</Label>
-                    <Select value={formData.paymentMethod} onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}>
-                      <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                    <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                      {t('biz.salePaymentMethod')}
+                    </Label>
+                    <Select
+                      value={formData.paymentMethod}
+                      onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}
+                    >
+                      <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        {PAYMENT_METHODS.map((m) => (
-                          <SelectItem key={m.value} value={m.value} className="text-white">
-                            {t(m.labelKey)}
-                          </SelectItem>
-                        ))}
+                      <SelectContent className="bg-[#1A1A2E] border-white/[0.08] rounded-xl">
+                        {PAYMENT_METHODS.map((m) => {
+                          const Icon = m.icon;
+                          return (
+                            <SelectItem key={m.value} value={m.value} className="text-white rounded-lg focus:bg-white/[0.06]">
+                              <span className="flex items-center gap-2">
+                                <Icon className="h-3.5 w-3.5" style={{ color: m.color }} />
+                                {t(m.labelKey)}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
-                  <Label className="text-white/80">{t('biz.customerNotes')}</Label>
+                {/* Notes */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-2"
+                >
+                  <Label className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                    {t('biz.customerNotes')}
+                  </Label>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     placeholder={t('biz.customerNotes')}
-                    className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px]"
+                    className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 min-h-[72px] rounded-xl focus:border-[#03DAC6]/40 focus:ring-1 focus:ring-[#03DAC6]/20 transition-all resize-none"
                   />
-                </div>
+                </motion.div>
 
-                <DialogFooter className="gap-2 pt-2">
+                <DialogFooter className="gap-2 pt-3">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setDialogOpen(false)}
-                    className="border-white/[0.1] text-white hover:bg-white/10"
+                    className="border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all"
                   >
                     {t('common.cancel')}
                   </Button>
                   <Button
                     type="submit"
                     disabled={saving || !formData.description || !formData.amount}
-                    className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
+                    className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:from-[#9B6FDB] hover:to-[#7B5FBB] rounded-xl shadow-lg shadow-[#BB86FC]/20 disabled:opacity-50 transition-all"
                   >
                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {t('common.save')}
@@ -497,27 +946,33 @@ export default function BusinessSales() {
 
           {/* Delete Confirmation */}
           <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-            <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white">
+            <AlertDialogContent className="bg-gradient-to-b from-[#1A1A2E] to-[#1A1A2E]/95 border border-white/[0.08] text-white rounded-2xl shadow-2xl shadow-black/40">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#CF6679] to-[#CF6679]/50" />
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
-                <AlertDialogDescription className="text-white/60">
+                <AlertDialogTitle className="text-white flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#CF6679]/10 flex items-center justify-center">
+                    <Trash2 className="h-4 w-4 text-[#CF6679]" />
+                  </div>
+                  {t('common.delete')}
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-white/50 pl-10">
                   {t('kas.deleteDesc')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
+                <AlertDialogCancel className="border-white/[0.1] text-white/70 hover:bg-white/[0.06] hover:text-white rounded-xl transition-all">
                   {t('common.cancel')}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-red-500 hover:bg-red-600 text-white border-0"
+                  className="bg-[#CF6679] hover:bg-[#CF6679]/80 text-white border-0 rounded-xl transition-all"
                 >
                   {t('common.delete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </>
+        </motion.div>
       )}
     </div>
   );

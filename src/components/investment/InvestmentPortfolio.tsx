@@ -699,15 +699,26 @@ export default function InvestmentPortfolio() {
             {/* ── Quantity (Jumlah Aset) ────────────────────────────────────── */}
             <div className="space-y-2">
               <Label className="text-white/80 text-sm">Jumlah Aset *</Label>
-              <Input
-                type="number"
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                placeholder="0"
-                min="0"
-                step="any"
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
-              />
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={form.quantity}
+                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  step="any"
+                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10 pr-32"
+                />
+                {/* Inline Nominal Preview Badge */}
+                {computedNominal > 0 && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1 rounded-lg bg-[#BB86FC]/[0.12] border border-[#BB86FC]/20 pointer-events-none">
+                    <Calculator className="h-3 w-3 text-[#BB86FC]/60" />
+                    <span className="text-[11px] font-bold text-[#BB86FC] max-w-[140px] truncate">
+                      {formatInvPrice(form.type, computedNominal)}
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="flex items-start gap-1.5">
                 <Info className="h-3 w-3 text-white/25 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-white/30 leading-relaxed">
@@ -716,36 +727,89 @@ export default function InvestmentPortfolio() {
               </div>
             </div>
 
-            {/* ── Nominal Posisi (auto-calculated, read-only) ───────────────── */}
-            <div className="space-y-2">
-              <Label className="text-white/80 text-sm flex items-center gap-1.5">
-                <Calculator className="h-3.5 w-3.5 text-white/40" />
-                Nominal Posisi
-                <span className="text-white/25 text-[11px] font-normal">(otomatis)</span>
-              </Label>
-              <div className={cn(
-                'flex items-center gap-3 px-4 py-3.5 rounded-xl border',
-                computedNominal > 0
-                  ? 'bg-[#BB86FC]/[0.07] border-[#BB86FC]/[0.15]'
-                  : 'bg-white/[0.03] border-white/[0.06]'
-              )}>
-                <span className={cn(
-                  'text-lg font-bold',
-                  computedNominal > 0 ? 'text-[#BB86FC]' : 'text-white/30'
-                )}>
-                  {computedNominal > 0
-                    ? formatInvPrice(form.type, computedNominal)
-                    : '—'}
-                </span>
-                <span className="text-white/25 text-[11px]">
-                  {computedNominal > 0 ? `Total Investasi (${getInvCurrencyLabel(form.type)})` : ''}
-                </span>
+            {/* ── Nominal Posisi — Enhanced Preview Card ────────────────────── */}
+            <div className={cn(
+              'rounded-xl border p-4 transition-all duration-300',
+              computedNominal > 0
+                ? 'bg-gradient-to-br from-[#BB86FC]/[0.08] to-[#03DAC6]/[0.04] border-[#BB86FC]/20'
+                : 'bg-white/[0.02] border-white/[0.06]'
+            )}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-lg',
+                    computedNominal > 0 ? 'bg-[#BB86FC]/20' : 'bg-white/[0.05]'
+                  )}>
+                    <Calculator className={cn('h-3.5 w-3.5', computedNominal > 0 ? 'text-[#BB86FC]' : 'text-white/30')} />
+                  </div>
+                  <span className={cn('text-xs font-semibold uppercase tracking-wider', computedNominal > 0 ? 'text-[#BB86FC]/80' : 'text-white/30')}>
+                    Nominal Posisi
+                  </span>
+                </div>
+                {computedNominal > 0 && (
+                  <Badge className="text-[9px] font-bold px-2 py-0.5 h-5 bg-[#BB86FC]/15 text-[#BB86FC] border-[#BB86FC]/25">
+                    {getInvCurrencyLabel(form.type)}
+                  </Badge>
+                )}
               </div>
-              {/* IDR conversion hint for non-saham */}
-              {idrConversionHint && (
-                <div className="flex items-start gap-1.5">
-                  <Info className="h-3 w-3 text-white/20 mt-0.5 shrink-0" />
-                  <p className="text-[11px] text-white/30 leading-relaxed">{idrConversionHint}</p>
+              {computedNominal > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-xl font-black text-white tracking-tight">
+                    {formatInvPrice(form.type, computedNominal)}
+                  </p>
+                  {/* Breakdown */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-white/40">Harga Masuk</span>
+                      <span className="text-white/70 font-mono">{formatInvPrice(form.type, parseFloat(form.entryPrice) || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-white/40">Jumlah</span>
+                      <span className="text-white/70 font-mono">× {form.quantity}</span>
+                    </div>
+                    <div className="h-px bg-white/[0.06]" />
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-white/50 font-medium">Total Investasi</span>
+                      <span className="text-[#BB86FC] font-bold font-mono">{formatInvPrice(form.type, computedNominal)}</span>
+                    </div>
+                  </div>
+                  {/* IDR conversion hint for non-saham */}
+                  {idrConversionHint && (
+                    <div className="flex items-start gap-1.5 pt-1">
+                      <Info className="h-3 w-3 text-white/20 mt-0.5 shrink-0" />
+                      <p className="text-[10px] text-white/25 leading-relaxed">{idrConversionHint}</p>
+                    </div>
+                  )}
+                  {/* PnL Projection based on Target Price */}
+                  {form.targetPrice && parseFloat(form.targetPrice) > 0 && (
+                    (() => {
+                      const target = parseFloat(form.targetPrice);
+                      const entry = parseFloat(form.entryPrice) || 0;
+                      const qty = parseFloat(form.quantity) || 0;
+                      const targetPnl = (target - entry) * qty;
+                      const targetPnlPct = entry > 0 ? ((target - entry) / entry) * 100 : 0;
+                      const isPositive = targetPnl >= 0;
+                      return (
+                        <div className={cn(
+                          'mt-2 pt-2 border-t flex items-center justify-between',
+                          isPositive ? 'border-[#03DAC6]/15' : 'border-[#CF6679]/15'
+                        )}>
+                          <div className="flex items-center gap-1.5">
+                            {isPositive ? <ArrowUpRight className="h-3 w-3 text-[#03DAC6]" /> : <ArrowDownRight className="h-3 w-3 text-[#CF6679]" />}
+                            <span className="text-[11px] text-white/50">Potensi PnL @ Target</span>
+                          </div>
+                          <span className={cn('text-xs font-bold font-mono', isPositive ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
+                            {isPositive ? '+' : ''}{formatInvPrice(form.type, Math.abs(targetPnl))} ({isPositive ? '+' : ''}{targetPnlPct.toFixed(1)}%)
+                          </span>
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 py-1">
+                  <span className="text-white/20 text-sm">—</span>
+                  <span className="text-[11px] text-white/20">Masukkan harga & jumlah untuk melihat nominal</span>
                 </div>
               )}
             </div>
