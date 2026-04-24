@@ -134,6 +134,10 @@ export async function POST(
       }
     }
 
+    const numTempo = installmentTempo ? parseInt(String(installmentTempo)) : null;
+    const numDP = downPayment ? parseFloat(String(downPayment)) : null;
+    const numInstAmount = installmentAmount ? parseFloat(String(installmentAmount)) : null;
+
     const sale = await db.businessSale.create({
       data: {
         businessId,
@@ -144,10 +148,10 @@ export async function POST(
         date: date ? new Date(date) : new Date(),
         paymentMethod,
         notes,
-        downPayment: downPayment ? parseFloat(String(downPayment)) : null,
+        downPayment: numDP,
         downPaymentPct: downPaymentPct ? parseFloat(String(downPaymentPct)) : null,
-        installmentTempo: installmentTempo ? parseInt(String(installmentTempo)) : null,
-        installmentAmount: installmentAmount ? parseFloat(String(installmentAmount)) : null,
+        installmentTempo: numTempo,
+        installmentAmount: numInstAmount,
         investorSharePct: investorSharePct ? parseFloat(String(investorSharePct)) : null,
       },
       include: {
@@ -156,6 +160,41 @@ export async function POST(
         },
       },
     });
+
+    // Auto-create piutang debt for installment sales
+    if (numTempo && numTempo > 0) {
+      const remaining = numAmount - (numDP || 0);
+      try {
+        // Get customer name as counterpart
+        let counterpart = description;
+        if (customerId) {
+          const cust = await db.businessCustomer.findUnique({ where: { id: customerId } });
+          if (cust) counterpart = cust.name;
+        }
+        // Calculate next installment date (1 month from now)
+        const nextDate = new Date();
+        nextDate.setMonth(nextDate.getMonth() + 1);
+
+        await db.businessDebt.create({
+          data: {
+            businessId,
+            type: 'piutang',
+            counterpart,
+            amount: remaining,
+            remaining,
+            description: `Cicilan: ${description}`,
+            status: 'active',
+            downPayment: numDP || 0,
+            installmentAmount: numInstAmount || (numTempo > 0 ? remaining / numTempo : 0),
+            installmentPeriod: numTempo,
+            nextInstallmentDate: nextDate,
+            referenceId: sale.id,
+          },
+        });
+      } catch (piutangErr) {
+        console.error('Auto-create piutang error:', piutangErr);
+      }
+    }
 
     // Create notification for new sale
     try {

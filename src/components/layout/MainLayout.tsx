@@ -39,7 +39,6 @@ import {
   ShoppingCart,
   Receipt,
   Users,
-  CreditCard,
   BarChart3,
   Gem,
   BookOpen,
@@ -62,7 +61,6 @@ import BusinessCash from '@/components/business/BusinessCash';
 import BusinessSales from '@/components/business/BusinessSales';
 import BusinessInvoice from '@/components/business/BusinessInvoice';
 import BusinessCustomers from '@/components/business/BusinessCustomers';
-import BusinessDebts from '@/components/business/BusinessDebts';
 import BusinessAllocation from '@/components/business/BusinessAllocation';
 import BusinessLaporan from '@/components/business/BusinessLaporan';
 import BusinessInvoiceSettings from '@/components/business/BusinessInvoiceSettings';
@@ -79,7 +77,7 @@ import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 type PageType =
   | 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile'
   | 'biz-dashboard' | 'biz-kas' | 'biz-penjualan' | 'biz-invoice' | 'biz-customer'
-  | 'biz-hutang' | 'biz-allocation' | 'biz-laporan' | 'biz-invoice-settings'
+  | 'biz-allocation' | 'biz-laporan' | 'biz-invoice-settings'
   | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal' | 'inv-quant' | 'inv-macro';
 
 interface NavItem {
@@ -231,7 +229,6 @@ export function MainLayout() {
     { id: 'biz-penjualan', label: t('biz.penjualan'), icon: ShoppingCart, desc: 'Penjualan' },
     { id: 'biz-invoice', label: t('biz.invoice'), icon: Receipt, desc: 'Invoice' },
     { id: 'biz-customer', label: t('biz.customers'), icon: Users, desc: 'Pelanggan' },
-    { id: 'biz-hutang', label: t('biz.hutangPiutang'), icon: CreditCard, desc: 'Hutang & Piutang' },
     { id: 'biz-allocation', label: t('biz.autoAllocation'), icon: ArrowLeftRight, desc: 'Alokasi ke Pribadi' },
     { id: 'biz-laporan', label: t('biz.bizLaporan'), icon: BarChart3, desc: 'Laporan' },
     { id: 'biz-invoice-settings', label: t('biz.invoiceSettings'), icon: Palette, desc: 'Template & Branding' },
@@ -272,7 +269,7 @@ export function MainLayout() {
         case 'biz-penjualan': return <BusinessSales />;
         case 'biz-invoice': return <BusinessInvoice />;
         case 'biz-customer': return <BusinessCustomers />;
-        case 'biz-hutang': return <BusinessDebts />;
+        // biz-hutang removed — piutang is now in Cashflow tab
         case 'biz-allocation': return <BusinessAllocation />;
         case 'biz-laporan': return <BusinessLaporan />;
         case 'biz-invoice-settings': return <BusinessInvoiceSettings />;
@@ -808,14 +805,14 @@ export function MainLayout() {
             );
           })}
         </div>
-        {/* Mobile page nav items */}
-        <div className="flex items-center justify-around px-1 h-[50px]">
-          {navigation.slice(0, 5).map((item) => {
+        {/* Mobile page nav items — scrollable */}
+        <div className="flex items-center px-1 h-[50px] overflow-x-auto scrollbar-hide">
+          {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
-                className="relative flex flex-col items-center justify-center py-1 px-1 rounded-lg min-w-0 flex-1 transition-all duration-200 active:scale-95">
+                className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-lg min-w-[60px] shrink-0 transition-all duration-200 active:scale-95">
                 {isActive && (
                   <div className="absolute -top-0 left-1/2 -translate-x-1/2">
                     <div className="w-5 h-[2.5px] rounded-full" style={{ background: modeColor(mode), boxShadow: `0 0 8px ${modeColor(mode)}66` }} />

@@ -26,8 +26,8 @@ export async function GET(
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type') || 'full'; // 'sales', 'cash', 'debts', 'invoices', 'portfolio', 'full'
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const startDate = searchParams.get('startDate') || searchParams.get('from');
+    const endDate = searchParams.get('endDate') || searchParams.get('to');
 
     const dateFilter: Record<string, Date> | undefined =
       startDate || endDate

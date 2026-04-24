@@ -21,13 +21,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   FileBarChart, Download, TrendingUp, TrendingDown,
-  DollarSign, FileText, CreditCard, Wallet,
+  DollarSign, CreditCard, Wallet,
   CalendarDays, BarChart3, Receipt, ArrowUpRight, ArrowDownRight, ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -47,60 +47,127 @@ const cardHover = {
   hover: { scale: 1.02, transition: { duration: 0.2 } },
 };
 
+/* ------------------------------------------------------------------ */
+/*  Raw API response types                                              */
+/* ------------------------------------------------------------------ */
+
+interface ApiSalesItem {
+  tanggal: string;
+  pelanggan: string;
+  deskripsi: string;
+  jumlah: number;
+  metodePembayaran: string;
+  catatan: string;
+}
+
+interface ApiCashItem {
+  tanggal: string;
+  tipe: string;
+  jumlah: number;
+  deskripsi: string;
+  kategori: string;
+  catatan: string;
+}
+
+interface ApiInvoiceItem {
+  nomorInvoice: string;
+  pelanggan: string;
+  tanggal: string;
+  tanggalJatuhTempo: string;
+  subtotal: number;
+  pajak: number;
+  diskon: number;
+  total: number;
+  status: string;
+}
+
+interface ApiDebtItem {
+  tipe: string;
+  pihak: string;
+  jumlah: number;
+  sisa: number;
+  tanggalJatuhTempo: string;
+  status: string;
+  deskripsi: string;
+}
+
+interface ApiResponse {
+  report: {
+    businessName?: string;
+    overallSummary?: {
+      totalPendapatan: number;
+      totalPengeluaran: number;
+      laba: number;
+      totalKasBesar: number;
+      totalKasKecil: number;
+      saldoBersih: number;
+      totalHutang: number;
+      totalPiutang: number;
+    };
+    sales?: { data: ApiSalesItem[] };
+    cash?: { data: ApiCashItem[] };
+    invoices?: { data: ApiInvoiceItem[] };
+    debts?: { data: ApiDebtItem[] };
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Normalized data used by the UI                                     */
+/* ------------------------------------------------------------------ */
+
 interface ReportSummary {
   totalRevenue: number;
   totalExpense: number;
   netIncome: number;
   totalSales: number;
-  totalInvoices: number;
   totalCashIn: number;
   totalCashOut: number;
   totalHutang: number;
   totalPiutang: number;
 }
 
+interface SalesRow {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  customer: string;
+  paymentMethod: string;
+}
+
+interface ExpenseRow {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  category: string;
+}
+
+interface InvoiceRow {
+  id: string;
+  invoiceNumber: string;
+  total: number;
+  date: string;
+  status: string;
+  customer: string;
+}
+
+interface DebtRow {
+  id: string;
+  type: string;
+  counterpart: string;
+  amount: number;
+  remaining: number;
+  dueDate: string;
+  status: string;
+}
+
 interface ReportData {
   summary: ReportSummary;
-  sales: Array<{
-    id: string;
-    description: string;
-    amount: number;
-    date: string;
-    customer?: { name: string } | null;
-    paymentMethod: string | null;
-  }>;
-  expenses: Array<{
-    id: string;
-    description: string;
-    amount: number;
-    date: string;
-    category: string | null;
-  }>;
-  cashEntries: Array<{
-    id: string;
-    description: string;
-    amount: number;
-    date: string;
-    type: string;
-    category: string | null;
-  }>;
-  invoices: Array<{
-    id: string;
-    invoiceNumber: string;
-    total: number;
-    date: string;
-    status: string;
-    customer?: { name: string } | null;
-  }>;
-  debts: Array<{
-    id: string;
-    type: string;
-    counterpart: string;
-    amount: number;
-    remaining: number;
-    dueDate: string | null;
-    status: string;
-  }>;
+  sales: SalesRow[];
+  expenses: ExpenseRow[];
+  invoices: InvoiceRow[];
+  debts: DebtRow[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -108,7 +175,7 @@ interface ReportData {
 /* ------------------------------------------------------------------ */
 
 function ExpenseBreakdownChart({ expenses, formatAmount }: {
-  expenses: Array<{ category: string | null; amount: number }>;
+  expenses: ExpenseRow[];
   formatAmount: (n: number) => string;
 }) {
   const categoryData = useMemo(() => {
@@ -123,7 +190,6 @@ function ExpenseBreakdownChart({ expenses, formatAmount }: {
   }, [expenses]);
 
   const maxAmount = Math.max(...categoryData.map(([, a]) => a), 1);
-
   const barColors = ['#CF6679', '#BB86FC', '#FFD700', '#03DAC6', '#FF8A65', '#82B1FF'];
 
   if (categoryData.length === 0) return null;
@@ -181,6 +247,73 @@ function DateRangeIndicator({ fromDate, toDate }: { fromDate: string; toDate: st
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Normalize raw API response → flat UI data                          */
+/* ------------------------------------------------------------------ */
+
+function normalizeResponse(raw: ApiResponse): ReportData | null {
+  const r = raw?.report;
+  if (!r) return null;
+
+  const os = r.overallSummary;
+
+  const sales: SalesRow[] = (r.sales?.data || []).map((s, i) => ({
+    id: `sale-${i}`,
+    description: s.deskripsi,
+    amount: s.jumlah,
+    date: s.tanggal,
+    customer: s.pelanggan,
+    paymentMethod: s.metodePembayaran,
+  }));
+
+  // Expenses = cash entries where tipe === 'kas_keluar'
+  const expenses: ExpenseRow[] = (r.cash?.data || [])
+    .filter((c) => c.tipe === 'kas_keluar')
+    .map((c, i) => ({
+      id: `exp-${i}`,
+      description: c.deskripsi,
+      amount: c.jumlah,
+      date: c.tanggal,
+      category: c.kategori,
+    }));
+
+  const invoices: InvoiceRow[] = (r.invoices?.data || []).map((inv, i) => ({
+    id: `inv-${i}`,
+    invoiceNumber: inv.nomorInvoice,
+    total: inv.total,
+    date: inv.tanggal,
+    status: inv.status,
+    customer: inv.pelanggan,
+  }));
+
+  const debts: DebtRow[] = (r.debts?.data || []).map((d, i) => ({
+    id: `debt-${i}`,
+    type: d.tipe,
+    counterpart: d.pihak,
+    amount: d.jumlah,
+    remaining: d.sisa,
+    dueDate: d.tanggalJatuhTempo,
+    status: d.status,
+  }));
+
+  const summary: ReportSummary = {
+    totalRevenue: os?.totalPendapatan ?? 0,
+    totalExpense: os?.totalPengeluaran ?? 0,
+    netIncome: os?.laba ?? 0,
+    totalSales: os?.totalPendapatan ?? 0,
+    totalCashIn: os?.totalKasBesar ?? 0,
+    totalCashOut: os?.totalPengeluaran ?? 0,
+    totalHutang: os?.totalHutang ?? 0,
+    totalPiutang: os?.totalPiutang ?? 0,
+  };
+
+  return { summary, sales, expenses, invoices, debts };
+}
+
+/* ================================================================== */
+/*  Main Component                                                      */
+/* ================================================================== */
+
 export default function BusinessLaporan() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
@@ -197,7 +330,6 @@ export default function BusinessLaporan() {
   const [toDate, setToDate] = useState(today.toISOString().split('T')[0]);
 
   const [exporting, setExporting] = useState<string | null>(null);
-
   const businessId = activeBusiness?.id;
 
   const fetchReport = useCallback(() => {
@@ -208,17 +340,19 @@ export default function BusinessLaporan() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((result) => setData(result))
+      .then((raw: ApiResponse) => {
+        const normalized = normalizeResponse(raw);
+        setData(normalized);
+      })
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [businessId, fromDate, toDate]);
 
   useEffect(() => {
-    if (businessId) {
-      fetchReport();
-    }
+    if (businessId) fetchReport();
   }, [businessId, fetchReport]);
 
+  /* ── Export Excel ── */
   const handleExportExcel = async () => {
     if (!businessId || !data) return;
     setExporting('excel');
@@ -227,66 +361,50 @@ export default function BusinessLaporan() {
       const wb = XLSX.utils.book_new();
 
       if (data.sales.length > 0) {
-        const salesData = data.sales.map((s) => ({
-          [t('biz.cashDate')]: new Date(s.date).toLocaleDateString(),
-          [t('biz.saleDescription')]: s.description,
-          [t('biz.saleCustomer')]: s.customer?.name || '-',
-          [t('biz.salePaymentMethod')]: s.paymentMethod || '-',
-          [t('biz.saleAmount')]: s.amount,
+        const rows = data.sales.map((s) => ({
+          Tanggal: s.date,
+          Deskripsi: s.description,
+          Pelanggan: s.customer,
+          Metode: s.paymentMethod,
+          Jumlah: s.amount,
         }));
-        const ws = XLSX.utils.json_to_sheet(salesData);
-        XLSX.utils.book_append_sheet(wb, ws, t('biz.penjualan'));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Penjualan');
       }
 
       if (data.expenses.length > 0) {
-        const expData = data.expenses.map((e) => ({
-          [t('biz.cashDate')]: new Date(e.date).toLocaleDateString(),
-          [t('biz.cashDescription')]: e.description,
-          [t('biz.cashCategory')]: e.category || '-',
-          [t('biz.cashAmount')]: e.amount,
+        const rows = data.expenses.map((e) => ({
+          Tanggal: e.date,
+          Deskripsi: e.description,
+          Kategori: e.category,
+          Jumlah: e.amount,
         }));
-        const ws = XLSX.utils.json_to_sheet(expData);
-        XLSX.utils.book_append_sheet(wb, ws, t('biz.kasKeluar'));
-      }
-
-      if (data.cashEntries.length > 0) {
-        const cashData = data.cashEntries.map((c) => ({
-          [t('biz.cashDate')]: new Date(c.date).toLocaleDateString(),
-          [t('biz.cashDescription')]: c.description,
-          [t('biz.cashCategory')]: c.category || '-',
-          [t('biz.debtAmount')]: c.amount,
-          [t('biz.debtStatus')]: c.type,
-        }));
-        const ws = XLSX.utils.json_to_sheet(cashData);
-        XLSX.utils.book_append_sheet(wb, ws, t('biz.kasBesar'));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pengeluaran');
       }
 
       if (data.invoices.length > 0) {
-        const invData = data.invoices.map((inv) => ({
-          [t('biz.invoiceNumber')]: inv.invoiceNumber,
-          [t('biz.invoiceCustomer')]: inv.customer?.name || '-',
-          [t('biz.invoiceTotal')]: inv.total,
-          [t('biz.invoiceStatus')]: inv.status,
-          [t('biz.cashDate')]: new Date(inv.date).toLocaleDateString(),
+        const rows = data.invoices.map((inv) => ({
+          'No Invoice': inv.invoiceNumber,
+          Pelanggan: inv.customer,
+          Total: inv.total,
+          Status: inv.status,
+          Tanggal: inv.date,
         }));
-        const ws = XLSX.utils.json_to_sheet(invData);
-        XLSX.utils.book_append_sheet(wb, ws, t('biz.invoices'));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Invoice');
       }
 
       if (data.debts.length > 0) {
-        const debtData = data.debts.map((d) => ({
-          [t('biz.debtCounterpart')]: d.counterpart,
-          [t('biz.debtStatus')]: d.type,
-          [t('biz.debtAmount')]: d.amount,
-          [t('biz.debtRemaining')]: d.remaining,
-          [t('biz.debtDueDate')]: d.dueDate ? new Date(d.dueDate).toLocaleDateString() : '-',
+        const rows = data.debts.map((d) => ({
+          Pihak: d.counterpart,
+          Tipe: d.type,
+          Jumlah: d.amount,
+          Sisa: d.remaining,
+          'Jatuh Tempo': d.dueDate,
         }));
-        const ws = XLSX.utils.json_to_sheet(debtData);
-        XLSX.utils.book_append_sheet(wb, ws, t('biz.hutangPiutang'));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Hutang Piutang');
       }
 
       XLSX.writeFile(wb, `Laporan_Bisnis_${fromDate}_${toDate}.xlsx`);
-      toast.success(t('laporan.downloadSuccess'));
+      toast.success('Export berhasil!');
     } catch {
       toast.error(t('common.error'));
     } finally {
@@ -294,6 +412,7 @@ export default function BusinessLaporan() {
     }
   };
 
+  /* ── Export PDF ── */
   const handleExportPDF = async () => {
     if (!businessId || !data) return;
     setExporting('pdf');
@@ -305,52 +424,41 @@ export default function BusinessLaporan() {
       doc.setFontSize(16);
       doc.text(t('biz.bizLaporan'), 14, 20);
       doc.setFontSize(10);
-      doc.text(
-        `${t('biz.cashDate')}: ${fromDate} - ${toDate}`,
-        14,
-        28
-      );
+      doc.text(`Periode: ${fromDate} - ${toDate}`, 14, 28);
 
       let yPos = 40;
-
       doc.setFontSize(12);
-      doc.text(t('dashboard.totalSavings'), 14, yPos);
+      doc.text('Ringkasan', 14, yPos);
       yPos += 8;
       doc.setFontSize(10);
-
-      const summaryRows = [
-        [t('biz.bizRevenue'), formatAmount(data.summary.totalRevenue)],
-        [t('biz.bizExpense'), formatAmount(data.summary.totalExpense)],
-        [t('biz.bizNetIncome'), formatAmount(data.summary.netIncome)],
-        [t('biz.totalPenjualan'), formatAmount(data.summary.totalSales)],
-        [t('biz.totalHutang'), formatAmount(data.summary.totalHutang)],
-        [t('biz.totalPiutang'), formatAmount(data.summary.totalPiutang)],
-      ];
 
       autoTable(doc, {
         startY: yPos,
         head: [['Keterangan', 'Jumlah']],
-        body: summaryRows,
+        body: [
+          ['Pendapatan', formatAmount(data.summary.totalRevenue)],
+          ['Pengeluaran', formatAmount(data.summary.totalExpense)],
+          ['Laba Bersih', formatAmount(data.summary.netIncome)],
+          ['Total Hutang', formatAmount(data.summary.totalHutang)],
+          ['Total Piutang', formatAmount(data.summary.totalPiutang)],
+        ],
         theme: 'grid',
         headStyles: { fillColor: [187, 134, 252], textColor: 0 },
         styles: { fontSize: 9 },
       });
 
-      yPos = (doc as unknown as Record<string, unknown>).lastAutoTable != null ? ((doc as unknown as Record<string, Record<string, number>>).lastAutoTable.finalY + 15) : yPos + 60;
+      yPos = (doc as unknown as Record<string, unknown>).lastAutoTable != null
+        ? ((doc as unknown as Record<string, Record<string, number>>).lastAutoTable.finalY + 15)
+        : yPos + 60;
 
       if (data.sales.length > 0) {
         doc.setFontSize(12);
-        doc.text(t('biz.penjualan'), 14, yPos);
+        doc.text('Penjualan', 14, yPos);
         yPos += 4;
         autoTable(doc, {
           startY: yPos,
-          head: [[t('biz.cashDate'), t('biz.saleDescription'), t('biz.saleCustomer'), t('biz.saleAmount')]],
-          body: data.sales.slice(0, 50).map((s) => [
-            new Date(s.date).toLocaleDateString(),
-            s.description,
-            s.customer?.name || '-',
-            formatAmount(s.amount),
-          ]),
+          head: [['Tanggal', 'Deskripsi', 'Pelanggan', 'Jumlah']],
+          body: data.sales.slice(0, 50).map((s) => [s.date, s.description, s.customer, formatAmount(s.amount)]),
           theme: 'grid',
           headStyles: { fillColor: [187, 134, 252], textColor: 0 },
           styles: { fontSize: 8 },
@@ -358,7 +466,7 @@ export default function BusinessLaporan() {
       }
 
       doc.save(`Laporan_Bisnis_${fromDate}_${toDate}.pdf`);
-      toast.success(t('laporan.downloadSuccess'));
+      toast.success('Export berhasil!');
     } catch {
       toast.error(t('common.error'));
     } finally {
@@ -376,10 +484,10 @@ export default function BusinessLaporan() {
 
   const summaryCards = data
     ? [
-        { label: t('biz.bizRevenue'), value: data.summary.totalRevenue, color: '#03DAC6', icon: TrendingUp, gradient: 'from-[#03DAC6]/20 to-[#03DAC6]/5', trend: 'up' },
-        { label: t('biz.bizExpense'), value: data.summary.totalExpense, color: '#CF6679', icon: TrendingDown, gradient: 'from-[#CF6679]/20 to-[#CF6679]/5', trend: 'down' },
-        { label: t('biz.bizNetIncome'), value: data.summary.netIncome, color: data.summary.netIncome >= 0 ? '#03DAC6' : '#CF6679', icon: DollarSign, gradient: data.summary.netIncome >= 0 ? 'from-[#03DAC6]/20 to-[#03DAC6]/5' : 'from-[#CF6679]/20 to-[#CF6679]/5', trend: data.summary.netIncome >= 0 ? 'up' : 'down' },
-        { label: t('biz.totalPenjualan'), value: data.summary.totalSales, color: '#BB86FC', icon: Wallet, gradient: 'from-[#BB86FC]/20 to-[#BB86FC]/5', trend: 'up' },
+        { label: t('biz.bizRevenue'), value: data.summary.totalRevenue, color: '#03DAC6', icon: TrendingUp, gradient: 'from-[#03DAC6]/20 to-[#03DAC6]/5', trend: 'up' as const },
+        { label: t('biz.bizExpense'), value: data.summary.totalExpense, color: '#CF6679', icon: TrendingDown, gradient: 'from-[#CF6679]/20 to-[#CF6679]/5', trend: 'down' as const },
+        { label: t('biz.bizNetIncome'), value: data.summary.netIncome, color: data.summary.netIncome >= 0 ? '#03DAC6' : '#CF6679', icon: DollarSign, gradient: data.summary.netIncome >= 0 ? 'from-[#03DAC6]/20 to-[#03DAC6]/5' : 'from-[#CF6679]/20 to-[#CF6679]/5', trend: data.summary.netIncome >= 0 ? 'up' as const : 'down' as const },
+        { label: t('biz.totalPenjualan'), value: data.summary.totalSales, color: '#BB86FC', icon: Wallet, gradient: 'from-[#BB86FC]/20 to-[#BB86FC]/5', trend: 'up' as const },
       ]
     : [];
 
@@ -422,7 +530,7 @@ export default function BusinessLaporan() {
           </div>
         </motion.div>
 
-        {/* Date Range Filter with Visual Indicator */}
+        {/* Date Range Filter */}
         <motion.div variants={itemVariants} className="mt-4">
           <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
             <CardContent className="p-4">
@@ -457,7 +565,7 @@ export default function BusinessLaporan() {
                     className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 h-9 text-xs rounded-xl shadow-lg shadow-[#BB86FC]/15"
                   >
                     {loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <BarChart3 className="mr-1 h-3.5 w-3.5" />}
-                    {t('dashboard.savingsTargets')}
+                    Lihat Laporan
                   </Button>
                 </motion.div>
               </div>
@@ -560,20 +668,7 @@ export default function BusinessLaporan() {
                       ))}
                     </div>
                   ) : !data || data.sales.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-white/40">
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="relative"
-                      >
-                        <div className="h-16 w-16 rounded-2xl bg-[#BB86FC]/10 flex items-center justify-center">
-                          <TrendingUp className="h-8 w-8 text-[#BB86FC]/40" />
-                        </div>
-                      </motion.div>
-                      <p className="text-sm mt-3">{t('biz.noBizData')}</p>
-                      <p className="text-xs mt-1 text-white/25">No sales recorded for this period</p>
-                    </div>
+                    <EmptyState icon={TrendingUp} color="#BB86FC" text="Belum ada penjualan di periode ini" />
                   ) : (
                     <div className="max-h-[400px] overflow-y-auto">
                       <Table>
@@ -581,16 +676,16 @@ export default function BusinessLaporan() {
                           <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.01]">
                             <TableHead className="text-white/50 text-xs font-medium">{t('biz.cashDate')}</TableHead>
                             <TableHead className="text-white/50 text-xs font-medium">{t('biz.saleDescription')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">{t('biz.saleCustomer')}</TableHead>
+                            <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">Pelanggan</TableHead>
                             <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.saleAmount')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {data.sales.map((sale, idx) => (
                             <TableRow key={sale.id} className={cn('border-white/[0.04] hover:bg-white/[0.04] transition-colors', idx % 2 === 1 && 'bg-white/[0.015]')}>
-                              <TableCell className="text-white/70 text-xs py-2.5">{new Date(sale.date).toLocaleDateString()}</TableCell>
+                              <TableCell className="text-white/70 text-xs py-2.5">{sale.date}</TableCell>
                               <TableCell className="text-white text-xs py-2.5 font-medium">{sale.description}</TableCell>
-                              <TableCell className="text-white/60 text-xs py-2.5 hidden sm:table-cell">{sale.customer?.name || '-'}</TableCell>
+                              <TableCell className="text-white/60 text-xs py-2.5 hidden sm:table-cell">{sale.customer}</TableCell>
                               <TableCell className="text-[#03DAC6] text-xs text-right py-2.5 font-semibold">{formatAmount(sale.amount)}</TableCell>
                             </TableRow>
                           ))}
@@ -613,20 +708,7 @@ export default function BusinessLaporan() {
                       ))}
                     </div>
                   ) : !data || data.expenses.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-white/40">
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="relative"
-                      >
-                        <div className="h-16 w-16 rounded-2xl bg-[#CF6679]/10 flex items-center justify-center">
-                          <TrendingDown className="h-8 w-8 text-[#CF6679]/40" />
-                        </div>
-                      </motion.div>
-                      <p className="text-sm mt-3">{t('biz.noBizData')}</p>
-                      <p className="text-xs mt-1 text-white/25">No expenses recorded for this period</p>
-                    </div>
+                    <EmptyState icon={TrendingDown} color="#CF6679" text="Belum ada pengeluaran di periode ini" />
                   ) : (
                     <div className="max-h-[400px] overflow-y-auto">
                       <Table>
@@ -641,7 +723,7 @@ export default function BusinessLaporan() {
                         <TableBody>
                           {data.expenses.map((exp, idx) => (
                             <TableRow key={exp.id} className={cn('border-white/[0.04] hover:bg-white/[0.04] transition-colors', idx % 2 === 1 && 'bg-white/[0.015]')}>
-                              <TableCell className="text-white/70 text-xs py-2.5">{new Date(exp.date).toLocaleDateString()}</TableCell>
+                              <TableCell className="text-white/70 text-xs py-2.5">{exp.date}</TableCell>
                               <TableCell className="text-white text-xs py-2.5 font-medium">{exp.description}</TableCell>
                               <TableCell className="py-2.5 hidden sm:table-cell">
                                 <Badge className="bg-white/[0.05] text-white/60 border-white/[0.08] text-[10px]">{exp.category || '-'}</Badge>
@@ -668,27 +750,14 @@ export default function BusinessLaporan() {
                       ))}
                     </div>
                   ) : !data || data.invoices.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-white/40">
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="relative"
-                      >
-                        <div className="h-16 w-16 rounded-2xl bg-[#FFD700]/10 flex items-center justify-center">
-                          <Receipt className="h-8 w-8 text-[#FFD700]/40" />
-                        </div>
-                      </motion.div>
-                      <p className="text-sm mt-3">{t('biz.noBizData')}</p>
-                      <p className="text-xs mt-1 text-white/25">No invoices for this period</p>
-                    </div>
+                    <EmptyState icon={Receipt} color="#FFD700" text="Belum ada invoice di periode ini" />
                   ) : (
                     <div className="max-h-[400px] overflow-y-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.01]">
                             <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceNumber')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">{t('biz.invoiceCustomer')}</TableHead>
+                            <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">Pelanggan</TableHead>
                             <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceStatus')}</TableHead>
                             <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.invoiceTotal')}</TableHead>
                           </TableRow>
@@ -699,7 +768,7 @@ export default function BusinessLaporan() {
                             return (
                               <TableRow key={inv.id} className={cn('border-white/[0.04] hover:bg-white/[0.04] transition-colors', idx % 2 === 1 && 'bg-white/[0.015]')}>
                                 <TableCell className="text-white text-xs py-2.5 font-medium">{inv.invoiceNumber}</TableCell>
-                                <TableCell className="text-white/60 text-xs py-2.5 hidden sm:table-cell">{inv.customer?.name || '-'}</TableCell>
+                                <TableCell className="text-white/60 text-xs py-2.5 hidden sm:table-cell">{inv.customer}</TableCell>
                                 <TableCell className="py-2.5">
                                   <Badge variant="outline" className={cn('text-[10px] font-medium border', statusClass)}>
                                     {inv.status}
@@ -728,20 +797,7 @@ export default function BusinessLaporan() {
                       ))}
                     </div>
                   ) : !data || data.debts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-white/40">
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="relative"
-                      >
-                        <div className="h-16 w-16 rounded-2xl bg-[#03DAC6]/10 flex items-center justify-center">
-                          <CreditCard className="h-8 w-8 text-[#03DAC6]/40" />
-                        </div>
-                      </motion.div>
-                      <p className="text-sm mt-3">{t('biz.noBizData')}</p>
-                      <p className="text-xs mt-1 text-white/25">No debts or receivables for this period</p>
-                    </div>
+                    <EmptyState icon={CreditCard} color="#03DAC6" text="Belum ada hutang/piutang" />
                   ) : (
                     <div className="max-h-[400px] overflow-y-auto">
                       <Table>
@@ -784,6 +840,28 @@ export default function BusinessLaporan() {
           </Tabs>
         </motion.div>
       </motion.div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Reusable empty state                                               */
+/* ------------------------------------------------------------------ */
+
+function EmptyState({ icon: Icon, color, text }: { icon: React.ElementType; color: string; text: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-white/40">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative"
+      >
+        <div className="h-16 w-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${color}10` }}>
+          <Icon className="h-8 w-8" style={{ color: `${color}60` }} />
+        </div>
+      </motion.div>
+      <p className="text-sm mt-3">{text}</p>
     </div>
   );
 }
