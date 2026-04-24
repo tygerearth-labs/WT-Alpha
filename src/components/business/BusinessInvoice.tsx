@@ -48,7 +48,7 @@ import {
   Plus, Pencil, Trash2, FileText, Download,
   PlusCircle, MinusCircle, Eye, Receipt,
   Clock, CheckCircle2, AlertTriangle, TrendingUp,
-  Landmark, Star,
+  Landmark, Star, Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -341,6 +341,16 @@ export default function BusinessInvoice() {
 
   return (
     <div className="space-y-4">
+      {/* Info Banner */}
+      <div
+        className="flex items-start gap-2.5 p-3 rounded-lg text-[11px]"
+        style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}20` }}
+      >
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
+        <span style={{ color: THEME.textSecondary }}>
+          Kelola invoice/tagihan pelanggan. Invoice cicilan dibuat otomatis dari penjualan cicilan.
+        </span>
+      </div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-base font-bold flex items-center gap-2" style={{ color: THEME.text }}>
@@ -426,7 +436,7 @@ export default function BusinessInvoice() {
                       return (
                         <tr
                           key={inv.id}
-                          className="transition-colors duration-150 group"
+                          className="transition-colors duration-150 group cursor-default"
                           style={{ borderBottom: `1px solid ${THEME.border}` }}
                         >
                           <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>
@@ -451,7 +461,7 @@ export default function BusinessInvoice() {
                             {formatAmount(inv.total)}
                           </TableCell>
                           <TableCell className="py-2 text-right">
-                            <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10" style={{ color: THEME.muted }} onClick={() => setViewInvoice(inv)}>
                                 <Eye className="h-3 w-3" />
                               </Button>

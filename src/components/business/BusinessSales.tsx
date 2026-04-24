@@ -68,6 +68,7 @@ import {
   Layers,
   CalendarDays,
   CheckCircle,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -117,6 +118,7 @@ interface Sale {
   installmentAmount?: number | null;
   investorSharePct?: number | null;
   installmentDueDate?: string | null;
+  realizedAmount?: number | null;
 }
 
 const PAYMENT_METHODS = [
@@ -416,6 +418,12 @@ export default function BusinessSales() {
   );
 
   const total = filteredSales.reduce((sum, s) => sum + s.amount, 0);
+  const totalTunai = filteredSales
+    .filter((s) => (s.installmentTempo ?? 0) <= 0)
+    .reduce((sum, s) => sum + s.amount, 0);
+  const totalCicilan = filteredSales
+    .filter((s) => (s.installmentTempo ?? 0) > 0)
+    .reduce((sum, s) => sum + (s.realizedAmount ?? s.downPayment ?? 0), 0);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todaySales = sales.filter((s) => s.date.startsWith(todayStr));
@@ -425,6 +433,8 @@ export default function BusinessSales() {
   const animatedTotal = useAnimatedCounter(total);
   const animatedToday = useAnimatedCounter(todayTotal);
   const animatedAvg = useAnimatedCounter(avgPerTransaction);
+  const animatedTunai = useAnimatedCounter(totalTunai);
+  const animatedCicilan = useAnimatedCounter(totalCicilan);
 
   // Selected product info for dialog
   const selectedProduct = products.find((p) => p.id === selectedProductId);
@@ -440,6 +450,17 @@ export default function BusinessSales() {
 
   return (
     <div className="space-y-4">
+      {/* Info Banner */}
+      <div
+        className="flex items-start gap-2.5 p-3 rounded-lg text-[11px]"
+        style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}20` }}
+      >
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
+        <span style={{ color: THEME.textSecondary }}>
+          Catat semua penjualan Anda. Untuk penjualan cicilan, sistem akan otomatis membuat piutang dan invoice.
+        </span>
+      </div>
+
       {/* Tab Toggle — simple design */}
       <div
         className="relative flex gap-1 rounded-lg p-0.5 w-fit"
@@ -491,8 +512,8 @@ export default function BusinessSales() {
       ) : (
         <div key="sales">
           {/* Summary Cards — Clean flat design */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            {/* Total Penjualan */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Total Penjualan (Tunai) */}
             <Card
               className="rounded-xl overflow-hidden"
               style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
@@ -503,22 +524,22 @@ export default function BusinessSales() {
                     className="w-7 h-7 rounded-lg flex items-center justify-center"
                     style={{ background: `${THEME.secondary}15` }}
                   >
-                    <CircleDollarSign className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+                    <Banknote className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
                   </div>
                   <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
-                    {t('biz.totalPenjualan')}
+                    Total Tunai
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-bold tabular-nums" style={{ color: THEME.text }}>
-                  {formatAmount(animatedTotal)}
+                  {formatAmount(animatedTunai)}
                 </p>
                 <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>
-                  {filteredSales.length} {t('biz.penjualan').toLowerCase()}
+                  {filteredSales.filter((s) => (s.installmentTempo ?? 0) <= 0).length} transaksi
                 </p>
               </CardContent>
             </Card>
 
-            {/* Transaksi Hari Ini */}
+            {/* Total Penjualan (Cicilan) */}
             <Card
               className="rounded-xl overflow-hidden"
               style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
@@ -529,46 +550,37 @@ export default function BusinessSales() {
                     className="w-7 h-7 rounded-lg flex items-center justify-center"
                     style={{ background: `${THEME.primary}15` }}
                   >
-                    <Receipt className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                    <Wallet className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
                   </div>
                   <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
-                    {t('biz.cashDate')}
+                    Total Cicilan
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-bold tabular-nums" style={{ color: THEME.text }}>
-                  {formatAmount(animatedToday)}
+                  {formatAmount(animatedCicilan)}
                 </p>
                 <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>
-                  {todaySales.length} transaksi
+                  {filteredSales.filter((s) => (s.installmentTempo ?? 0) > 0).length} cicilan · realisasi
                 </p>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Rata-rata per Transaksi */}
-            <Card
-              className="rounded-xl overflow-hidden"
-              style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
-            >
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center"
-                    style={{ background: `${THEME.warning}15` }}
-                  >
-                    <Calculator className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
-                  </div>
-                  <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
-                    Rata-rata
-                  </span>
-                </div>
-                <p className="text-sm sm:text-base font-bold tabular-nums" style={{ color: THEME.text }}>
-                  {formatAmount(animatedAvg)}
-                </p>
-                <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>
-                  per transaksi
-                </p>
-              </CardContent>
-            </Card>
+          {/* Sub summary row */}
+          <div className="flex items-center justify-between gap-3 mb-4 px-1">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <Receipt className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                <span className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.cashDate')}</span>
+                <span className="text-[11px] font-semibold tabular-nums" style={{ color: THEME.text }}>{formatAmount(animatedToday)}</span>
+                <span className="text-[10px]" style={{ color: THEME.muted }}>({todaySales.length})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Calculator className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
+                <span className="text-[11px]" style={{ color: THEME.textSecondary }}>Rata-rata</span>
+                <span className="text-[11px] font-semibold tabular-nums" style={{ color: THEME.text }}>{formatAmount(animatedAvg)}</span>
+              </div>
+            </div>
           </div>
 
           {/* Header with Search & Filters */}
@@ -696,10 +708,10 @@ export default function BusinessSales() {
                           <TableHead className="text-[10px] font-medium uppercase tracking-wider hidden lg:table-cell w-[120px] py-2" style={{ color: THEME.muted }}>
                             Status
                           </TableHead>
-                          <TableHead className="text-[10px] font-medium uppercase tracking-wider text-right w-[110px] sm:w-[140px] py-2" style={{ color: THEME.muted }}>
+                          <TableHead className="text-[10px] font-medium uppercase tracking-wider text-right w-[130px] sm:w-[180px] py-2" style={{ color: THEME.muted }}>
                             {t('biz.saleAmount')}
                           </TableHead>
-                          <TableHead className="w-20" />
+                          <TableHead className="w-[68px] sm:w-20" />
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -849,10 +861,24 @@ export default function BusinessSales() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-xs text-right font-semibold py-2 tabular-nums" style={{ color: THEME.secondary }}>
-                                  +{formatAmount(sale.amount)}
+                                  {isInstallment ? (
+                                    <div className="flex flex-col items-end gap-0">
+                                      <span className="font-semibold">+{formatAmount(sale.amount)}</span>
+                                      <span className="text-[9px]" style={{ color: THEME.muted }}>
+                                        DP {formatAmount(sale.downPayment ?? 0)} · Sisa {formatAmount(sale.amount - (sale.realizedAmount ?? sale.downPayment ?? 0))}
+                                      </span>
+                                      {hasInvestor && sale.downPayment && sale.installmentAmount && (
+                                        <span className="text-[8px]" style={{ color: THEME.warning }}>
+                                          Inv DP {sale.investorSharePct}%={formatAmount((sale.downPayment * (sale.investorSharePct ?? 0)) / 100)} · Cicilan {sale.investorSharePct}%={formatAmount((sale.installmentAmount * (sale.investorSharePct ?? 0)) / 100)}/tempo
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span>+{formatAmount(sale.amount)}</span>
+                                  )}
                                 </TableCell>
                                 <TableCell className="py-2 text-right">
-                                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                  <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
                                     <Button
                                       variant="ghost"
                                       size="sm"

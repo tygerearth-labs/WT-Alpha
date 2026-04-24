@@ -23,29 +23,28 @@ import {
   FileBarChart, Download, TrendingUp, TrendingDown,
   DollarSign, CreditCard, Wallet,
   CalendarDays, BarChart3, Receipt, ArrowUpRight, ArrowDownRight, ArrowRight,
+  AlertTriangle, Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.07, delayChildren: 0.05 },
-  },
+// ─── THEME ─────────────────────────────────────────────────────
+const THEME = {
+  bg: '#000000',
+  surface: '#121212',
+  primary: '#BB86FC',
+  secondary: '#03DAC6',
+  destructive: '#CF6679',
+  warning: '#F9A825',
+  muted: '#9E9E9E',
+  border: 'rgba(255,255,255,0.08)',
+  borderHover: 'rgba(255,255,255,0.15)',
+  text: '#FFFFFF',
+  textSecondary: '#B3B3B3',
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
-};
-
-const cardHover = {
-  rest: { scale: 1 },
-  hover: { scale: 1.02, transition: { duration: 0.2 } },
-};
+const cardStyle: React.CSSProperties = { background: THEME.surface, border: `1px solid ${THEME.border}` };
+const inputStyle: React.CSSProperties = { background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text };
 
 /* ------------------------------------------------------------------ */
 /*  Raw API response types                                              */
@@ -162,6 +161,16 @@ interface DebtRow {
   status: string;
 }
 
+interface PiutangDetailRow {
+  id: string;
+  counterpart: string;
+  amount: number;
+  paid: number;
+  remaining: number;
+  daysOverdue: number;
+  status: string;
+}
+
 interface ReportData {
   summary: ReportSummary;
   sales: SalesRow[];
@@ -190,27 +199,28 @@ function ExpenseBreakdownChart({ expenses, formatAmount }: {
   }, [expenses]);
 
   const maxAmount = Math.max(...categoryData.map(([, a]) => a), 1);
-  const barColors = ['#CF6679', '#BB86FC', '#FFD700', '#03DAC6', '#FF8A65', '#82B1FF'];
+  const barColors = [THEME.destructive, THEME.primary, THEME.warning, THEME.secondary, '#FF8A65', '#82B1FF'];
 
   if (categoryData.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {categoryData.map(([cat, amount], i) => {
         const pct = (amount / maxAmount) * 100;
         return (
           <div key={cat} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-white/70 font-medium truncate max-w-[140px]">{cat}</span>
-              <span className="text-white/50">{formatAmount(amount)}</span>
+              <span className="font-medium truncate max-w-[140px]" style={{ color: THEME.textSecondary }}>{cat}</span>
+              <span style={{ color: THEME.muted }}>{formatAmount(amount)}</span>
             </div>
-            <div className="h-2.5 rounded-full bg-white/[0.04] overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' as const }}
-                className="h-full rounded-full"
-                style={{ backgroundColor: barColors[i % barColors.length] }}
+            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: THEME.border }}>
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${pct}%`,
+                  backgroundColor: barColors[i % barColors.length],
+                  transitionDelay: `${i * 0.08}s`,
+                }}
               />
             </div>
           </div>
@@ -221,7 +231,7 @@ function ExpenseBreakdownChart({ expenses, formatAmount }: {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Visual Date Range Indicator                                        */
+/*  Date Range Indicator                                               */
 /* ------------------------------------------------------------------ */
 
 function DateRangeIndicator({ fromDate, toDate }: { fromDate: string; toDate: string }) {
@@ -234,15 +244,16 @@ function DateRangeIndicator({ fromDate, toDate }: { fromDate: string; toDate: st
 
   return (
     <div className="flex items-center gap-3 mt-2">
-      <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${progress * 100}%` }}
-          transition={{ duration: 0.5 }}
-          className="h-full rounded-full bg-gradient-to-r from-[#BB86FC] to-[#03DAC6]"
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: THEME.border }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${progress * 100}%`,
+            background: `linear-gradient(to right, ${THEME.primary}, ${THEME.secondary})`,
+          }}
         />
       </div>
-      <span className="text-[10px] text-white/40 whitespace-nowrap">{totalDays} days</span>
+      <span className="text-[10px] whitespace-nowrap" style={{ color: THEME.muted }}>{totalDays} hari</span>
     </div>
   );
 }
@@ -266,7 +277,6 @@ function normalizeResponse(raw: ApiResponse): ReportData | null {
     paymentMethod: s.metodePembayaran,
   }));
 
-  // Expenses = cash entries where tipe === 'kas_keluar'
   const expenses: ExpenseRow[] = (r.cash?.data || [])
     .filter((c) => c.tipe === 'kas_keluar')
     .map((c, i) => ({
@@ -308,6 +318,21 @@ function normalizeResponse(raw: ApiResponse): ReportData | null {
   };
 
   return { summary, sales, expenses, invoices, debts };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Empty State                                                        */
+/* ------------------------------------------------------------------ */
+
+function EmptyState({ icon: Icon, color, text }: { icon: React.ElementType; color: string; text: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16">
+      <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <Icon className="h-7 w-7" style={{ color: `${color}50` }} />
+      </div>
+      <p className="text-sm" style={{ color: THEME.textSecondary }}>{text}</p>
+    </div>
+  );
 }
 
 /* ================================================================== */
@@ -352,6 +377,60 @@ export default function BusinessLaporan() {
     if (businessId) fetchReport();
   }, [businessId, fetchReport]);
 
+  /* ── Tax Audit Derivatives ── */
+  const taxAudit = useMemo(() => {
+    if (!data) return null;
+    const piutangDebts = data.debts.filter((d) => d.type === 'piutang');
+    const totalPiutangRemaining = piutangDebts.reduce((s, d) => s + d.remaining, 0);
+    const totalPiutangPaid = piutangDebts.reduce((s, d) => s + (d.amount - d.remaining), 0);
+
+    // Sales split: cash vs installment proxy
+    const cashSales = data.sales.filter((s) => !s.paymentMethod || s.paymentMethod === 'cash' || s.paymentMethod === 'tunai');
+    const installmentSales = data.sales.filter((s) => s.paymentMethod && (s.paymentMethod === 'cicilan' || s.paymentMethod === 'installment' || s.paymentMethod === 'kredit'));
+    const pendapatanTunai = cashSales.reduce((s, sl) => s + sl.amount, 0);
+    const pendapatanCicilan = installmentSales.reduce((s, sl) => s + sl.amount, 0);
+
+    // DP received = portion of installment sales that's been paid as DP
+    // We estimate: total piutang paid from installment sales
+    const dpDiterima = totalPiutangPaid;
+    const cicilanDiterima = totalPiutangPaid; // same as paid installments
+    const totalPiutangBelumDibayar = totalPiutangRemaining;
+    const labaRugiReal = pendapatanTunai + totalPiutangPaid - data.summary.totalExpense;
+
+    return {
+      pendapatanTunai,
+      pendapatanCicilan,
+      dpDiterima,
+      cicilanDiterima,
+      totalPiutangBelumDibayar,
+      labaRugiReal,
+    };
+  }, [data]);
+
+  /* ── Piutang Detail ── */
+  const piutangDetail = useMemo((): PiutangDetailRow[] => {
+    if (!data) return [];
+    const now = new Date();
+    return data.debts
+      .filter((d) => d.type === 'piutang' && d.status !== 'paid')
+      .map((d) => {
+        const paid = d.amount - d.remaining;
+        const daysOverdue = d.dueDate && d.dueDate !== '-'
+          ? Math.max(0, Math.floor((now.getTime() - new Date(d.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+          : 0;
+        return {
+          id: d.id,
+          counterpart: d.counterpart,
+          amount: d.amount,
+          paid,
+          remaining: d.remaining,
+          daysOverdue,
+          status: d.status,
+        };
+      })
+      .sort((a, b) => b.daysOverdue - a.daysOverdue);
+  }, [data]);
+
   /* ── Export Excel ── */
   const handleExportExcel = async () => {
     if (!businessId || !data) return;
@@ -362,43 +441,31 @@ export default function BusinessLaporan() {
 
       if (data.sales.length > 0) {
         const rows = data.sales.map((s) => ({
-          Tanggal: s.date,
-          Deskripsi: s.description,
-          Pelanggan: s.customer,
-          Metode: s.paymentMethod,
-          Jumlah: s.amount,
+          Tanggal: s.date, Deskripsi: s.description, Pelanggan: s.customer,
+          Metode: s.paymentMethod, Jumlah: s.amount,
         }));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Penjualan');
       }
 
       if (data.expenses.length > 0) {
         const rows = data.expenses.map((e) => ({
-          Tanggal: e.date,
-          Deskripsi: e.description,
-          Kategori: e.category,
-          Jumlah: e.amount,
+          Tanggal: e.date, Deskripsi: e.description, Kategori: e.category, Jumlah: e.amount,
         }));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pengeluaran');
       }
 
       if (data.invoices.length > 0) {
         const rows = data.invoices.map((inv) => ({
-          'No Invoice': inv.invoiceNumber,
-          Pelanggan: inv.customer,
-          Total: inv.total,
-          Status: inv.status,
-          Tanggal: inv.date,
+          'No Invoice': inv.invoiceNumber, Pelanggan: inv.customer,
+          Total: inv.total, Status: inv.status, Tanggal: inv.date,
         }));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Invoice');
       }
 
       if (data.debts.length > 0) {
         const rows = data.debts.map((d) => ({
-          Pihak: d.counterpart,
-          Tipe: d.type,
-          Jumlah: d.amount,
-          Sisa: d.remaining,
-          'Jatuh Tempo': d.dueDate,
+          Pihak: d.counterpart, Tipe: d.type, Jumlah: d.amount,
+          Sisa: d.remaining, 'Jatuh Tempo': d.dueDate,
         }));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Hutang Piutang');
       }
@@ -477,391 +544,473 @@ export default function BusinessLaporan() {
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-white/50 text-center">{t('biz.registerFirst')}</p>
+        <p className="text-center" style={{ color: THEME.textSecondary }}>{t('biz.registerFirst')}</p>
       </div>
     );
   }
 
   const summaryCards = data
     ? [
-        { label: t('biz.bizRevenue'), value: data.summary.totalRevenue, color: '#03DAC6', icon: TrendingUp, gradient: 'from-[#03DAC6]/20 to-[#03DAC6]/5', trend: 'up' as const },
-        { label: t('biz.bizExpense'), value: data.summary.totalExpense, color: '#CF6679', icon: TrendingDown, gradient: 'from-[#CF6679]/20 to-[#CF6679]/5', trend: 'down' as const },
-        { label: t('biz.bizNetIncome'), value: data.summary.netIncome, color: data.summary.netIncome >= 0 ? '#03DAC6' : '#CF6679', icon: DollarSign, gradient: data.summary.netIncome >= 0 ? 'from-[#03DAC6]/20 to-[#03DAC6]/5' : 'from-[#CF6679]/20 to-[#CF6679]/5', trend: data.summary.netIncome >= 0 ? 'up' as const : 'down' as const },
-        { label: t('biz.totalPenjualan'), value: data.summary.totalSales, color: '#BB86FC', icon: Wallet, gradient: 'from-[#BB86FC]/20 to-[#BB86FC]/5', trend: 'up' as const },
+        { label: t('biz.bizRevenue'), value: data.summary.totalRevenue, color: THEME.secondary, icon: TrendingUp },
+        { label: t('biz.bizExpense'), value: data.summary.totalExpense, color: THEME.destructive, icon: TrendingDown },
+        { label: t('biz.bizNetIncome'), value: data.summary.netIncome, color: data.summary.netIncome >= 0 ? THEME.secondary : THEME.destructive, icon: DollarSign },
+        { label: t('biz.totalPenjualan'), value: data.summary.totalSales, color: THEME.primary, icon: Wallet },
       ]
     : [];
 
   return (
-    <div className="space-y-5">
-      <motion.div variants={containerVariants} initial="hidden" animate="visible">
-        {/* Header */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-[#BB86FC]/15 flex items-center justify-center">
-              <FileBarChart className="h-4 w-4 text-[#BB86FC]" />
-            </div>
-            {t('biz.bizLaporan')}
-          </h2>
-          <div className="flex gap-2">
-            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Button
-                onClick={handleExportExcel}
-                size="sm"
-                variant="outline"
-                disabled={exporting === 'excel' || loading}
-                className="border-[#03DAC6]/20 text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-xl"
-              >
-                {exporting === 'excel' ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1 h-3.5 w-3.5" />}
-                {t('biz.exportExcel')}
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Button
-                onClick={handleExportPDF}
-                size="sm"
-                variant="outline"
-                disabled={exporting === 'pdf' || loading}
-                className="border-[#CF6679]/20 text-[#CF6679] hover:bg-[#CF6679]/10 rounded-xl"
-              >
-                {exporting === 'pdf' ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1 h-3.5 w-3.5" />}
-                {t('biz.exportPDF')}
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
+    <div className="space-y-3">
+      {/* Info Banner */}
+      <div className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}15` }}>
+        <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
+        <p className="text-xs leading-relaxed" style={{ color: THEME.textSecondary }}>
+          Laporan keuangan bisnis untuk audit dan perencanaan. Data cicilan dipisah untuk akurasi laporan pajak.
+        </p>
+      </div>
 
-        {/* Date Range Filter */}
-        <motion.div variants={itemVariants} className="mt-4">
-          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="h-7 w-7 rounded-lg bg-[#BB86FC]/15 flex items-center justify-center">
-                    <CalendarDays className="h-3.5 w-3.5 text-[#BB86FC]" />
-                  </div>
-                  <Label className="text-white/60 text-xs font-medium">{t('biz.cashDate')}</Label>
-                </div>
-                <div className="flex items-center gap-2 flex-1 flex-wrap">
-                  <Input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    className="bg-white/[0.04] border-white/[0.08] text-white w-40 h-9 text-xs rounded-lg focus:border-[#BB86FC]/40"
-                  />
-                  <div className="h-4 w-8 rounded bg-gradient-to-r from-[#BB86FC]/30 to-[#03DAC6]/30 flex items-center justify-center">
-                    <ArrowRight className="h-3 w-3 text-white/40" />
-                  </div>
-                  <Input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="bg-white/[0.04] border-white/[0.08] text-white w-40 h-9 text-xs rounded-lg focus:border-[#BB86FC]/40"
-                  />
-                </div>
-                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                  <Button
-                    onClick={fetchReport}
-                    size="sm"
-                    className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 h-9 text-xs rounded-xl shadow-lg shadow-[#BB86FC]/15"
-                  >
-                    {loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <BarChart3 className="mr-1 h-3.5 w-3.5" />}
-                    Lihat Laporan
-                  </Button>
-                </motion.div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-base font-bold flex items-center gap-2" style={{ color: THEME.text }}>
+          <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
+            <FileBarChart className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+          </div>
+          {t('biz.bizLaporan')}
+        </h2>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleExportExcel}
+            size="sm"
+            variant="outline"
+            disabled={exporting === 'excel' || loading}
+            className="rounded-lg text-xs h-8"
+            style={{ borderColor: `${THEME.secondary}25`, color: THEME.secondary }}
+          >
+            {exporting === 'excel' ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Download className="mr-1 h-3 w-3" />}
+            {t('biz.exportExcel')}
+          </Button>
+          <Button
+            onClick={handleExportPDF}
+            size="sm"
+            variant="outline"
+            disabled={exporting === 'pdf' || loading}
+            className="rounded-lg text-xs h-8"
+            style={{ borderColor: `${THEME.destructive}25`, color: THEME.destructive }}
+          >
+            {exporting === 'pdf' ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Download className="mr-1 h-3 w-3" />}
+            {t('biz.exportPDF')}
+          </Button>
+        </div>
+      </div>
+
+      {/* Date Range Filter */}
+      <Card className="rounded-xl" style={cardStyle}>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
+                <CalendarDays className="h-3 w-3" style={{ color: THEME.primary }} />
               </div>
-              <DateRangeIndicator fromDate={fromDate} toDate={toDate} />
+              <Label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.cashDate')}</Label>
+            </div>
+            <div className="flex items-center gap-2 flex-1 flex-wrap">
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-36 h-8 text-xs rounded-lg"
+                style={inputStyle}
+              />
+              <div className="h-5 w-6 rounded flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
+                <ArrowRight className="h-3 w-3" style={{ color: THEME.primary }} />
+              </div>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-36 h-8 text-xs rounded-lg"
+                style={inputStyle}
+              />
+            </div>
+            <Button
+              onClick={fetchReport}
+              size="sm"
+              className="rounded-lg h-8 text-xs"
+              style={{ backgroundColor: THEME.primary, color: '#000' }}
+            >
+              {loading ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <BarChart3 className="mr-1 h-3 w-3" />}
+              Lihat Laporan
+            </Button>
+          </div>
+          <DateRangeIndicator fromDate={fromDate} toDate={toDate} />
+        </CardContent>
+      </Card>
+
+      {/* Summary Cards */}
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" style={{ background: THEME.surface }} />
+          ))}
+        </div>
+      ) : data ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          {summaryCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Card key={card.label} className="rounded-xl overflow-hidden" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
+                      <Icon className="h-3.5 w-3.5" style={{ color: card.color }} />
+                    </div>
+                    <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
+                      {card.color === THEME.secondary || (card.label === t('biz.bizNetIncome') && data.summary.netIncome >= 0) ? (
+                        <ArrowUpRight className="h-3 w-3" style={{ color: THEME.secondary }} />
+                      ) : (
+                        <ArrowDownRight className="h-3 w-3" style={{ color: THEME.destructive }} />
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{card.label}</p>
+                  <p className="text-base font-bold tabular-nums mt-0.5" style={{ color: card.color }}>
+                    {formatAmount(card.value)}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {/* Tax Audit Summary */}
+      {data && taxAudit && (
+        <Card className="rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.warning}25` }}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.warning}15` }}>
+                <AlertTriangle className="h-3 w-3" style={{ color: THEME.warning }} />
+              </div>
+              <h3 className="text-xs font-semibold" style={{ color: THEME.warning }}>Detail Audit Pajak</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {[
+                { label: 'Pendapatan Tunai', value: taxAudit.pendapatanTunai, color: THEME.secondary, highlight: false },
+                { label: 'Pendapatan Cicilan (Total)', value: taxAudit.pendapatanCicilan, color: THEME.primary, highlight: false },
+                { label: 'Pendapatan Cicilan — Diterima', value: taxAudit.dpDiterima, color: THEME.secondary, highlight: false },
+                { label: 'Total Piutang Belum Dibayar', value: taxAudit.totalPiutangBelumDibayar, color: THEME.warning, highlight: true },
+                { label: 'Pengeluaran', value: data.summary.totalExpense, color: THEME.destructive, highlight: false },
+                { label: 'LABA RUGI REAL', value: taxAudit.labaRugiReal, color: taxAudit.labaRugiReal >= 0 ? THEME.secondary : THEME.destructive, highlight: true },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between p-2 rounded-lg"
+                  style={{
+                    background: item.highlight ? `${item.color}08` : 'transparent',
+                    border: item.highlight ? `1px solid ${item.color}20` : `1px solid ${THEME.border}`,
+                  }}
+                >
+                  <span className="text-[10px] font-medium" style={{ color: THEME.muted }}>{item.label}</span>
+                  <span className="text-xs font-bold tabular-nums" style={{ color: item.color }}>
+                    {formatAmount(item.value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Expense Breakdown Chart */}
+      {data && data.expenses.length > 0 && !loading && (
+        <Card className="rounded-xl" style={cardStyle}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.destructive}15` }}>
+                <BarChart3 className="h-3 w-3" style={{ color: THEME.destructive }} />
+              </div>
+              <h3 className="text-xs font-semibold" style={{ color: THEME.text }}>Expense Breakdown</h3>
+              <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: `${THEME.destructive}15`, color: THEME.destructive, border: `1px solid ${THEME.destructive}20` }}>
+                {data.expenses.length} items
+              </Badge>
+            </div>
+            <ExpenseBreakdownChart expenses={data.expenses} formatAmount={formatAmount} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full sm:w-auto rounded-xl p-1 h-auto" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}>
+          {[
+            { value: 'sales', label: t('biz.penjualan'), color: THEME.primary },
+            { value: 'expenses', label: t('biz.kasKeluar'), color: THEME.destructive },
+            { value: 'invoices', label: t('biz.invoices'), color: THEME.warning },
+            { value: 'debts', label: t('biz.hutangPiutang'), color: THEME.secondary },
+            { value: 'piutang', label: 'Piutang Detail', color: THEME.warning },
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="rounded-lg text-xs px-3 py-1.5 data-[state=active]:shadow-none"
+              style={activeTab === tab.value
+                ? { color: tab.color, backgroundColor: `${tab.color}15` }
+                : { color: THEME.muted }
+              }
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {/* Sales Tab */}
+        <TabsContent value="sales" className="mt-3">
+          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-2 p-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                  ))}
+                </div>
+              ) : !data || data.sales.length === 0 ? (
+                <EmptyState icon={TrendingUp} color={THEME.primary} text="Belum ada penjualan di periode ini" />
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent" style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.cashDate')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.saleDescription')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: THEME.muted }}>Pelanggan</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>{t('biz.saleAmount')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.sales.map((sale, idx) => (
+                        <TableRow key={sale.id} className="transition-colors duration-150" style={{ background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent', borderBottom: `1px solid ${THEME.border}` }}>
+                          <TableCell className="text-xs py-2" style={{ color: THEME.textSecondary }}>{sale.date}</TableCell>
+                          <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>{sale.description}</TableCell>
+                          <TableCell className="text-xs py-2 hidden sm:table-cell" style={{ color: THEME.textSecondary }}>{sale.customer}</TableCell>
+                          <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: THEME.secondary }}>{formatAmount(sale.amount)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
-        </motion.div>
+        </TabsContent>
 
-        {/* Summary Cards */}
-        {loading ? (
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-2xl bg-[#1A1A2E]" />
-            ))}
-          </motion.div>
-        ) : data ? (
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-            {summaryCards.map((card) => (
-              <motion.div
-                key={card.label}
-                variants={cardHover}
-                initial="rest"
-                whileHover="hover"
-              >
-                <Card className={cn('relative overflow-hidden rounded-2xl border-white/[0.06] bg-gradient-to-br', card.gradient)}>
-                  <div className="absolute top-0 right-0 h-20 w-20 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: card.color }} />
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}20` }}>
-                        <card.icon className="h-4 w-4" style={{ color: card.color }} />
-                      </div>
-                      <div className={cn(
-                        'h-5 w-5 rounded-full flex items-center justify-center',
-                        card.trend === 'up' ? 'bg-[#03DAC6]/20' : 'bg-[#CF6679]/20'
-                      )}>
-                        {card.trend === 'up' ? (
-                          <ArrowUpRight className="h-3 w-3 text-[#03DAC6]" />
-                        ) : (
-                          <ArrowDownRight className="h-3 w-3 text-[#CF6679]" />
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">{card.label}</p>
-                    <p className={cn('text-lg font-bold mt-0.5', card.color === '#03DAC6' && 'text-[#03DAC6]', card.color === '#CF6679' && 'text-[#CF6679]', card.color === '#BB86FC' && 'text-[#BB86FC]')}>
-                      {formatAmount(card.value)}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        ) : null}
-
-        {/* Expense Breakdown Chart */}
-        {data && data.expenses.length > 0 && !loading && (
-          <motion.div variants={itemVariants} className="mt-4">
-            <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-7 w-7 rounded-lg bg-[#CF6679]/15 flex items-center justify-center">
-                    <BarChart3 className="h-3.5 w-3.5 text-[#CF6679]" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-white">Expense Breakdown</h3>
-                  <Badge className="bg-[#CF6679]/20 text-[#CF6679] border-[#CF6679]/20 text-[10px] ml-auto">
-                    {data.expenses.length} items
-                  </Badge>
+        {/* Expenses Tab */}
+        <TabsContent value="expenses" className="mt-3">
+          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-2 p-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                  ))}
                 </div>
-                <ExpenseBreakdownChart expenses={data.expenses} formatAmount={formatAmount} />
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Tabs */}
-        <motion.div variants={itemVariants} className="mt-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-white/[0.03] border border-white/[0.06] w-full sm:w-auto rounded-xl p-1">
-              <TabsTrigger value="sales" className="data-[state=active]:bg-[#BB86FC]/20 data-[state=active]:text-[#BB86FC] text-white/60 data-[state=active]:shadow-none rounded-lg text-xs">
-                {t('biz.penjualan')}
-              </TabsTrigger>
-              <TabsTrigger value="expenses" className="data-[state=active]:bg-[#CF6679]/20 data-[state=active]:text-[#CF6679] text-white/60 data-[state=active]:shadow-none rounded-lg text-xs">
-                {t('biz.kasKeluar')}
-              </TabsTrigger>
-              <TabsTrigger value="invoices" className="data-[state=active]:bg-[#FFD700]/20 data-[state=active]:text-[#FFD700] text-white/60 data-[state=active]:shadow-none rounded-lg text-xs">
-                {t('biz.invoices')}
-              </TabsTrigger>
-              <TabsTrigger value="debts" className="data-[state=active]:bg-[#03DAC6]/20 data-[state=active]:text-[#03DAC6] text-white/60 data-[state=active]:shadow-none rounded-lg text-xs">
-                {t('biz.hutangPiutang')}
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Sales Tab */}
-            <TabsContent value="sales" className="mt-4">
-              <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
-                <CardContent className="p-0">
-                  {loading ? (
-                    <div className="space-y-3 p-4">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 rounded-lg bg-white/[0.06]" />
+              ) : !data || data.expenses.length === 0 ? (
+                <EmptyState icon={TrendingDown} color={THEME.destructive} text="Belum ada pengeluaran di periode ini" />
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent" style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.cashDate')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.cashDescription')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: THEME.muted }}>{t('biz.cashCategory')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>{t('biz.cashAmount')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.expenses.map((exp, idx) => (
+                        <TableRow key={exp.id} className="transition-colors duration-150" style={{ background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent', borderBottom: `1px solid ${THEME.border}` }}>
+                          <TableCell className="text-xs py-2" style={{ color: THEME.textSecondary }}>{exp.date}</TableCell>
+                          <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>{exp.description}</TableCell>
+                          <TableCell className="py-2 hidden sm:table-cell">
+                            <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: `${THEME.muted}10`, color: THEME.textSecondary, border: `1px solid ${THEME.border}` }}>{exp.category || '-'}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: THEME.destructive }}>-{formatAmount(exp.amount)}</TableCell>
+                        </TableRow>
                       ))}
-                    </div>
-                  ) : !data || data.sales.length === 0 ? (
-                    <EmptyState icon={TrendingUp} color="#BB86FC" text="Belum ada penjualan di periode ini" />
-                  ) : (
-                    <div className="max-h-[400px] overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.01]">
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.cashDate')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.saleDescription')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">Pelanggan</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.saleAmount')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.sales.map((sale, idx) => (
-                            <TableRow key={sale.id} className={cn('border-white/[0.04] hover:bg-white/[0.04] transition-colors', idx % 2 === 1 && 'bg-white/[0.015]')}>
-                              <TableCell className="text-white/70 text-xs py-2.5">{sale.date}</TableCell>
-                              <TableCell className="text-white text-xs py-2.5 font-medium">{sale.description}</TableCell>
-                              <TableCell className="text-white/60 text-xs py-2.5 hidden sm:table-cell">{sale.customer}</TableCell>
-                              <TableCell className="text-[#03DAC6] text-xs text-right py-2.5 font-semibold">{formatAmount(sale.amount)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            {/* Expenses Tab */}
-            <TabsContent value="expenses" className="mt-4">
-              <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
-                <CardContent className="p-0">
-                  {loading ? (
-                    <div className="space-y-3 p-4">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 rounded-lg bg-white/[0.06]" />
+        {/* Invoices Tab */}
+        <TabsContent value="invoices" className="mt-3">
+          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-2 p-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                  ))}
+                </div>
+              ) : !data || data.invoices.length === 0 ? (
+                <EmptyState icon={Receipt} color={THEME.warning} text="Belum ada invoice di periode ini" />
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent" style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.invoiceNumber')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: THEME.muted }}>Pelanggan</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.invoiceStatus')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>{t('biz.invoiceTotal')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.invoices.map((inv, idx) => {
+                        const statusStyle = inv.status === 'paid'
+                          ? { backgroundColor: `${THEME.secondary}15`, color: THEME.secondary, border: `1px solid ${THEME.secondary}25` }
+                          : inv.status === 'overdue'
+                            ? { backgroundColor: `${THEME.destructive}15`, color: THEME.destructive, border: `1px solid ${THEME.destructive}25` }
+                            : { backgroundColor: `${THEME.warning}15`, color: THEME.warning, border: `1px solid ${THEME.warning}25` };
+                        return (
+                          <TableRow key={inv.id} className="transition-colors duration-150" style={{ background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent', borderBottom: `1px solid ${THEME.border}` }}>
+                            <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>{inv.invoiceNumber}</TableCell>
+                            <TableCell className="text-xs py-2 hidden sm:table-cell" style={{ color: THEME.textSecondary }}>{inv.customer}</TableCell>
+                            <TableCell className="py-2">
+                              <Badge variant="outline" className="text-[9px] font-medium rounded-full px-1.5 py-0" style={statusStyle}>
+                                {inv.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: THEME.text }}>{formatAmount(inv.total)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Debts Tab */}
+        <TabsContent value="debts" className="mt-3">
+          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-2 p-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                  ))}
+                </div>
+              ) : !data || data.debts.length === 0 ? (
+                <EmptyState icon={CreditCard} color={THEME.secondary} text="Belum ada hutang/piutang" />
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent" style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.debtCounterpart')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.debtStatus')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.debtAmount')}</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>{t('biz.debtRemaining')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.debts.map((debt, idx) => (
+                        <TableRow key={debt.id} className="transition-colors duration-150" style={{ background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent', borderBottom: `1px solid ${THEME.border}` }}>
+                          <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>{debt.counterpart}</TableCell>
+                          <TableCell className="py-2">
+                            <Badge variant="outline" className="text-[9px] font-medium rounded-full px-1.5 py-0" style={
+                              debt.type === 'hutang'
+                                ? { backgroundColor: `${THEME.destructive}15`, color: THEME.destructive, border: `1px solid ${THEME.destructive}25` }
+                                : { backgroundColor: `${THEME.secondary}15`, color: THEME.secondary, border: `1px solid ${THEME.secondary}25` }
+                            }>
+                              {debt.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs py-2" style={{ color: THEME.textSecondary }}>{formatAmount(debt.amount)}</TableCell>
+                          <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: debt.remaining > 0 ? THEME.warning : THEME.secondary }}>
+                            {debt.remaining > 0 ? formatAmount(debt.remaining) : t('biz.debtPaid')}
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </div>
-                  ) : !data || data.expenses.length === 0 ? (
-                    <EmptyState icon={TrendingDown} color="#CF6679" text="Belum ada pengeluaran di periode ini" />
-                  ) : (
-                    <div className="max-h-[400px] overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.01]">
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.cashDate')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.cashDescription')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">{t('biz.cashCategory')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.cashAmount')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.expenses.map((exp, idx) => (
-                            <TableRow key={exp.id} className={cn('border-white/[0.04] hover:bg-white/[0.04] transition-colors', idx % 2 === 1 && 'bg-white/[0.015]')}>
-                              <TableCell className="text-white/70 text-xs py-2.5">{exp.date}</TableCell>
-                              <TableCell className="text-white text-xs py-2.5 font-medium">{exp.description}</TableCell>
-                              <TableCell className="py-2.5 hidden sm:table-cell">
-                                <Badge className="bg-white/[0.05] text-white/60 border-white/[0.08] text-[10px]">{exp.category || '-'}</Badge>
-                              </TableCell>
-                              <TableCell className="text-[#CF6679] text-xs text-right py-2.5 font-semibold">-{formatAmount(exp.amount)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            {/* Invoices Tab */}
-            <TabsContent value="invoices" className="mt-4">
-              <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
-                <CardContent className="p-0">
-                  {loading ? (
-                    <div className="space-y-3 p-4">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 rounded-lg bg-white/[0.06]" />
+        {/* Piutang Detail Tab */}
+        <TabsContent value="piutang" className="mt-3">
+          <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.warning}25` }}>
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 p-3 sm:p-4" style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.warning}15` }}>
+                  <AlertTriangle className="h-3 w-3" style={{ color: THEME.warning }} />
+                </div>
+                <h3 className="text-xs font-semibold" style={{ color: THEME.warning }}>Piutang Belum Lunas</h3>
+                <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: `${THEME.warning}15`, color: THEME.warning, border: `1px solid ${THEME.warning}20` }}>
+                  {piutangDetail.length}
+                </Badge>
+              </div>
+              {loading ? (
+                <div className="space-y-2 p-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                  ))}
+                </div>
+              ) : piutangDetail.length === 0 ? (
+                <EmptyState icon={CreditCard} color={THEME.secondary} text="Tidak ada piutang yang belum lunas" />
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent" style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>Pelanggan</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>Total</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>Terbayar</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>Sisa</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>Lewat Jatuh</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {piutangDetail.map((row, idx) => (
+                        <TableRow key={row.id} className="transition-colors duration-150" style={{
+                          background: row.daysOverdue > 0 ? `${THEME.warning}05` : idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                          borderBottom: `1px solid ${THEME.border}`,
+                        }}>
+                          <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>{row.counterpart}</TableCell>
+                          <TableCell className="text-xs text-right py-2" style={{ color: THEME.textSecondary }}>{formatAmount(row.amount)}</TableCell>
+                          <TableCell className="text-xs text-right py-2" style={{ color: THEME.secondary }}>{formatAmount(row.paid)}</TableCell>
+                          <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: THEME.warning }}>{formatAmount(row.remaining)}</TableCell>
+                          <TableCell className="text-xs text-right py-2">
+                            {row.daysOverdue > 0 ? (
+                              <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{
+                                backgroundColor: row.daysOverdue > 30 ? `${THEME.destructive}15` : `${THEME.warning}15`,
+                                color: row.daysOverdue > 30 ? THEME.destructive : THEME.warning,
+                                border: `1px solid ${row.daysOverdue > 30 ? THEME.destructive : THEME.warning}20`,
+                              }}>
+                                {row.daysOverdue} hari
+                              </Badge>
+                            ) : (
+                              <span className="text-[10px]" style={{ color: THEME.muted }}>-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </div>
-                  ) : !data || data.invoices.length === 0 ? (
-                    <EmptyState icon={Receipt} color="#FFD700" text="Belum ada invoice di periode ini" />
-                  ) : (
-                    <div className="max-h-[400px] overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.01]">
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceNumber')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">Pelanggan</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceStatus')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.invoiceTotal')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.invoices.map((inv, idx) => {
-                            const statusClass = inv.status === 'paid' ? 'bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20' : inv.status === 'overdue' ? 'bg-[#CF6679]/15 text-[#CF6679] border-[#CF6679]/20' : 'bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/20';
-                            return (
-                              <TableRow key={inv.id} className={cn('border-white/[0.04] hover:bg-white/[0.04] transition-colors', idx % 2 === 1 && 'bg-white/[0.015]')}>
-                                <TableCell className="text-white text-xs py-2.5 font-medium">{inv.invoiceNumber}</TableCell>
-                                <TableCell className="text-white/60 text-xs py-2.5 hidden sm:table-cell">{inv.customer}</TableCell>
-                                <TableCell className="py-2.5">
-                                  <Badge variant="outline" className={cn('text-[10px] font-medium border', statusClass)}>
-                                    {inv.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-white text-xs text-right py-2.5 font-semibold">{formatAmount(inv.total)}</TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Debts Tab */}
-            <TabsContent value="debts" className="mt-4">
-              <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
-                <CardContent className="p-0">
-                  {loading ? (
-                    <div className="space-y-3 p-4">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 rounded-lg bg-white/[0.06]" />
-                      ))}
-                    </div>
-                  ) : !data || data.debts.length === 0 ? (
-                    <EmptyState icon={CreditCard} color="#03DAC6" text="Belum ada hutang/piutang" />
-                  ) : (
-                    <div className="max-h-[400px] overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.01]">
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.debtCounterpart')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.debtStatus')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium">{t('biz.debtAmount')}</TableHead>
-                            <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.debtRemaining')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.debts.map((debt, idx) => (
-                            <TableRow key={debt.id} className={cn('border-white/[0.04] hover:bg-white/[0.04] transition-colors', idx % 2 === 1 && 'bg-white/[0.015]')}>
-                              <TableCell className="text-white text-xs py-2.5 font-medium">{debt.counterpart}</TableCell>
-                              <TableCell className="py-2.5">
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    'text-[10px] font-medium border',
-                                    debt.type === 'hutang' ? 'bg-[#CF6679]/15 text-[#CF6679] border-[#CF6679]/20' : 'bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20'
-                                  )}
-                                >
-                                  {debt.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-white/70 text-xs py-2.5">{formatAmount(debt.amount)}</TableCell>
-                              <TableCell className={cn('text-xs text-right py-2.5 font-semibold', debt.remaining > 0 ? 'text-[#FFD700]' : 'text-[#03DAC6]')}>
-                                {debt.remaining > 0 ? formatAmount(debt.remaining) : t('biz.debtPaid')}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
-      </motion.div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Reusable empty state                                               */
-/* ------------------------------------------------------------------ */
-
-function EmptyState({ icon: Icon, color, text }: { icon: React.ElementType; color: string; text: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-white/40">
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative"
-      >
-        <div className="h-16 w-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${color}10` }}>
-          <Icon className="h-8 w-8" style={{ color: `${color}60` }} />
-        </div>
-      </motion.div>
-      <p className="text-sm mt-3">{text}</p>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

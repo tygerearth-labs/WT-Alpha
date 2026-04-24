@@ -37,6 +37,10 @@ import {
   Lightbulb,
   ChevronLeft,
   ChevronRight,
+  Info,
+  X,
+  CheckCircle2,
+  Package,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -88,6 +92,11 @@ interface DashboardData {
     amount: number;
     date: string;
     type: string;
+  }>;
+  topProductsSold: Array<{
+    name: string;
+    totalQty: number;
+    totalRevenue: number;
   }>;
 }
 
@@ -391,6 +400,7 @@ export default function BusinessDashboard() {
   const [loading, setLoading] = useState(true);
   const [fetchKey, setFetchKey] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
+  const [infoDismissed, setInfoDismissed] = useState(false);
 
   const businessId = activeBusiness?.id;
 
@@ -444,16 +454,69 @@ export default function BusinessDashboard() {
     return { greet, dateStr };
   }, []);
 
-  // Group recent sales by date (must be before early returns for React hooks rule)
+  // Format date helper (before memos)
+  const _fmtDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  // Combined recent activity (sales + cash entries)
+  const combinedActivities = useMemo(() => {
+    if (!data) return [];
+    const activities: Array<{
+      id: string;
+      description: string;
+      amount: number;
+      date: string;
+      type: 'sale' | 'income' | 'expense';
+      customer?: string | null;
+    }> = [];
+    data.recentSales.forEach((s) => {
+      activities.push({ id: s.id, description: s.description, amount: s.amount, date: s.date, type: 'sale', customer: s.customer?.name });
+    });
+    data.recentCashEntries.forEach((e) => {
+      activities.push({ id: e.id, description: e.description, amount: e.amount, date: e.date, type: e.type === 'kas_keluar' ? 'expense' : 'income' });
+    });
+    activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return activities.slice(0, 5);
+  }, [data]);
+
+  // Group activities by date
   const groupedActivities = useMemo(() => {
-    if (!data || data.recentSales.length === 0) return [];
-    const groups: Record<string, typeof data.recentSales> = {};
-    data.recentSales.forEach((sale) => {
-      const group = getDateGroup(sale.date);
+    if (combinedActivities.length === 0) return [];
+    const groups: Record<string, typeof combinedActivities> = {};
+    combinedActivities.forEach((item) => {
+      const group = getDateGroup(item.date);
       if (!groups[group]) groups[group] = [];
-      groups[group].push(sale);
+      groups[group].push(item);
     });
     return Object.entries(groups).map(([group, items]) => ({ group, items }));
+  }, [combinedActivities]);
+
+  // Piutang due soon with badge color
+  const debtsDueSoonWithBadge = useMemo(() => {
+    if (!data || !data.debtsDueSoon) return [];
+    return data.debtsDueSoon.slice(0, 5).map((debt) => {
+      const now = new Date();
+      const due = new Date(debt.dueDate);
+      const diffDays = Math.ceil((due.getTime() - now.getTime()) / 86400000);
+      let badgeColor: string;
+      let badgeLabel: string;
+      if (diffDays < 0) {
+        badgeColor = THEME.destructive;
+        badgeLabel = `Lewat ${Math.abs(diffDays)} hari`;
+      } else if (diffDays <= 3) {
+        badgeColor = THEME.warning;
+        badgeLabel = diffDays === 0 ? 'Hari ini' : `${diffDays} hari lagi`;
+      } else if (diffDays <= 7) {
+        badgeColor = THEME.secondary;
+        badgeLabel = `${diffDays} hari lagi`;
+      } else {
+        badgeColor = THEME.muted;
+        badgeLabel = _fmtDate(debt.dueDate);
+      }
+      return { ...debt, badgeColor, badgeLabel };
+    });
   }, [data]);
 
   // Health score
@@ -597,15 +660,43 @@ export default function BusinessDashboard() {
     { label: t('biz.kasKeluar'), icon: Receipt, color: THEME.destructive },
   ];
 
-  // Format date helper
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-  };
+  // Format date helper (reuse from above)
+  const formatDate = _fmtDate;
 
   const hasAnyData = data && (
     data.totalRevenue > 0 || data.totalExpense > 0 || data.recentSales.length > 0
   );
+
+  // Quick insight (computed after derived values)
+  const quickInsight = (() => {
+    if (!data || !hasAnyData) return 'Mulai catat penjualan dan pengeluaran untuk melihat insight bisnis Anda.';
+    const parts: string[] = [];
+    if (data.profit > 0) {
+      parts.push(`Bisnis Anda untung ${formatAmount(data.profit)} (margin ${(data.profitMargin ?? 0).toFixed(1)}%)`);
+    } else if (data.profit < 0) {
+      parts.push('Bisnis Anda sedang merugi — perlu evaluasi pengeluaran.');
+    } else {
+      parts.push('Pendapatan dan pengeluaran Anda seimbang.');
+    }
+    if (netCashValue > 0) {
+      parts.push(`Kas bersih positif ${formatAmount(netCashValue)}.`);
+    } else if (netCashValue < 0) {
+      parts.push('Kas bersih negatif — perlu tambahan modal.');
+    }
+    if ((data.debtsDueSoon?.length ?? 0) > 0) {
+      parts.push(`${data.debtsDueSoon!.length} piutang akan jatuh tempo.`);
+    }
+    if (healthScore.score >= 80) {
+      parts.push('Kesehatan bisnis: Sangat Baik.');
+    } else if (healthScore.score >= 60) {
+      parts.push('Kesehatan bisnis: Baik.');
+    } else if (healthScore.score >= 40) {
+      parts.push('Kesehatan bisnis: Perlu perhatian.');
+    } else {
+      parts.push('Kesehatan bisnis: Kritis.');
+    }
+    return parts.join(' ');
+  })();
 
   // Health score breakdown
   const healthBreakdown = data ? [
@@ -669,6 +760,29 @@ export default function BusinessDashboard() {
           <span className="text-[11px] font-medium" style={{ color: THEME.muted }}>Dashboard</span>
         </div>
       </div>
+
+      {/* ── Info Card (dismissible) ── */}
+      {!infoDismissed && (
+        <div
+          className="rounded-xl p-3 flex items-start gap-2.5 transition-opacity duration-200"
+          style={{
+            background: `${THEME.muted}08`,
+            border: `1px solid ${THEME.border}`,
+          }}
+        >
+          <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: THEME.muted }} />
+          <p className="text-[11px] leading-relaxed flex-1" style={{ color: THEME.muted }}>
+            Dashboard menampilkan ringkasan bisnis Anda: pendapatan, pengeluaran, profit, arus kas, piutang yang akan jatuh tempo, dan produk terlaris.
+          </p>
+          <button
+            onClick={() => setInfoDismissed(true)}
+            className="shrink-0 h-5 w-5 rounded-md flex items-center justify-center transition-colors duration-150"
+            style={{ color: THEME.muted }}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* ── Section 1: Quick Stats Row with Sparklines ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1047,6 +1161,122 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
+      {/* ── Section 3b: Piutang Mau Jatuh Tempo ── */}
+      <Card
+        style={{
+          background: THEME.surface,
+          border: `1px solid ${THEME.border}`,
+        }}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
+              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: THEME.warning }} />
+              <AlertTriangle className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
+              Piutang Mau Jatuh Tempo
+            </CardTitle>
+            {(data?.debtsDueSoon?.length ?? 0) > 0 && (
+              <span
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{ color: THEME.warning, backgroundColor: `${THEME.warning}15` }}
+              >
+                {data.debtsDueSoon.length} item
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pb-4">
+          {debtsDueSoonWithBadge.length > 0 ? (
+            <div className="space-y-1.5">
+              {debtsDueSoonWithBadge.map((debt) => (
+                <div
+                  key={debt.id}
+                  className="flex items-center gap-2.5 py-2 px-2.5 rounded-lg"
+                  style={{ borderBottom: `1px solid ${THEME.border}` }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] truncate font-medium" style={{ color: THEME.text }}>{debt.counterpart}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Clock className="h-2.5 w-2.5" style={{ color: THEME.muted }} />
+                      <p className="text-[10px]" style={{ color: THEME.muted }}>{_fmtDate(debt.dueDate)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[11px] font-bold tabular-nums" style={{ color: debt.badgeColor }}>{formatAmount(debt.remaining)}</p>
+                    <span
+                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block"
+                      style={{ color: debt.badgeColor, backgroundColor: `${debt.badgeColor}15` }}
+                    >
+                      {debt.badgeLabel}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 py-2 px-2.5 rounded-lg" style={{ backgroundColor: `${THEME.secondary}08` }}>
+              <CheckCircle2 className="h-4 w-4" style={{ color: THEME.secondary }} />
+              <p className="text-[12px] font-medium" style={{ color: THEME.secondary }}>Semua piutang aman</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Section 3c: Top Produk Terjual ── */}
+      {data?.topProductsSold && data.topProductsSold.length > 0 && (
+        <Card
+          style={{
+            background: THEME.surface,
+            border: `1px solid ${THEME.border}`,
+          }}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
+                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: THEME.primary }} />
+                <Package className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                Top Produk Terjual
+              </CardTitle>
+              <span className="text-[10px] uppercase tracking-wider font-medium" style={{ color: THEME.muted }}>
+                Top 5
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="space-y-2.5">
+              {data.topProductsSold.slice(0, 5).map((product, idx) => {
+                const maxRevenue = Math.max(...data.topProductsSold.map(p => p.totalRevenue), 1);
+                const barPct = (product.totalRevenue / maxRevenue) * 100;
+                return (
+                  <div key={product.name} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-bold tabular-nums w-4" style={{ color: THEME.muted }}>{idx + 1}</span>
+                        <span className="text-[12px] truncate font-medium" style={{ color: THEME.textSecondary }}>{product.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px]" style={{ color: THEME.muted }}>{product.totalQty} pcs</span>
+                        <span className="text-[11px] font-bold tabular-nums" style={{ color: THEME.primary }}>{formatAmount(product.totalRevenue)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          backgroundColor: THEME.primary,
+                          width: `${Math.max(barPct, 2)}%`,
+                          opacity: 1 - idx * 0.12,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Section 4: Mini Revenue Trend ── */}
       <Card
         style={{
@@ -1090,19 +1320,19 @@ export default function BusinessDashboard() {
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: THEME.primary }} />
               Aktivitas Terbaru
             </CardTitle>
-            {data && data.recentSales.length > 0 && (
+            {combinedActivities.length > 0 && (
               <span
                 className="text-[10px] font-medium px-2 py-0.5 rounded-full"
                 style={{ color: THEME.muted, backgroundColor: `${THEME.border}` }}
               >
-                {data.recentSales.length} transaksi
+                {combinedActivities.length} aktivitas
               </span>
             )}
           </div>
         </CardHeader>
         <CardContent>
           <div className="max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
-            {data && groupedActivities.length > 0 ? (
+            {groupedActivities.length > 0 ? (
               <div className="space-y-3">
                 {groupedActivities.map((group) => (
                   <div key={group.group}>
@@ -1114,43 +1344,48 @@ export default function BusinessDashboard() {
                       <div className="h-px flex-1" style={{ background: THEME.border }} />
                     </div>
                     <div className="space-y-0.5">
-                      {group.items.map((sale) => (
-                        <div
-                          key={sale.id}
-                          className="flex items-center gap-2.5 py-2 rounded-lg px-2 -mx-1 transition-colors duration-150 cursor-default hover:bg-white/[0.03]"
-                        >
+                      {group.items.map((item) => {
+                        const isExpense = item.type === 'expense';
+                        const actColor = isExpense ? THEME.destructive : item.type === 'sale' ? THEME.secondary : THEME.primary;
+                        const ActIcon = isExpense ? ArrowDownRight : ArrowUpRight;
+                        return (
                           <div
-                            className="flex h-7 w-7 items-center justify-center rounded-md shrink-0"
-                            style={{
-                              backgroundColor: `${THEME.secondary}12`,
-                            }}
+                            key={item.id}
+                            className="flex items-center gap-2.5 py-2 rounded-lg px-2 -mx-1 transition-colors duration-150 cursor-default hover:bg-white/[0.03]"
                           >
-                            <ArrowUpRight className="h-3 w-3" style={{ color: THEME.secondary }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] truncate font-medium" style={{ color: THEME.textSecondary }}>
-                              {sale.description}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[10px]" style={{ color: THEME.muted }}>
-                                {sale.customer?.name || '-'}
-                              </span>
-                              <span
-                                className="text-[9px] font-medium px-1 py-px rounded-md"
-                                style={{
-                                  color: `${THEME.primary}90`,
-                                  backgroundColor: `${THEME.primary}12`,
-                                }}
-                              >
-                                {getTimeBadge(sale.date)}
-                              </span>
+                            <div
+                              className="flex h-7 w-7 items-center justify-center rounded-md shrink-0"
+                              style={{
+                                backgroundColor: `${actColor}12`,
+                              }}
+                            >
+                              <ActIcon className="h-3 w-3" style={{ color: actColor }} />
                             </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] truncate font-medium" style={{ color: THEME.textSecondary }}>
+                                {item.description}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px]" style={{ color: THEME.muted }}>
+                                  {item.type === 'sale' ? (item.customer || '-') : item.type === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
+                                </span>
+                                <span
+                                  className="text-[9px] font-medium px-1 py-px rounded-md"
+                                  style={{
+                                    color: `${THEME.primary}90`,
+                                    backgroundColor: `${THEME.primary}12`,
+                                  }}
+                                >
+                                  {getTimeBadge(item.date)}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-sm font-bold ml-1 shrink-0 tabular-nums" style={{ color: actColor }}>
+                              {isExpense ? '-' : '+'}{formatAmount(item.amount)}
+                            </span>
                           </div>
-                          <span className="text-sm font-bold ml-1 shrink-0 tabular-nums" style={{ color: THEME.secondary }}>
-                            +{formatAmount(sale.amount)}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -1259,6 +1494,34 @@ export default function BusinessDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Section 7: Quick Insight ── */}
+      <div
+        className="rounded-xl p-3 flex items-start gap-2.5"
+        style={{
+          background: THEME.surface,
+          border: `1px solid ${THEME.border}`,
+        }}
+      >
+        <Lightbulb className="h-4 w-4 shrink-0 mt-0.5" style={{ color: THEME.secondary }} />
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: THEME.muted }}>
+            Quick Insight
+          </p>
+          <p className="text-[11px] leading-relaxed" style={{ color: THEME.textSecondary }}>
+            {quickInsight}
+          </p>
+        </div>
+        <span
+          className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 mt-0.5"
+          style={{
+            color: healthScore.color,
+            backgroundColor: `${healthScore.color}15`,
+          }}
+        >
+          {healthScore.grade}
+        </span>
+      </div>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

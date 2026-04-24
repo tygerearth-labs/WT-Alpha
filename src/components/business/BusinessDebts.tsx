@@ -43,7 +43,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle, CreditCard,
   CalendarDays, HeartPulse, TrendingUp, AlertTriangle, CheckCircle2,
-  Clock, DollarSign,
+  Clock, DollarSign, MessageCircle, Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -202,6 +202,7 @@ export default function BusinessDebts() {
   const [paying, setPaying] = useState(false);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [sendingRemind, setSendingRemind] = useState<string | null>(null);
 
   const businessId = activeBusiness?.id;
 
@@ -372,6 +373,21 @@ export default function BusinessDebts() {
     }
   };
 
+  const handleRemind = async (debtId: string) => {
+    if (!businessId) return;
+    setSendingRemind(debtId);
+    try {
+      const res = await fetch(`/api/business/${businessId}/debts/${debtId}/remind`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal');
+      window.open(data.message, '_blank');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setSendingRemind(null);
+    }
+  };
+
   const filtered = debts.filter((d) => d.type === activeTab);
   const totalAmount = filtered.reduce((sum, d) => sum + d.amount, 0);
   const totalRemaining = filtered.reduce((sum, d) => sum + d.remaining, 0);
@@ -414,6 +430,16 @@ export default function BusinessDebts() {
 
   return (
     <div className="space-y-3">
+      {/* Info Banner */}
+      <div
+        className="flex items-start gap-2.5 p-3 rounded-lg text-[11px]"
+        style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}20` }}
+      >
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
+        <span style={{ color: THEME.textSecondary }}>
+          Kelola hutang dan piutang bisnis Anda. Untuk cicilan, sistem menghitung tempo otomatis dari tanggal pembuatan.
+        </span>
+      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <TabsList
@@ -739,50 +765,66 @@ export default function BusinessDebts() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="py-2 text-right">
-                                {debt.remaining > 0 && (
-                                  <>
-                                    {isInstallment && (
+                                <div className="flex items-center justify-end gap-0.5">
+                                  {debt.remaining > 0 && (
+                                    <>
+                                      {isInstallment && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 p-0 hover:bg-white/5"
+                                          style={{ color: `${THEME.warning}99` }}
+                                          onClick={() => openPaymentDialog(debt, true)}
+                                          title={t('biz.payInstallment')}
+                                        >
+                                          <CreditCard className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         className="h-8 w-8 p-0 hover:bg-white/5"
-                                        style={{ color: `${THEME.warning}99` }}
-                                        onClick={() => openPaymentDialog(debt, true)}
-                                        title={t('biz.payInstallment')}
+                                        style={{ color: THEME.muted }}
+                                        onClick={() => openPaymentDialog(debt)}
+                                        title={t('biz.payDebt')}
                                       >
                                         <CreditCard className="h-3.5 w-3.5" />
                                       </Button>
-                                    )}
+                                    </>
+                                  )}
+                                  {/* Kirim Tagihan WA Button */}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-[#25D36615]"
+                                    style={{ color: '#25D366' }}
+                                    onClick={() => handleRemind(debt.id)}
+                                    title="Kirim Tagihan ke WA"
+                                    disabled={sendingRemind === debt.id}
+                                  >
+                                    {sendingRemind === debt.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                                  </Button>
+                                  <div className="flex items-center gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="h-8 w-8 p-0 hover:bg-white/5"
                                       style={{ color: THEME.muted }}
-                                      onClick={() => openPaymentDialog(debt)}
-                                      title={t('biz.payDebt')}
+                                      onClick={() => openEditDialog(debt)}
                                     >
-                                      <CreditCard className="h-3.5 w-3.5" />
+                                      <Pencil className="h-3.5 w-3.5" />
                                     </Button>
-                                  </>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-white/5"
-                                  style={{ color: THEME.muted }}
-                                  onClick={() => openEditDialog(debt)}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-white/5"
-                                  style={{ color: THEME.muted }}
-                                  onClick={() => setDeleteId(debt.id)}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 hover:bg-white/5"
+                                      style={{ color: THEME.muted }}
+                                      onClick={() => setDeleteId(debt.id)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
                               </TableCell>
                             </motion.tr>
                           );

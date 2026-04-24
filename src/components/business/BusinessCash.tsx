@@ -71,6 +71,7 @@ import {
   CalendarDays,
   MessageCircle,
   ChevronRight,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -366,6 +367,7 @@ export default function BusinessCash() {
   const [investorLoading, setInvestorLoading] = useState(true);
   const [investorDialogOpen, setInvestorDialogOpen] = useState(false);
   const [investorSaving, setInvestorSaving] = useState(false);
+  const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null);
   const [investorForm, setInvestorForm] = useState({
     name: '',
     phone: '',
@@ -758,7 +760,20 @@ export default function BusinessCash() {
 
   // ── Investor CRUD ──
   const openInvestorCreate = () => {
+    setEditingInvestor(null);
     setInvestorForm({ name: '', phone: '', email: '', totalInvestment: '', profitSharePct: '' });
+    setInvestorDialogOpen(true);
+  };
+
+  const openInvestorEdit = (investor: Investor) => {
+    setEditingInvestor(investor);
+    setInvestorForm({
+      name: investor.name,
+      phone: investor.phone || '',
+      email: investor.email || '',
+      totalInvestment: investor.totalInvestment.toString(),
+      profitSharePct: investor.profitSharePct.toString(),
+    });
     setInvestorDialogOpen(true);
   };
 
@@ -767,8 +782,11 @@ export default function BusinessCash() {
     if (!businessId || !investorForm.name) return;
     setInvestorSaving(true);
     try {
-      const res = await fetch(`/api/business/${businessId}/investors`, {
-        method: 'POST',
+      const url = editingInvestor
+        ? `/api/business/${businessId}/investors/${editingInvestor.id}`
+        : `/api/business/${businessId}/investors`;
+      const res = await fetch(url, {
+        method: editingInvestor ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: investorForm.name,
@@ -779,7 +797,7 @@ export default function BusinessCash() {
         }),
       });
       if (!res.ok) throw new Error();
-      toast.success('Investor berhasil ditambahkan');
+      toast.success(editingInvestor ? 'Investor berhasil diperbarui' : 'Investor berhasil ditambahkan');
       setInvestorDialogOpen(false);
       fetchInvestors();
     } catch {
@@ -1323,11 +1341,11 @@ export default function BusinessCash() {
                       >
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ backgroundColor: `${THEME.primary}15`, color: THEME.primary }}>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: `${THEME.primary}15`, color: THEME.primary }}>
                                 {inv.name.charAt(0).toUpperCase()}
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <p className="text-xs font-semibold truncate max-w-[140px]" style={{ color: THEME.text }}>{inv.name}</p>
                                 <Badge
                                   variant="outline"
@@ -1341,6 +1359,17 @@ export default function BusinessCash() {
                                 </Badge>
                               </div>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 rounded-md shrink-0"
+                              style={{ color: THEME.muted }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = THEME.primary; (e.currentTarget as HTMLElement).style.background = `${THEME.primary}10`; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = THEME.muted; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                              onClick={() => openInvestorEdit(inv)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
                           </div>
 
                           <div className="space-y-1.5">
@@ -1389,22 +1418,83 @@ export default function BusinessCash() {
         {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'piutang' && (
           <div key="piutang" className="space-y-4">
-            {/* ── Piutang Summary Cards ── */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              {[
-                { label: 'Total Piutang', value: piutangStats.total, color: THEME.warning },
-                { label: 'Sudah Realisasi', value: piutangStats.totalPaid, color: THEME.secondary },
-                { label: 'Belum Realisasi', value: piutangStats.totalRemaining, color: THEME.warning },
-                { label: 'Terlambat', value: piutangStats.overdueCount, color: THEME.destructive },
-              ].map((item, idx) => (
-                <Card key={idx} className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${item.color}20` }}>
-                  <CardContent className="p-3">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1" style={{ color: THEME.muted }}>{item.label}</span>
-                    <p className="text-sm font-bold tabular-nums" style={{ color: item.color }}>{item.value}</p>
-                    <p className="text-[9px] mt-0.5" style={{ color: THEME.muted }}>{idx === 3 ? `${piutangStats.macetCount} aktif` : idx === 2 ? `${piutangStats.berjalanCount + piutangStats.macetCount} aktif` : idx === 1 ? `${piutangStats.selesaiCount} lunas` : ''}</p>
-                  </CardContent>
-                </Card>
-              ))}
+            {/* ── Piutang Info Banner ── */}
+            <div
+              className="rounded-xl p-3 flex items-start gap-2.5"
+              style={{
+                background: `${THEME.muted}08`,
+                border: `1px solid ${THEME.border}`,
+              }}
+            >
+              <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: THEME.muted }} />
+              <p className="text-[11px] leading-relaxed" style={{ color: THEME.muted }}>
+                Kelola piutang pelanggan Anda. Pantau status cicilan, kirim pengingat pembayaran, dan catat pembayaran yang diterima.
+              </p>
+            </div>
+
+            {/* ── Piutang Summary Cards (Detailed) ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+              {/* Cicilan Berjalan */}
+              <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.secondary}20` }}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}15` }}>
+                      <Clock className="h-3 w-3" style={{ color: THEME.secondary }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>Cicilan Berjalan</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: THEME.secondary }}>{piutangStats.berjalanCount} <span className="text-[10px] font-normal" style={{ color: THEME.muted }}>piutang</span></p>
+                  <p className="text-[11px] font-semibold tabular-nums mt-0.5" style={{ color: THEME.textSecondary }}>Sisa: {formatAmount(piutangStats.berjalanRemaining)}</p>
+                  {allPiutang.filter(d => ['active', 'partially_paid'].includes(d.status)).slice(0, 3).map((d) => (
+                    <div key={d.id} className="flex items-center justify-between py-1 mt-1" style={{ borderTop: `1px solid ${THEME.border}` }}>
+                      <span className="text-[10px] truncate" style={{ color: THEME.textSecondary }}>{d.counterpart}</span>
+                      <span className="text-[10px] font-semibold tabular-nums" style={{ color: THEME.secondary }}>{formatAmount(d.remaining)}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Total Cicilan Menunggak */}
+              <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.destructive}20` }}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.destructive}15` }}>
+                      <AlertTriangle className="h-3 w-3" style={{ color: THEME.destructive }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>Menunggak</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: THEME.destructive }}>{piutangStats.macetCount} <span className="text-[10px] font-normal" style={{ color: THEME.muted }}>piutang</span></p>
+                  <p className="text-[11px] font-semibold tabular-nums mt-0.5" style={{ color: THEME.textSecondary }}>Sisa: {formatAmount(piutangStats.macetRemaining)}</p>
+                  {allPiutang.filter(d => d.status === 'overdue').slice(0, 3).map((d) => {
+                    const overdueDays = d.dueDate ? differenceInDays(new Date(), parseISO(d.dueDate)) : 0;
+                    return (
+                      <div key={d.id} className="flex items-center justify-between py-1 mt-1" style={{ borderTop: `1px solid ${THEME.border}` }}>
+                        <span className="text-[10px] truncate" style={{ color: THEME.textSecondary }}>{d.counterpart}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-semibold tabular-nums" style={{ color: THEME.destructive }}>{formatAmount(d.remaining)}</span>
+                          <span className="text-[9px] px-1 py-px rounded-full" style={{ color: THEME.destructive, backgroundColor: `${THEME.destructive}15` }}>
+                            {overdueDays > 0 ? `${overdueDays}h` : ''}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+              {/* Cicilan Selesai */}
+              <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.primary}20` }}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
+                      <CheckCircle2 className="h-3 w-3" style={{ color: THEME.primary }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>Selesai</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: THEME.primary }}>{piutangStats.selesaiCount} <span className="text-[10px] font-normal" style={{ color: THEME.muted }}>piutang</span></p>
+                  <p className="text-[11px] font-semibold tabular-nums mt-0.5" style={{ color: THEME.textSecondary }}>Total: {formatAmount(piutangStats.selesaiAmount)}</p>
+                </CardContent>
+              </Card>
             </div>
 
             {/* ── Sub-tabs + Search ── */}
@@ -1589,8 +1679,9 @@ export default function BusinessCash() {
                                         <span className="hidden lg:inline">Bayar</span>
                                       </Button>
                                     )}
-                                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium rounded-md" style={{ color: '#25D366' }} onClick={() => sendReminder(debt)} title="Ingatkan via WhatsApp">
+                                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium rounded-md" style={{ color: '#25D366' }} onClick={() => sendReminder(debt)} title="Kirim tagihan via WhatsApp">
                                       <MessageCircle className="h-3 w-3" />
+                                      <span className="hidden lg:inline">Kirim Tagihan</span>
                                     </Button>
                                     <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium rounded-md" style={{ color: THEME.muted }} onClick={() => openDetailDialog(debt)} title="Detail">
                                       <ChevronRight className="h-3 w-3" />
@@ -1796,12 +1887,12 @@ export default function BusinessCash() {
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
               <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}10` }}>
-                <UserPlus className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                {editingInvestor ? <Pencil className="h-3.5 w-3.5" style={{ color: THEME.primary }} /> : <UserPlus className="h-3.5 w-3.5" style={{ color: THEME.primary }} />}
               </div>
-              Tambah Investor
+              {editingInvestor ? 'Edit Investor' : 'Tambah Investor'}
             </DialogTitle>
             <DialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
-              Tambahkan investor baru untuk modal bisnis
+              {editingInvestor ? `Edit data ${editingInvestor.name}` : 'Tambahkan investor baru untuk modal bisnis'}
             </DialogDescription>
           </DialogHeader>
 
@@ -2276,7 +2367,7 @@ export default function BusinessCash() {
                         style={{ borderColor: `${'#25D366'}40`, color: '#25D366' }}
                       >
                         <MessageCircle className="h-4 w-4 mr-1.5" />
-                        Ingatkan WA
+                        Kirim Tagihan
                       </Button>
                     </div>
                   )}

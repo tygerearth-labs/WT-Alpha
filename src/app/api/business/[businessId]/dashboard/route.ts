@@ -51,6 +51,8 @@ export async function GET(
       debtsDueSoonResult,
       recentSales,
       recentCashEntries,
+      topProductsRaw,
+      piutangAll,
     ] = await Promise.all([
       // Total revenue from sales
       db.businessSale.aggregate({
@@ -121,18 +123,28 @@ export async function GET(
         },
       }),
 
-      // Debts due within 7 days
+      // Piutang debts due within 7 days OR already overdue
       db.businessDebt.findMany({
         where: {
           businessId,
-          status: { in: ['active', 'partially_paid'] },
-          dueDate: {
-            lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            gte: new Date(),
-          },
+          type: 'piutang',
+          OR: [
+            {
+              status: { in: ['active', 'partially_paid'] },
+              dueDate: {
+                lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              },
+            },
+            { status: 'overdue' },
+          ],
         },
         orderBy: { dueDate: 'asc' },
-        take: 5,
+        include: {
+          payments: {
+            select: { id: true, amount: true, paymentDate: true },
+            orderBy: { paymentDate: 'asc' },
+          },
+        },
       }),
 
       // Recent sales (last 5)
@@ -151,6 +163,31 @@ export async function GET(
         orderBy: { date: 'desc' },
         take: 5,
       }),
+
+      // Top products sold (non-installment only) — group by description
+      db.businessSale.findMany({
+        where: {
+          businessId,
+          installmentTempo: null,
+        },
+        select: {
+          description: true,
+          amount: true,
+        },
+      }),
+
+      // All piutang debts for summary
+      db.businessDebt.findMany({
+        where: {
+          businessId,
+          type: 'piutang',
+        },
+        select: {
+          status: true,
+          amount: true,
+          remaining: true,
+        },
+      }),
     ]);
 
     const totalRevenue = salesResult._sum.amount || 0;
@@ -165,6 +202,65 @@ export async function GET(
     const profit = totalRevenue - totalExpense;
     const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
 
+    // ── debtsDueSoon: piutang debts about to be due or overdue ──
+    const debtsDueSoon = debtsDueSoonResult.map((d) => {
+      const entry: Record<string, unknown> = {
+        id: d.id,
+        counterpart: d.counterpart,
+        remaining: d.remaining,
+        dueDate: d.dueDate,
+        status: d.status,
+      };
+      if (d.installmentPeriod && d.installmentPeriod > 0) {
+        const paidTempo = d.payments.length;
+        entry.installmentInfo = {
+          currentTempo: paidTempo,
+          paidTempo,
+          totalPeriod: d.installmentPeriod,
+          nextInstallmentDate: d.nextInstallmentDate,
+        };
+      }
+      return entry;
+    });
+
+    // ── topProductsSold: top 5 non-installment products by count ──
+    const productMap = new Map<string, { count: number; revenue: number }>();
+    for (const sale of topProductsRaw) {
+      const key = sale.description;
+      const existing = productMap.get(key);
+      if (existing) {
+        existing.count += 1;
+        existing.revenue += sale.amount;
+      } else {
+        productMap.set(key, { count: 1, revenue: sale.amount });
+      }
+    }
+    const topProductsSold = Array.from(productMap.entries())
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5)
+      .map(([name, data]) => ({
+        name,
+        totalQuantity: data.count,
+        totalRevenue: data.revenue,
+      }));
+
+    // ── piutangSummary ──
+    let piutangBerjalan = { count: 0, amount: 0 };
+    let piutangMenunggak = { count: 0, amount: 0 };
+    let piutangSelesai = { count: 0, amount: 0 };
+    for (const d of piutangAll) {
+      if (d.status === 'active' || d.status === 'partially_paid') {
+        piutangBerjalan.count += 1;
+        piutangBerjalan.amount += d.remaining;
+      } else if (d.status === 'overdue') {
+        piutangMenunggak.count += 1;
+        piutangMenunggak.amount += d.remaining;
+      } else if (d.status === 'paid') {
+        piutangSelesai.count += 1;
+        piutangSelesai.amount += d.amount;
+      }
+    }
+
     return NextResponse.json({
       totalRevenue,
       totalExpense,
@@ -177,11 +273,17 @@ export async function GET(
       pendingInvoices,
       totalHutang,
       totalPiutang,
-      debtsDueSoon: debtsDueSoonResult,
+      debtsDueSoon,
       salesCount,
       averageSaleValue,
       recentSales,
       recentCashEntries,
+      topProductsSold,
+      piutangSummary: {
+        cicilanBerjalan: piutangBerjalan,
+        cicilanMenunggak: piutangMenunggak,
+        cicilanSelesai: piutangSelesai,
+      },
     });
   } catch (error) {
     console.error('Dashboard GET error:', error);

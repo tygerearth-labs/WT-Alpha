@@ -14,7 +14,7 @@ async function verifyDebtOwnership(
   return debt?.business.userId === userId ? debt : null;
 }
 
-// POST — Generate a WhatsApp reminder message for the debt
+// POST — Generate a WhatsApp reminder/invoice message for the debt
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ businessId: string; debtId: string }> }
@@ -34,14 +34,27 @@ export async function POST(
     // Resolve phone number: try customer via referenceId first, then match by counterpart name, fallback to business phone
     let phone = debt.business.phone || '';
 
-    if (debt.referenceId) {
-      const sale = await db.businessSale.findUnique({
-        where: { id: debt.referenceId },
-        include: { customer: { select: { phone: true } } },
-      });
-      if (sale?.customer?.phone) {
-        phone = sale.customer.phone;
-      }
+    // Look up the sale linked via referenceId, and from the sale find the invoice
+    const saleResult = debt.referenceId
+      ? await db.businessSale.findUnique({
+          where: { id: debt.referenceId },
+          include: {
+            customer: { select: { phone: true, name: true } },
+          },
+        })
+      : null;
+
+    const customerPhone = saleResult?.customer?.phone || null;
+
+    // From the sale, find the linked invoice
+    const invoiceResult = saleResult?.invoiceId
+      ? await db.businessInvoice.findUnique({
+          where: { id: saleResult.invoiceId },
+        })
+      : null;
+
+    if (customerPhone) {
+      phone = customerPhone;
     }
 
     // If still no phone, try to find customer by matching counterpart name
@@ -65,6 +78,11 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // Fetch default bank account for the business
+    const defaultBankAccount = await db.businessBankAccount.findFirst({
+      where: { businessId, isDefault: true },
+    });
 
     // Clean phone number: remove non-digit characters, ensure Indonesian format
     const cleanPhone = phone.replace(/\D/g, '');
@@ -91,31 +109,124 @@ export async function POST(
         year: 'numeric',
       }).format(date);
 
-    // Build WhatsApp message based on debt type
-    const dueDateStr = debt.dueDate
-      ? formatDate(new Date(debt.dueDate))
-      : 'Belum ditentukan';
+    // Build bank account info block
+    const buildBankInfo = () => {
+      if (!defaultBankAccount) return null;
+      return [
+        `🏦 *Informasi Rekening Pembayaran:*`,
+        `Bank: *${defaultBankAccount.bankName}*`,
+        `No. Rekening: *${defaultBankAccount.accountNumber}*`,
+        `Atas Nama: *${defaultBankAccount.accountHolder}*`,
+      ].join('\n');
+    };
+
+    const bankInfoBlock = buildBankInfo();
 
     let message: string;
+
     if (debt.type === 'piutang') {
-      // Friendly tone asking customer to pay their debt to us
-      message = [
-        `*Reminder Pembayaran Piutang*`,
-        ``,
-        `Halo *${debt.counterpart}*, 👋`,
-        ``,
-        `Kami ingin mengingatkan mengenai pembayaran yang belum lunas dengan rincian berikut:`,
-        ``,
-        `💰 *Total Piutang:* ${formatCurrency(debt.amount)}`,
-        `📉 *Sisa yang Harus Dibayar:* ${formatCurrency(debt.remaining)}`,
-        `📅 *Jatuh Tempo:* ${dueDateStr}`,
-        ``,
-        `Mohon untuk segera melakukan pembayaran sebelum tanggal jatuh tempo ya. Jika sudah melakukan pembayaran, mohon konfirmasi kembali agar kami bisa update datanya. 😊`,
-        ``,
-        `Terima kasih atas kepercayaan dan kerjasamanya! 🙏`,
-      ].join('\n');
+      if (invoiceResult) {
+        // ── Invoice-based message ──
+        const invoiceStatus = {
+          pending: 'Belum Dibayar',
+          paid: 'Lunas',
+          cancelled: 'Dibatalkan',
+          overdue: 'Terlambat',
+        }[invoiceResult.status] || invoiceResult.status;
+
+        const invoiceDueStr = invoiceResult.dueDate
+          ? formatDate(new Date(invoiceResult.dueDate))
+          : 'Belum ditentukan';
+
+        const installmentLines = debt.installmentPeriod && debt.installmentPeriod > 0
+          ? [
+              ``,
+              `📋 *Detail Cicilan:*`,
+              `Tempo: ${debt.installmentPeriod} bulan`,
+              `Cicilan per bulan: ${formatCurrency(debt.installmentAmount || 0)}`,
+              debt.nextInstallmentDate
+                ? `Cicilan berikutnya: ${formatDate(new Date(debt.nextInstallmentDate))}`
+                : '',
+            ].join('\n')
+          : '';
+
+        message = [
+          `*INVOICE PEMBAYARAN*`,
+          ``,
+          `Halo *${debt.counterpart}*, 👋`,
+          ``,
+          `Berikut detail invoice kami yang perlu diselesaikan:`,
+          ``,
+          `🧾 *Nomor Invoice:* ${invoiceResult.invoiceNumber}`,
+          `💰 *Total Tagihan:* ${formatCurrency(invoiceResult.total)}`,
+          `📅 *Jatuh Tempo:* ${invoiceDueStr}`,
+          `📊 *Status Pembayaran:* ${invoiceStatus}`,
+          installmentLines,
+          ``,
+          `💰 *Sisa yang Harus Dibayar:* ${formatCurrency(debt.remaining)}`,
+          ``,
+        ].join('\n');
+
+        if (bankInfoBlock) {
+          message += bankInfoBlock + '\n';
+        }
+
+        message += [
+          ``,
+          `Mohon untuk segera melakukan pembayaran sesuai nominal yang tertera. Jika sudah melakukan pembayaran, mohon konfirmasi kembali agar kami bisa update datanya. 😊`,
+          ``,
+          `Terima kasih atas kepercayaan dan kerjasamanya! 🙏`,
+        ].join('\n');
+      } else {
+        // ── Fallback: no invoice, use debt details with tempo info ──
+        const dueDateStr = debt.dueDate
+          ? formatDate(new Date(debt.dueDate))
+          : 'Belum ditentukan';
+
+        const installmentLines = debt.installmentPeriod && debt.installmentPeriod > 0
+          ? [
+              ``,
+              `📋 *Detail Cicilan:*`,
+              `Jumlah Tempo: ${debt.installmentPeriod} bulan`,
+              `Cicilan per bulan: ${formatCurrency(debt.installmentAmount || 0)}`,
+              debt.downPayment ? `Uang Muka (DP): ${formatCurrency(debt.downPayment)}` : '',
+              debt.nextInstallmentDate
+                ? `Cicilan berikutnya jatuh tempo: ${formatDate(new Date(debt.nextInstallmentDate))}`
+                : '',
+            ].join('\n')
+          : '';
+
+        message = [
+          `*Reminder Pembayaran Piutang*`,
+          ``,
+          `Halo *${debt.counterpart}*, 👋`,
+          ``,
+          `Kami ingin mengingatkan mengenai pembayaran yang belum lunas dengan rincian berikut:`,
+          ``,
+          `💰 *Total Piutang:* ${formatCurrency(debt.amount)}`,
+          `📉 *Sisa yang Harus Dibayar:* ${formatCurrency(debt.remaining)}`,
+          `📅 *Jatuh Tempo:* ${dueDateStr}`,
+          installmentLines,
+          ``,
+        ].join('\n');
+
+        if (bankInfoBlock) {
+          message += bankInfoBlock + '\n';
+        }
+
+        message += [
+          ``,
+          `Mohon untuk segera melakukan pembayaran sebelum tanggal jatuh tempo ya. Jika sudah melakukan pembayaran, mohon konfirmasi kembali agar kami bisa update datanya. 😊`,
+          ``,
+          `Terima kasih atas kepercayaan dan kerjasamanya! 🙏`,
+        ].join('\n');
+      }
     } else {
-      // Hutang - reminding about our own debt to pay
+      // ── Hutang: reminding about our own debt to pay ──
+      const dueDateStr = debt.dueDate
+        ? formatDate(new Date(debt.dueDate))
+        : 'Belum ditentukan';
+
       message = [
         `*Reminder Pembayaran Utang*`,
         ``,
@@ -126,6 +237,14 @@ export async function POST(
         `💰 *Total Utang:* ${formatCurrency(debt.amount)}`,
         `📉 *Sisa Tagihan:* ${formatCurrency(debt.remaining)}`,
         `📅 *Jatuh Tempo:* ${dueDateStr}`,
+        ``,
+      ].join('\n');
+
+      if (bankInfoBlock) {
+        message += bankInfoBlock + '\n';
+      }
+
+      message += [
         ``,
         `Kami akan segera melakukan pembayaran sebelum tanggal jatuh tempo. Mohon maaf atas keterlambatan jika ada.`,
         ``,
