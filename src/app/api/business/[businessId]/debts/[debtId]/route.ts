@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
-async function verifyDebtOwnership(id: string, userId: string) {
+async function verifyDebtOwnership(debtId: string, userId: string) {
   const debt = await db.businessDebt.findFirst({
-    where: { id },
+    where: { id: debtId },
     include: { business: { select: { userId: true } } },
   });
   return debt?.business.userId === userId ? debt : null;

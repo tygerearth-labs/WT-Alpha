@@ -34,12 +34,12 @@ export function LoginForm() {
         toast.success(t('auth.loginSuccess'));
 
         if (data.user?.role === 'admin') {
-          // Use href instead of reload to avoid Zustand persist race condition
           window.location.href = '/admin';
-        } else {
-          window.location.href = '/';
+          return;
         }
-        return; // Don't let finally run — page is navigating away
+        // For regular users, reload to ensure clean state
+        window.location.reload();
+        return;
       }
       else toast.error(data.error || t('auth.loginFailed'));
     } catch { toast.error(t('auth.loginError')); }

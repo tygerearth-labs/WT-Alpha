@@ -36,39 +36,36 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, ArrowDownToLine, History, Wallet, TrendingUp,
-  Percent, DollarSign, Layers, ArrowUpRight, Lightbulb, Info,
+  Percent, DollarSign, Receipt, Layers, ArrowUpRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
-// ─── THEME ─────────────────────────────────────────────────────
-const THEME = {
-  bg: '#000000',
-  surface: '#121212',
-  primary: '#BB86FC',
-  secondary: '#03DAC6',
-  destructive: '#CF6679',
-  warning: '#F9A825',
-  muted: '#9E9E9E',
-  border: 'rgba(255,255,255,0.08)',
-  borderHover: 'rgba(255,255,255,0.15)',
-  text: '#FFFFFF',
-  textSecondary: '#B3B3B3',
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.07, delayChildren: 0.05 },
+  },
 };
 
-const cardStyle: React.CSSProperties = { background: THEME.surface, border: `1px solid ${THEME.border}` };
-const inputStyle: React.CSSProperties = { background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text };
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
+};
+
+const cardHover = {
+  rest: { scale: 1 },
+  hover: { scale: 1.02, transition: { duration: 0.2 } },
+};
 
 interface Sale {
   id: string;
   description: string;
   amount: number;
   date: string;
-  downPayment?: number | null;
-  downPaymentPct?: number | null;
-  installmentTempo?: number | null;
-  installmentAmount?: number | null;
-  paymentMethod?: string | null;
 }
 
 interface Allocation {
@@ -91,52 +88,39 @@ function AllocationBar({ allocations, totalSales }: { allocations: Allocation[];
 
   const barSegments = allocations.slice(0, 5).map((a, i) => ({
     width: a.percentage || 0,
-    color: [THEME.primary, THEME.secondary, THEME.warning, THEME.destructive, '#FF8A65'][i % 5],
+    color: ['#BB86FC', '#03DAC6', '#FFD700', '#CF6679', '#FF8A65'][i % 5],
   }));
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
       <div className="flex items-center justify-between text-xs">
-        <span style={{ color: THEME.muted }}>Total Allocated vs Total Sales</span>
-        <span className="font-medium tabular-nums" style={{ color: THEME.textSecondary }}>{pct.toFixed(1)}%</span>
+        <span className="text-white/50">Total Allocated vs Total Sales</span>
+        <span className="text-white/70 font-medium">{pct.toFixed(1)}%</span>
       </div>
-      <div className="h-2.5 rounded-full overflow-hidden flex" style={{ backgroundColor: THEME.border }}>
+      <div className="h-3 rounded-full bg-white/[0.04] overflow-hidden flex">
         {barSegments.map((seg, i) => (
-          <div
+          <motion.div
             key={i}
-            className="h-full transition-all duration-700"
-            style={{
-              width: `${seg.width}%`,
-              backgroundColor: seg.color,
-              opacity: 0.8,
-              transitionDelay: `${i * 0.12}s`,
-            }}
+            initial={{ width: 0 }}
+            animate={{ width: `${seg.width}%` }}
+            transition={{ duration: 0.6, delay: i * 0.15, ease: 'easeOut' as const }}
+            className="h-full"
+            style={{ backgroundColor: seg.color, opacity: 0.8 }}
           />
         ))}
         {pct < 100 && totalSales > 0 && (
-          <div className="h-full transition-all duration-500" style={{ width: `${100 - pct}%`, backgroundColor: THEME.border }} />
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${100 - pct}%` }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="h-full bg-white/[0.04]"
+          />
         )}
       </div>
-      <div className="flex items-center justify-between text-[10px]" style={{ color: THEME.muted }}>
+      <div className="flex items-center justify-between text-[10px] text-white/40">
         <span>{allocations.length} allocations</span>
         <span>{totalSales > 0 ? `${pct.toFixed(0)}% of sales` : 'No sales data'}</span>
       </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Empty State                                                        */
-/* ------------------------------------------------------------------ */
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4">
-      <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
-        <ArrowDownToLine className="h-7 w-7" style={{ color: `${THEME.primary}50` }} />
-      </div>
-      <p className="text-sm font-medium" style={{ color: THEME.textSecondary }}>{'Belum ada alokasi'}</p>
-      <p className="text-xs mt-1" style={{ color: THEME.muted }}>Buat alokasi pertama untuk memulai</p>
     </div>
   );
 }
@@ -223,247 +207,259 @@ export default function BusinessAllocation() {
   const avgPercentage = allocations.length > 0 ? allocations.reduce((s, a) => s + a.percentage, 0) / allocations.length : 0;
   const latestAlloc = allocations.length > 0 ? allocations[allocations.length - 1] : null;
 
-  // Check if selected sale is installment
-  const selectedSale = formData.saleId ? sales.find((s) => s.id === formData.saleId) : null;
-  const isInstallment = selectedSale && (selectedSale.installmentTempo && selectedSale.installmentTempo > 0);
+  const statCards = [
+    { label: t('biz.totalAllocated'), value: formatAmount(totalAllocated), icon: DollarSign, color: '#BB86FC', gradient: 'from-[#BB86FC]/20 to-[#BB86FC]/5' },
+    { label: t('biz.allocationPercent'), value: `${avgPercentage.toFixed(1)}%`, icon: Percent, color: '#03DAC6', gradient: 'from-[#03DAC6]/20 to-[#03DAC6]/5' },
+    { label: 'Total Sales', value: formatAmount(totalSales), icon: TrendingUp, color: '#FFD700', gradient: 'from-[#FFD700]/20 to-[#FFD700]/5' },
+    { label: 'Total Allocations', value: allocations.length, icon: Layers, color: '#CF6679', gradient: 'from-[#CF6679]/20 to-[#CF6679]/5' },
+  ];
 
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-center" style={{ color: THEME.textSecondary }}>{t('biz.registerFirst')}</p>
+        <p className="text-white/50 text-center">{t('biz.registerFirst')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {/* Info Banner */}
-      <div className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}15` }}>
-        <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
-        <p className="text-xs leading-relaxed" style={{ color: THEME.textSecondary }}>
-          Atur pembagian dana dari pendapatan bisnis Anda.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
+        {/* Header */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-[#BB86FC]/15 flex items-center justify-center">
+              <ArrowDownToLine className="h-4 w-4 text-[#BB86FC]" />
+            </div>
+            {t('biz.autoAllocation')}
+          </h2>
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+            <Button onClick={openCreateDialog} size="sm" className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 shadow-lg shadow-[#BB86FC]/20">
+              <Plus className="h-4 w-4 mr-1" />
+              {t('common.add')}
+            </Button>
+          </motion.div>
+        </motion.div>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-base font-bold flex items-center gap-2" style={{ color: THEME.text }}>
-          <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
-            <ArrowDownToLine className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-          </div>
-          {t('biz.autoAllocation')}
-        </h2>
-        <Button
-          onClick={openCreateDialog}
-          size="sm"
-          className="rounded-lg h-8 text-xs"
-          style={{ backgroundColor: THEME.primary, color: '#000' }}
-        >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          {t('common.add')}
-        </Button>
-      </div>
-
-      {/* Explanation Card */}
-      <div className="flex items-start gap-3 p-3 sm:p-4 rounded-xl" style={{ background: `${THEME.primary}06`, border: `1px solid ${THEME.primary}20` }}>
-        <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${THEME.primary}15` }}>
-          <Lightbulb className="h-4 w-4" style={{ color: THEME.primary }} />
-        </div>
-        <div>
-          <p className="text-xs font-semibold mb-1" style={{ color: THEME.primary }}>Apa itu Alokasi Otomatis?</p>
-          <p className="text-[11px] leading-relaxed" style={{ color: THEME.textSecondary }}>
-            Alokasi otomatis membagikan pendapatan penjualan ke berbagai keperluan bisnis (operasional, investasi, cadangan). Anda bisa menetapkan persentase atau nominal tetap yang otomatis dialokasikan dari setiap penjualan.
-          </p>
-        </div>
-      </div>
-
-      {/* Summary Stat Cards */}
-      {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          {[
-            { label: t('biz.totalAllocated'), value: formatAmount(totalAllocated), icon: DollarSign, color: THEME.primary },
-            { label: t('biz.allocationPercent'), value: `${avgPercentage.toFixed(1)}%`, icon: Percent, color: THEME.secondary },
-            { label: 'Total Sales', value: formatAmount(totalSales), icon: TrendingUp, color: THEME.warning },
-            { label: 'Total Allocations', value: allocations.length, icon: Layers, color: THEME.destructive },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <Card key={item.label} className="rounded-xl overflow-hidden" style={cardStyle}>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
-                      <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+        {/* Summary Stat Cards */}
+        {!loading && (
+          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+            {statCards.map((card, idx) => (
+              <motion.div
+                key={idx}
+                variants={cardHover}
+                initial="rest"
+                whileHover="hover"
+              >
+                <Card className={cn('relative overflow-hidden rounded-2xl border-white/[0.06] bg-gradient-to-br', card.gradient)}>
+                  <div className="absolute top-0 right-0 h-20 w-20 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: card.color }} />
+                  <CardContent className="p-4 relative">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}20` }}>
+                        <card.icon className="h-4 w-4" style={{ color: card.color }} />
+                      </div>
                     </div>
-                    <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{item.label}</span>
+                    <p className="text-[10px] text-white/50 uppercase tracking-wider">{card.label}</p>
+                    <p className="text-lg font-bold text-white mt-0.5">{card.value}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Visual Allocation Bar */}
+        {!loading && allocations.length > 0 && (
+          <motion.div variants={itemVariants} className="mt-4">
+            <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-7 w-7 rounded-lg bg-[#BB86FC]/15 flex items-center justify-center">
+                    <Wallet className="h-3.5 w-3.5 text-[#BB86FC]" />
                   </div>
-                  <p className="text-base font-bold tabular-nums" style={{ color: item.color }}>{item.value}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Visual Allocation Bar */}
-      {!loading && allocations.length > 0 && (
-        <Card className="rounded-xl" style={cardStyle}>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
-                <Wallet className="h-3 w-3" style={{ color: THEME.primary }} />
-              </div>
-              <h3 className="text-xs font-semibold" style={{ color: THEME.text }}>{t('biz.autoAllocation')}</h3>
-              <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: `${THEME.primary}15`, color: THEME.primary, border: `1px solid ${THEME.primary}20` }}>
-                {allocations.length} records
-              </Badge>
-            </div>
-            <AllocationBar allocations={allocations} totalSales={totalSales} />
-            {latestAlloc && (
-              <div className="mt-3 pt-3 flex items-center gap-2.5" style={{ borderTop: `1px solid ${THEME.border}` }}>
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${THEME.secondary}15` }}>
-                  <ArrowUpRight className="h-3 w-3" style={{ color: THEME.secondary }} />
+                  <h3 className="text-sm font-semibold text-white">{t('biz.autoAllocation')}</h3>
+                  <Badge className="bg-[#BB86FC]/20 text-[#BB86FC] border-[#BB86FC]/20 text-[10px] ml-auto">
+                    {allocations.length} records
+                  </Badge>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px]" style={{ color: THEME.muted }}>Latest Allocation</p>
-                  <p className="text-xs font-medium truncate" style={{ color: THEME.textSecondary }}>{latestAlloc.sale?.description || 'Manual allocation'}</p>
+                <AllocationBar allocations={allocations} totalSales={totalSales} />
+                {latestAlloc && (
+                  <div className="mt-4 pt-3 border-t border-white/[0.04] flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center shrink-0">
+                      <ArrowUpRight className="h-3.5 w-3.5 text-[#03DAC6]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-white/40">Latest Allocation</p>
+                      <p className="text-xs text-white/80 font-medium truncate">{latestAlloc.sale?.description || 'Manual allocation'}</p>
+                    </div>
+                    <p className="text-xs text-[#BB86FC] font-semibold ml-auto">{formatAmount(latestAlloc.amount)}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Config Card */}
+        <motion.div variants={itemVariants} className="mt-4">
+          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-7 w-7 rounded-lg bg-[#FFD700]/15 flex items-center justify-center">
+                  <Percent className="h-3.5 w-3.5 text-[#FFD700]" />
                 </div>
-                <p className="text-xs font-semibold tabular-nums" style={{ color: THEME.primary }}>{formatAmount(latestAlloc.amount)}</p>
+                <h3 className="text-sm font-semibold text-white">Allocation Config</h3>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <motion.div variants={cardHover} initial="rest" whileHover="hover">
+                  <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] rounded-xl p-4 border border-white/[0.04]">
+                    <p className="text-[10px] text-white/40 uppercase tracking-wider">{t('biz.allocationPercent')}</p>
+                    <p className="text-2xl font-bold text-white mt-1">
+                      {allocations.length > 0 ? `${avgPercentage.toFixed(1)}%` : '-'}
+                    </p>
+                    <p className="text-[10px] text-white/30 mt-1">Average allocation percentage</p>
+                  </div>
+                </motion.div>
+                <motion.div variants={cardHover} initial="rest" whileHover="hover">
+                  <div className="bg-gradient-to-br from-[#BB86FC]/10 to-[#BB86FC]/[0.02] rounded-xl p-4 border border-[#BB86FC]/10">
+                    <p className="text-[10px] text-white/40 uppercase tracking-wider">{t('biz.allocationFixed')}</p>
+                    <p className="text-2xl font-bold text-[#BB86FC] mt-1">
+                      {totalAllocated > 0 ? formatAmount(totalAllocated / Math.max(allocations.length, 1)) : '-'}
+                    </p>
+                    <p className="text-[10px] text-white/30 mt-1">Average fixed amount</p>
+                  </div>
+                </motion.div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      {/* Config Card */}
-      <Card className="rounded-xl" style={cardStyle}>
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.warning}15` }}>
-              <Percent className="h-3 w-3" style={{ color: THEME.warning }} />
-            </div>
-            <h3 className="text-xs font-semibold" style={{ color: THEME.text }}>Allocation Config</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}>
-              <p className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>{t('biz.allocationPercent')}</p>
-              <p className="text-xl font-bold" style={{ color: THEME.text }}>
-                {allocations.length > 0 ? `${avgPercentage.toFixed(1)}%` : '-'}
-              </p>
-              <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>Average allocation percentage</p>
-            </div>
-            <div className="rounded-lg p-3" style={{ background: `${THEME.primary}06`, border: `1px solid ${THEME.primary}15` }}>
-              <p className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>{t('biz.allocationFixed')}</p>
-              <p className="text-xl font-bold tabular-nums" style={{ color: THEME.primary }}>
-                {totalAllocated > 0 ? formatAmount(totalAllocated / Math.max(allocations.length, 1)) : '-'}
-              </p>
-              <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>Average fixed amount</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* History Table */}
-      <Card className="rounded-xl overflow-hidden" style={cardStyle}>
-        <CardContent className="p-0">
-          <div className="flex items-center gap-2 p-3 sm:p-4" style={{ borderBottom: `1px solid ${THEME.border}` }}>
-            <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}15` }}>
-              <History className="h-3 w-3" style={{ color: THEME.secondary }} />
-            </div>
-            <h3 className="text-xs font-semibold" style={{ color: THEME.text }}>{t('laporan.history')}</h3>
-            <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: `${THEME.primary}15`, color: THEME.primary, border: `1px solid ${THEME.primary}20` }}>
-              {allocations.length}
-            </Badge>
-          </div>
-          {loading ? (
-            <div className="space-y-2 p-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-lg" style={{ background: THEME.border }} />
-              ))}
-            </div>
-          ) : allocations.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="max-h-96 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent" style={{ borderBottom: `1px solid ${THEME.border}` }}>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.cashDate')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.saleDescription')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>{t('biz.debtAmount')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: THEME.muted }}>{t('biz.allocationPercent')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: THEME.muted }}>{t('biz.customerNotes')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allocations.map((alloc, idx) => (
-                    <TableRow
-                      key={alloc.id}
-                      className="transition-colors duration-150"
-                      style={{
-                        background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent',
-                        borderBottom: `1px solid ${THEME.border}`,
-                      }}
-                    >
-                      <TableCell className="text-xs py-2.5 tabular-nums" style={{ color: THEME.textSecondary }}>
-                        {new Date(alloc.allocatedAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: THEME.primary }} />
-                          <span className="text-xs font-medium max-w-[180px] truncate" style={{ color: THEME.text }}>
-                            {alloc.sale?.description || '-'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-right font-semibold py-2.5 tabular-nums" style={{ color: THEME.primary }}>
-                        {formatAmount(alloc.amount)}
-                      </TableCell>
-                      <TableCell className="py-2.5 text-right">
-                        {alloc.percentage > 0 ? (
-                          <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: `${THEME.secondary}15`, color: THEME.secondary, border: `1px solid ${THEME.secondary}20` }}>
-                            {alloc.percentage}%
-                          </Badge>
-                        ) : (
-                          <span className="text-xs" style={{ color: THEME.muted }}>-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs py-2.5 max-w-[150px] truncate hidden sm:table-cell" style={{ color: THEME.muted }}>
-                        {alloc.personalNote || '-'}
-                      </TableCell>
-                    </TableRow>
+        {/* History Table */}
+        <motion.div variants={itemVariants} className="mt-4">
+          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 p-4 border-b border-white/[0.04]">
+                <div className="h-7 w-7 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center">
+                  <History className="h-3.5 w-3.5 text-[#03DAC6]" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">{t('laporan.history')}</h3>
+                <Badge className="bg-[#BB86FC]/20 text-[#BB86FC] border-[#BB86FC]/20 text-[10px] ml-auto">
+                  {allocations.length}
+                </Badge>
+              </div>
+              {loading ? (
+                <div className="space-y-3 p-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              ) : allocations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-white/40">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative"
+                  >
+                    <div className="h-16 w-16 rounded-2xl bg-[#BB86FC]/10 flex items-center justify-center">
+                      <ArrowDownToLine className="h-8 w-8 text-[#BB86FC]/40" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-[#03DAC6]/20 flex items-center justify-center">
+                      <Plus className="h-3 w-3 text-[#03DAC6]" />
+                    </div>
+                  </motion.div>
+                  <p className="text-sm mt-4">{t('biz.noBizData')}</p>
+                  <p className="text-xs mt-1 text-white/25">Create your first allocation to get started</p>
+                </div>
+              ) : (
+                <div className="max-h-[400px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.01]">
+                        <TableHead className="text-white/50 text-xs font-medium">{t('biz.cashDate')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium">{t('biz.saleDescription')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.debtAmount')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.allocationPercent')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">{t('biz.customerNotes')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <AnimatePresence>
+                        {allocations.map((alloc, idx) => (
+                          <motion.tr
+                            key={alloc.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.03, duration: 0.3 }}
+                            className={cn(
+                              'border-white/[0.04] transition-colors duration-150 group',
+                              idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]',
+                              'hover:bg-white/[0.04]'
+                            )}
+                          >
+                            <TableCell className="text-white/70 text-xs py-3">
+                              {new Date(alloc.allocatedAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-1.5 rounded-full bg-[#BB86FC] shrink-0" />
+                                <span className="text-white text-xs font-medium max-w-[180px] truncate">
+                                  {alloc.sale?.description || '-'}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-semibold py-3 text-[#BB86FC]">
+                              {formatAmount(alloc.amount)}
+                            </TableCell>
+                            <TableCell className="py-3 text-right">
+                              {alloc.percentage > 0 ? (
+                                <Badge className="bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20 text-[10px] font-medium">
+                                  {alloc.percentage}%
+                                </Badge>
+                              ) : (
+                                <span className="text-white/30 text-xs">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white/40 text-xs py-3 max-w-[150px] truncate hidden sm:table-cell">
+                              {alloc.personalNote || '-'}
+                            </TableCell>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       {/* Add Allocation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-xl sm:max-w-[460px]" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[460px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
-              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}15` }}>
-                <ArrowDownToLine className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+            <DialogTitle className="text-white flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#03DAC6]/20 flex items-center justify-center">
+                <ArrowDownToLine className="h-3.5 w-3.5 text-[#03DAC6]" />
               </div>
               {t('biz.autoAllocation')}
             </DialogTitle>
-            <DialogDescription className="text-xs" style={{ color: THEME.textSecondary }}>
+            <DialogDescription className="text-white/60">
               {t('biz.allocatedFrom')}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-3 mt-1">
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.saleDescription')}</Label>
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-white/80 text-xs">{t('biz.saleDescription')}</Label>
               <Select value={formData.saleId} onValueChange={(v) => setFormData({ ...formData, saleId: v })}>
-                <SelectTrigger className="text-sm rounded-lg" style={inputStyle}>
+                <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl">
                   <SelectValue placeholder={t('biz.saleDescription')} />
                 </SelectTrigger>
                 <SelectContent>
                   {sales.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
+                    <SelectItem key={s.id} value={s.id} className="text-white">
                       {s.description} — {formatAmount(s.amount)}
                     </SelectItem>
                   ))}
@@ -471,28 +467,9 @@ export default function BusinessAllocation() {
               </Select>
             </div>
 
-            {/* Installment split note */}
-            {isInstallment && selectedSale && (
-              <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: `${THEME.warning}08`, border: `1px solid ${THEME.warning}20` }}>
-                <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: THEME.warning }} />
-                <div className="text-[10px] leading-relaxed" style={{ color: THEME.textSecondary }}>
-                  <p className="font-medium mb-1" style={{ color: THEME.warning }}>Penjualan Cicilan</p>
-                  <p>Alokasi dari cicilan akan dibagi: DP saat penjualan, sisanya per tempo cicilan.</p>
-                  {selectedSale.downPayment != null && (
-                    <div className="mt-1.5 space-y-0.5">
-                      <p style={{ color: THEME.text }}>• DP: {formatAmount(selectedSale.downPayment)}</p>
-                      {selectedSale.installmentAmount && selectedSale.installmentTempo && (
-                        <p style={{ color: THEME.text }}>• Cicilan: {formatAmount(selectedSale.installmentAmount)} × {selectedSale.installmentTempo} tempo</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.allocationPercent')}</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs">{t('biz.allocationPercent')}</Label>
                 <Input
                   type="number"
                   value={formData.percentage}
@@ -500,54 +477,51 @@ export default function BusinessAllocation() {
                   placeholder="0"
                   min="0"
                   max="100"
-                  className="text-sm rounded-lg tabular-nums"
-                  style={inputStyle}
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.allocationFixed')}</Label>
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs">{t('biz.allocationFixed')}</Label>
                 <Input
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="text-sm rounded-lg tabular-nums"
-                  style={inputStyle}
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.customerNotes')}</Label>
+            <div className="space-y-2">
+              <Label className="text-white/80 text-xs">{t('biz.customerNotes')}</Label>
               <Textarea
                 value={formData.personalNote}
                 onChange={(e) => setFormData({ ...formData, personalNote: e.target.value })}
                 placeholder={t('biz.customerNotes')}
-                className="text-sm rounded-lg resize-none min-h-[60px]"
-                style={inputStyle}
+                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 min-h-[60px] rounded-xl focus:border-[#BB86FC]/40"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-1">
+            <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
-                className="rounded-lg text-xs"
-                style={{ borderColor: THEME.border, color: THEME.text }}
+                className="border-white/[0.1] text-white hover:bg-white/10 rounded-xl"
               >
                 {t('common.cancel')}
               </Button>
-              <Button
-                type="submit"
-                disabled={saving || (!formData.amount && !formData.percentage)}
-                className="rounded-lg text-xs"
-                style={{ backgroundColor: THEME.primary, color: '#000' }}
-              >
-                {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                {t('common.save')}
-              </Button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="submit"
+                  disabled={saving || (!formData.amount && !formData.percentage)}
+                  className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 rounded-xl shadow-lg shadow-[#BB86FC]/20"
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {t('common.save')}
+                </Button>
+              </motion.div>
             </DialogFooter>
           </form>
         </DialogContent>

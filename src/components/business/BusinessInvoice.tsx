@@ -48,25 +48,29 @@ import {
   Plus, Pencil, Trash2, FileText, Download,
   PlusCircle, MinusCircle, Eye, Receipt,
   Clock, CheckCircle2, AlertTriangle, TrendingUp,
-  Landmark, Star, Info,
+  Landmark, Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const THEME = {
-  bg: '#000000',
-  surface: '#121212',
-  primary: '#BB86FC',
-  secondary: '#03DAC6',
-  destructive: '#CF6679',
-  warning: '#F9A825',
-  muted: '#9E9E9E',
-  border: 'rgba(255,255,255,0.08)',
-  borderHover: 'rgba(255,255,255,0.15)',
-  text: '#FFFFFF',
-  textSecondary: '#B3B3B3',
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
+};
+
+const cardHover = {
+  rest: { scale: 1 },
+  hover: { scale: 1.02, transition: { duration: 0.2 } },
 };
 
 interface InvoiceItem {
@@ -91,15 +95,12 @@ interface Invoice {
   customerId?: string | null;
 }
 
-const STATUS_STYLES: Record<string, { label: string; dotColor: string; icon: React.ComponentType<{ className?: string }>; bg: string; color: string }> = {
-  pending: { label: 'biz.invoicePending', dotColor: THEME.warning, icon: Clock, bg: `${THEME.warning}15`, color: THEME.warning },
-  paid: { label: 'biz.invoicePaid', dotColor: THEME.secondary, icon: CheckCircle2, bg: `${THEME.secondary}15`, color: THEME.secondary },
-  cancelled: { label: 'biz.invoiceCancelled', dotColor: '#666', icon: AlertTriangle, bg: 'rgba(255,255,255,0.05)', color: THEME.muted },
-  overdue: { label: 'biz.invoiceOverdue', dotColor: THEME.destructive, icon: AlertTriangle, bg: `${THEME.destructive}15`, color: THEME.destructive },
+const STATUS_STYLES: Record<string, { label: string; className: string; dotColor: string; icon: React.ComponentType<{ className?: string }> }> = {
+  pending: { label: 'biz.invoicePending', className: 'bg-[#FFD700]/15 text-[#FFD700] border-[#FFD700]/20', dotColor: '#FFD700', icon: Clock },
+  paid: { label: 'biz.invoicePaid', className: 'bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20', dotColor: '#03DAC6', icon: CheckCircle2 },
+  cancelled: { label: 'biz.invoiceCancelled', className: 'bg-white/[0.05] text-white/40 border-white/10', dotColor: '#666', icon: AlertTriangle },
+  overdue: { label: 'biz.invoiceOverdue', className: 'bg-[#CF6679]/15 text-[#CF6679] border-[#CF6679]/20', dotColor: '#CF6679', icon: AlertTriangle },
 };
-
-const inputCls = 'bg-transparent border text-white placeholder:text-white/30 rounded-lg focus:ring-1';
-const inputBorder = `1px solid ${THEME.border}`;
 
 export default function BusinessInvoice() {
   const { t } = useTranslation();
@@ -325,293 +326,356 @@ export default function BusinessInvoice() {
   const totalRevenue = invoices.reduce((s, i) => s + i.total, 0);
 
   const statCards = [
-    { label: t('biz.invoices'), value: totalInvoices, icon: Receipt, color: THEME.primary },
-    { label: t('biz.invoicePaid'), value: paidInvoices, icon: CheckCircle2, color: THEME.secondary },
-    { label: t('biz.invoicePending'), value: pendingInvoices, icon: Clock, color: THEME.warning },
-    { label: t('biz.bizRevenue'), value: formatAmount(totalRevenue), icon: TrendingUp, color: THEME.destructive },
+    { label: t('biz.invoices'), value: totalInvoices, icon: Receipt, color: '#BB86FC', gradient: 'from-[#BB86FC]/20 to-[#BB86FC]/5' },
+    { label: t('biz.invoicePaid'), value: paidInvoices, icon: CheckCircle2, color: '#03DAC6', gradient: 'from-[#03DAC6]/20 to-[#03DAC6]/5' },
+    { label: t('biz.invoicePending'), value: pendingInvoices, icon: Clock, color: '#FFD700', gradient: 'from-[#FFD700]/20 to-[#FFD700]/5' },
+    { label: t('biz.bizRevenue'), value: formatAmount(totalRevenue), icon: TrendingUp, color: '#CF6679', gradient: 'from-[#CF6679]/20 to-[#CF6679]/5' },
   ];
 
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p style={{ color: THEME.textSecondary }} className="text-center">{t('biz.registerFirst')}</p>
+        <p className="text-white/50 text-center">{t('biz.registerFirst')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Info Banner */}
-      <div
-        className="flex items-start gap-2.5 p-3 rounded-lg text-[11px]"
-        style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}20` }}
-      >
-        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
-        <span style={{ color: THEME.textSecondary }}>
-          Kelola invoice/tagihan pelanggan. Invoice cicilan dibuat otomatis dari penjualan cicilan.
-        </span>
-      </div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-base font-bold flex items-center gap-2" style={{ color: THEME.text }}>
-          <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.warning}20` }}>
-            <FileText className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
-          </div>
-          {t('biz.invoices')}
-        </h2>
-        <Button onClick={openCreateDialog} size="sm" style={{ backgroundColor: THEME.primary, color: '#000' }} className="hover:opacity-90 rounded-lg">
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          {t('biz.addInvoice')}
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
+        {/* Header */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-[#FFD700]/15 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-[#FFD700]" />
+            </div>
+            {t('biz.invoices')}
+          </h2>
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+            <Button onClick={openCreateDialog} size="sm" className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 shadow-lg shadow-[#BB86FC]/20">
+              <Plus className="h-4 w-4 mr-1" />
+              {t('biz.addInvoice')}
+            </Button>
+          </motion.div>
+        </motion.div>
 
-      {/* Summary Stat Cards */}
-      {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          {statCards.map((card, idx) => (
-            <Card key={idx} className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}20` }}>
-                    <card.icon className="h-3.5 w-3.5" style={{ color: card.color }} />
-                  </div>
-                  {idx === 3 && overdueInvoices > 0 && (
-                    <Badge className="text-[10px] px-1.5 py-0" style={{ backgroundColor: `${THEME.destructive}20`, color: THEME.destructive, border: `1px solid ${THEME.destructive}30` }}>
-                      {overdueInvoices} {t('biz.invoiceOverdue')}
-                    </Badge>
-                  )}
+        {/* Summary Stat Cards */}
+        {!loading && (
+          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+            {statCards.map((card, idx) => (
+              <motion.div
+                key={idx}
+                variants={cardHover}
+                initial="rest"
+                whileHover="hover"
+              >
+                <Card className={cn('relative overflow-hidden rounded-2xl border-white/[0.06] bg-gradient-to-br', card.gradient)}>
+                  <div className="absolute top-0 right-0 h-20 w-20 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: card.color }} />
+                  <CardContent className="p-4 relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}20` }}>
+                        <card.icon className="h-4 w-4" style={{ color: card.color }} />
+                      </div>
+                      {idx === 3 && overdueInvoices > 0 && (
+                        <Badge className="bg-[#CF6679]/20 text-[#CF6679] border-[#CF6679]/20 text-[10px]">
+                          {overdueInvoices} {t('biz.invoiceOverdue')}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-white/50">{card.label}</p>
+                    <p className="text-xl font-bold text-white mt-0.5">{card.value}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Search */}
+        <motion.div variants={itemVariants} className="mt-4">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('common.search') + '...'}
+            className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 max-w-sm focus:border-[#BB86FC]/40 focus:ring-[#BB86FC]/10 rounded-xl"
+          />
+        </motion.div>
+
+        {/* Table */}
+        <motion.div variants={itemVariants} className="mt-4">
+          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-3 p-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
+                  ))}
                 </div>
-                <p className="text-[11px]" style={{ color: THEME.muted }}>{card.label}</p>
-                <p className="text-sm font-bold mt-0.5" style={{ color: THEME.text }}>{card.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Search */}
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('common.search') + '...'}
-        className="max-w-sm text-sm"
-        style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
-      />
-
-      {/* Table */}
-      <Card className="rounded-xl overflow-hidden" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-2 p-3 sm:p-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 rounded-lg" style={{ background: `${THEME.border}` }} />
-              ))}
-            </div>
-          ) : filteredInvoices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="h-16 w-16 rounded-xl flex items-center justify-center" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
-                <FileText className="h-8 w-8 opacity-20" />
-              </div>
-              <p className="text-sm mt-3" style={{ color: THEME.muted }}>{t('biz.noBizData')}</p>
-              <p className="text-xs mt-1" style={{ color: THEME.muted }}>Create your first invoice to get started</p>
-            </div>
-          ) : (
-            <div className="max-h-[500px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ borderBottom: `1px solid ${THEME.border}` }} className="hover:bg-transparent">
-                    <TableHead className="text-[11px] font-medium" style={{ color: THEME.muted }}>{t('biz.invoiceNumber')}</TableHead>
-                    <TableHead className="text-[11px] font-medium hidden sm:table-cell" style={{ color: THEME.muted }}>{t('biz.invoiceCustomer')}</TableHead>
-                    <TableHead className="text-[11px] font-medium" style={{ color: THEME.muted }}>{t('biz.invoiceStatus')}</TableHead>
-                    <TableHead className="text-[11px] font-medium hidden md:table-cell" style={{ color: THEME.muted }}>{t('biz.invoiceDueDate')}</TableHead>
-                    <TableHead className="text-[11px] font-medium text-right" style={{ color: THEME.muted }}>{t('biz.invoiceTotal')}</TableHead>
-                    <TableHead className="text-[11px] font-medium w-32" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <AnimatePresence>
-                    {filteredInvoices.map((inv) => {
-                      const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
-                      const StatusIcon = statusStyle.icon;
-                      return (
-                        <tr
-                          key={inv.id}
-                          className="transition-colors duration-150 group cursor-default"
-                          style={{ borderBottom: `1px solid ${THEME.border}` }}
-                        >
-                          <TableCell className="text-xs py-2 font-medium" style={{ color: THEME.text }}>
-                            <div className="flex items-center gap-2">
-                              <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.dotColor }} />
-                              {inv.invoiceNumber}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2 hidden sm:table-cell">
-                            <span className="text-xs" style={{ color: THEME.textSecondary }}>{inv.customer?.name || '-'}</span>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Badge variant="outline" className="text-[10px] font-medium gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color, borderColor: 'transparent' }}>
-                              <StatusIcon className="h-2.5 w-2.5" />
-                              {t(statusStyle.label)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs py-2 hidden md:table-cell" style={{ color: THEME.textSecondary }}>
-                            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '-'}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-semibold py-2" style={{ color: THEME.text }}>
-                            {formatAmount(inv.total)}
-                          </TableCell>
-                          <TableCell className="py-2 text-right">
-                            <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10" style={{ color: THEME.muted }} onClick={() => setViewInvoice(inv)}>
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10" style={{ color: THEME.muted }} onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
-                                {downloading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10" style={{ color: THEME.muted }} onClick={() => openEditDialog(inv)}>
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10" style={{ color: THEME.muted }} onClick={() => setDeleteId(inv.id)}>
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </tr>
-                      );
-                    })}
-                  </AnimatePresence>
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              ) : filteredInvoices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-white/40">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative"
+                  >
+                    <div className="h-20 w-20 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                      <FileText className="h-10 w-10 opacity-30" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-[#BB86FC]/20 flex items-center justify-center">
+                      <Plus className="h-3 w-3 text-[#BB86FC]" />
+                    </div>
+                  </motion.div>
+                  <p className="text-sm mt-4 text-white/40">{t('biz.noBizData')}</p>
+                  <p className="text-xs mt-1 text-white/25">Create your first invoice to get started</p>
+                </div>
+              ) : (
+                <div className="max-h-[500px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/[0.06] hover:bg-transparent">
+                        <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceNumber')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium hidden sm:table-cell">{t('biz.invoiceCustomer')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium">{t('biz.invoiceStatus')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium hidden md:table-cell">{t('biz.invoiceDueDate')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium text-right">{t('biz.invoiceTotal')}</TableHead>
+                        <TableHead className="text-white/50 text-xs font-medium w-36" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <AnimatePresence>
+                        {filteredInvoices.map((inv, idx) => {
+                          const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
+                          const StatusIcon = statusStyle.icon;
+                          return (
+                            <motion.tr
+                              key={inv.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.03, duration: 0.3 }}
+                              className={cn(
+                                'border-white/[0.04] transition-colors duration-150 group',
+                                idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.015]',
+                                'hover:bg-white/[0.04]'
+                              )}
+                            >
+                              <TableCell className="text-white text-xs py-3.5 font-medium">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.dotColor }} />
+                                  {inv.invoiceNumber}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-3.5 hidden sm:table-cell">
+                                <span className="text-white/60 text-xs">{inv.customer?.name || '-'}</span>
+                              </TableCell>
+                              <TableCell className="py-3.5">
+                                <Badge variant="outline" className={cn('text-[10px] font-medium gap-1 px-2 py-0.5', statusStyle.className)}>
+                                  <StatusIcon className="h-3 w-3" />
+                                  {t(statusStyle.label)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-white/60 text-xs py-3.5 hidden md:table-cell">
+                                {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '-'}
+                              </TableCell>
+                              <TableCell className="text-xs text-right font-semibold py-3.5 text-white">
+                                {formatAmount(inv.total)}
+                              </TableCell>
+                              <TableCell className="py-3.5 text-right">
+                                <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10 rounded-lg"
+                                    onClick={() => setViewInvoice(inv)}
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-lg"
+                                    onClick={() => handleDownloadPDF(inv.id)}
+                                    disabled={downloading === inv.id}
+                                  >
+                                    {downloading === inv.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <Download className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 rounded-lg"
+                                    onClick={() => openEditDialog(inv)}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-white/40 hover:text-[#CF6679] hover:bg-[#CF6679]/10 rounded-lg"
+                                    onClick={() => setDeleteId(inv.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </motion.tr>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       {/* View Invoice Dialog */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="sm:max-w-[580px] rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[620px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
-              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}20` }}>
-                <Receipt className="h-3 w-3" style={{ color: THEME.primary }} />
+            <DialogTitle className="text-white flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#BB86FC]/20 flex items-center justify-center">
+                <Receipt className="h-3.5 w-3.5 text-[#BB86FC]" />
               </div>
               {viewInvoice?.invoiceNumber}
             </DialogTitle>
-            <DialogDescription style={{ color: THEME.textSecondary }}>
+            <DialogDescription className="text-white/60">
               {viewInvoice?.customer?.name || '-'}
             </DialogDescription>
           </DialogHeader>
           {viewInvoice && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: (STATUS_STYLES[viewInvoice.status]?.bg), color: (STATUS_STYLES[viewInvoice.status]?.color), borderColor: 'transparent' }}>
-                  {(() => { const S = STATUS_STYLES[viewInvoice.status]; const Ic = S?.icon; return Ic ? <Ic className="h-2.5 w-2.5" /> : null; })()}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="outline" className={cn('text-xs gap-1', STATUS_STYLES[viewInvoice.status]?.className)}>
+                  {(() => { const S = STATUS_STYLES[viewInvoice.status]; const Ic = S?.icon; return Ic ? <Ic className="h-3 w-3" /> : null; })()}
                   {t(STATUS_STYLES[viewInvoice.status]?.label || 'biz.invoicePending')}
                 </Badge>
-                <span className="text-[11px]" style={{ color: THEME.muted }}>{t('biz.invoiceDate')}: {new Date(viewInvoice.date).toLocaleDateString()}</span>
+                <span className="text-xs text-white/40">{t('biz.invoiceDate')}: {new Date(viewInvoice.date).toLocaleDateString()}</span>
                 {viewInvoice.dueDate && (
-                  <span className="text-[11px]" style={{ color: THEME.muted }}>{t('biz.invoiceDueDate')}: {new Date(viewInvoice.dueDate).toLocaleDateString()}</span>
+                  <span className="text-xs text-white/40">{t('biz.invoiceDueDate')}: {new Date(viewInvoice.dueDate).toLocaleDateString()}</span>
                 )}
               </div>
-              <div className="max-h-44 overflow-y-auto rounded-lg" style={{ border: `1px solid ${THEME.border}` }}>
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-white/[0.06]">
                 <Table>
                   <TableHeader>
-                    <TableRow style={{ borderBottom: `1px solid ${THEME.border}` }} className="hover:bg-transparent">
-                      <TableHead className="text-[11px]" style={{ color: THEME.muted }}>{t('biz.invoiceItems')}</TableHead>
-                      <TableHead className="text-[11px] text-center" style={{ color: THEME.muted }}>Qty</TableHead>
-                      <TableHead className="text-[11px] text-right" style={{ color: THEME.muted }}>Harga</TableHead>
-                      <TableHead className="text-[11px] text-right" style={{ color: THEME.muted }}>Total</TableHead>
+                    <TableRow className="border-white/[0.06] hover:bg-transparent bg-white/[0.02]">
+                      <TableHead className="text-white/50 text-xs">{t('biz.invoiceItems')}</TableHead>
+                      <TableHead className="text-white/50 text-xs text-center">Qty</TableHead>
+                      <TableHead className="text-white/50 text-xs text-right">Harga</TableHead>
+                      <TableHead className="text-white/50 text-xs text-right">Total</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {viewInvoice.items.map((item, i) => (
-                      <TableRow key={i} style={{ borderBottom: `1px solid ${THEME.border}` }}>
-                        <TableCell className="text-xs py-1.5" style={{ color: THEME.text }}>{item.description}</TableCell>
-                        <TableCell className="text-xs text-center py-1.5" style={{ color: THEME.textSecondary }}>{item.qty}</TableCell>
-                        <TableCell className="text-xs text-right py-1.5" style={{ color: THEME.textSecondary }}>{formatAmount(item.price)}</TableCell>
-                        <TableCell className="text-xs text-right py-1.5 font-medium" style={{ color: THEME.text }}>{formatAmount(item.qty * item.price)}</TableCell>
+                      <TableRow key={i} className={cn('border-white/[0.04] hover:bg-white/[0.02]', i % 2 === 1 && 'bg-white/[0.015]')}>
+                        <TableCell className="text-white text-xs py-2">{item.description}</TableCell>
+                        <TableCell className="text-white/70 text-xs text-center py-2">{item.qty}</TableCell>
+                        <TableCell className="text-white/70 text-xs text-right py-2">{formatAmount(item.price)}</TableCell>
+                        <TableCell className="text-white text-xs text-right py-2">{formatAmount(item.qty * item.price)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-              <div className="rounded-lg p-3 space-y-1 text-xs" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}>
-                <div className="flex justify-between" style={{ color: THEME.textSecondary }}>
+              <div className="bg-white/[0.03] rounded-xl p-4 space-y-1.5 text-xs border border-white/[0.04]">
+                <div className="flex justify-between text-white/60">
                   <span>{t('biz.invoiceSubtotal')}</span>
                   <span>{formatAmount(viewInvoice.subtotal)}</span>
                 </div>
                 {viewInvoice.tax > 0 && (
-                  <div className="flex justify-between" style={{ color: THEME.textSecondary }}>
+                  <div className="flex justify-between text-white/60">
                     <span>{t('biz.invoiceTax')} ({viewInvoice.tax}%)</span>
                     <span>{formatAmount(viewInvoice.tax * viewInvoice.subtotal / 100)}</span>
                   </div>
                 )}
                 {viewInvoice.discount > 0 && (
-                  <div className="flex justify-between" style={{ color: THEME.secondary }}>
+                  <div className="flex justify-between text-[#03DAC6]">
                     <span>{t('biz.invoiceDiscount')} ({viewInvoice.discount}%)</span>
                     <span>-{formatAmount(viewInvoice.discount * viewInvoice.subtotal / 100)}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-sm pt-2" style={{ color: THEME.text, borderTop: `1px solid ${THEME.border}` }}>
+                <div className="flex justify-between text-white font-bold text-base pt-3 border-t border-white/[0.06]">
                   <span>{t('biz.invoiceTotal')}</span>
                   <span>{formatAmount(viewInvoice.total)}</span>
                 </div>
               </div>
               {viewInvoice.notes && (
-                <p className="text-[11px] italic" style={{ color: THEME.muted }}>{viewInvoice.notes}</p>
+                <p className="text-xs text-white/40 italic">{viewInvoice.notes}</p>
               )}
 
               {/* Bank Accounts Display */}
               {bankAccounts.length > 0 && (
-                <div className="rounded-lg p-3" style={{ border: `1px solid ${THEME.border}`, background: 'rgba(255,255,255,0.02)' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-5 w-5 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.secondary}20` }}>
-                      <Landmark className="h-2.5 w-2.5" style={{ color: THEME.secondary }} />
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' as const }}
+                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center">
+                      <Landmark className="h-3 w-3 text-[#03DAC6]" />
                     </div>
-                    <p className="text-[11px] font-semibold" style={{ color: THEME.textSecondary }}>Rekening Pembayaran</p>
+                    <p className="text-xs font-semibold text-white/70">Rekening Pembayaran</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {bankAccounts.map((acc) => (
                       <div
                         key={acc.id}
-                        className="flex items-start gap-2 p-2 rounded-lg transition-colors"
-                        style={{
-                          backgroundColor: acc.isDefault ? `${THEME.secondary}08` : 'transparent',
-                          border: `1px solid ${acc.isDefault ? `${THEME.secondary}30` : THEME.border}`,
-                        }}
+                        className={cn(
+                          'flex items-start gap-2.5 p-2.5 rounded-lg border transition-colors',
+                          acc.isDefault
+                            ? 'border-[#03DAC6]/20 bg-[#03DAC6]/[0.04]'
+                            : 'border-white/[0.06] bg-white/[0.015]'
+                        )}
                       >
-                        <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: acc.isDefault ? `${THEME.secondary}15` : 'rgba(255,255,255,0.04)' }}>
-                          <Landmark className="h-3 w-3" style={{ color: acc.isDefault ? THEME.secondary : THEME.muted }} />
+                        <div className={cn(
+                          'h-8 w-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
+                          acc.isDefault ? 'bg-[#03DAC6]/20' : 'bg-white/[0.06]'
+                        )}>
+                          <Landmark className={cn('h-3.5 w-3.5', acc.isDefault ? 'text-[#03DAC6]' : 'text-white/40')} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-[11px] font-medium truncate" style={{ color: THEME.text }}>{acc.bankName}</p>
+                            <p className="text-xs font-medium text-white truncate">{acc.bankName}</p>
                             {acc.isDefault && (
-                              <Badge className="text-[8px] px-1 py-0" style={{ backgroundColor: `${THEME.secondary}15`, color: THEME.secondary, border: 'transparent' }}>
-                                <Star className="h-1.5 w-1.5 mr-0.5" />
+                              <Badge className="bg-[#03DAC6]/15 text-[#03DAC6] border-[#03DAC6]/20 text-[8px] px-1 py-0 shrink-0">
+                                <Star className="h-2 w-2 mr-0.5" />
                                 Utama
                               </Badge>
                             )}
                           </div>
-                          <p className="text-[10px] font-mono mt-0.5" style={{ color: THEME.textSecondary }}>{acc.accountNumber}</p>
-                          <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>a.n. {acc.accountHolder}</p>
+                          <p className="text-[11px] text-white/50 font-mono mt-0.5">{acc.accountNumber}</p>
+                          <p className="text-[10px] text-white/40 mt-0.5">a.n. {acc.accountHolder}</p>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
           )}
           <DialogFooter>
             <Button
               variant="outline"
-              className="rounded-lg"
-              style={{ borderColor: `${THEME.secondary}30`, color: THEME.secondary }}
+              className="border-[#03DAC6]/20 text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-xl"
               onClick={() => viewInvoice && handleDownloadPDF(viewInvoice.id)}
               disabled={!viewInvoice || downloading === viewInvoice.id}
             >
-              {downloading === viewInvoice?.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {downloading === viewInvoice?.id ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
               {t('biz.downloadPDF')}
             </Button>
           </DialogFooter>
@@ -620,76 +684,79 @@ export default function BusinessInvoice() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[660px] max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
-              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: editingInvoice ? `${THEME.warning}20` : `${THEME.secondary}20` }}>
-                {editingInvoice ? <Pencil className="h-3 w-3" style={{ color: editingInvoice ? THEME.warning : THEME.secondary }} /> : <Plus className="h-3 w-3" style={{ color: THEME.secondary }} />}
+            <DialogTitle className="text-white flex items-center gap-2">
+              <div className={cn('h-7 w-7 rounded-lg flex items-center justify-center', editingInvoice ? 'bg-[#FFD700]/20' : 'bg-[#03DAC6]/20')}>
+                {editingInvoice ? <Pencil className="h-3.5 w-3.5 text-[#FFD700]" /> : <Plus className="h-3.5 w-3.5 text-[#03DAC6]" />}
               </div>
               {editingInvoice ? t('common.edit') : t('biz.addInvoice')}
             </DialogTitle>
-            <DialogDescription style={{ color: THEME.textSecondary }}>
+            <DialogDescription className="text-white/60">
               {t('biz.generateInvoice')}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.invoiceNumber')} *</Label>
+          <form onSubmit={handleSave} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs">{t('biz.invoiceNumber')} *</Label>
                 <Input
                   value={formData.invoiceNumber}
                   onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
                   placeholder="INV-001"
-                  className="text-sm h-9 rounded-lg"
-                  style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.invoiceCustomer')}</Label>
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs">{t('biz.invoiceCustomer')}</Label>
                 <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
-                  <SelectTrigger className="text-sm h-9 rounded-lg" style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}>
+                  <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl">
                     <SelectValue placeholder={t('biz.invoiceCustomer')} />
                   </SelectTrigger>
-                  <SelectContent style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+                  <SelectContent>
                     {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id} style={{ color: THEME.text }}>
+                      <SelectItem key={c.id} value={c.id} className="text-white">
                         {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.invoiceDueDate')}</Label>
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs">{t('biz.invoiceDueDate')}</Label>
                 <Input
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="text-sm h-9 rounded-lg"
-                  style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
+                  className="bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:border-[#BB86FC]/40"
                 />
               </div>
             </div>
 
             {/* Line Items */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.invoiceItems')} *</Label>
-                <Button type="button" variant="ghost" size="sm" onClick={addItem} className="text-xs" style={{ color: THEME.secondary }}>
+                <Label className="text-white/80 text-xs">{t('biz.invoiceItems')} *</Label>
+                <Button type="button" variant="ghost" size="sm" onClick={addItem} className="text-[#03DAC6] hover:text-[#03DAC6]/80 hover:bg-[#03DAC6]/10 text-xs">
                   <PlusCircle className="h-3.5 w-3.5 mr-1" />
                   {t('common.add')}
                 </Button>
               </div>
-              <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                 {formData.items.map((item, idx) => (
-                  <div key={idx} className="flex gap-1.5 items-start">
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex gap-2 items-start"
+                  >
                     <Input
                       value={item.description}
                       onChange={(e) => updateItem(idx, 'description', e.target.value)}
                       placeholder="Item"
-                      className="flex-1 text-xs h-8 rounded-md"
-                      style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
+                      className="flex-1 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 text-xs h-9 rounded-lg"
                     />
                     <Input
                       type="number"
@@ -697,8 +764,7 @@ export default function BusinessInvoice() {
                       onChange={(e) => updateItem(idx, 'qty', parseInt(e.target.value) || 0)}
                       placeholder="Qty"
                       min="1"
-                      className="w-14 text-xs h-8 rounded-md"
-                      style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
+                      className="w-16 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 text-xs h-9 rounded-lg"
                     />
                     <Input
                       type="number"
@@ -706,60 +772,82 @@ export default function BusinessInvoice() {
                       onChange={(e) => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
                       placeholder="Harga"
                       min="0"
-                      className="w-24 text-xs h-8 rounded-md"
-                      style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
+                      className="w-28 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 text-xs h-9 rounded-lg"
                     />
                     {formData.items.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(idx)} className="h-8 w-8 p-0 shrink-0 rounded-md" style={{ color: THEME.muted }}>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(idx)} className="h-9 w-9 p-0 text-white/30 hover:text-[#CF6679] hover:bg-[#CF6679]/10 shrink-0 rounded-lg">
                         <MinusCircle className="h-4 w-4" />
                       </Button>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
 
             {/* Tax, Discount */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.invoiceTax')} (%)</Label>
-                <Input type="number" value={formData.tax} onChange={(e) => setFormData({ ...formData, tax: e.target.value })} placeholder="0" min="0" className="text-sm h-9 rounded-lg" style={{ background: THEME.surface, border: inputBorder, color: THEME.text }} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs">{t('biz.invoiceTax')} (%)</Label>
+                <Input
+                  type="number"
+                  value={formData.tax}
+                  onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
+                />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.invoiceDiscount')} (%)</Label>
-                <Input type="number" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} placeholder="0" min="0" className="text-sm h-9 rounded-lg" style={{ background: THEME.surface, border: inputBorder, color: THEME.text }} />
+              <div className="space-y-2">
+                <Label className="text-white/80 text-xs">{t('biz.invoiceDiscount')} (%)</Label>
+                <Input
+                  type="number"
+                  value={formData.discount}
+                  onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-xl focus:border-[#BB86FC]/40"
+                />
               </div>
             </div>
 
             {/* Totals Preview */}
-            <div className="rounded-lg p-3 space-y-1 text-xs" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}` }}>
-              <div className="flex justify-between" style={{ color: THEME.textSecondary }}>
+            <motion.div
+              layout
+              className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] rounded-xl p-4 space-y-1.5 text-xs border border-white/[0.06]"
+            >
+              <div className="flex justify-between text-white/60">
                 <span>{t('biz.invoiceSubtotal')}</span>
                 <span>{formatAmount(getSubtotal())}</span>
               </div>
-              <div className="flex justify-between" style={{ color: THEME.textSecondary }}>
+              <div className="flex justify-between text-white/60">
                 <span>{t('biz.invoiceTax')}</span>
                 <span>+{formatAmount(getTaxAmount())}</span>
               </div>
-              <div className="flex justify-between" style={{ color: THEME.secondary }}>
+              <div className="flex justify-between text-[#03DAC6]">
                 <span>{t('biz.invoiceDiscount')}</span>
                 <span>-{formatAmount(getDiscountAmount())}</span>
               </div>
-              <div className="flex justify-between font-bold text-sm pt-2" style={{ color: THEME.text, borderTop: `1px solid ${THEME.border}` }}>
+              <div className="flex justify-between text-white font-bold text-base pt-3 border-t border-white/[0.08]">
                 <span>{t('biz.invoiceTotal')}</span>
-                <span style={{ color: THEME.primary }}>{formatAmount(getTotal())}</span>
+                <motion.span
+                  key={getTotal()}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  className="text-[#BB86FC]"
+                >
+                  {formatAmount(getTotal())}
+                </motion.span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Notes */}
-            <div className="space-y-1.5">
-              <Label className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.customerNotes')}</Label>
+            <div className="space-y-2">
+              <Label className="text-white/80 text-xs">{t('biz.customerNotes')}</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder={t('biz.customerNotes')}
-                className="text-xs min-h-[56px] rounded-lg resize-none"
-                style={{ background: THEME.surface, border: inputBorder, color: THEME.text }}
+                className="bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 min-h-[60px] rounded-xl focus:border-[#BB86FC]/40"
               />
             </div>
 
@@ -768,20 +856,20 @@ export default function BusinessInvoice() {
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
-                className="rounded-lg"
-                style={{ borderColor: THEME.border, color: THEME.textSecondary }}
+                className="border-white/[0.1] text-white hover:bg-white/10 rounded-xl"
               >
                 {t('common.cancel')}
               </Button>
-              <Button
-                type="submit"
-                disabled={saving || !formData.invoiceNumber || formData.items.every((i) => !i.description.trim())}
-                className="rounded-lg disabled:opacity-40"
-                style={{ backgroundColor: THEME.primary, color: '#000' }}
-              >
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingInvoice ? t('common.save') : t('biz.generateInvoice')}
-              </Button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="submit"
+                  disabled={saving || !formData.invoiceNumber || formData.items.every((i) => !i.description.trim())}
+                  className="bg-gradient-to-r from-[#BB86FC] to-[#9B6FDB] text-black hover:opacity-90 rounded-xl shadow-lg shadow-[#BB86FC]/20"
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingInvoice ? t('common.save') : t('biz.generateInvoice')}
+                </Button>
+              </motion.div>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -789,23 +877,26 @@ export default function BusinessInvoice() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
-              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${THEME.destructive}20` }}>
-                <Trash2 className="h-3 w-3" style={{ color: THEME.destructive }} />
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#CF6679]/20 flex items-center justify-center">
+                <Trash2 className="h-3.5 w-3.5 text-[#CF6679]" />
               </div>
               {t('common.delete')}
             </AlertDialogTitle>
-            <AlertDialogDescription style={{ color: THEME.textSecondary }}>
+            <AlertDialogDescription className="text-white/60">
               {t('kas.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-lg" style={{ borderColor: THEME.border, color: THEME.textSecondary }}>
+            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10 rounded-xl">
               {t('common.cancel')}
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="rounded-lg" style={{ backgroundColor: THEME.destructive, color: THEME.text, border: 'none' }}>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-gradient-to-r from-[#CF6679] to-[#B04060] hover:opacity-90 text-white border-0 rounded-xl"
+            >
               {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
