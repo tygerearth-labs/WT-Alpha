@@ -72,6 +72,8 @@ import {
   MessageCircle,
   ChevronRight,
   Info,
+  X,
+  Tag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -183,6 +185,32 @@ interface Category {
   name: string;
   type: string;
   color?: string | null;
+}
+
+interface InvestorHistoryItem {
+  id: string;
+  date: string;
+  type: 'modal_masuk' | 'dp_penjualan' | 'penjualan_lunas' | 'cicilan_diterima';
+  description: string;
+  amount: number;
+  investorId?: string;
+  investorName?: string;
+  saleId?: string;
+  customerName?: string;
+}
+
+interface SaleItem {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  paymentMethod: string | null;
+  downPayment: number | null;
+  installmentTempo: number | null;
+  installmentAmount: number | null;
+  investorSharePct: number | null;
+  realizedAmount?: number;
+  customer?: { id: string; name: string } | null;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────
@@ -433,6 +461,23 @@ export default function BusinessCash() {
   const [cashDeleteId, setCashDeleteId] = useState<string | null>(null);
   const [cashCategories, setCashCategories] = useState<Category[]>([]);
   const [cashSearch, setCashSearch] = useState('');
+  const [cashPageSize, setCashPageSize] = useState(10);
+  const [searchMode, setSearchMode] = useState(false);
+
+  // ── Quick Add State ──
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickForm, setQuickForm] = useState({ description: '', amount: '' });
+  const [quickSaving, setQuickSaving] = useState(false);
+
+  // ── Category Management State ──
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categorySaving, setCategorySaving] = useState(false);
+
+  // ── Investor History State ──
+  const [investorHistory, setInvestorHistory] = useState<InvestorHistoryItem[]>([]);
+
+  // ── Sales Data (Arus Kas) ──
+  const [salesData, setSalesData] = useState<SaleItem[]>([]);
 
   // ── Investor State ──
   const [investors, setInvestors] = useState<Investor[]>([]);
@@ -502,8 +547,11 @@ export default function BusinessCash() {
       fetch(`/api/business/${businessId}/categories?type=pengeluaran`).then((r) =>
         r.ok ? r.json() : { categories: [] }
       ),
+      fetch(`/api/business/${businessId}/sales?pageSize=20`).then((r) =>
+        r.ok ? r.json() : { sales: [], summary: {} }
+      ),
     ])
-      .then(([besarData, kecilData, keluarData, catData]) => {
+      .then(([besarData, kecilData, keluarData, catData, salesRes]) => {
         const besarEntries: CashEntry[] = besarData?.cashEntries || [];
         const kecilEntries: CashEntry[] = kecilData?.cashEntries || [];
         const keluarEntries: CashEntry[] = keluarData?.cashEntries || [];
@@ -514,12 +562,14 @@ export default function BusinessCash() {
         setIncomeTotal(inc);
         setExpenseTotal(exp);
         setCashCategories(catData?.categories || []);
+        setSalesData(salesRes?.sales || []);
       })
       .catch(() => {
         setCashEntries([]);
         setIncomeTotal(0);
         setExpenseTotal(0);
         setCashCategories([]);
+        setSalesData([]);
       })
       .finally(() => setCashLoading(false));
   }, [businessId, cashSubTab, cashPeriod, investorSummary.totalInvestment]);
@@ -532,10 +582,12 @@ export default function BusinessCash() {
       .then((result) => {
         setInvestors(result?.investors || []);
         setInvestorSummary(result?.summary || { activeCount: 0, totalInvestment: 0, avgSharePct: 0 });
+        setInvestorHistory(result?.investorHistory || []);
       })
       .catch(() => {
         setInvestors([]);
         setInvestorSummary({ activeCount: 0, totalInvestment: 0, avgSharePct: 0 });
+        setInvestorHistory([]);
       })
       .finally(() => setInvestorLoading(false));
   }, [businessId]);
@@ -612,9 +664,15 @@ export default function BusinessCash() {
       }
       const data = await res.json();
       if (data.message) {
-        window.open(data.message, '_blank');
+        // Use <a> click trick for reliable mobile + desktop redirect
+        const a = document.createElement('a');
+        a.href = data.message;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
-      toast.success('Pengingat WhatsApp berhasil dibuat');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.error'));
     }
@@ -650,8 +708,35 @@ export default function BusinessCash() {
   // ── Derived Data ──────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════
 
+  // Reset page size and search mode when sub-tab or search changes
+  useEffect(() => {
+    setCashPageSize(10);
+  }, [cashSubTab]);
+
+  useEffect(() => {
+    if (!cashSearch.trim()) {
+      setSearchMode(false);
+      setCashPageSize(10);
+    } else {
+      // Check if search has matches in other tabs
+      const q = cashSearch.toLowerCase();
+      const matchesAll = cashEntries.filter(
+        (e) =>
+          e.description.toLowerCase().includes(q) ||
+          (e.category && e.category.toLowerCase().includes(q)) ||
+          (e.notes && e.notes.toLowerCase().includes(q))
+      );
+      const matchesCurrentTab = matchesAll.filter((e) => e.type === cashSubTab);
+      const hasOtherTabMatches = matchesAll.length > matchesCurrentTab.length;
+      setSearchMode(hasOtherTabMatches);
+      setCashPageSize(10);
+    }
+  }, [cashSearch, cashEntries, cashSubTab]);
+
   const filteredCashEntries = useMemo(() => {
-    let entries = cashEntries.filter((e) => e.type === cashSubTab);
+    let entries = searchMode
+      ? [...cashEntries]
+      : cashEntries.filter((e) => e.type === cashSubTab);
     if (cashSearch.trim()) {
       const q = cashSearch.toLowerCase();
       entries = entries.filter(
@@ -662,7 +747,7 @@ export default function BusinessCash() {
       );
     }
     return entries;
-  }, [cashEntries, cashSubTab, cashSearch]);
+  }, [cashEntries, cashSubTab, cashSearch, searchMode]);
 
   const currentCashSubTotal = useMemo(() => {
     return filteredCashEntries.reduce((sum, e) => sum + e.amount, 0);
@@ -881,6 +966,81 @@ export default function BusinessCash() {
       toast.error(t('common.error'));
     } finally {
       setCashDeleteId(null);
+    }
+  };
+
+  // ── Quick Add Handler ──
+  const handleQuickAddSave = async () => {
+    if (!businessId || !quickForm.description || !quickForm.amount) return;
+    const numAmount = parseFloat(quickForm.amount);
+    if (isNaN(numAmount) || numAmount <= 0) return;
+    setQuickSaving(true);
+    try {
+      let defaultSource: 'kas_besar' | 'kas_kecil' | 'investor' | '' = '';
+      if (cashSubTab === 'kas_kecil') defaultSource = 'kas_besar';
+      if (cashSubTab === 'kas_keluar') defaultSource = 'kas_kecil';
+
+      const body: Record<string, unknown> = {
+        type: cashSubTab,
+        amount: numAmount,
+        description: quickForm.description,
+        date: new Date().toISOString().split('T')[0],
+        category: '',
+        notes: '',
+      };
+      if (defaultSource) {
+        body.source = defaultSource;
+      }
+
+      const res = await fetch(`/api/business/${businessId}/cash`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(t('biz.businessCreated'));
+      setQuickForm({ description: '', amount: '' });
+      setQuickAddOpen(false);
+      fetchAllCashData();
+    } catch {
+      toast.error(t('common.error'));
+    } finally {
+      setQuickSaving(false);
+    }
+  };
+
+  // ── Category CRUD ──
+  const handleAddCategory = async () => {
+    if (!businessId || !newCategoryName.trim()) return;
+    setCategorySaving(true);
+    try {
+      const res = await fetch(`/api/business/${businessId}/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'pengeluaran', name: newCategoryName.trim(), color: '#03DAC6' }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Kategori berhasil ditambahkan');
+      setNewCategoryName('');
+      fetchAllCashData();
+    } catch {
+      toast.error(t('common.error'));
+    } finally {
+      setCategorySaving(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catId: string) => {
+    if (!businessId) return;
+    try {
+      const res = await fetch(`/api/business/${businessId}/categories/${catId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Kategori berhasil dihapus');
+      fetchAllCashData();
+    } catch {
+      toast.error(t('common.error'));
     }
   };
 
@@ -1197,6 +1357,125 @@ export default function BusinessCash() {
               </Card>
             )}
 
+            {/* ── Penjualan Terbaru ── */}
+            {salesData.length > 0 && (
+              <Card className="rounded-xl overflow-hidden border border-border">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center bg-secondary/8">
+                      <Wallet className="h-3 w-3 text-secondary" />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Penjualan Terbaru
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-medium border-0 rounded-full px-1.5 py-0"
+                      style={{ backgroundColor: alpha(c.secondary, 8), color: c.secondary }}
+                    >
+                      {salesData.length}
+                    </Badge>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    <AnimatePresence mode="popLayout">
+                      {salesData.slice(0, 8).map((sale, index) => {
+                        const isInstallment = sale.installmentTempo && sale.installmentTempo > 0;
+                        const realized = sale.realizedAmount || 0;
+                        const remaining = isInstallment ? sale.amount - realized : 0;
+                        const paidPct = sale.amount > 0 ? Math.round((realized / sale.amount) * 100) : 0;
+                        const saleColor = isInstallment ? c.warning : c.secondary;
+                        return (
+                          <motion.div
+                            key={sale.id}
+                            custom={index}
+                            variants={{
+                              hidden: { opacity: 0, x: -6 },
+                              show: (i: number) => ({
+                                opacity: 1, x: 0,
+                                transition: { delay: i * 0.02, duration: 0.2 },
+                              }),
+                              exit: { opacity: 0, transition: { duration: 0.1 } },
+                            }}
+                            initial="hidden"
+                            animate="show"
+                            layout
+                            className="rounded-lg p-2.5 border border-border bg-white/[0.01] hover:bg-white/[0.03] transition-colors duration-150"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
+                                    style={{ backgroundColor: alpha(saleColor, 8), color: saleColor }}
+                                  >
+                                    {isInstallment ? 'Cicilan' : 'Tunai'}
+                                  </Badge>
+                                  {sale.investorSharePct && sale.investorSharePct > 0 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
+                                      style={{ backgroundColor: alpha(c.primary, 8), color: c.primary }}
+                                    >
+                                      Investor {sale.investorSharePct}%
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs font-medium truncate text-foreground">{sale.description}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                                  <span>{formatDate(sale.date)}</span>
+                                  {sale.customer?.name && (
+                                    <>
+                                      <span className="text-border">•</span>
+                                      <span className="truncate max-w-[100px]">{sale.customer.name}</span>
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-xs font-bold tabular-nums" style={{ color: saleColor }}>
+                                  {formatAmount(realized)}
+                                </p>
+                                {isInstallment && (
+                                  <>
+                                    <p className="text-[9px] tabular-nums text-muted-foreground">
+                                      sisa {formatAmount(remaining)}
+                                    </p>
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <div className="h-1 w-12 rounded-full overflow-hidden bg-border">
+                                        <div
+                                          className="h-full rounded-full transition-all duration-500"
+                                          style={{
+                                            width: `${Math.min(100, paidPct)}%`,
+                                            backgroundColor: saleColor,
+                                          }}
+                                        />
+                                      </div>
+                                      <span className="text-[8px] tabular-nums text-muted-foreground">{paidPct}%</span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {isInstallment && sale.downPayment && sale.downPayment > 0 && (
+                              <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-border">
+                                <span className="text-[9px] text-muted-foreground">
+                                  DP: <span className="font-semibold text-foreground">{formatAmount(sale.downPayment)}</span>
+                                </span>
+                                <span className="text-[9px] text-muted-foreground">
+                                  Cicilan: <span className="font-semibold text-foreground">{formatAmount(sale.installmentAmount || 0)}/{sale.installmentTempo}x</span>
+                                </span>
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* ── Period Filter ── */}
             <div className="flex gap-1 rounded-lg p-0.5 w-fit bg-white/[0.03] border border-border">
               {PERIOD_OPTIONS.map((opt) => {
@@ -1217,6 +1496,64 @@ export default function BusinessCash() {
                 );
               })}
             </div>
+
+            {/* ── Kategori Pengeluaran ── */}
+            <Card className="rounded-xl overflow-hidden border border-border">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-semibold text-foreground">Kategori Pengeluaran</span>
+                    {cashCategories.length > 0 && (
+                      <Badge variant="outline" className="text-[10px] font-medium border-0 rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.secondary, 8), color: c.secondary }}>
+                        {cashCategories.length}
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">Tambah ↓</span>
+                </div>
+
+                {/* Category List */}
+                {cashCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {cashCategories.map((cat) => (
+                      <div
+                        key={cat.id}
+                        className="flex items-center gap-1.5 rounded-full px-2.5 py-1 border border-border bg-white/[0.02]"
+                      >
+                        <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: cat.color || c.secondary }} />
+                        <span className="text-[11px] text-foreground">{cat.name}</span>
+                        <button
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="h-3.5 w-3.5 rounded-full flex items-center justify-center hover:bg-destructive/15 transition-colors text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add Category Inline Form */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                    placeholder="Nama kategori baru..."
+                    className="h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground"
+                  />
+                  <Button
+                    onClick={handleAddCategory}
+                    disabled={!newCategoryName.trim() || categorySaving}
+                    size="sm"
+                    className="rounded-lg h-7 px-3 bg-secondary text-secondary-foreground hover:bg-secondary/90 text-xs"
+                  >
+                    {categorySaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Simpan'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* ── Sub-tab toggle + Search + Add Button ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
@@ -1268,6 +1605,65 @@ export default function BusinessCash() {
               </Button>
             </div>
 
+            {/* ── Quick Add Inline Form ── */}
+            <Card
+              className="rounded-xl overflow-hidden border transition-colors duration-200"
+              style={{ borderColor: alpha(subTypeConfig.color, 20) }}
+            >
+              <CardContent className="p-2.5">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQuickAddOpen(!quickAddOpen)}
+                    className="rounded-lg h-7 px-2 text-xs font-medium shrink-0"
+                    style={{ color: subTypeConfig.color, backgroundColor: alpha(subTypeConfig.color, 8) }}
+                  >
+                    {quickAddOpen ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                    <span className="ml-1">Quick Add</span>
+                  </Button>
+                  <AnimatePresence>
+                    {quickAddOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: 'auto' }}
+                        exit={{ opacity: 0, width: 0 }}
+                        className="flex items-center gap-2 overflow-hidden flex-1"
+                      >
+                        <Input
+                          value={quickForm.description}
+                          onChange={(e) => setQuickForm({ ...quickForm, description: e.target.value })}
+                          onKeyDown={(e) => e.key === 'Enter' && handleQuickAddSave()}
+                          placeholder="Deskripsi..."
+                          className="h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1 min-w-0"
+                        />
+                        <div className="relative shrink-0">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">Rp</span>
+                          <Input
+                            type="number"
+                            value={quickForm.amount}
+                            onChange={(e) => setQuickForm({ ...quickForm, amount: e.target.value })}
+                            onKeyDown={(e) => e.key === 'Enter' && handleQuickAddSave()}
+                            placeholder="0"
+                            className="h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground w-[120px] pl-7"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleQuickAddSave}
+                          disabled={!quickForm.description || !quickForm.amount || quickSaving}
+                          size="sm"
+                          className="rounded-lg h-7 px-3 text-xs shrink-0"
+                          style={{ backgroundColor: subTypeConfig.color, color: 'white' }}
+                        >
+                          {quickSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Simpan'}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* ── Sub-total indicator ── */}
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full" style={{ backgroundColor: subTypeConfig.color }} />
@@ -1297,6 +1693,25 @@ export default function BusinessCash() {
                     actionLabel={t('biz.addCashEntry')}
                   />
                 ) : (
+                  <>
+                    {/* Search mode banner */}
+                    {searchMode && (
+                      <div className="flex items-center gap-2 px-3 sm:px-4 pt-3 pb-1">
+                        <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="text-[11px] text-muted-foreground">
+                          Menampilkan hasil dari <span className="font-medium text-foreground">semua tab</span> ({filteredCashEntries.length} hasil)
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="ml-auto h-6 px-2 text-[10px] rounded-md text-muted-foreground hover:text-foreground"
+                          onClick={() => { setCashSearch(''); setSearchMode(false); }}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Reset
+                        </Button>
+                      </div>
+                    )}
                   <div className="max-h-[500px] overflow-y-auto">
                     <Table>
                       <TableHeader>
@@ -1307,7 +1722,7 @@ export default function BusinessCash() {
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             {t('biz.cashDescription')}
                           </TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell w-[110px]">
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell w-[110px]">
                             Sumber
                           </TableHead>
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">
@@ -1321,7 +1736,7 @@ export default function BusinessCash() {
                       </TableHeader>
                       <TableBody>
                         <AnimatePresence mode="popLayout">
-                          {filteredCashEntries.map((entry, index) => {
+                          {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
                             const isExpense = entry.type === 'kas_keluar';
                             const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
                             const sourceInfo = getEntrySourceLabel(entry);
@@ -1353,10 +1768,20 @@ export default function BusinessCash() {
                                       <ArrowUpRight className="h-3 w-3 shrink-0 text-secondary" />
                                     )}
                                     <span className="truncate">{entry.description}</span>
+                                    {/* Inline source badge for kas_keluar on all screen sizes */}
+                                    {isExpense && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 shrink-0 sm:hidden whitespace-nowrap"
+                                        style={{ backgroundColor: alpha(sourceInfo.color, 8), color: sourceInfo.color }}
+                                      >
+                                        {sourceInfo.label}
+                                      </Badge>
+                                    )}
                                   </span>
                                 </TableCell>
-                                {/* Source Column (hidden on mobile) */}
-                                <TableCell className="py-2 hidden lg:table-cell">
+                                {/* Source Column (visible sm+) */}
+                                <TableCell className="py-2 hidden sm:table-cell">
                                   <Badge
                                     variant="outline"
                                     className="text-[10px] font-medium border-0 rounded-full px-2 py-0"
@@ -1401,6 +1826,19 @@ export default function BusinessCash() {
                       </TableBody>
                     </Table>
                   </div>
+                  {/* Pagination: Tampilkan Lebih Banyak */}
+                  {filteredCashEntries.length > cashPageSize && (
+                    <div className="flex justify-center py-3 border-t border-border">
+                      <Button
+                        onClick={() => setCashPageSize((p) => p + 10)}
+                        variant="ghost"
+                        className="rounded-lg h-8 px-4 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Tampilkan Lebih Banyak ({filteredCashEntries.length - cashPageSize} lagi)
+                      </Button>
+                    </div>
+                  )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -1569,11 +2007,108 @@ export default function BusinessCash() {
                 </AnimatePresence>
               </div>
             )}
+
+            {/* ── Riwayat Pemasukan Investor ── */}
+            {investorHistory.length > 0 && (
+              <Card className="rounded-xl overflow-hidden border border-border">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center bg-secondary/8">
+                      <TrendingUp className="h-3 w-3 text-secondary" />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Riwayat Pemasukan Investor
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-medium border-0 rounded-full px-1.5 py-0"
+                      style={{ backgroundColor: alpha(c.secondary, 8), color: c.secondary }}
+                    >
+                      {investorHistory.length}
+                    </Badge>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-border hover:bg-transparent">
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[80px]">Tanggal</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tipe</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Pelanggan</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[110px]">Bagian Investor</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <AnimatePresence mode="popLayout">
+                          {investorHistory.map((item, index) => {
+                            const typeConfig = {
+                              modal_masuk: { label: 'Modal Masuk', color: c.primary, bg: alpha(c.primary, 8) },
+                              dp_penjualan: { label: 'DP Penjualan', color: c.secondary, bg: alpha(c.secondary, 8) },
+                              penjualan_lunas: { label: 'Penjualan', color: '#14b8a6', bg: 'color-mix(in srgb, #14b8a6 8%, transparent)' },
+                              cicilan_diterima: { label: 'Cicilan', color: '#a855f7', bg: 'color-mix(in srgb, #a855f7 8%, transparent)' },
+                            }[item.type];
+                            return (
+                              <motion.tr
+                                key={item.id}
+                                custom={index}
+                                variants={{
+                                  hidden: { opacity: 0, y: -4 },
+                                  show: (i: number) => ({
+                                    opacity: 1, y: 0,
+                                    transition: { delay: i * 0.015, duration: 0.15 },
+                                  }),
+                                  exit: { opacity: 0, transition: { duration: 0.1 } },
+                                }}
+                                initial="hidden"
+                                animate="show"
+                                layout
+                                className="border-b border-border transition-colors duration-150"
+                              >
+                                <TableCell className="text-xs py-2 font-mono text-muted-foreground">
+                                  {formatDate(item.date)}
+                                </TableCell>
+                                <TableCell className="py-2">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
+                                    style={{ backgroundColor: typeConfig.bg, color: typeConfig.color }}
+                                  >
+                                    {typeConfig.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs py-2 max-w-[180px] truncate text-foreground">
+                                  {item.investorName && item.type === 'modal_masuk' && (
+                                    <span className="text-muted-foreground mr-1">{item.investorName}</span>
+                                  )}
+                                  {item.description}
+                                </TableCell>
+                                <TableCell className="text-xs py-2 hidden sm:table-cell text-muted-foreground">
+                                  {item.customerName || (
+                                    item.investorName && item.type !== 'modal_masuk' ? item.investorName : '—'
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-xs text-right font-semibold py-2 tabular-nums" style={{ color: typeConfig.color }}>
+                                  +{formatAmount(item.amount)}
+                                </TableCell>
+                              </motion.tr>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {/* Total investor income */}
+                  <div className="border-t border-border mt-2 pt-2 flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Pemasukan Investor</span>
+                    <span className="text-sm font-bold tabular-nums text-secondary">
+                      {formatAmount(investorHistory.reduce((sum, item) => sum + item.amount, 0))}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
-
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/* ── TAB 3: PIUTANG ──────────────────────────────────── */}
         {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'piutang' && (
           <div key="piutang" className="space-y-3">

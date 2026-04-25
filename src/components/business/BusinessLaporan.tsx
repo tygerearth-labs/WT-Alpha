@@ -23,7 +23,8 @@ import {
   FileBarChart, Download, TrendingUp, TrendingDown,
   DollarSign, CreditCard, Wallet,
   CalendarDays, BarChart3, Receipt, ArrowUpRight, ArrowDownRight, ArrowRight,
-  AlertTriangle, Info,
+  AlertTriangle, Info, Landmark, PiggyBank, Clock, CircleDollarSign,
+  Building2, ArrowDownUp, Banknote, Timer,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -42,6 +43,10 @@ interface ApiSalesItem {
   jumlah: number;
   metodePembayaran: string;
   catatan: string;
+  tipe?: string;
+  downPayment?: number;
+  realizedAmount?: number;
+  sisaPiutang?: number;
 }
 
 interface ApiCashItem {
@@ -82,16 +87,42 @@ interface ApiResponse {
       totalPendapatan: number;
       totalPengeluaran: number;
       laba: number;
+      labaKotor?: number;
+      pendapatanTerealisasi?: number;
+      pendapatanBelumTerealisasi?: number;
       totalKasBesar: number;
       totalKasKecil: number;
       saldoBersih: number;
       totalHutang: number;
       totalPiutang: number;
     };
-    sales?: { data: ApiSalesItem[] };
-    cash?: { data: ApiCashItem[] };
+    sales?: {
+      data: ApiSalesItem[];
+      summary?: Record<string, number>;
+      salesBreakdown?: {
+        tunai?: { jumlahTransaksi?: number; total?: number };
+        cicilan?: { jumlahTransaksi?: number; totalProduk?: number; totalDPDiterima?: number; totalCicilanDiterima?: number; totalTerealisasi?: number; totalSisa?: number };
+      };
+    };
+    cash?: {
+      data: ApiCashItem[];
+      summary?: { totalKasBesar?: number; totalKasKecil?: number; totalKasKeluar?: number; saldoBersih?: number };
+    };
     invoices?: { data: ApiInvoiceItem[] };
     debts?: { data: ApiDebtItem[] };
+    piutangDetail?: {
+      berjalan?: Array<Record<string, unknown>>;
+      menunggak?: Array<Record<string, unknown>>;
+      selesai?: Array<Record<string, unknown>>;
+      ringkasan?: Record<string, number>;
+    };
+    taxAudit?: {
+      pengeluaranPerKategori?: Array<{ kategori: string; jumlah: number }>;
+      labaRugi?: { pendapatanRealized?: number; totalPengeluaran?: number; labaBersih?: number };
+      pendapatanTunai?: { total?: number };
+      dpDiterima?: { total?: number };
+      cicilanDiterima?: { total?: number };
+    };
   };
 }
 
@@ -108,6 +139,11 @@ interface ReportSummary {
   totalCashOut: number;
   totalHutang: number;
   totalPiutang: number;
+  kasBesarSaldo: number;
+  kasKecilSaldo: number;
+  labaKotor: number;
+  pendapatanTerealisasi: number;
+  pendapatanBelumTerealisasi: number;
 }
 
 interface SalesRow {
@@ -117,6 +153,10 @@ interface SalesRow {
   date: string;
   customer: string;
   paymentMethod: string;
+  tipe?: string;
+  downPayment?: number;
+  realizedAmount?: number;
+  sisaPiutang?: number;
 }
 
 interface ExpenseRow {
@@ -154,6 +194,21 @@ interface PiutangDetailRow {
   remaining: number;
   daysOverdue: number;
   status: string;
+  createdAt?: string;
+}
+
+interface ExpenseCategoryRow {
+  category: string;
+  total: number;
+  count: number;
+  percentage: number;
+}
+
+interface PiutangAgingBucket {
+  label: string;
+  count: number;
+  total: number;
+  color: string;
 }
 
 interface ReportData {
@@ -162,6 +217,10 @@ interface ReportData {
   expenses: ExpenseRow[];
   invoices: InvoiceRow[];
   debts: DebtRow[];
+  cashItems: ApiCashItem[];
+  salesBreakdown?: ApiResponse['report']['sales']['salesBreakdown'];
+  piutangDetailApi?: ApiResponse['report']['piutangDetail'];
+  taxAuditApi?: ApiResponse['report']['taxAudit'];
 }
 
 /* ------------------------------------------------------------------ */
@@ -244,6 +303,56 @@ function DateRangeIndicator({ fromDate, toDate }: { fromDate: string; toDate: st
 }
 
 /* ------------------------------------------------------------------ */
+/*  Section Header Helper                                              */
+/* ------------------------------------------------------------------ */
+
+function SectionHeader({ icon: Icon, color, title, badge }: {
+  icon: React.ElementType;
+  color: string;
+  title: string;
+  badge?: string | number;
+}) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` }}>
+        <Icon className="h-3 w-3" style={{ color } as React.CSSProperties} />
+      </div>
+      <h3 className="text-xs font-semibold" style={{ color } as React.CSSProperties}>{title}</h3>
+      {badge !== undefined && (
+        <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{
+          backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)`,
+          color: color as string,
+          border: `1px solid color-mix(in srgb, ${color} 12%, transparent)`,
+        }}>
+          {badge}
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Progress Bar Helper                                                */
+/* ------------------------------------------------------------------ */
+
+function ProgressBar({ value, max, color, height = 6 }: {
+  value: number;
+  max: number;
+  color: string;
+  height?: number;
+}) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)', height: `${height}px` }}>
+      <div
+        className="h-full rounded-full transition-all duration-700"
+        style={{ width: `${pct}%`, backgroundColor: color }}
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Normalize raw API response → flat UI data                          */
 /* ------------------------------------------------------------------ */
 
@@ -260,9 +369,15 @@ function normalizeResponse(raw: ApiResponse): ReportData | null {
     date: s.tanggal,
     customer: s.pelanggan,
     paymentMethod: s.metodePembayaran,
+    tipe: s.tipe,
+    downPayment: s.downPayment,
+    realizedAmount: s.realizedAmount,
+    sisaPiutang: s.sisaPiutang,
   }));
 
-  const expenses: ExpenseRow[] = (r.cash?.data || [])
+  const cashItems = r.cash?.data || [];
+
+  const expenses: ExpenseRow[] = cashItems
     .filter((c) => c.tipe === 'kas_keluar')
     .map((c, i) => ({
       id: `exp-${i}`,
@@ -300,9 +415,24 @@ function normalizeResponse(raw: ApiResponse): ReportData | null {
     totalCashOut: os?.totalPengeluaran ?? 0,
     totalHutang: os?.totalHutang ?? 0,
     totalPiutang: os?.totalPiutang ?? 0,
+    kasBesarSaldo: os?.totalKasBesar ?? 0,
+    kasKecilSaldo: os?.totalKasKecil ?? 0,
+    labaKotor: os?.labaKotor ?? 0,
+    pendapatanTerealisasi: os?.pendapatanTerealisasi ?? 0,
+    pendapatanBelumTerealisasi: os?.pendapatanBelumTerealisasi ?? 0,
   };
 
-  return { summary, sales, expenses, invoices, debts };
+  return {
+    summary,
+    sales,
+    expenses,
+    invoices,
+    debts,
+    cashItems,
+    salesBreakdown: r.sales?.salesBreakdown,
+    piutangDetailApi: r.piutangDetail,
+    taxAuditApi: r.taxAudit,
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -330,7 +460,7 @@ export default function BusinessLaporan() {
   const { formatAmount } = useCurrencyFormat();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('sales');
+  const [activeTab, setActiveTab] = useState('labaRugi');
 
   const today = new Date();
   const thirtyDaysAgo = new Date(today);
@@ -362,33 +492,157 @@ export default function BusinessLaporan() {
     if (businessId) fetchReport();
   }, [businessId, fetchReport]);
 
-  /* ── Tax Audit Derivatives ── */
-  const taxAudit = useMemo(() => {
+  /* ── Expense by Category with percentages ── */
+  const expenseCategories = useMemo((): ExpenseCategoryRow[] => {
+    if (!data) return [];
+    const totalExpense = data.summary.totalExpense;
+    const map = new Map<string, { total: number; count: number }>();
+    data.expenses.forEach((e) => {
+      const cat = e.category || 'Tidak Berkategori';
+      const existing = map.get(cat) || { total: 0, count: 0 };
+      map.set(cat, { total: existing.total + e.amount, count: existing.count + 1 });
+    });
+    return Array.from(map.entries())
+      .map(([category, { total, count }]) => ({
+        category,
+        total,
+        count,
+        percentage: totalExpense > 0 ? (total / totalExpense) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [data]);
+
+  /* ── Laba Rugi Detail ── */
+  const labaRugiDetail = useMemo(() => {
     if (!data) return null;
-    const piutangDebts = data.debts.filter((d) => d.type === 'piutang');
-    const totalPiutangRemaining = piutangDebts.reduce((s, d) => s + d.remaining, 0);
-    const totalPiutangPaid = piutangDebts.reduce((s, d) => s + (d.amount - d.remaining), 0);
+    const sb = data.salesBreakdown;
+    const tunaiTotal = sb?.tunai?.total || 0;
+    const cicilanDPTotal = sb?.cicilan?.totalDPDiterima || 0;
+    const cicilanDiterima = sb?.cicilan?.totalCicilanDiterima || 0;
+    const cicilanTerealisasi = sb?.cicilan?.totalTerealisasi || 0;
+    const cicilanTotalProduk = sb?.cicilan?.totalProduk || 0;
 
-    // Sales split: cash vs installment proxy
-    const cashSales = data.sales.filter((s) => !s.paymentMethod || s.paymentMethod === 'cash' || s.paymentMethod === 'tunai');
-    const installmentSales = data.sales.filter((s) => s.paymentMethod && (s.paymentMethod === 'cicilan' || s.paymentMethod === 'installment' || s.paymentMethod === 'kredit'));
-    const pendapatanTunai = cashSales.reduce((s, sl) => s + sl.amount, 0);
-    const pendapatanCicilan = installmentSales.reduce((s, sl) => s + sl.amount, 0);
-
-    // DP received = portion of installment sales that's been paid as DP
-    // We estimate: total piutang paid from installment sales
-    const dpDiterima = totalPiutangPaid;
-    const cicilanDiterima = totalPiutangPaid; // same as paid installments
-    const totalPiutangBelumDibayar = totalPiutangRemaining;
-    const labaRugiReal = pendapatanTunai + totalPiutangPaid - data.summary.totalExpense;
+    const pendapatanTunai = tunaiTotal;
+    const pendapatanDP = cicilanDPTotal;
+    const pendapatanCicilan = cicilanDiterima;
+    const pendapatanInvestor = 0; // investor income from cash entries
+    const totalPendapatan = pendapatanTunai + pendapatanDP + pendapatanCicilan + pendapatanInvestor;
+    const totalPengeluaran = data.summary.totalExpense;
+    const labaKotor = totalPendapatan - totalPengeluaran;
 
     return {
-      pendapatanTunai,
-      pendapatanCicilan,
-      dpDiterima,
-      cicilanDiterima,
-      totalPiutangBelumDibayar,
-      labaRugiReal,
+      income: [
+        { label: 'Penjualan Tunai', amount: pendapatanTunai, color: 'var(--secondary)' },
+        { label: 'DP Cicilan Diterima', amount: pendapatanDP, color: 'var(--primary)' },
+        { label: 'Cicilan Diterima', amount: pendapatanCicilan, color: 'color-mix(in srgb, var(--primary) 60%, var(--secondary))' },
+        { label: 'Modal Investor', amount: pendapatanInvestor, color: 'var(--warning)' },
+      ],
+      totalIncome: totalPendapatan,
+      totalExpense: totalPengeluaran,
+      labaKotor,
+      totalPendapatanBruto: tunaiTotal + cicilanTotalProduk,
+      sisaPiutangCicilan: sb?.cicilan?.totalSisa || 0,
+    };
+  }, [data]);
+
+  /* ── Arus Kas Detail ── */
+  const arusKasDetail = useMemo(() => {
+    if (!data) return null;
+    const cashIn = data.cashItems.filter((c) => c.tipe === 'kas_besar');
+    const cashKecil = data.cashItems.filter((c) => c.tipe === 'kas_kecil');
+    const cashOut = data.cashItems.filter((c) => c.tipe === 'kas_keluar');
+    const investorCash = data.cashItems.filter((c) => c.tipe === 'investor');
+
+    const kasBesarIn = cashIn.reduce((s, c) => s + c.jumlah, 0);
+    const kasKecilIn = cashKecil.reduce((s, c) => s + c.jumlah, 0);
+    const totalExpenses = cashOut.reduce((s, c) => s + c.jumlah, 0);
+    const investorIn = investorCash.reduce((s, c) => s + c.jumlah, 0);
+
+    // Operating cash flow: sales income - operating expenses
+    const operatingIncome = kasBesarIn + kasKecilIn;
+    const operatingExpenses = totalExpenses;
+    const operatingCashFlow = operatingIncome - operatingExpenses;
+
+    // Investing: investor deposits - withdrawals (we only track deposits here)
+    const investorDeposits = investorIn;
+    const investingCashFlow = investorDeposits;
+
+    // Cash balances
+    const kasBesarSaldo = kasBesarIn - totalExpenses;
+    const kasKecilSaldo = kasKecilIn;
+
+    return {
+      operating: {
+        inflow: operatingIncome,
+        outflow: operatingExpenses,
+        net: operatingCashFlow,
+      },
+      investing: {
+        inflow: investorDeposits,
+        outflow: 0,
+        net: investingCashFlow,
+      },
+      kasBesarSaldo,
+      kasKecilSaldo,
+      totalSaldo: kasBesarSaldo + kasKecilSaldo + investorDeposits,
+    };
+  }, [data]);
+
+  /* ── Piutang Analysis ── */
+  const piutangAnalysis = useMemo(() => {
+    if (!data) return null;
+
+    const piutangAll = data.debts.filter((d) => d.type === 'piutang');
+    const outstanding = piutangAll.filter((d) => d.status !== 'paid');
+    const berjalan = outstanding.filter((d) => d.status === 'active' || d.status === 'partially_paid');
+    const macet = outstanding.filter((d) => d.status === 'overdue');
+    const selesai = piutangAll.filter((d) => d.status === 'paid');
+
+    const totalOutstanding = outstanding.reduce((s, d) => s + d.remaining, 0);
+    const totalBerjalan = berjalan.reduce((s, d) => s + d.remaining, 0);
+    const totalMacet = macet.reduce((s, d) => s + d.remaining, 0);
+    const totalSelesai = selesai.reduce((s, d) => s + d.amount, 0);
+
+    // Aging analysis
+    const now = new Date();
+    const agingBuckets: PiutangAgingBucket[] = [
+      { label: '0-30 hari', count: 0, total: 0, color: 'var(--secondary)' },
+      { label: '31-60 hari', count: 0, total: 0, color: 'var(--warning)' },
+      { label: '61-90 hari', count: 0, total: 0, color: 'var(--primary)' },
+      { label: '> 90 hari', count: 0, total: 0, color: 'var(--destructive)' },
+    ];
+
+    outstanding.forEach((d) => {
+      const days = d.dueDate && d.dueDate !== '-'
+        ? Math.max(0, Math.floor((now.getTime() - new Date(d.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+        : 0;
+      if (days <= 30) {
+        agingBuckets[0].total += d.remaining;
+        agingBuckets[0].count++;
+      } else if (days <= 60) {
+        agingBuckets[1].total += d.remaining;
+        agingBuckets[1].count++;
+      } else if (days <= 90) {
+        agingBuckets[2].total += d.remaining;
+        agingBuckets[2].count++;
+      } else {
+        agingBuckets[3].total += d.remaining;
+        agingBuckets[3].count++;
+      }
+    });
+
+    // Top 5 biggest piutang
+    const top5 = [...outstanding]
+      .sort((a, b) => b.remaining - a.remaining)
+      .slice(0, 5);
+
+    return {
+      totalOutstanding,
+      berjalan: { count: berjalan.length, total: totalBerjalan },
+      macet: { count: macet.length, total: totalMacet },
+      selesai: { count: selesai.length, total: totalSelesai },
+      aging: agingBuckets,
+      top5,
     };
   }, [data]);
 
@@ -414,6 +668,33 @@ export default function BusinessLaporan() {
         };
       })
       .sort((a, b) => b.daysOverdue - a.daysOverdue);
+  }, [data]);
+
+  /* ── Tax Audit Derivatives ── */
+  const taxAudit = useMemo(() => {
+    if (!data) return null;
+    const piutangDebts = data.debts.filter((d) => d.type === 'piutang');
+    const totalPiutangRemaining = piutangDebts.reduce((s, d) => s + d.remaining, 0);
+    const totalPiutangPaid = piutangDebts.reduce((s, d) => s + (d.amount - d.remaining), 0);
+
+    const cashSales = data.sales.filter((s) => !s.paymentMethod || s.paymentMethod === 'cash' || s.paymentMethod === 'tunai' || s.tipe === 'tunai');
+    const installmentSales = data.sales.filter((s) => s.paymentMethod && (s.paymentMethod === 'cicilan' || s.paymentMethod === 'installment' || s.paymentMethod === 'kredit') || s.tipe === 'cicilan');
+    const pendapatanTunai = cashSales.reduce((s, sl) => s + sl.amount, 0);
+    const pendapatanCicilan = installmentSales.reduce((s, sl) => s + sl.amount, 0);
+
+    const dpDiterima = totalPiutangPaid;
+    const cicilanDiterima = totalPiutangPaid;
+    const totalPiutangBelumDibayar = totalPiutangRemaining;
+    const labaRugiReal = pendapatanTunai + totalPiutangPaid - data.summary.totalExpense;
+
+    return {
+      pendapatanTunai,
+      pendapatanCicilan,
+      dpDiterima,
+      cicilanDiterima,
+      totalPiutangBelumDibayar,
+      labaRugiReal,
+    };
   }, [data]);
 
   /* ── Export Excel ── */
@@ -536,17 +817,21 @@ export default function BusinessLaporan() {
 
   const summaryCards = data
     ? [
-        { label: t('biz.bizRevenue'), value: data.summary.totalRevenue, color: 'var(--secondary)', icon: TrendingUp },
-        { label: t('biz.bizExpense'), value: data.summary.totalExpense, color: 'var(--destructive)', icon: TrendingDown },
-        { label: t('biz.bizNetIncome'), value: data.summary.netIncome, color: data.summary.netIncome >= 0 ? 'var(--secondary)' : 'var(--destructive)', icon: DollarSign },
-        { label: t('biz.totalPenjualan'), value: data.summary.totalSales, color: 'var(--primary)', icon: Wallet },
+        { label: 'Total Pendapatan', value: data.summary.totalRevenue, color: 'var(--secondary)', icon: TrendingUp },
+        { label: 'Total Pengeluaran', value: data.summary.totalExpense, color: 'var(--destructive)', icon: TrendingDown },
+        { label: 'Laba Bersih', value: data.summary.netIncome, color: data.summary.netIncome >= 0 ? 'var(--secondary)' : 'var(--destructive)', icon: DollarSign },
+        { label: 'Saldo Kas', value: data.summary.kasBesarSaldo + data.summary.kasKecilSaldo, color: 'var(--primary)', icon: Wallet },
+        { label: 'Piutang Outstanding', value: data.summary.totalPiutang, color: 'var(--warning)', icon: CreditCard },
       ]
     : [];
+
+  /* ── Pct helper ── */
+  const pct = (value: number, total: number) => (total > 0 ? ((value / total) * 100).toFixed(1) : '0.0');
 
   return (
     <div className="space-y-3">
       {/* Info Banner */}
-      <div className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: `1px solid color-mix(in srgb, var(--primary) 8%, transparent)` }}>
+      <div className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
         <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />
         <p className="text-xs leading-relaxed" >
           Laporan keuangan bisnis untuk audit dan perencanaan. Data cicilan dipisah untuk akurasi laporan pajak.
@@ -630,15 +915,15 @@ export default function BusinessLaporan() {
         </CardContent>
       </Card>
 
-      {/* Summary Cards */}
+      {/* Enhanced Summary Cards */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" style={{ background: 'var(--card)' }} />
           ))}
         </div>
       ) : data ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {summaryCards.map((card) => {
             const Icon = card.icon;
             return (
@@ -649,10 +934,12 @@ export default function BusinessLaporan() {
                       <Icon className="h-3.5 w-3.5" style={{ color: card.color }} />
                     </div>
                     <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
-                      {card.color === 'var(--secondary)' || (card.label === t('biz.bizNetIncome') && data.summary.netIncome >= 0) ? (
+                      {(card.label === 'Laba Bersih' && data.summary.netIncome >= 0) || card.label === 'Total Pendapatan' || card.label === 'Saldo Kas' ? (
                         <ArrowUpRight className="h-3 w-3" style={{ color: 'var(--secondary)' }} />
-                      ) : (
+                      ) : card.label === 'Laba Bersih' && data.summary.netIncome < 0 ? (
                         <ArrowDownRight className="h-3 w-3" style={{ color: 'var(--destructive)' }} />
+                      ) : (
+                        <CircleDollarSign className="h-3 w-3" style={{ color: card.color } as React.CSSProperties} />
                       )}
                     </div>
                   </div>
@@ -667,71 +954,17 @@ export default function BusinessLaporan() {
         </div>
       ) : null}
 
-      {/* Tax Audit Summary */}
-      {data && taxAudit && (
-        <Card className="rounded-xl" style={{ background: 'var(--card)', border: `1px solid color-mix(in srgb, var(--warning) 15%, transparent)` }}>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)' }}>
-                <AlertTriangle className="h-3 w-3" style={{ color: 'var(--warning)' }} />
-              </div>
-              <h3 className="text-xs font-semibold" style={{ color: 'var(--warning)' }}>Detail Audit Pajak</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {[
-                { label: 'Pendapatan Tunai', value: taxAudit.pendapatanTunai, color: 'var(--secondary)', highlight: false },
-                { label: 'Pendapatan Cicilan (Total)', value: taxAudit.pendapatanCicilan, color: 'var(--primary)', highlight: false },
-                { label: 'Pendapatan Cicilan — Diterima', value: taxAudit.dpDiterima, color: 'var(--secondary)', highlight: false },
-                { label: 'Total Piutang Belum Dibayar', value: taxAudit.totalPiutangBelumDibayar, color: 'var(--warning)', highlight: true },
-                { label: 'Pengeluaran', value: data.summary.totalExpense, color: 'var(--destructive)', highlight: false },
-                { label: 'LABA RUGI REAL', value: taxAudit.labaRugiReal, color: taxAudit.labaRugiReal >= 0 ? 'var(--secondary)' : 'var(--destructive)', highlight: true },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between p-2 rounded-lg"
-                  style={{
-                    background: item.highlight ? `${item.color}08` : 'transparent',
-                    border: item.highlight ? `1px solid color-mix(in srgb, '+item.color+' 12%, transparent)` : `1px solid var(--border)`,
-                  }}
-                >
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--muted-foreground)' }}>{item.label}</span>
-                  <span className="text-xs font-bold tabular-nums" style={{ color: item.color }}>
-                    {formatAmount(item.value)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Expense Breakdown Chart */}
-      {data && data.expenses.length > 0 && !loading && (
-        <Card className="rounded-xl" style={cardStyle}>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)' }}>
-                <BarChart3 className="h-3 w-3" style={{ color: 'var(--destructive)' }} />
-              </div>
-              <h3 className="text-xs font-semibold" >Expense Breakdown</h3>
-              <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: `1px solid color-mix(in srgb, var(--destructive) 12%, transparent)` }}>
-                {data.expenses.length} items
-              </Badge>
-            </div>
-            <ExpenseBreakdownChart expenses={data.expenses} formatAmount={formatAmount} />
-          </CardContent>
-        </Card>
-      )}
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full sm:w-auto rounded-xl p-1 h-auto" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
           {[
-            { value: 'sales', label: t('biz.penjualan'), color: 'var(--primary)' },
+            { value: 'labaRugi', label: 'Laba Rugi', color: 'var(--secondary)' },
+            { value: 'arusKas', label: 'Arus Kas', color: 'var(--primary)' },
+            { value: 'piutangAnalysis', label: 'Piutang', color: 'var(--warning)' },
+            { value: 'sales', label: t('biz.penjualan'), color: 'var(--secondary)' },
             { value: 'expenses', label: t('biz.kasKeluar'), color: 'var(--destructive)' },
-            { value: 'invoices', label: t('biz.invoices'), color: 'var(--warning)' },
+            { value: 'invoices', label: t('biz.invoices'), color: 'var(--primary)' },
             { value: 'debts', label: t('biz.hutangPiutang'), color: 'var(--secondary)' },
-            { value: 'piutang', label: 'Piutang Detail', color: 'var(--warning)' },
           ].map((tab) => (
             <TabsTrigger
               key={tab.value}
@@ -747,7 +980,456 @@ export default function BusinessLaporan() {
           ))}
         </TabsList>
 
-        {/* Sales Tab */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  LABA RUGI DETAIL TAB                                          */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="labaRugi" className="mt-3 space-y-3">
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+            </div>
+          ) : !data || !labaRugiDetail ? (
+            <EmptyState icon={BarChart3} color={'var(--secondary)'} text="Tidak ada data laporan" />
+          ) : (
+            <>
+              {/* Income Breakdown */}
+              <Card className="rounded-xl" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={TrendingUp} color="var(--secondary)" title="Pendapatan per Sumber" badge={labaRugiDetail.income.filter((i) => i.amount > 0).length} />
+                  <div className="space-y-2">
+                    {labaRugiDetail.income.map((item) => {
+                      const p = labaRugiDetail.totalIncome > 0 ? ((item.amount / labaRugiDetail.totalIncome) * 100) : 0;
+                      return (
+                        <div key={item.label} className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{item.label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{
+                                backgroundColor: 'color-mix(in srgb, var(--muted-foreground) 6%, transparent)',
+                                color: 'var(--muted-foreground)',
+                              }}>
+                                {p.toFixed(1)}%
+                              </span>
+                              <span className="text-xs font-bold tabular-nums" style={{ color: item.color as string }}>
+                                {formatAmount(item.amount)}
+                              </span>
+                            </div>
+                          </div>
+                          <ProgressBar value={item.amount} max={labaRugiDetail.totalIncome || 1} color={item.color as string} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg mt-2" style={{ background: 'color-mix(in srgb, var(--secondary) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--secondary) 12%, transparent)' }}>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--secondary)' }}>Total Pendapatan</span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>
+                      {formatAmount(labaRugiDetail.totalIncome)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Expense Breakdown by Category */}
+              <Card className="rounded-xl" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={TrendingDown} color="var(--destructive)" title="Pengeluaran per Kategori" badge={expenseCategories.length} />
+                  {expenseCategories.length === 0 ? (
+                    <p className="text-xs text-center py-4" style={{ color: 'var(--muted-foreground)' }}>Tidak ada pengeluaran di periode ini</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {expenseCategories.map((cat) => (
+                        <div key={cat.category} className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{cat.category}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{
+                                backgroundColor: 'color-mix(in srgb, var(--muted-foreground) 6%, transparent)',
+                                color: 'var(--muted-foreground)',
+                              }}>
+                                {cat.count}x
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{
+                                backgroundColor: 'color-mix(in srgb, var(--destructive) 6%, transparent)',
+                                color: 'var(--destructive)',
+                              }}>
+                                {cat.percentage.toFixed(1)}%
+                              </span>
+                              <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--destructive)' }}>
+                                -{formatAmount(cat.total)}
+                              </span>
+                            </div>
+                          </div>
+                          <ProgressBar value={cat.total} max={labaRugiDetail.totalExpense || 1} color="var(--destructive)" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between p-2 rounded-lg mt-2" style={{ background: 'color-mix(in srgb, var(--destructive) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 12%, transparent)' }}>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--destructive)' }}>Total Pengeluaran</span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--destructive)' }}>
+                      -{formatAmount(labaRugiDetail.totalExpense)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Net Profit/Loss Summary */}
+              <Card className="rounded-xl" style={{ background: 'var(--card)', border: `1px solid color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 20%, transparent)` }}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={DollarSign} color={labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} title="Laba / Rugi Bersih" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <span className="text-[10px] block mb-0.5" style={{ color: 'var(--muted-foreground)' }}>Total Pendapatan Bruto</span>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>{formatAmount(labaRugiDetail.totalPendapatanBruto)}</span>
+                    </div>
+                    <div className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <span className="text-[10px] block mb-0.5" style={{ color: 'var(--muted-foreground)' }}>Total Pengeluaran</span>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--destructive)' }}>-{formatAmount(labaRugiDetail.totalExpense)}</span>
+                    </div>
+                    <div className="p-2 rounded-lg" style={{
+                      background: labaRugiDetail.labaKotor >= 0 ? 'color-mix(in srgb, var(--secondary) 6%, transparent)' : 'color-mix(in srgb, var(--destructive) 6%, transparent)',
+                      border: `1px solid color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 12%, transparent)`,
+                    }}>
+                      <span className="text-[10px] block mb-0.5" style={{ color: 'var(--muted-foreground)' }}>LABA RUGI REAL</span>
+                      <span className="text-sm font-bold tabular-nums" style={{ color: labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                        {formatAmount(labaRugiDetail.labaKotor)}
+                      </span>
+                    </div>
+                  </div>
+                  {labaRugiDetail.sisaPiutangCicilan > 0 && (
+                    <div className="mt-2 p-2 rounded-lg" style={{ background: 'color-mix(in srgb, var(--warning) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 10%, transparent)' }}>
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle className="h-3 w-3" style={{ color: 'var(--warning)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--warning)' }}>Sisa Piutang Cicilan Belum Diterima: </span>
+                        <span className="text-[10px] font-bold" style={{ color: 'var(--warning)' }}>{formatAmount(labaRugiDetail.sisaPiutangCicilan)}</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  ARUS KAS DETAIL TAB                                           */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="arusKas" className="mt-3 space-y-3">
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+            </div>
+          ) : !data || !arusKasDetail ? (
+            <EmptyState icon={Landmark} color={'var(--primary)'} text="Tidak ada data arus kas" />
+          ) : (
+            <>
+              {/* Operating Cash Flow */}
+              <Card className="rounded-xl" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={ArrowDownUp} color="var(--secondary)" title="Arus Kas Operasional" />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Pemasukan (Kas Besar + Kas Kecil)</span>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>+{formatAmount(arusKasDetail.operating.inflow)}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Pengeluaran Operasional</span>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--destructive)' }}>-{formatAmount(arusKasDetail.operating.outflow)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg mt-2" style={{
+                    background: arusKasDetail.operating.net >= 0 ? 'color-mix(in srgb, var(--secondary) 6%, transparent)' : 'color-mix(in srgb, var(--destructive) 6%, transparent)',
+                    border: `1px solid color-mix(in srgb, ${arusKasDetail.operating.net >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 12%, transparent)`,
+                  }}>
+                    <span className="text-xs font-semibold" style={{ color: arusKasDetail.operating.net >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>Arus Kas Operasional Bersih</span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: arusKasDetail.operating.net >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                      {formatAmount(arusKasDetail.operating.net)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Investing Cash Flow */}
+              <Card className="rounded-xl" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={PiggyBank} color="var(--primary)" title="Arus Kas Investasi" />
+                  <div className="flex items-center justify-between p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                    <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Modal Investor Masuk</span>
+                    <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--primary)' }}>+{formatAmount(arusKasDetail.investing.inflow)}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg mt-2" style={{ background: 'color-mix(in srgb, var(--primary) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 12%, transparent)' }}>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>Arus Kas Investasi Bersih</span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--primary)' }}>
+                      +{formatAmount(arusKasDetail.investing.net)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Cash Balances */}
+              <Card className="rounded-xl" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={Banknote} color="var(--warning)" title="Saldo Kas" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Building2 className="h-3 w-3" style={{ color: 'var(--secondary)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Kas Besar</span>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums block" style={{ color: arusKasDetail.kasBesarSaldo >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                        {formatAmount(arusKasDetail.kasBesarSaldo)}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Wallet className="h-3 w-3" style={{ color: 'var(--primary)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Kas Kecil</span>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums block" style={{ color: arusKasDetail.kasKecilSaldo >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                        {formatAmount(arusKasDetail.kasKecilSaldo)}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-lg" style={{
+                      background: arusKasDetail.totalSaldo >= 0 ? 'color-mix(in srgb, var(--secondary) 6%, transparent)' : 'color-mix(in srgb, var(--destructive) 6%, transparent)',
+                      border: `1px solid color-mix(in srgb, ${arusKasDetail.totalSaldo >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 12%, transparent)`,
+                    }}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Landmark className="h-3 w-3" style={{ color: arusKasDetail.totalSaldo >= 0 ? 'var(--secondary)' : 'var(--destructive)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Total Saldo</span>
+                      </div>
+                      <span className="text-sm font-bold tabular-nums block" style={{ color: arusKasDetail.totalSaldo >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                        {formatAmount(arusKasDetail.totalSaldo)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Period info */}
+              <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: 'color-mix(in srgb, var(--muted-foreground) 3%, transparent)', border: '1px solid var(--border)' }}>
+                <Clock className="h-3.5 w-3.5" style={{ color: 'var(--muted-foreground)' }} />
+                <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                  Periode: {fromDate} s/d {toDate} — Saldo awal dihitung dari total pemasukan dikurangi pengeluaran dalam periode ini.
+                </p>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  PIUTANG ANALYSIS TAB                                          */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="piutangAnalysis" className="mt-3 space-y-3">
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+            </div>
+          ) : !data || !piutangAnalysis ? (
+            <EmptyState icon={CreditCard} color={'var(--warning)'} text="Tidak ada data piutang" />
+          ) : (
+            <>
+              {/* Piutang Status Summary */}
+              <Card className="rounded-xl" style={{ background: 'var(--card)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' }}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={AlertTriangle} color="var(--warning)" title="Piutang Outstanding" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--secondary)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Berjalan</span>
+                        <Badge className="text-[9px] px-1 py-0 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 12%, transparent)' }}>
+                          {piutangAnalysis.berjalan.count}
+                        </Badge>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>{formatAmount(piutangAnalysis.berjalan.total)}</span>
+                    </div>
+                    <div className="p-2 rounded-lg" style={{ background: 'color-mix(in srgb, var(--destructive) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 10%, transparent)' }}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--destructive)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Macet</span>
+                        <Badge className="text-[9px] px-1 py-0 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: '1px solid color-mix(in srgb, var(--destructive) 12%, transparent)' }}>
+                          {piutangAnalysis.macet.count}
+                        </Badge>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--destructive)' }}>{formatAmount(piutangAnalysis.macet.total)}</span>
+                    </div>
+                    <div className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--muted-foreground)' }} />
+                        <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Selesai</span>
+                        <Badge className="text-[9px] px-1 py-0 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--muted-foreground) 8%, transparent)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>
+                          {piutangAnalysis.selesai.count}
+                        </Badge>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--muted-foreground)' }}>{formatAmount(piutangAnalysis.selesai.total)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg mt-2" style={{ background: 'color-mix(in srgb, var(--warning) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 12%, transparent)' }}>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--warning)' }}>Total Outstanding</span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--warning)' }}>
+                      {formatAmount(piutangAnalysis.totalOutstanding)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Aging Analysis */}
+              <Card className="rounded-xl" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={Timer} color="var(--primary)" title="Aging Analysis" />
+                  {piutangAnalysis.totalOutstanding === 0 ? (
+                    <p className="text-xs text-center py-4" style={{ color: 'var(--muted-foreground)' }}>Tidak ada piutang outstanding</p>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        {piutangAnalysis.aging.map((bucket) => (
+                          <div key={bucket.label} className="p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{bucket.label}</span>
+                                <Badge className="text-[9px] px-1 py-0 rounded-full" style={{
+                                  backgroundColor: `color-mix(in srgb, ${bucket.color} 8%, transparent)`,
+                                  color: bucket.color,
+                                  border: `1px solid color-mix(in srgb, ${bucket.color} 12%, transparent)`,
+                                }}>
+                                  {bucket.count}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                                  {pct(bucket.total, piutangAnalysis.totalOutstanding)}%
+                                </span>
+                                <span className="text-xs font-bold tabular-nums" style={{ color: bucket.color }}>
+                                  {formatAmount(bucket.total)}
+                                </span>
+                              </div>
+                            </div>
+                            <ProgressBar value={bucket.total} max={piutangAnalysis.totalOutstanding} color={bucket.color} />
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Top 5 Biggest Piutang */}
+              <Card className="rounded-xl" style={cardStyle}>
+                <CardContent className="p-3 sm:p-4">
+                  <SectionHeader icon={CreditCard} color="var(--destructive)" title="Top 5 Piutang Terbesar" badge={piutangAnalysis.top5.length} />
+                  {piutangAnalysis.top5.length === 0 ? (
+                    <p className="text-xs text-center py-4" style={{ color: 'var(--muted-foreground)' }}>Tidak ada piutang outstanding</p>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>#</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>Pelanggan</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Total</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Sisa</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {piutangAnalysis.top5.map((d, idx) => {
+                            const paidPct = d.amount > 0 ? ((d.amount - d.remaining) / d.amount) * 100 : 0;
+                            return (
+                              <TableRow key={d.id} className="transition-colors duration-150" style={{ borderBottom: '1px solid var(--border)' }}>
+                                <TableCell className="text-xs py-2 font-medium" style={{ color: 'var(--muted-foreground)' }}>{idx + 1}</TableCell>
+                                <TableCell className="text-xs py-2 font-medium" >{d.counterpart}</TableCell>
+                                <TableCell className="text-xs text-right py-2" >{formatAmount(d.amount)}</TableCell>
+                                <TableCell className="text-xs text-right py-2 font-bold" style={{ color: 'var(--warning)' }}>{formatAmount(d.remaining)}</TableCell>
+                                <TableCell className="py-2 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <div className="w-12 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                                      <div className="h-full rounded-full" style={{
+                                        width: `${paidPct}%`,
+                                        backgroundColor: paidPct >= 100 ? 'var(--secondary)' : 'var(--primary)',
+                                      }} />
+                                    </div>
+                                    <span className="text-[10px] tabular-nums" style={{ color: 'var(--muted-foreground)' }}>{paidPct.toFixed(0)}%</span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Full Piutang Detail Table */}
+              <Card className="rounded-xl" style={{ background: 'var(--card)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' }}>
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-2 p-3 sm:p-4" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)' }}>
+                      <AlertTriangle className="h-3 w-3" style={{ color: 'var(--warning)' }} />
+                    </div>
+                    <h3 className="text-xs font-semibold" style={{ color: 'var(--warning)' }}>Detail Piutang Belum Lunas</h3>
+                    <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)', color: 'var(--warning)', border: '1px solid color-mix(in srgb, var(--warning) 12%, transparent)' }}>
+                      {piutangDetail.length}
+                    </Badge>
+                  </div>
+                  {piutangDetail.length === 0 ? (
+                    <EmptyState icon={CreditCard} color={'var(--secondary)'} text="Tidak ada piutang yang belum lunas" />
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>Pelanggan</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Total</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Terbayar</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Sisa</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Lewat Jatuh</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {piutangDetail.map((row, idx) => (
+                            <TableRow key={row.id} className="transition-colors duration-150" style={{
+                              background: row.daysOverdue > 0 ? 'color-mix(in srgb, var(--warning) 2%, transparent)' : idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                              borderBottom: '1px solid var(--border)',
+                            }}>
+                              <TableCell className="text-xs py-2 font-medium" >{row.counterpart}</TableCell>
+                              <TableCell className="text-xs text-right py-2" >{formatAmount(row.amount)}</TableCell>
+                              <TableCell className="text-xs text-right py-2" style={{ color: 'var(--secondary)' }}>{formatAmount(row.paid)}</TableCell>
+                              <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: 'var(--warning)' }}>{formatAmount(row.remaining)}</TableCell>
+                              <TableCell className="text-xs text-right py-2">
+                                {row.daysOverdue > 0 ? (
+                                  <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{
+                                    backgroundColor: row.daysOverdue > 30 ? 'color-mix(in srgb, var(--destructive) 8%, transparent)' : 'color-mix(in srgb, var(--warning) 8%, transparent)',
+                                    color: row.daysOverdue > 30 ? 'var(--destructive)' : 'var(--warning)',
+                                    border: `1px solid ${row.daysOverdue > 30 ? 'var(--destructive)' : 'var(--warning)'}20`,
+                                  }}>
+                                    {row.daysOverdue} hari
+                                  </Badge>
+                                ) : (
+                                  <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>-</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  SALES TAB (existing)                                          */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="sales" className="mt-3">
           <Card className="rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
@@ -773,7 +1455,18 @@ export default function BusinessLaporan() {
                     <TableBody>
                       {data.sales.map((sale, idx) => (
                         <TableRow key={sale.id} className="transition-colors duration-150" style={{ background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
-                          <TableCell className="text-xs py-2" >{sale.date}</TableCell>
+                          <TableCell className="text-xs py-2" >
+                            <div className="flex items-center gap-1.5">
+                              {sale.date}
+                              {sale.tipe === 'cicilan' && (
+                                <Badge className="text-[8px] px-1 py-0 rounded-full" style={{
+                                  backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                                  color: 'var(--primary)',
+                                  border: '1px solid color-mix(in srgb, var(--primary) 12%, transparent)',
+                                }}>Cicilan</Badge>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell className="text-xs py-2 font-medium" >{sale.description}</TableCell>
                           <TableCell className="text-xs py-2 hidden sm:table-cell" >{sale.customer}</TableCell>
                           <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: 'var(--secondary)' }}>{formatAmount(sale.amount)}</TableCell>
@@ -787,7 +1480,9 @@ export default function BusinessLaporan() {
           </Card>
         </TabsContent>
 
-        {/* Expenses Tab */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  EXPENSES TAB (existing)                                       */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="expenses" className="mt-3">
           <Card className="rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
@@ -829,7 +1524,9 @@ export default function BusinessLaporan() {
           </Card>
         </TabsContent>
 
-        {/* Invoices Tab */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  INVOICES TAB (existing)                                       */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="invoices" className="mt-3">
           <Card className="rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
@@ -855,10 +1552,10 @@ export default function BusinessLaporan() {
                     <TableBody>
                       {data.invoices.map((inv, idx) => {
                         const statusStyle = inv.status === 'paid'
-                          ? { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: `1px solid color-mix(in srgb, var(--secondary) 15%, transparent)` }
+                          ? { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 15%, transparent)' }
                           : inv.status === 'overdue'
-                            ? { backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: `1px solid color-mix(in srgb, var(--destructive) 15%, transparent)` }
-                            : { backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)', color: 'var(--warning)', border: `1px solid color-mix(in srgb, var(--warning) 15%, transparent)` };
+                            ? { backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: '1px solid color-mix(in srgb, var(--destructive) 15%, transparent)' }
+                            : { backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)', color: 'var(--warning)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' };
                         return (
                           <TableRow key={inv.id} className="transition-colors duration-150" style={{ background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
                             <TableCell className="text-xs py-2 font-medium" >{inv.invoiceNumber}</TableCell>
@@ -880,7 +1577,9 @@ export default function BusinessLaporan() {
           </Card>
         </TabsContent>
 
-        {/* Debts Tab */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  DEBTS TAB (existing)                                          */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="debts" className="mt-3">
           <Card className="rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
@@ -910,8 +1609,8 @@ export default function BusinessLaporan() {
                           <TableCell className="py-2">
                             <Badge variant="outline" className="text-[9px] font-medium rounded-full px-1.5 py-0" style={
                               debt.type === 'hutang'
-                                ? { backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: `1px solid color-mix(in srgb, var(--destructive) 15%, transparent)` }
-                                : { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: `1px solid color-mix(in srgb, var(--secondary) 15%, transparent)` }
+                                ? { backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: '1px solid color-mix(in srgb, var(--destructive) 15%, transparent)' }
+                                : { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 15%, transparent)' }
                             }>
                               {debt.type}
                             </Badge>
@@ -929,73 +1628,50 @@ export default function BusinessLaporan() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Piutang Detail Tab */}
-        <TabsContent value="piutang" className="mt-3">
-          <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: `1px solid color-mix(in srgb, var(--warning) 15%, transparent)` }}>
-            <CardContent className="p-0">
-              <div className="flex items-center gap-2 p-3 sm:p-4" style={{ borderBottom: '1px solid var(--border)' }}>
-                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)' }}>
-                  <AlertTriangle className="h-3 w-3" style={{ color: 'var(--warning)' }} />
-                </div>
-                <h3 className="text-xs font-semibold" style={{ color: 'var(--warning)' }}>Piutang Belum Lunas</h3>
-                <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)', color: 'var(--warning)', border: `1px solid color-mix(in srgb, var(--warning) 12%, transparent)` }}>
-                  {piutangDetail.length}
-                </Badge>
-              </div>
-              {loading ? (
-                <div className="space-y-2 p-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: 'var(--border)' }} />
-                  ))}
-                </div>
-              ) : piutangDetail.length === 0 ? (
-                <EmptyState icon={CreditCard} color={'var(--secondary)'} text="Tidak ada piutang yang belum lunas" />
-              ) : (
-                <div className="max-h-96 overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
-                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>Pelanggan</TableHead>
-                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Total</TableHead>
-                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Terbayar</TableHead>
-                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Sisa</TableHead>
-                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Lewat Jatuh</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {piutangDetail.map((row, idx) => (
-                        <TableRow key={row.id} className="transition-colors duration-150" style={{
-                          background: row.daysOverdue > 0 ? 'color-mix(in srgb, var(--warning) 2%, transparent)' : idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent',
-                          borderBottom: '1px solid var(--border)',
-                        }}>
-                          <TableCell className="text-xs py-2 font-medium" >{row.counterpart}</TableCell>
-                          <TableCell className="text-xs text-right py-2" >{formatAmount(row.amount)}</TableCell>
-                          <TableCell className="text-xs text-right py-2" style={{ color: 'var(--secondary)' }}>{formatAmount(row.paid)}</TableCell>
-                          <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: 'var(--warning)' }}>{formatAmount(row.remaining)}</TableCell>
-                          <TableCell className="text-xs text-right py-2">
-                            {row.daysOverdue > 0 ? (
-                              <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{
-                                backgroundColor: row.daysOverdue > 30 ? 'color-mix(in srgb, var(--destructive) 8%, transparent)' : 'color-mix(in srgb, var(--warning) 8%, transparent)',
-                                color: row.daysOverdue > 30 ? 'var(--destructive)' : 'var(--warning)',
-                                border: `1px solid ${row.daysOverdue > 30 ? 'var(--destructive)' : 'var(--warning)'}20`,
-                              }}>
-                                {row.daysOverdue} hari
-                              </Badge>
-                            ) : (
-                              <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>-</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      {/* Tax Audit Summary (kept below tabs as reference section) */}
+      {data && taxAudit && (
+        <Card className="rounded-xl" style={{ background: 'var(--card)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' }}>
+          <CardContent className="p-3 sm:p-4">
+            <SectionHeader icon={AlertTriangle} color="var(--warning)" title="Detail Audit Pajak" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {[
+                { label: 'Pendapatan Tunai', value: taxAudit.pendapatanTunai, color: 'var(--secondary)', highlight: false },
+                { label: 'Pendapatan Cicilan (Total)', value: taxAudit.pendapatanCicilan, color: 'var(--primary)', highlight: false },
+                { label: 'Pendapatan Cicilan — Diterima', value: taxAudit.dpDiterima, color: 'var(--secondary)', highlight: false },
+                { label: 'Total Piutang Belum Dibayar', value: taxAudit.totalPiutangBelumDibayar, color: 'var(--warning)', highlight: true },
+                { label: 'Pengeluaran', value: data.summary.totalExpense, color: 'var(--destructive)', highlight: false },
+                { label: 'LABA RUGI REAL', value: taxAudit.labaRugiReal, color: taxAudit.labaRugiReal >= 0 ? 'var(--secondary)' : 'var(--destructive)', highlight: true },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between p-2 rounded-lg"
+                  style={{
+                    background: item.highlight ? `${item.color}08` : 'transparent',
+                    border: item.highlight ? `1px solid color-mix(in srgb, ${item.color} 12%, transparent)` : '1px solid var(--border)',
+                  }}
+                >
+                  <span className="text-[10px] font-medium" style={{ color: 'var(--muted-foreground)' }}>{item.label}</span>
+                  <span className="text-xs font-bold tabular-nums" style={{ color: item.color }}>
+                    {formatAmount(item.value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Expense Breakdown Chart (kept below tabs) */}
+      {data && data.expenses.length > 0 && !loading && (
+        <Card className="rounded-xl" style={cardStyle}>
+          <CardContent className="p-3 sm:p-4">
+            <SectionHeader icon={BarChart3} color="var(--destructive)" title="Expense Breakdown" badge={data.expenses.length} />
+            <ExpenseBreakdownChart expenses={data.expenses} formatAmount={formatAmount} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

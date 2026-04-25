@@ -365,7 +365,16 @@ export default function BusinessDebts() {
       const res = await fetch(`/api/business/${businessId}/debts/${debtId}/remind`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal');
-      window.open(data.message, '_blank');
+      if (data.message) {
+        // Use <a> click trick for reliable mobile + desktop redirect
+        const a = document.createElement('a');
+        a.href = data.message;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {

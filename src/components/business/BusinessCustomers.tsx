@@ -38,9 +38,12 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays, Phone, Mail, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 // ─── THEME ─────────────────────────────────────────────────────
 const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
@@ -315,8 +318,8 @@ export default function BusinessCustomers() {
         })}
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-xs">
+      {/* Search - full width */}
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={search}
@@ -345,40 +348,67 @@ export default function BusinessCustomers() {
             </div>
           ) : filteredCustomers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3 bg-card border border-border">
-                <Users className="h-7 w-7" style={{ color: 'color-mix(in srgb, var(--primary) 31%, transparent)' }} />
+              <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3 bg-primary/8 border border-primary/15">
+                <Users className="h-7 w-7 text-primary" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground" >Belum ada pelanggan</p>
+              <p className="text-sm font-medium text-foreground" >Belum ada pelanggan</p>
               <p className="text-xs mt-1 text-muted-foreground" >Tambahkan pelanggan pertama Anda</p>
+              <Button onClick={openCreateDialog} size="sm" className="mt-4 rounded-lg h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                {t('biz.addCustomer')}
+              </Button>
             </div>
           ) : (
             <>
               {/* Mobile Card Grid */}
               <div className="sm:hidden max-h-[500px] overflow-y-auto">
                 <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                  {filteredCustomers.map((customer) => {
+                  <AnimatePresence mode="popLayout">
+                  {filteredCustomers.map((customer, index) => {
                     const totalCount = (customer._count?.invoices || 0) + (customer._count?.sales || 0);
                     const badge = getCustomerBadge(totalCount);
                     const spending = customerSpending[customer.id];
                     return (
-                      <div key={customer.id} className="p-3 border-b border-border">
+                      <motion.div
+                        key={customer.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ delay: index * 0.03, duration: 0.2 }}
+                        className="p-3 border-b border-border"
+                      >
                         <div className="flex items-start gap-2.5">
-                          <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/12 text-primary">
+                          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 bg-primary/12 text-primary">
                             {customer.name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 mb-1">
                               <p className="text-xs font-semibold truncate text-foreground" >{customer.name}</p>
-                              <Badge variant="outline" className="text-[8px] font-semibold px-1 py-0 h-3.5 rounded-full" style={badge.style}>
+                              <Badge variant="outline" className="text-[8px] font-semibold px-1.5 py-0 h-4 rounded-full" style={badge.style}>
                                 {badge.label}
                               </Badge>
                             </div>
+                            {/* Contact info */}
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-1.5">
+                              {customer.phone && (
+                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                  <Phone className="h-2.5 w-2.5" />
+                                  {customer.phone}
+                                </span>
+                              )}
+                              {customer.email && (
+                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground truncate max-w-[160px]">
+                                  <Mail className="h-2.5 w-2.5 shrink-0" />
+                                  {customer.email}
+                                </span>
+                              )}
+                            </div>
                             {/* Spending & method */}
-                            <div className="flex items-center gap-2 mt-1.5">
+                            <div className="flex items-center gap-2">
                               {spending?.total ? (
                                 <span className="text-[11px] font-bold tabular-nums text-secondary" >{formatAmount(spending.total)}</span>
                               ) : (
-                                <span className="text-[11px] text-muted-foreground" >-</span>
+                                <span className="text-[11px] text-muted-foreground" >Belum ada transaksi</span>
                               )}
                               {spending?.method && (
                                 <span className="text-[9px] px-1.5 py-px rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 7%, transparent)', color: 'var(--warning)' }}>
@@ -404,7 +434,7 @@ export default function BusinessCustomers() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                              className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-primary"
                               onClick={() => openEditDialog(customer)}
                             >
                               <Pencil className="h-3 w-3" />
@@ -412,16 +442,17 @@ export default function BusinessCustomers() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                              className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive"
                               onClick={() => setDeleteId(customer.id)}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
+                  </AnimatePresence>
                 </div>
               </div>
 
