@@ -218,7 +218,7 @@ interface ReportData {
   invoices: InvoiceRow[];
   debts: DebtRow[];
   cashItems: ApiCashItem[];
-  salesBreakdown?: ApiResponse['report']['sales']['salesBreakdown'];
+  salesBreakdown?: { tunai?: { jumlahTransaksi?: number; total?: number }; cicilan?: { jumlahTransaksi?: number; totalProduk?: number; totalDPDiterima?: number; totalCicilanDiterima?: number; totalTerealisasi?: number; totalSisa?: number } };
   piutangDetailApi?: ApiResponse['report']['piutangDetail'];
   taxAuditApi?: ApiResponse['report']['taxAudit'];
 }

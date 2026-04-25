@@ -69,7 +69,6 @@ export async function GET(
       debt: {
         referenceId: string | null;
         counterpart: string;
-        customer: { id: string; name: string } | null;
       };
       saleSharePct: number;
       customerName: string;
@@ -103,7 +102,6 @@ export async function GET(
             },
             orderBy: { paymentDate: 'desc' },
           },
-          customer: { select: { id: true, name: true } },
         },
       });
 
@@ -120,7 +118,6 @@ export async function GET(
             debt: {
               referenceId: debt.referenceId,
               counterpart: debt.counterpart,
-              customer: debt.customer,
             },
             saleSharePct: sharePct,
             customerName: saleCustomerMap.get(debt.referenceId) || debt.counterpart,
