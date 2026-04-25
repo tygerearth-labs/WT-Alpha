@@ -50,20 +50,6 @@ import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
-const THEME = {
-  bg: '#000000',
-  surface: '#121212',
-  primary: '#BB86FC',
-  secondary: '#03DAC6',
-  destructive: '#CF6679',
-  warning: '#F9A825',
-  muted: '#9E9E9E',
-  border: 'rgba(255,255,255,0.08)',
-  borderHover: 'rgba(255,255,255,0.15)',
-  text: '#FFFFFF',
-  textSecondary: '#B3B3B3',
-};
-
 interface Debt {
   id: string;
   type: 'hutang' | 'piutang';
@@ -81,10 +67,10 @@ interface Debt {
 }
 
 const STATUS_STYLES: Record<string, { label: string; style: React.CSSProperties }> = {
-  active: { label: 'biz.debtActive', style: { background: `${THEME.primary}20`, color: THEME.primary, borderWidth: '1px', borderColor: `${THEME.primary}30` } },
-  partially_paid: { label: 'biz.debtActive', style: { background: `${THEME.warning}20`, color: THEME.warning, borderWidth: '1px', borderColor: `${THEME.warning}30` } },
-  paid: { label: 'biz.debtPaid', style: { background: `${THEME.secondary}20`, color: THEME.secondary, borderWidth: '1px', borderColor: `${THEME.secondary}30` } },
-  overdue: { label: 'biz.debtOverdue', style: { background: `${THEME.destructive}20`, color: THEME.destructive, borderWidth: '1px', borderColor: `${THEME.destructive}30` } },
+  active: { label: 'biz.debtActive', style: { background: 'var(--primary)', color: 'var(--primary)', borderWidth: '1px', borderColor: 'var(--primary)' } },
+  partially_paid: { label: 'biz.debtActive', style: { background: 'var(--warning)', color: 'var(--warning)', borderWidth: '1px', borderColor: 'var(--warning)' } },
+  paid: { label: 'biz.debtPaid', style: { background: 'var(--secondary)', color: 'var(--secondary)', borderWidth: '1px', borderColor: 'var(--secondary)' } },
+  overdue: { label: 'biz.debtOverdue', style: { background: 'var(--destructive)', color: 'var(--destructive)', borderWidth: '1px', borderColor: 'var(--destructive)' } },
 };
 
 function calculateInstallmentLateInfo(debt: Debt): { lateDays: number; currentTempo: number; paidTempo: number; isLate: boolean } {
@@ -114,38 +100,38 @@ function calculateInstallmentLateInfo(debt: Debt): { lateDays: number; currentTe
 }
 
 function getDueDateInfo(dueDate: string | null, remaining: number, debt?: Debt): { color: string; label: string; bg: string } {
-  if (remaining <= 0) return { color: THEME.muted, label: '', bg: '' };
+  if (remaining <= 0) return { color: 'var(--muted-foreground)', label: '', bg: '' };
 
   // For installment debts, use chained tempo calculation
   if (debt && debt.installmentAmount && debt.installmentAmount > 0 && debt.createdAt) {
     const info = calculateInstallmentLateInfo(debt);
     if (info.isLate) {
       return {
-        color: THEME.destructive,
-        label: `Tempo ${info.paidTempo + 1}/${debt.installmentPeriod} · Lewat ${info.lateDays} hari`,
-        bg: `${THEME.destructive}1A`,
+        color: 'var(--destructive)',
+              label: `Tempo ${info.paidTempo + 1}/${debt.installmentPeriod} · Lewat ${info.lateDays} hari`,
+        bg: 'var(--destructive)',
       };
     }
     if (info.currentTempo < (debt.installmentPeriod || 0) && info.currentTempo > info.paidTempo) {
       return {
-        color: THEME.warning,
+        color: 'var(--warning)',
         label: `Tempo ${info.currentTempo}/${debt.installmentPeriod} · ${info.currentTempo - info.paidTempo} tertunggak`,
-        bg: `${THEME.warning}1A`,
+        bg: 'var(--warning)',
       };
     }
     if (info.paidTempo >= (debt.installmentPeriod || 0)) {
-      return { color: THEME.secondary, label: 'Lunas', bg: `${THEME.secondary}1A` };
+      return { color: 'var(--secondary)', label: 'Lunas', bg: 'var(--secondary)' };
     }
-    return { color: THEME.secondary, label: 'Aman', bg: `${THEME.secondary}1A` };
+    return { color: 'var(--secondary)', label: 'Aman', bg: 'var(--secondary)' };
   }
 
   // Non-installment logic (original)
-  if (!dueDate) return { color: THEME.muted, label: '', bg: '' };
+  if (!dueDate) return { color: 'var(--muted-foreground)', label: '', bg: '' };
   const daysUntilDue = Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  if (daysUntilDue < 0) return { color: THEME.destructive, label: `Lewat ${Math.abs(daysUntilDue)} hari`, bg: `${THEME.destructive}1A` };
-  if (daysUntilDue <= 3) return { color: THEME.destructive, label: `${daysUntilDue} hari lagi`, bg: `${THEME.destructive}1A` };
-  if (daysUntilDue <= 7) return { color: THEME.warning, label: `${daysUntilDue} hari lagi`, bg: `${THEME.warning}1A` };
-  return { color: THEME.secondary, label: 'Aman', bg: `${THEME.secondary}1A` };
+  if (daysUntilDue < 0) return { color: 'var(--destructive)', label: `Lewat ${Math.abs(daysUntilDue)} hari`, bg: 'var(--destructive)' };
+  if (daysUntilDue <= 3) return { color: 'var(--destructive)', label: `${daysUntilDue} hari lagi`, bg: 'var(--destructive)' };
+  if (daysUntilDue <= 7) return { color: 'var(--warning)', label: `${daysUntilDue} hari lagi`, bg: 'var(--warning)' };
+  return { color: 'var(--secondary)', label: 'Aman', bg: 'var(--secondary)' };
 }
 
 function getDueDateColor(dueDate: string | null, remaining: number, debt?: Debt): string {
@@ -155,19 +141,18 @@ function getDueDateColor(dueDate: string | null, remaining: number, debt?: Debt)
 const DebtEmptyState = ({ type }: { type: string }) => (
   <div className="flex flex-col items-center justify-center py-12 px-4">
     <div
-      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-      style={{ background: type === 'hutang' ? `${THEME.destructive}15` : `${THEME.secondary}15` }}
+      className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${type === 'hutang' ? 'bg-destructive/15' : 'bg-secondary/15'}`}
     >
       {type === 'hutang' ? (
-        <ArrowDownCircle className="h-8 w-8" style={{ color: THEME.destructive, opacity: 0.6 }} />
+        <ArrowDownCircle className="h-8 w-8 text-destructive opacity-60" />
       ) : (
-        <ArrowUpCircle className="h-8 w-8" style={{ color: THEME.secondary, opacity: 0.6 }} />
+        <ArrowUpCircle className="h-8 w-8" style={{ color: 'var(--secondary)', opacity: 0.6 }} />
       )}
     </div>
-    <p style={{ color: THEME.muted }} className="text-sm font-medium">
+    <p className="text-muted-foreground text-sm font-medium">
       {type === 'hutang' ? 'Belum ada hutang' : 'Belum ada piutang'}
     </p>
-    <p style={{ color: THEME.muted, opacity: 0.6 }} className="text-xs mt-1">
+    <p className="text-muted-foreground opacity-60 text-xs mt-1">
       {type === 'hutang' ? 'Kelola hutang Anda di sini' : 'Kelola piutang Anda di sini'}
     </p>
   </div>
@@ -413,17 +398,17 @@ export default function BusinessDebts() {
   }, [filtered]);
 
   const getHealthLabel = (score: number) => {
-    if (score >= 80) return { text: 'Sehat', color: THEME.secondary, icon: HeartPulse };
-    if (score >= 50) return { text: 'Cukup', color: THEME.warning, icon: TrendingUp };
-    return { text: 'Berisiko', color: THEME.destructive, icon: AlertTriangle };
+    if (score >= 80) return { text: 'Sehat', color: 'var(--secondary)', icon: HeartPulse };
+    if (score >= 50) return { text: 'Cukup', color: 'var(--warning)', icon: TrendingUp };
+    return { text: 'Berisiko', color: 'var(--destructive)', icon: AlertTriangle };
   };
 
-  const accentColor = activeTab === 'hutang' ? THEME.destructive : THEME.secondary;
+  const accentColor = activeTab === 'hutang' ? 'var(--destructive)' : 'var(--secondary)';
 
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p style={{ color: THEME.muted }} className="text-center">{t('biz.registerFirst')}</p>
+        <p className="text-muted-foreground text-center">{t('biz.registerFirst')}</p>
       </div>
     );
   }
@@ -431,20 +416,16 @@ export default function BusinessDebts() {
   return (
     <div className="space-y-3">
       {/* Info Banner */}
-      <div
-        className="flex items-start gap-2.5 p-3 rounded-lg text-[11px]"
-        style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}20` }}
-      >
-        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
-        <span style={{ color: THEME.textSecondary }}>
+      <div className="flex items-start gap-2 p-2.5 rounded-lg text-[11px] bg-primary/5 border border-primary/15">
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />
+        <span className="text-muted-foreground">
           Kelola hutang dan piutang bisnis Anda. Untuk cicilan, sistem menghitung tempo otomatis dari tanggal pembuatan.
         </span>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <TabsList
-            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
-            className="rounded-lg"
+            className="bg-card border border-border rounded-lg"
           >
             <TabsTrigger
               value="hutang"
@@ -452,7 +433,7 @@ export default function BusinessDebts() {
                 'data-[state=active]:shadow-none transition-colors duration-200',
                 activeTab === 'hutang' ? 'text-white' : 'text-white/60'
               )}
-              style={activeTab === 'hutang' ? { background: `${THEME.destructive}20`, color: THEME.destructive } : undefined}
+              style={activeTab === 'hutang' ? { background: 'var(--destructive)' } : undefined}
             >
               <ArrowDownCircle className="h-4 w-4 mr-1" />
               {t('biz.hutang')}
@@ -463,7 +444,7 @@ export default function BusinessDebts() {
                 'data-[state=active]:shadow-none transition-colors duration-200',
                 activeTab === 'piutang' ? 'text-white' : 'text-white/60'
               )}
-              style={activeTab === 'piutang' ? { background: `${THEME.secondary}20`, color: THEME.secondary } : undefined}
+              style={activeTab === 'piutang' ? { background: 'var(--secondary)', color: 'var(--secondary)' } : undefined}
             >
               <ArrowUpCircle className="h-4 w-4 mr-1" />
               {t('biz.piutang')}
@@ -474,9 +455,9 @@ export default function BusinessDebts() {
             onClick={openCreateDialog}
             size="sm"
             className="text-black transition-colors duration-200"
-            style={{ background: THEME.primary }}
+            style={{ background: 'var(--primary)' }}
             onMouseEnter={(e) => { e.currentTarget.style.background = '#9B6FDB'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = THEME.primary; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--primary)'; }}
           >
             <Plus className="h-4 w-4 mr-1" />
             {t('biz.addDebt')}
@@ -484,18 +465,17 @@ export default function BusinessDebts() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 mb-2">
           {/* Total Amount */}
           <Card
-            className="rounded-xl p-3 sm:p-4"
-            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
           >
             <div className="flex items-center gap-2 mb-1.5">
               <DollarSign className="h-4 w-4" style={{ color: accentColor }} />
-              <span className="text-[11px]" style={{ color: THEME.muted }}>{t('biz.debtAmount')}</span>
+              <span className="text-[11px] text-muted-foreground">{t('biz.debtAmount')}</span>
             </div>
-            <p className="text-sm font-bold" style={{ color: THEME.text }}>{formatAmount(totalAmount)}</p>
-            <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+            <p className="text-sm font-bold text-foreground">{formatAmount(totalAmount)}</p>
+            <div className="mt-1.5 h-1 rounded-full overflow-hidden bg-border">
               <div
                 className="h-full rounded-full"
                 style={{ width: '100%', background: accentColor, opacity: 0.3, transition: 'width 0.8s ease' }}
@@ -505,20 +485,19 @@ export default function BusinessDebts() {
 
           {/* Remaining */}
           <Card
-            className="rounded-xl p-3 sm:p-4"
-            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
           >
             <div className="flex items-center gap-2 mb-1.5">
-              <Clock className="h-4 w-4" style={{ color: THEME.warning }} />
-              <span className="text-[11px]" style={{ color: THEME.muted }}>{t('biz.debtRemaining')}</span>
+              <Clock className="h-4 w-4" style={{ color: 'var(--warning)' }} />
+              <span className="text-[11px] text-muted-foreground">{t('biz.debtRemaining')}</span>
             </div>
-            <p className="text-sm font-bold" style={{ color: THEME.text }}>{formatAmount(totalRemaining)}</p>
-            <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+            <p className="text-sm font-bold text-foreground">{formatAmount(totalRemaining)}</p>
+            <div className="mt-1.5 h-1 rounded-full overflow-hidden bg-border">
               <div
                 className="h-full rounded-full"
                 style={{
                   width: totalAmount > 0 ? `${(totalRemaining / totalAmount) * 100}%` : '0%',
-                  background: THEME.warning,
+                  background: 'var(--warning)',
                   transition: 'width 0.8s ease',
                 }}
               />
@@ -527,20 +506,19 @@ export default function BusinessDebts() {
 
           {/* Paid */}
           <Card
-            className="rounded-xl p-3 sm:p-4"
-            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
           >
             <div className="flex items-center gap-2 mb-1.5">
-              <CheckCircle2 className="h-4 w-4" style={{ color: THEME.secondary }} />
-              <span className="text-[11px]" style={{ color: THEME.muted }}>Dibayar</span>
+              <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--secondary)' }} />
+              <span className="text-[11px] text-muted-foreground">Dibayar</span>
             </div>
-            <p className="text-sm font-bold" style={{ color: THEME.secondary }}>{formatAmount(totalPaid)}</p>
-            <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+            <p className="text-sm font-bold" style={{ color: 'var(--secondary)' }}>{formatAmount(totalPaid)}</p>
+            <div className="mt-1.5 h-1 rounded-full overflow-hidden bg-border">
               <div
                 className="h-full rounded-full"
                 style={{
                   width: totalAmount > 0 ? `${(totalPaid / totalAmount) * 100}%` : '0%',
-                  background: THEME.secondary,
+                  background: 'var(--secondary)',
                   transition: 'width 0.8s ease',
                 }}
               />
@@ -549,24 +527,23 @@ export default function BusinessDebts() {
 
           {/* Health Score */}
           <Card
-            className="rounded-xl p-3 sm:p-4"
-            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
           >
             <div className="flex items-center gap-2 mb-1.5">
               {(() => {
                 const HIcon = getHealthLabel(healthData.score).icon;
                 return <HIcon className="h-4 w-4" style={{ color: getHealthLabel(healthData.score).color }} />;
               })()}
-              <span className="text-[11px]" style={{ color: THEME.muted }}>Skor Kesehatan</span>
+              <span className="text-[11px] text-muted-foreground">Skor Kesehatan</span>
             </div>
             <div className="flex items-end gap-1.5">
               <p className="text-xl font-bold" style={{ color: getHealthLabel(healthData.score).color }}>
                 {healthData.score}
               </p>
-              <span className="text-[10px] mb-0.5" style={{ color: THEME.muted }}>/100</span>
+              <span className="text-[10px] mb-0.5 text-muted-foreground">/100</span>
             </div>
             <div className="flex items-center gap-1 mt-1.5">
-              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -581,17 +558,17 @@ export default function BusinessDebts() {
               </span>
             </div>
             {healthData.total > 0 && (
-              <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: THEME.muted, opacity: 0.6 }}>
+              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground opacity-60">
                 <span className="flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: THEME.secondary }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
                   {healthData.paidCount} lunas
                 </span>
                 <span className="flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: THEME.primary }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   {healthData.activeCount} aktif
                 </span>
                 <span className="flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: THEME.destructive }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                   {healthData.overdueCount} lewat
                 </span>
               </div>
@@ -601,14 +578,13 @@ export default function BusinessDebts() {
 
         <TabsContent value={activeTab} className="mt-0">
           <Card
-            className="rounded-xl overflow-hidden"
-            style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+            className="rounded-xl overflow-hidden bg-card border border-border"
           >
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-3 p-3 sm:p-4">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                    <Skeleton key={i} className="h-10 rounded-lg bg-border" />
                   ))}
                 </div>
               ) : filtered.length === 0 ? (
@@ -617,13 +593,13 @@ export default function BusinessDebts() {
                 <div className="max-h-[500px] overflow-y-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow style={{ borderBottom: `1px solid ${THEME.border}` }} className="hover:bg-transparent">
-                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtCounterpart')}</TableHead>
-                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtAmount')}</TableHead>
-                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtRemaining')}</TableHead>
-                        <TableHead className="text-xs hidden sm:table-cell" style={{ color: THEME.muted }}>{t('biz.debtDueDate')}</TableHead>
-                        <TableHead className="text-xs" style={{ color: THEME.muted }}>{t('biz.debtStatus')}</TableHead>
-                        <TableHead className="text-xs w-28" style={{ color: THEME.muted }} />
+                      <TableRow className="hover:bg-transparent border-b border-border">
+                        <TableHead className="text-xs text-muted-foreground">{t('biz.debtCounterpart')}</TableHead>
+                        <TableHead className="text-xs text-right hidden sm:table-cell text-muted-foreground">{t('biz.debtAmount')}</TableHead>
+                        <TableHead className="text-xs text-muted-foreground">{t('biz.debtRemaining')}</TableHead>
+                        <TableHead className="text-xs hidden sm:table-cell text-muted-foreground">{t('biz.debtDueDate')}</TableHead>
+                        <TableHead className="text-xs hidden lg:table-cell text-muted-foreground">{t('biz.debtStatus')}</TableHead>
+                        <TableHead className="text-xs w-28 text-muted-foreground" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -648,30 +624,30 @@ export default function BusinessDebts() {
                               <TableCell className="py-2">
                                 <div>
                                   <div className="flex items-center gap-1.5">
-                                    <p className="text-xs font-medium" style={{ color: THEME.text }}>{debt.counterpart}</p>
+                                    <p className="text-xs font-medium text-foreground">{debt.counterpart}</p>
                                     {isInstallment && (
                                       <Badge
                                         className="text-[9px] font-bold px-1.5 py-0 h-4 leading-none"
-                                        style={{ background: `${THEME.warning}20`, color: THEME.warning, borderWidth: '1px', borderColor: `${THEME.warning}30` }}
+                                        style={{ background: 'var(--warning)', color: 'var(--warning)', borderWidth: '1px', borderColor: 'var(--warning)' }}
                                       >
                                         {t('biz.installmentBadge')}
                                       </Badge>
                                     )}
                                   </div>
                                   {debt.description && (
-                                    <p className="text-[10px] mt-0.5 max-w-[150px] truncate" style={{ color: THEME.muted, opacity: 0.6 }}>{debt.description}</p>
+                                    <p className="text-[10px] mt-0.5 max-w-[150px] truncate text-muted-foreground opacity-60">{debt.description}</p>
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-xs font-medium py-2" style={{ color: activeTab === 'hutang' ? THEME.destructive : THEME.secondary }}>
+                              <TableCell className="text-xs font-medium py-2 hidden sm:table-cell text-destructive">
                                 {formatAmount(debt.amount)}
                                 {isInstallment && debt.downPayment && debt.downPayment > 0 && (
-                                  <p className="text-[10px] mt-0.5" style={{ color: THEME.muted, opacity: 0.6 }}>
+                                  <p className="text-[10px] mt-0.5 text-muted-foreground opacity-60">
                                     DP: {formatAmount(debt.downPayment)}
                                   </p>
                                 )}
                               </TableCell>
-                              <TableCell className="text-xs py-2" style={{ color: THEME.text }}>
+                              <TableCell className="text-xs py-2 text-foreground">
                                 {debt.remaining > 0 ? (
                                   <div>
                                     {formatAmount(debt.remaining)}
@@ -679,17 +655,17 @@ export default function BusinessDebts() {
                                       <div className="mt-1">
                                         {/* Visual Progress Bar */}
                                         <div className="flex items-center gap-2">
-                                          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                                          <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
                                             <div
                                               className="h-full rounded-full"
                                               style={{
                                                 width: `${paidPercent}%`,
-                                                background: paidPercent >= 75 ? THEME.secondary : paidPercent >= 40 ? THEME.warning : THEME.destructive,
+                                                background: paidPercent >= 75 ? 'var(--secondary)' : paidPercent >= 40 ? 'var(--warning)' : 'var(--destructive)',
                                                 transition: 'width 0.6s ease',
                                               }}
                                             />
                                           </div>
-                                          <span className="text-[10px] w-7 text-right" style={{ color: THEME.muted }}>{paidPercent}%</span>
+                                          <span className="text-[10px] w-7 text-right text-muted-foreground">{paidPercent}%</span>
                                         </div>
                                         {/* Timeline dots */}
                                         <div className="flex items-center gap-1 mt-1">
@@ -701,21 +677,21 @@ export default function BusinessDebts() {
                                                 className="flex-1 h-1 rounded-full"
                                                 style={{
                                                   background: filled
-                                                    ? paidPercent >= 75 ? THEME.secondary : THEME.warning
-                                                    : THEME.border,
+                                                    ? paidPercent >= 75 ? 'var(--secondary)' : 'var(--warning)'
+                                                    : 'var(--border)',
                                                 }}
                                               />
                                             );
                                           })}
                                           {(debt.installmentPeriod || 0) > 8 && (
-                                            <span className="text-[8px]" style={{ color: THEME.muted, opacity: 0.5 }}>...</span>
+                                            <span className="text-[8px] text-muted-foreground opacity-50">...</span>
                                           )}
                                         </div>
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                  <span className="flex items-center gap-1" style={{ color: THEME.secondary }}>
+                                  <span className="flex items-center gap-1" style={{ color: 'var(--secondary)' }}>
                                     <CheckCircle2 className="h-3 w-3" />
                                     {t('biz.debtPaid')}
                                   </span>
@@ -726,7 +702,7 @@ export default function BusinessDebts() {
                                   {isInstallment && debt.installmentPeriod ? (() => {
                                     const instInfo = calculateInstallmentLateInfo(debt);
                                     return (
-                                      <span className="text-[10px] font-medium" style={{ color: THEME.warning }}>
+                                      <span className="text-[10px] font-medium" style={{ color: 'var(--warning)' }}>
                                         Tempo {instInfo.paidTempo}/{debt.installmentPeriod}
                                       </span>
                                     );
@@ -751,15 +727,15 @@ export default function BusinessDebts() {
                                   )}
                                   {isInstallment && debt.nextInstallmentDate && debt.remaining > 0 && (
                                     <div className="flex items-center gap-1 mt-1">
-                                      <CalendarDays className="h-3 w-3" style={{ color: THEME.warning }} />
-                                      <span className="text-[10px]" style={{ color: THEME.warning }}>
+                                      <CalendarDays className="h-3 w-3" style={{ color: 'var(--warning)' }} />
+                                      <span className="text-[10px]" style={{ color: 'var(--warning)' }}>
                                         {new Date(debt.nextInstallmentDate).toLocaleDateString()}
                                       </span>
                                     </div>
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="py-2">
+                              <TableCell className="py-2 hidden lg:table-cell">
                                 <Badge variant="outline" style={statusStyle.style}>
                                   {t(statusStyle.label)}
                                 </Badge>
@@ -773,7 +749,7 @@ export default function BusinessDebts() {
                                           variant="ghost"
                                           size="sm"
                                           className="h-8 w-8 p-0 hover:bg-white/5"
-                                          style={{ color: `${THEME.warning}99` }}
+                                          style={{ color: 'rgba(249, 168, 37, 0.6)' }}
                                           onClick={() => openPaymentDialog(debt, true)}
                                           title={t('biz.payInstallment')}
                                         >
@@ -783,8 +759,7 @@ export default function BusinessDebts() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0 hover:bg-white/5"
-                                        style={{ color: THEME.muted }}
+                                        className="h-8 w-8 p-0 hover:bg-white/5 text-muted-foreground"
                                         onClick={() => openPaymentDialog(debt)}
                                         title={t('biz.payDebt')}
                                       >
@@ -808,8 +783,7 @@ export default function BusinessDebts() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0 hover:bg-white/5"
-                                      style={{ color: THEME.muted }}
+                                      className="h-8 w-8 p-0 hover:bg-white/5 text-muted-foreground"
                                       onClick={() => openEditDialog(debt)}
                                     >
                                       <Pencil className="h-3.5 w-3.5" />
@@ -817,8 +791,7 @@ export default function BusinessDebts() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-8 w-8 p-0 hover:bg-white/5"
-                                      style={{ color: THEME.muted }}
+                                      className="h-8 w-8 p-0 hover:bg-white/5 text-muted-foreground"
                                       onClick={() => setDeleteId(debt.id)}
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
@@ -842,26 +815,25 @@ export default function BusinessDebts() {
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto"
-          style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+          className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-card border border-border text-foreground"
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
-                {editingDebt ? <Pencil className="h-4 w-4" style={{ color: THEME.primary }} /> : <Plus className="h-4 w-4" style={{ color: THEME.primary }} />}
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/15">
+                {editingDebt ? <Pencil className="h-4 w-4" style={{ color: 'var(--primary)' }} /> : <Plus className="h-4 w-4" style={{ color: 'var(--primary)' }} />}
               </div>
               {editingDebt ? t('common.edit') : t('biz.addDebt')}
             </DialogTitle>
-            <DialogDescription style={{ color: THEME.textSecondary }}>
+            <DialogDescription className="text-muted-foreground">
               {t('biz.hutangPiutang')}
             </DialogDescription>
           </DialogHeader>
 
-          <Separator style={{ backgroundColor: THEME.border }} />
+          <Separator className="bg-border" />
 
           <form onSubmit={handleSave} className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.hutangPiutang')}</Label>
+              <Label className="text-xs font-medium text-muted-foreground">{t('biz.hutangPiutang')}</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -871,7 +843,7 @@ export default function BusinessDebts() {
                     'flex-1 transition-colors duration-200',
                     formData.type === 'hutang' ? 'text-white border-0' : ''
                   )}
-                  style={formData.type === 'hutang' ? { background: THEME.destructive } : { color: THEME.muted, borderColor: THEME.borderHover }}
+                  style={formData.type === 'hutang' ? { background: 'var(--destructive)' } : { color: 'var(--muted-foreground)', borderColor: 'var(--border)' }}
                 >
                   <ArrowDownCircle className="h-4 w-4 mr-1" />
                   {t('biz.hutang')}
@@ -884,7 +856,7 @@ export default function BusinessDebts() {
                     'flex-1 transition-colors duration-200',
                     formData.type === 'piutang' ? 'text-black border-0' : ''
                   )}
-                  style={formData.type === 'piutang' ? { background: THEME.secondary } : { color: THEME.muted, borderColor: THEME.borderHover }}
+                  style={formData.type === 'piutang' ? { background: 'var(--secondary)' } : { color: 'var(--muted-foreground)', borderColor: 'var(--border)' }}
                 >
                   <ArrowUpCircle className="h-4 w-4 mr-1" />
                   {t('biz.piutang')}
@@ -893,18 +865,18 @@ export default function BusinessDebts() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtCounterpart')} *</Label>
+              <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtCounterpart')} *</Label>
               <Input
                 value={formData.counterpart}
                 onChange={(e) => setFormData({ ...formData, counterpart: e.target.value })}
                 placeholder={t('biz.debtCounterpart')}
                 className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
-                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtAmount')} *</Label>
+              <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtAmount')} *</Label>
               <Input
                 type="number"
                 value={formData.amount}
@@ -912,7 +884,7 @@ export default function BusinessDebts() {
                 placeholder="0"
                 min="0"
                 className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
-                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
               />
             </div>
 
@@ -920,11 +892,11 @@ export default function BusinessDebts() {
             {!editingDebt && (
               <div
                 className="flex items-center justify-between py-2 px-3 rounded-lg"
-                style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}
               >
                 <div>
-                  <Label className="text-sm" style={{ color: THEME.textSecondary }}>{t('biz.isInstallment')}</Label>
-                  <p className="text-[10px]" style={{ color: THEME.muted }}>DP + cicilan bulanan</p>
+                  <Label className="text-sm text-muted-foreground">{t('biz.isInstallment')}</Label>
+                  <p className="text-[10px] text-muted-foreground">DP + cicilan bulanan</p>
                 </div>
                 <Switch
                   checked={formData.isInstallment}
@@ -936,14 +908,13 @@ export default function BusinessDebts() {
             {/* Installment Fields */}
             {!editingDebt && formData.isInstallment && (
               <div
-                className="space-y-3 p-3 rounded-xl overflow-hidden"
-                style={{ background: `${THEME.warning}08`, border: `1px solid ${THEME.warning}1F` }}
+                className="space-y-3 p-3 rounded-xl overflow-hidden bg-warning/5 border border-warning/15"
               >
-                <p className="text-xs font-medium" style={{ color: THEME.warning }}>{t('biz.installmentInfo')}</p>
+                <p className="text-xs font-medium" style={{ color: 'var(--warning)' }}>{t('biz.installmentInfo')}</p>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs" style={{ color: THEME.muted }}>{t('biz.downPayment')}</Label>
+                    <Label className="text-xs text-muted-foreground">{t('biz.downPayment')}</Label>
                     <Input
                       type="number"
                       value={formData.downPayment}
@@ -951,11 +922,11 @@ export default function BusinessDebts() {
                       placeholder="0"
                       min="0"
                       className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
-                      style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                      style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs" style={{ color: THEME.muted }}>{t('biz.installmentAmount')} *</Label>
+                    <Label className="text-xs text-muted-foreground">{t('biz.installmentAmount')} *</Label>
                     <Input
                       type="number"
                       value={formData.installmentAmount}
@@ -963,13 +934,13 @@ export default function BusinessDebts() {
                       placeholder="0"
                       min="0"
                       className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
-                      style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                      style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs" style={{ color: THEME.muted }}>{t('biz.installmentPeriod')} *</Label>
+                  <Label className="text-xs text-muted-foreground">{t('biz.installmentPeriod')} *</Label>
                   <Input
                     type="number"
                     value={formData.installmentPeriod}
@@ -977,7 +948,7 @@ export default function BusinessDebts() {
                     placeholder="12"
                     min="1"
                     className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 w-1/2 focus:ring-1 transition-colors duration-200"
-                    style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                    style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
                   />
                 </div>
 
@@ -986,49 +957,49 @@ export default function BusinessDebts() {
                   <div className="mt-3 space-y-3 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
                     <div className="space-y-2">
                       <div className="flex justify-between text-[11px]">
-                        <span style={{ color: THEME.muted }}>{t('biz.downPayment')}</span>
-                        <span className="font-medium" style={{ color: THEME.text }}>{formatAmount(parseFloat(formData.downPayment) || 0)}</span>
+                        <span className="text-muted-foreground">{t('biz.downPayment')}</span>
+                        <span className="font-medium text-foreground">{formatAmount(parseFloat(formData.downPayment) || 0)}</span>
                       </div>
                       <div className="flex justify-between text-[11px]">
-                        <span style={{ color: THEME.muted }}>{t('biz.remainingAfterDP')}</span>
-                        <span className="font-medium" style={{ color: THEME.text }}>{formatAmount(installmentPreview.remainingAfterDP)}</span>
+                        <span className="text-muted-foreground">{t('biz.remainingAfterDP')}</span>
+                        <span className="font-medium text-foreground">{formatAmount(installmentPreview.remainingAfterDP)}</span>
                       </div>
                       <div className="flex justify-between text-[11px]">
-                        <span style={{ color: THEME.muted }}>
+                        <span className="text-muted-foreground">
                           {t('biz.installmentSchedule')} ({installmentPreview.numPeriod}x)
                         </span>
-                        <span className="font-medium" style={{ color: THEME.warning }}>{formatAmount(installmentPreview.totalInstallments)}</span>
+                        <span className="font-medium" style={{ color: 'var(--warning)' }}>{formatAmount(installmentPreview.totalInstallments)}</span>
                       </div>
-                      <div className="pt-2 flex justify-between text-[11px]" style={{ borderTop: `1px solid ${THEME.border}` }}>
-                        <span style={{ color: THEME.muted }}>Total</span>
-                        <span className="font-bold" style={{ color: THEME.text }}>{formatAmount(installmentPreview.totalDPPlusInstallments)}</span>
+                      <div className="pt-2 flex justify-between text-[11px] border-t border-border">
+                        <span className="text-muted-foreground">Total</span>
+                        <span className="font-bold text-foreground">{formatAmount(installmentPreview.totalDPPlusInstallments)}</span>
                       </div>
                     </div>
 
                     {/* Visual Timeline */}
                     <div>
-                      <p className="text-[10px] mb-1.5" style={{ color: THEME.muted, opacity: 0.6 }}>Timeline cicilan</p>
+                      <p className="text-[10px] mb-1.5 text-muted-foreground opacity-60">Timeline cicilan</p>
                       <div className="flex items-center gap-0.5">
-                        <div className="w-2 h-2 rounded-full" style={{ background: THEME.warning }} />
-                        <div className="flex-1 h-0.5" style={{ background: `${THEME.warning}4D` }} />
+                        <div className="w-2 h-2 rounded-full bg-warning" />
+                        <div className="flex-1 h-0.5 bg-warning/30" />
                         {Array.from({ length: Math.min(installmentPreview.numPeriod - 1, 10) }).map((_, i) => (
                           <React.Fragment key={i}>
                             <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
                             {i < Math.min(installmentPreview.numPeriod - 2, 9) && (
-                              <div className="flex-1 h-0.5" style={{ background: THEME.border }} />
+                              <div className="flex-1 h-0.5 bg-border" />
                             )}
                           </React.Fragment>
                         ))}
                         <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
                       </div>
-                      <div className="flex justify-between mt-1 text-[8px]" style={{ color: THEME.muted, opacity: 0.5 }}>
+                      <div className="flex justify-between mt-1 text-[8px] text-muted-foreground opacity-50">
                         <span>DP</span>
                         <span>Bulan {installmentPreview.numPeriod}</span>
                       </div>
                     </div>
 
                     {installmentPreview.totalDPPlusInstallments !== parseFloat(formData.amount) && (
-                      <p className="text-[9px]" style={{ color: THEME.muted, opacity: 0.6 }}>
+                      <p className="text-[9px] text-muted-foreground opacity-60">
                         {installmentPreview.totalDPPlusInstallments > parseFloat(formData.amount)
                           ? `⚠️ ${formatAmount(installmentPreview.totalDPPlusInstallments - parseFloat(formData.amount))} lebih dari jumlah`
                           : `ℹ️ ${formatAmount(parseFloat(formData.amount) - installmentPreview.totalDPPlusInstallments)} kurang dari jumlah`}
@@ -1040,24 +1011,24 @@ export default function BusinessDebts() {
             )}
 
             <div className="space-y-2">
-              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtDueDate')}</Label>
+              <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtDueDate')}</Label>
               <Input
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 className="bg-white/[0.05] focus:ring-1 transition-colors duration-200"
-                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtDescription')}</Label>
+              <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtDescription')}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder={t('biz.debtDescription')}
                 className="bg-white/[0.05] placeholder:text-white/30 min-h-[60px] focus:ring-1 resize-none transition-colors duration-200"
-                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
               />
             </div>
 
@@ -1067,7 +1038,7 @@ export default function BusinessDebts() {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
                 className="hover:bg-white/5"
-                style={{ borderColor: THEME.borderHover, color: THEME.text }}
+                style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
               >
                 {t('common.cancel')}
               </Button>
@@ -1075,7 +1046,7 @@ export default function BusinessDebts() {
                 type="submit"
                 disabled={saving || !formData.counterpart || !formData.amount}
                 className="text-black transition-colors duration-200"
-                style={{ background: THEME.primary }}
+                style={{ background: 'var(--primary)' }}
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('common.save')}
@@ -1088,36 +1059,35 @@ export default function BusinessDebts() {
       {/* Partial Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent
-          className="sm:max-w-[420px]"
-          style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+          className="sm:max-w-[420px] bg-card border border-border text-foreground"
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${THEME.secondary}15` }}>
-                <CreditCard className="h-4 w-4" style={{ color: THEME.secondary }} />
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/15">
+                <CreditCard className="h-4 w-4" style={{ color: 'var(--secondary)' }} />
               </div>
               {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
             </DialogTitle>
-            <DialogDescription style={{ color: THEME.textSecondary }}>
+            <DialogDescription className="text-muted-foreground">
               {paymentDebt?.counterpart}
             </DialogDescription>
           </DialogHeader>
 
           {/* Visual Balance Preview */}
           {paymentDebt && (
-            <div className="p-3 rounded-xl space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}>
+            <div className="p-3 rounded-xl space-y-3 bg-white/[0.02] border border-border">
               {/* Balance Bar */}
               <div>
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span style={{ color: THEME.muted }}>Total</span>
-                  <span className="font-medium" style={{ color: THEME.text }}>{formatAmount(paymentDebt.amount)}</span>
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="font-medium text-foreground">{formatAmount(paymentDebt.amount)}</span>
                 </div>
-                <div className="h-3 rounded-full overflow-hidden relative" style={{ background: THEME.border }}>
+                <div className="h-3 rounded-full overflow-hidden relative bg-border">
                   <div
                     className="h-full rounded-full"
                     style={{
                       width: `${paymentDebt.amount > 0 ? ((paymentDebt.amount - paymentDebt.remaining) / paymentDebt.amount) * 100 : 0}%`,
-                      background: THEME.secondary,
+                      background: 'var(--secondary)',
                       transition: 'width 0.6s ease',
                     }}
                   />
@@ -1125,7 +1095,7 @@ export default function BusinessDebts() {
                     <div
                       className="absolute top-0 h-full rounded-full"
                       style={{
-                        background: `${THEME.primary}66`,
+                        background: 'rgba(187, 134, 252, 0.4)',
                         left: `${paymentDebt.amount > 0 ? ((paymentDebt.amount - paymentDebt.remaining) / paymentDebt.amount) * 100 : 0}%`,
                         width: `${(parseFloat(payAmount) / paymentDebt.amount) * 100}%`,
                         transition: 'opacity 0.3s ease',
@@ -1134,18 +1104,18 @@ export default function BusinessDebts() {
                   )}
                 </div>
                 <div className="flex justify-between mt-1.5 text-[10px]">
-                  <span style={{ color: THEME.secondary }}>Dibayar: {formatAmount(paymentDebt.amount - paymentDebt.remaining)}</span>
-                  <span style={{ color: THEME.muted }}>Sisa: {formatAmount(paymentDebt.remaining)}</span>
+                  <span style={{ color: 'var(--secondary)' }}>Dibayar: {formatAmount(paymentDebt.amount - paymentDebt.remaining)}</span>
+                  <span className="text-muted-foreground">Sisa: {formatAmount(paymentDebt.remaining)}</span>
                 </div>
               </div>
 
-              <Separator style={{ backgroundColor: THEME.border }} />
+              <Separator className="bg-border" />
 
               {/* New Balance Preview */}
               {payAmount && parseFloat(payAmount) > 0 && parseFloat(payAmount) <= paymentDebt.remaining && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs" style={{ color: THEME.muted }}>Sisa setelah bayar</span>
-                  <span className="text-sm font-bold" style={{ color: THEME.secondary }}>
+                  <span className="text-xs text-muted-foreground">Sisa setelah bayar</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--secondary)' }}>
                     {formatAmount(paymentDebt.remaining - parseFloat(payAmount))}
                   </span>
                 </div>
@@ -1155,21 +1125,21 @@ export default function BusinessDebts() {
 
           {/* Installment Info */}
           {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
-            <div className="p-3 rounded-lg" style={{ background: `${THEME.warning}08`, border: `1px solid ${THEME.warning}1F` }}>
+            <div className="p-3 rounded-lg bg-warning/5 border border-warning/15">
               <div className="flex justify-between text-xs">
-                <span style={{ color: THEME.muted }}>{t('biz.installmentAmount')}</span>
-                <span className="font-medium" style={{ color: THEME.warning }}>{formatAmount(paymentDebt.installmentAmount)}</span>
+                <span className="text-muted-foreground">{t('biz.installmentAmount')}</span>
+                <span className="font-medium" style={{ color: 'var(--warning)' }}>{formatAmount(paymentDebt.installmentAmount)}</span>
               </div>
               {paymentDebt.nextInstallmentDate && paymentDebt.remaining > 0 && (
                 <div className="flex justify-between text-xs mt-1">
-                  <span style={{ color: THEME.muted }}>{t('biz.nextDueDate')}</span>
-                  <span style={{ color: THEME.textSecondary }}>{new Date(paymentDebt.nextInstallmentDate).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground">{t('biz.nextDueDate')}</span>
+                  <span className="text-muted-foreground">{new Date(paymentDebt.nextInstallmentDate).toLocaleDateString()}</span>
                 </div>
               )}
               {paymentDebt.installmentPeriod && (
                 <div className="flex justify-between text-xs mt-1">
-                  <span style={{ color: THEME.muted }}>{t('biz.installmentPeriod')}</span>
-                  <span style={{ color: THEME.textSecondary }}>{paymentDebt.installmentPeriod} bulan</span>
+                  <span className="text-muted-foreground">{t('biz.installmentPeriod')}</span>
+                  <span className="text-muted-foreground">{paymentDebt.installmentPeriod} bulan</span>
                 </div>
               )}
             </div>
@@ -1177,7 +1147,7 @@ export default function BusinessDebts() {
 
           <form onSubmit={handlePay} className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-xs font-medium" style={{ color: THEME.textSecondary }}>{t('biz.debtAmount')} *</Label>
+              <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtAmount')} *</Label>
               <Input
                 type="number"
                 value={payAmount}
@@ -1186,10 +1156,10 @@ export default function BusinessDebts() {
                 min="0"
                 max={paymentDebt?.remaining || 0}
                 className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
-                style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.text }}
+                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
               />
               <div className="flex items-center justify-between">
-                <p className="text-[10px]" style={{ color: THEME.muted, opacity: 0.6 }}>
+                <p className="text-[10px] text-muted-foreground opacity-60">
                   Maks: {formatAmount(paymentDebt?.remaining || 0)}
                 </p>
                 {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
@@ -1197,7 +1167,7 @@ export default function BusinessDebts() {
                     type="button"
                     onClick={() => setPayAmount(paymentDebt.installmentAmount!.toString())}
                     className="text-[10px] transition-colors"
-                    style={{ color: THEME.warning }}
+                    style={{ color: 'var(--warning)' }}
                   >
                     Gunakan jumlah cicilan
                   </button>
@@ -1211,7 +1181,7 @@ export default function BusinessDebts() {
                 variant="outline"
                 onClick={() => setPaymentDialogOpen(false)}
                 className="hover:bg-white/5"
-                style={{ borderColor: THEME.borderHover, color: THEME.text }}
+                style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
               >
                 {t('common.cancel')}
               </Button>
@@ -1219,7 +1189,7 @@ export default function BusinessDebts() {
                 type="submit"
                 disabled={paying || !payAmount || parseFloat(payAmount) <= 0 || parseFloat(payAmount) > (paymentDebt?.remaining || 0)}
                 className="text-black transition-colors duration-200"
-                style={{ background: THEME.secondary }}
+                style={{ background: 'var(--secondary)' }}
               >
                 {paying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
@@ -1231,15 +1201,15 @@ export default function BusinessDebts() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}>
+        <AlertDialogContent className="bg-card border border-border text-foreground">
           <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: THEME.text }}>{t('common.delete')}</AlertDialogTitle>
-            <AlertDialogDescription style={{ color: THEME.textSecondary }}>
+            <AlertDialogTitle className="text-foreground">{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
               {t('kas.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="hover:bg-white/5" style={{ borderColor: THEME.borderHover, color: THEME.text }}>
+            <AlertDialogCancel className="hover:bg-white/5 border-border text-foreground">
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction

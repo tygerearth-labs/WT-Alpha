@@ -53,6 +53,7 @@ export async function GET(
       recentCashEntries,
       topProductsRaw,
       piutangAll,
+      allCashForAllocation,
     ] = await Promise.all([
       // Total revenue from sales
       db.businessSale.aggregate({
@@ -188,6 +189,16 @@ export async function GET(
           remaining: true,
         },
       }),
+
+      // All cash entries for allocation breakdown
+      db.businessCash.findMany({
+        where: { businessId },
+        select: {
+          type: true,
+          amount: true,
+          source: true,
+        },
+      }),
     ]);
 
     const totalRevenue = salesResult._sum.amount || 0;
@@ -283,7 +294,39 @@ export async function GET(
         cicilanBerjalan: piutangBerjalan,
         cicilanMenunggak: piutangMenunggak,
         cicilanSelesai: piutangSelesai,
+        berjalan: piutangBerjalan,
+        menunggak: piutangMenunggak,
+        selesai: piutangSelesai,
       },
+      allocationBreakdown: (() => {
+        const allocKasBesarTotal = allCashForAllocation.filter((c) => c.type === 'kas_besar').reduce((s, c) => s + c.amount, 0);
+        const allocKasKecilTotal = allCashForAllocation.filter((c) => c.type === 'kas_kecil').reduce((s, c) => s + c.amount, 0);
+        const allocInvestorTotal = allCashForAllocation.filter((c) => c.type === 'investor').reduce((s, c) => s + c.amount, 0);
+        const allocExpenseKasBesar = allCashForAllocation.filter((c) => c.type === 'kas_keluar' && c.source === 'kas_besar').reduce((s, c) => s + c.amount, 0);
+        const allocExpenseKasKecil = allCashForAllocation.filter((c) => c.type === 'kas_keluar' && c.source === 'kas_kecil').reduce((s, c) => s + c.amount, 0);
+        const allocExpenseInvestor = allCashForAllocation.filter((c) => c.type === 'kas_keluar' && c.source === 'investor').reduce((s, c) => s + c.amount, 0);
+        const allocTotalExpenses = allCashForAllocation.filter((c) => c.type === 'kas_keluar').reduce((s, c) => s + c.amount, 0);
+        const kasBesarSaldo = allocKasBesarTotal - allocExpenseKasBesar;
+        const kasKecilSaldo = allocKasKecilTotal - allocExpenseKasKecil;
+        const investorSaldo = allocInvestorTotal - allocExpenseInvestor;
+        const unallocatedExpenses = allocTotalExpenses - allocExpenseKasBesar - allocExpenseKasKecil - allocExpenseInvestor;
+        return {
+          kasBesarTotal: allocKasBesarTotal,
+          kasKecilTotal: allocKasKecilTotal,
+          investorTotal: allocInvestorTotal,
+          expenseFromKasBesar: allocExpenseKasBesar,
+          expenseFromKasKecil: allocExpenseKasKecil,
+          expenseFromInvestor: allocExpenseInvestor,
+          kasBesarSaldo,
+          kasKecilSaldo,
+          netCash: kasBesarSaldo + kasKecilSaldo + investorSaldo - unallocatedExpenses,
+          breakdown: [
+            { source: 'kas_besar', total: allocKasBesarTotal, expenses: allocExpenseKasBesar, saldo: kasBesarSaldo },
+            { source: 'kas_kecil', total: allocKasKecilTotal, expenses: allocExpenseKasKecil, saldo: kasKecilSaldo },
+            { source: 'investor', total: allocInvestorTotal, expenses: allocExpenseInvestor, saldo: investorSaldo },
+          ],
+        };
+      })(),
     });
   } catch (error) {
     console.error('Dashboard GET error:', error);

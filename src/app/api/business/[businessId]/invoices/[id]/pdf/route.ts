@@ -86,9 +86,11 @@ export async function GET(
     const primary = hexToRgb(settings.primaryColor);
     const secondary = hexToRgb(settings.secondaryColor);
 
-    // Dynamically import jspdf (server-side)
+    // Dynamically import jspdf + autotable (server-side)
+    // jspdf-autotable v5: use standalone autoTable(doc, options) function
     const { jsPDF } = await import('jspdf');
-    await import('jspdf-autotable');
+    const autoTableModule = await import('jspdf-autotable');
+    const autoTable = (autoTableModule as unknown as { default: (doc: unknown, options: Record<string, unknown>) => void }).default;
 
     const doc = new jsPDF();
 
@@ -114,6 +116,19 @@ export async function GET(
         currency: 'IDR',
         minimumFractionDigits: 0,
       }).format(val);
+    };
+
+    // Compute tax and discount amounts from percentages
+    const taxAmount = invoice.subtotal * (invoice.tax || 0) / 100;
+    const discountAmount = invoice.subtotal * (invoice.discount || 0) / 100;
+
+    // Helper to get finalY after autoTable
+    const getLastAutoTableY = (fallback: number) => {
+      try {
+        return ((doc as unknown as Record<string, Record<string, number>>).lastAutoTable?.finalY) || fallback;
+      } catch {
+        return fallback;
+      }
     };
 
     // ──────────────────────────────────────
@@ -260,7 +275,7 @@ export async function GET(
       doc.line(14, tableStartY - 2, 196, tableStartY - 2);
 
       // Items table
-      (doc as unknown as Record<string, (...args: unknown[]) => void>).autoTable({
+      autoTable(doc, {
         startY: tableStartY,
         head: [['No', 'Deskripsi', 'Qty', 'Harga', 'Total']],
         body: items.map((item, index) => [
@@ -293,9 +308,7 @@ export async function GET(
         },
       });
 
-      const finalY =
-        ((doc as unknown as Record<string, Record<string, number>>)
-          .lastAutoTable?.finalY) || tableStartY + 60;
+      const finalY = getLastAutoTableY(tableStartY + 60);
 
       // Totals section
       const totalsX = 130;
@@ -310,16 +323,16 @@ export async function GET(
       totalsY += 6;
 
       if (invoice.tax > 0) {
-        doc.text('Pajak:', totalsX, totalsY);
-        doc.text(formatCurrency(invoice.tax), totalsX + 50, totalsY, {
+        doc.text(`Pajak (${invoice.tax}%):`, totalsX, totalsY);
+        doc.text(formatCurrency(taxAmount), totalsX + 50, totalsY, {
           align: 'right',
         });
         totalsY += 6;
       }
 
       if (invoice.discount > 0) {
-        doc.text('Diskon:', totalsX, totalsY);
-        doc.text(`-${formatCurrency(invoice.discount)}`, totalsX + 50, totalsY, {
+        doc.text(`Diskon (${invoice.discount}%):`, totalsX, totalsY);
+        doc.text(`-${formatCurrency(discountAmount)}`, totalsX + 50, totalsY, {
           align: 'right',
         });
         totalsY += 6;
@@ -576,7 +589,7 @@ export async function GET(
       // Items table - no header background, just underlined headers
       const tableStartY = customerY + 25;
 
-      (doc as unknown as Record<string, (...args: unknown[]) => void>).autoTable({
+      autoTable(doc, {
         startY: tableStartY,
         head: [['No', 'Deskripsi', 'Qty', 'Harga', 'Total']],
         body: items.map((item, index) => [
@@ -611,9 +624,7 @@ export async function GET(
         },
       });
 
-      const finalY =
-        ((doc as unknown as Record<string, Record<string, number>>)
-          .lastAutoTable?.finalY) || tableStartY + 60;
+      const finalY = getLastAutoTableY(tableStartY + 60);
 
       // Totals section - clean, right-aligned
       const totalsX = 135;
@@ -628,17 +639,17 @@ export async function GET(
       totalsY += 5;
 
       if (invoice.tax > 0) {
-        doc.text('Pajak', totalsX, totalsY);
-        doc.text(formatCurrency(invoice.tax), totalsX + 45, totalsY, {
+        doc.text(`Pajak (${invoice.tax}%)`, totalsX, totalsY);
+        doc.text(formatCurrency(taxAmount), totalsX + 45, totalsY, {
           align: 'right',
         });
         totalsY += 5;
       }
 
       if (invoice.discount > 0) {
-        doc.text('Diskon', totalsX, totalsY);
+        doc.text(`Diskon (${invoice.discount}%)`, totalsX, totalsY);
         doc.text(
-          `-${formatCurrency(invoice.discount)}`,
+          `-${formatCurrency(discountAmount)}`,
           totalsX + 45,
           totalsY,
           { align: 'right' }
@@ -822,9 +833,7 @@ export async function GET(
         doc.text(displayEmail, 14 + logoOffset, infoY + (displayPhone ? 5 : 0));
       }
       if (displayWebsite) {
-        const webOffset = displayAddress
-          ? infoY + (displayPhone ? 5 : 0) + (displayEmail ? 5 : 0)
-          : infoY + (displayPhone ? 5 : 0) + (displayEmail ? 5 : 0);
+        const webOffset = infoY + (displayPhone ? 5 : 0) + (displayEmail ? 5 : 0);
         doc.text(displayWebsite, 14 + logoOffset, webOffset);
       }
 
@@ -915,7 +924,7 @@ export async function GET(
       // Items table
       const tableStartY = customerY + 30;
 
-      (doc as unknown as Record<string, (...args: unknown[]) => void>).autoTable({
+      autoTable(doc, {
         startY: tableStartY,
         head: [['No', 'Deskripsi', 'Qty', 'Harga', 'Total']],
         body: items.map((item, index) => [
@@ -946,9 +955,7 @@ export async function GET(
         },
       });
 
-      const finalY =
-        ((doc as unknown as Record<string, Record<string, number>>)
-          .lastAutoTable?.finalY) || tableStartY + 60;
+      const finalY = getLastAutoTableY(tableStartY + 60);
 
       // Totals section
       const totalsX = 130;
@@ -963,17 +970,17 @@ export async function GET(
 
       totalsY += 6;
       if (invoice.tax > 0) {
-        doc.text('Pajak:', totalsX, totalsY);
-        doc.text(formatCurrency(invoice.tax), totalsX + 50, totalsY, {
+        doc.text(`Pajak (${invoice.tax}%):`, totalsX, totalsY);
+        doc.text(formatCurrency(taxAmount), totalsX + 50, totalsY, {
           align: 'right',
         });
         totalsY += 6;
       }
 
       if (invoice.discount > 0) {
-        doc.text('Diskon:', totalsX, totalsY);
+        doc.text(`Diskon (${invoice.discount}%):`, totalsX, totalsY);
         doc.text(
-          `-${formatCurrency(invoice.discount)}`,
+          `-${formatCurrency(discountAmount)}`,
           totalsX + 50,
           totalsY,
           { align: 'right' }

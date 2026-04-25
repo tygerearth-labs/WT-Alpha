@@ -30,9 +30,12 @@ export async function GET(
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type');
+    const source = searchParams.get('source');
     const category = searchParams.get('category');
+    const period = searchParams.get('period'); // "day" | "week" | "month" | "year"
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const summaryOnly = searchParams.get('summary') === 'true';
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50'), 100);
 
@@ -46,11 +49,105 @@ export async function GET(
     const whereClause: Record<string, unknown> = { businessId };
     if (type) whereClause.type = type;
     if (category) whereClause.category = category;
-    if (startDate || endDate) {
+    // Period-based date filtering (takes precedence over startDate/endDate)
+    if (period) {
+      const now = new Date();
+      let from: Date;
+      let to: Date;
+      switch (period) {
+        case 'day': {
+          const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          from = start;
+          to = new Date(start.getTime() + 86400000 - 1);
+          break;
+        }
+        case 'week': {
+          const day = now.getDay() || 7;
+          from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+          to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - day));
+          to.setHours(23, 59, 59, 999);
+          break;
+        }
+        case 'month': {
+          from = new Date(now.getFullYear(), now.getMonth(), 1);
+          to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+          break;
+        }
+        case 'year': {
+          from = new Date(now.getFullYear(), 0, 1);
+          to = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+          break;
+        }
+        default:
+          break;
+      }
+      if (from && to) {
+        whereClause.date = { gte: from, lte: to };
+      }
+    } else if (startDate || endDate) {
       const dateFilter: Record<string, Date> = {};
       if (startDate) dateFilter.gte = new Date(startDate);
       if (endDate) dateFilter.lte = new Date(endDate);
       whereClause.date = dateFilter;
+    }
+    if (source) whereClause.source = source;
+
+    // If summary=true, return allocation breakdown instead of paginated entries
+    if (summaryOnly) {
+      const allCashEntries = await db.businessCash.findMany({
+        where: { businessId },
+        select: {
+          type: true,
+          amount: true,
+          source: true,
+        },
+      });
+
+      const kasBesarTotal = allCashEntries
+        .filter((c) => c.type === 'kas_besar')
+        .reduce((sum, c) => sum + c.amount, 0);
+      const kasKecilTotal = allCashEntries
+        .filter((c) => c.type === 'kas_kecil')
+        .reduce((sum, c) => sum + c.amount, 0);
+      const investorTotal = allCashEntries
+        .filter((c) => c.type === 'investor')
+        .reduce((sum, c) => sum + c.amount, 0);
+
+      // Expenses by source: kas_keluar entries with source field
+      const expenseFromKasBesar = allCashEntries
+        .filter((c) => c.type === 'kas_keluar' && c.source === 'kas_besar')
+        .reduce((sum, c) => sum + c.amount, 0);
+      const expenseFromKasKecil = allCashEntries
+        .filter((c) => c.type === 'kas_keluar' && c.source === 'kas_kecil')
+        .reduce((sum, c) => sum + c.amount, 0);
+      const expenseFromInvestor = allCashEntries
+        .filter((c) => c.type === 'kas_keluar' && c.source === 'investor')
+        .reduce((sum, c) => sum + c.amount, 0);
+      const totalExpenses = allCashEntries
+        .filter((c) => c.type === 'kas_keluar')
+        .reduce((sum, c) => sum + c.amount, 0);
+
+      const kasBesarSaldo = kasBesarTotal - expenseFromKasBesar;
+      const kasKecilSaldo = kasKecilTotal - expenseFromKasKecil;
+      const investorSaldo = investorTotal - expenseFromInvestor;
+      const netCash = kasBesarSaldo + kasKecilSaldo + investorSaldo - (totalExpenses - expenseFromKasBesar - expenseFromKasKecil - expenseFromInvestor);
+
+      return NextResponse.json({
+        kasBesarTotal,
+        kasKecilTotal,
+        investorTotal,
+        expenseFromKasBesar,
+        expenseFromKasKecil,
+        expenseFromInvestor,
+        kasBesarSaldo,
+        kasKecilSaldo,
+        netCash,
+        allocationBreakdown: [
+          { source: 'kas_besar', total: kasBesarTotal, expenses: expenseFromKasBesar, saldo: kasBesarSaldo },
+          { source: 'kas_kecil', total: kasKecilTotal, expenses: expenseFromKasKecil, saldo: kasKecilSaldo },
+          { source: 'investor', total: investorTotal, expenses: expenseFromInvestor, saldo: investorSaldo },
+        ],
+      });
     }
 
     const [cashEntries, totalResult] = await Promise.all([
@@ -100,7 +197,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { type, amount, description, category, date, referenceId, notes } = body;
+    const { type, amount, description, category, date, referenceId, notes, source, investorId } = body;
 
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
 
@@ -135,6 +232,8 @@ export async function POST(
         date: date ? new Date(date) : new Date(),
         referenceId,
         notes,
+        source: source || null,
+        investorId: investorId || null,
       },
     });
 

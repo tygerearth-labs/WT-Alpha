@@ -38,27 +38,17 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 // ─── THEME ─────────────────────────────────────────────────────
-const THEME = {
-  bg: '#000000',
-  surface: '#121212',
-  primary: '#BB86FC',
-  secondary: '#03DAC6',
-  destructive: '#CF6679',
-  warning: '#F9A825',
-  muted: '#9E9E9E',
-  border: 'rgba(255,255,255,0.08)',
-  borderHover: 'rgba(255,255,255,0.15)',
-  text: '#FFFFFF',
-  textSecondary: '#B3B3B3',
-};
-
-const cardStyle: React.CSSProperties = { background: THEME.surface, border: `1px solid ${THEME.border}` };
-const inputStyle: React.CSSProperties = { background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text };
+const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
+const inputStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' };
+const textMuted: React.CSSProperties = { color: 'var(--muted-foreground)' };
+const textPrimary: React.CSSProperties = { color: 'var(--primary)' };
+const textSecondary: React.CSSProperties = { color: 'var(--secondary)' };
+const textDestructive: React.CSSProperties = { color: 'var(--destructive)' };
 
 interface Customer {
   id: string;
@@ -82,10 +72,10 @@ interface CustomerSale {
 }
 
 function getCustomerBadge(count: number): { label: string; style: React.CSSProperties } {
-  if (count === 0) return { label: 'Baru', style: { backgroundColor: `${THEME.secondary}15`, color: THEME.secondary, border: `1px solid ${THEME.secondary}25` } };
-  if (count <= 3) return { label: 'Aktif', style: { backgroundColor: `${THEME.primary}15`, color: THEME.primary, border: `1px solid ${THEME.primary}25` } };
-  if (count <= 8) return { label: 'Setia', style: { backgroundColor: `${THEME.warning}15`, color: THEME.warning, border: `1px solid ${THEME.warning}25` } };
-  return { label: 'VIP', style: { backgroundColor: `${THEME.destructive}15`, color: THEME.destructive, border: `1px solid ${THEME.destructive}25` } };
+  if (count === 0) return { label: 'Baru', style: { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 15%, transparent)' } };
+  if (count <= 3) return { label: 'Aktif', style: { backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)', color: 'var(--primary)', border: '1px solid color-mix(in srgb, var(--primary) 15%, transparent)' } };
+  if (count <= 8) return { label: 'Setia', style: { backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)', color: 'var(--warning)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' } };
+  return { label: 'VIP', style: { backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: '1px solid color-mix(in srgb, var(--destructive) 15%, transparent)' } };
 }
 
 export default function BusinessCustomers() {
@@ -93,7 +83,7 @@ export default function BusinessCustomers() {
   const { activeBusiness } = useBusinessStore();
   const { formatAmount } = useCurrencyFormat();
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerSpending, setCustomerSpending] = useState<Record<string, { total: number; method: string | null }>>({});
+  const [customerSpending, setCustomerSpending] = useState<Record<string, { total: number; method: string | null; txCount: number; lastDate: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -132,21 +122,23 @@ export default function BusinessCustomers() {
         return res.json() as Promise<{ sales: CustomerSale[] }>;
       })
       .then((data) => {
-        const spendingMap: Record<string, { total: number; methods: Record<string, number> }> = {};
+        const spendingMap: Record<string, { total: number; methods: Record<string, number>; txCount: number; lastDate: string }> = {};
         const salesWithCustomer = data?.sales || [];
         for (const sale of salesWithCustomer) {
           const custId = sale.customer?.id;
           if (custId) {
-            if (!spendingMap[custId]) spendingMap[custId] = { total: 0, methods: {} };
+            if (!spendingMap[custId]) spendingMap[custId] = { total: 0, methods: {}, txCount: 0, lastDate: sale.date };
             spendingMap[custId].total += sale.amount || 0;
+            spendingMap[custId].txCount += 1;
+            if (sale.date > spendingMap[custId].lastDate) spendingMap[custId].lastDate = sale.date;
             const method = sale.paymentMethod || 'Lainnya';
             spendingMap[custId].methods[method] = (spendingMap[custId].methods[method] || 0) + 1;
           }
         }
-        const result: Record<string, { total: number; method: string | null }> = {};
+        const result: Record<string, { total: number; method: string | null; txCount: number; lastDate: string | null }> = {};
         Object.entries(spendingMap).forEach(([id, data]) => {
           const topMethod = Object.entries(data.methods).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-          result[id] = { total: data.total, method: topMethod };
+          result[id] = { total: data.total, method: topMethod, txCount: data.txCount, lastDate: data.lastDate || null };
         });
         setCustomerSpending(result);
       })
@@ -261,7 +253,7 @@ export default function BusinessCustomers() {
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-center" style={{ color: THEME.textSecondary }}>{t('biz.registerFirst')}</p>
+        <p className="text-center text-muted-foreground" >{t('biz.registerFirst')}</p>
       </div>
     );
   }
@@ -269,9 +261,9 @@ export default function BusinessCustomers() {
   return (
     <div className="space-y-3">
       {/* Info Banner */}
-      <div className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}15` }}>
-        <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
-        <p className="text-xs leading-relaxed" style={{ color: THEME.textSecondary }}>
+      <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+        <p className="text-[11px] leading-relaxed text-muted-foreground" >
           Kelola data pelanggan Anda. Data pelanggan terintegrasi dengan penjualan dan invoice.
         </p>
       </div>
@@ -279,19 +271,19 @@ export default function BusinessCustomers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold flex items-center gap-2" style={{ color: THEME.text }}>
-            <Users className="h-5 w-5" style={{ color: THEME.primary }} />
+          <h2 className="text-base font-bold flex items-center gap-2 text-foreground" >
+            <Users className="h-5 w-5 text-primary" />
             {t('biz.customers')}
           </h2>
-          <p className="text-xs mt-0.5" style={{ color: THEME.muted }}>
-            {t('biz.totalCustomers')}: <span className="font-semibold" style={{ color: THEME.primary }}>{customers.length}</span>
+          <p className="text-xs mt-0.5 text-muted-foreground" >
+            {t('biz.totalCustomers')}: <span className="font-semibold text-primary" >{customers.length}</span>
           </p>
         </div>
         <Button
           onClick={openCreateDialog}
           size="sm"
           className="rounded-lg h-8 text-xs"
-          style={{ backgroundColor: THEME.primary, color: '#000' }}
+          style={{ backgroundColor: 'var(--primary)', color: '#000' }}
         >
           <Plus className="h-3.5 w-3.5 mr-1" />
           {t('biz.addCustomer')}
@@ -299,24 +291,24 @@ export default function BusinessCustomers() {
       </div>
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
         {[
-          { label: 'Total Pelanggan', value: customers.length, icon: Users, color: THEME.primary },
-          { label: 'Aktif (Transaksi)', value: activeCustomers, icon: ShoppingCart, color: THEME.secondary },
-          { label: 'Baru (7 hari)', value: newCustomers, icon: UserPlus, color: THEME.warning },
-          { label: 'VIP (>10x)', value: vipCustomers, icon: Star, color: THEME.destructive },
+          { label: 'Total Pelanggan', value: customers.length, icon: Users, color: 'var(--primary)' },
+          { label: 'Aktif (Transaksi)', value: activeCustomers, icon: ShoppingCart, color: 'var(--secondary)' },
+          { label: 'Baru (7 hari)', value: newCustomers, icon: UserPlus, color: 'var(--warning)' },
+          { label: 'VIP (>10x)', value: vipCustomers, icon: Star, color: 'var(--destructive)' },
         ].map((item) => {
           const Icon = item.icon;
           return (
-            <Card key={item.label} className="rounded-xl" style={cardStyle}>
+            <Card key={item.label} className="rounded-xl bg-card border border-border">
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
                     <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
                   </div>
-                  <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{item.label}</span>
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground" >{item.label}</span>
                 </div>
-                <p className="text-lg font-bold tabular-nums" style={{ color: THEME.text }}>{item.value}</p>
+                <p className="text-lg font-bold tabular-nums text-foreground" >{item.value}</p>
               </CardContent>
             </Card>
           );
@@ -324,228 +316,284 @@ export default function BusinessCustomers() {
       </div>
 
       {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: THEME.muted }} />
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('common.search') + '...'}
-          className="pl-9 pr-10 text-sm rounded-lg"
-          style={inputStyle}
+          className="pl-9 pr-10 text-sm rounded-lg bg-card border border-border text-foreground"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs"
-            style={{ color: THEME.muted }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"
           >
             ×
           </button>
         )}
       </div>
 
-      {/* Table */}
-      <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+      {/* Mobile Card Grid / Desktop Table */}
+      <Card className="rounded-xl overflow-hidden bg-card border border-border">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-lg" style={{ background: THEME.border }} />
+                <Skeleton key={i} className="h-12 rounded-lg bg-border" />
               ))}
             </div>
           ) : filteredCustomers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
-                <Users className="h-7 w-7" style={{ color: `${THEME.primary}50` }} />
+              <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3 bg-card border border-border">
+                <Users className="h-7 w-7" style={{ color: 'color-mix(in srgb, var(--primary) 31%, transparent)' }} />
               </div>
-              <p className="text-sm font-medium" style={{ color: THEME.textSecondary }}>Belum ada pelanggan</p>
-              <p className="text-xs mt-1" style={{ color: THEME.muted }}>Tambahkan pelanggan pertama Anda</p>
+              <p className="text-sm font-medium text-muted-foreground" >Belum ada pelanggan</p>
+              <p className="text-xs mt-1 text-muted-foreground" >Tambahkan pelanggan pertama Anda</p>
             </div>
           ) : (
-            <div className="max-h-[500px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent" style={{ borderBottom: `1px solid ${THEME.border}` }}>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.customerName')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: THEME.muted }}>Total Belanja</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden md:table-cell" style={{ color: THEME.muted }}>Metode Utama</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden lg:table-cell">{t('biz.customerPhone')}</TableHead>
-                    <TableHead className="w-20" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCustomers.map((customer, index) => {
+            <>
+              {/* Mobile Card Grid */}
+              <div className="sm:hidden max-h-[500px] overflow-y-auto">
+                <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                  {filteredCustomers.map((customer) => {
                     const totalCount = (customer._count?.invoices || 0) + (customer._count?.sales || 0);
                     const badge = getCustomerBadge(totalCount);
                     const spending = customerSpending[customer.id];
-                    const isAlt = index % 2 === 1;
-
                     return (
-                      <TableRow
-                        key={customer.id}
-                        className="transition-colors duration-150 cursor-default"
-                        style={{
-                          background: isAlt ? 'rgba(255,255,255,0.015)' : 'transparent',
-                          borderBottom: `1px solid ${THEME.border}`,
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = isAlt ? 'rgba(255,255,255,0.015)' : 'transparent'; }}
-                      >
-                        <TableCell className="py-2.5">
-                          <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0" style={{ backgroundColor: `${THEME.primary}15`, color: THEME.primary }}>
-                              {customer.name.charAt(0).toUpperCase()}
+                      <div key={customer.id} className="p-3 border-b border-border">
+                        <div className="flex items-start gap-2.5">
+                          <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/12 text-primary">
+                            {customer.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-semibold truncate text-foreground" >{customer.name}</p>
+                              <Badge variant="outline" className="text-[8px] font-semibold px-1 py-0 h-3.5 rounded-full" style={badge.style}>
+                                {badge.label}
+                              </Badge>
                             </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-xs font-medium truncate" style={{ color: THEME.text }}>{customer.name}</p>
-                                <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 h-4 rounded-full" style={badge.style}>
-                                  {badge.label}
-                                </Badge>
-                              </div>
-                              {customer._count && (
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="inline-flex items-center gap-0.5 text-[10px]" style={{ color: THEME.muted }}>
-                                    <FileText className="h-2.5 w-2.5" />
-                                    {customer._count.invoices}
-                                  </span>
-                                  <Separator orientation="vertical" className="h-2.5" style={{ background: THEME.border }} />
-                                  <span className="inline-flex items-center gap-0.5 text-[10px]" style={{ color: THEME.muted }}>
-                                    <ShoppingCart className="h-2.5 w-2.5" />
-                                    {customer._count.sales}
-                                  </span>
-                                </div>
+                            {/* Spending & method */}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              {spending?.total ? (
+                                <span className="text-[11px] font-bold tabular-nums text-secondary" >{formatAmount(spending.total)}</span>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground" >-</span>
+                              )}
+                              {spending?.method && (
+                                <span className="text-[9px] px-1.5 py-px rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 7%, transparent)', color: 'var(--warning)' }}>
+                                  {spending.method}
+                                </span>
+                              )}
+                            </div>
+                            {/* Transaction count & last date */}
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-[10px] text-muted-foreground" >
+                                {spending?.txCount || 0} transaksi
+                              </span>
+                              {spending?.lastDate && (
+                                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground" >
+                                  <CalendarDays className="h-2.5 w-2.5" />
+                                  {new Date(spending.lastDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
                               )}
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-xs py-2.5 hidden sm:table-cell">
-                          <span className="font-semibold tabular-nums" style={{ color: spending?.total ? THEME.secondary : THEME.muted }}>
-                            {spending?.total ? formatAmount(spending.total) : '-'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-xs py-2.5 hidden md:table-cell">
-                          {spending?.method ? (
-                            <Badge variant="outline" className="text-[9px] font-medium rounded-full px-1.5 py-0 h-5" style={{ backgroundColor: `${THEME.warning}12`, color: THEME.warning, border: `1px solid ${THEME.warning}20` }}>
-                              {spending.method}
-                            </Badge>
-                          ) : (
-                            <span style={{ color: THEME.muted }}>-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs py-2.5 hidden lg:table-cell max-w-[150px] truncate" style={{ color: THEME.textSecondary }}>
-                          {customer.phone || '-'}
-                        </TableCell>
-                        <TableCell className="py-2.5 text-right">
-                          <div className="flex items-center justify-end gap-0.5">
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-0.5 shrink-0">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 rounded-lg"
-                              style={{ color: THEME.muted }}
-                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = THEME.primary; (e.currentTarget as HTMLElement).style.background = `${THEME.primary}10`; }}
-                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = THEME.muted; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                              className="h-7 w-7 p-0 rounded-md text-muted-foreground"
                               onClick={() => openEditDialog(customer)}
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Pencil className="h-3 w-3" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 rounded-lg"
-                              style={{ color: THEME.muted }}
-                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = THEME.destructive; (e.currentTarget as HTMLElement).style.background = `${THEME.destructive}10`; }}
-                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = THEME.muted; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                              className="h-7 w-7 p-0 rounded-md text-muted-foreground"
                               onClick={() => setDeleteId(customer.id)}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                      </div>
                     );
                   })}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden sm:block max-h-[500px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-b border-border">
+                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" >{t('biz.customerName')}</TableHead>
+                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" >Total Belanja</TableHead>
+                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden md:table-cell text-muted-foreground" >Metode Utama</TableHead>
+                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden lg:table-cell">Transaksi</TableHead>
+                      <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden lg:table-cell">{t('biz.customerPhone')}</TableHead>
+                      <TableHead className="w-20" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCustomers.map((customer, index) => {
+                      const totalCount = (customer._count?.invoices || 0) + (customer._count?.sales || 0);
+                      const badge = getCustomerBadge(totalCount);
+                      const spending = customerSpending[customer.id];
+                      const isAlt = index % 2 === 1;
+
+                      return (
+                        <TableRow
+                          key={customer.id}
+                          className="group transition-colors duration-150 cursor-default"
+                          style={{
+                            background: isAlt ? 'rgba(255,255,255,0.015)' : 'transparent',
+                            borderBottom: '1px solid var(--border)',
+                          }}
+                        >
+                          <TableCell className="py-2">
+                            <div className="flex items-center gap-2">
+                              <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 bg-primary/12 text-primary">
+                                {customer.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-xs font-medium truncate text-foreground" >{customer.name}</p>
+                                  <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 h-4 rounded-full" style={badge.style}>
+                                    {badge.label}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs py-2">
+                            <span className="font-semibold tabular-nums" style={{ color: spending?.total ? 'var(--secondary)' : 'var(--muted-foreground)' }}>
+                              {spending?.total ? formatAmount(spending.total) : '-'}
+                            </span>
+                            {spending?.lastDate && (
+                              <span className="block text-[9px] mt-0.5 text-muted-foreground" >
+                                {new Date(spending.lastDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs py-2 hidden md:table-cell">
+                            {spending?.method ? (
+                              <Badge variant="outline" className="text-[9px] font-medium rounded-full px-1.5 py-0 h-5" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 7%, transparent)', color: 'var(--warning)', border: '1px solid color-mix(in srgb, var(--warning) 12%, transparent)' }}>
+                                {spending.method}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground" >-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs py-2 hidden lg:table-cell text-muted-foreground" >
+                            {spending?.txCount || 0} transaksi
+                          </TableCell>
+                          <TableCell className="text-xs py-2 hidden lg:table-cell max-w-[150px] truncate text-muted-foreground" >
+                            {customer.phone || '-'}
+                          </TableCell>
+                          <TableCell className="py-2 text-right">
+                            <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                onClick={() => openEditDialog(customer)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                onClick={() => setDeleteId(customer.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-xl sm:max-w-[460px]" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <DialogContent className="rounded-xl sm:max-w-[460px] bg-card border border-border">
           <DialogHeader>
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
-              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${THEME.primary}15` }}>
-                {editingCustomer ? <Pencil className="h-3.5 w-3.5" style={{ color: THEME.primary }} /> : <UserPlus className="h-3.5 w-3.5" style={{ color: THEME.primary }} />}
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground" >
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/12">
+                {editingCustomer ? <Pencil className="h-3.5 w-3.5 text-primary" /> : <UserPlus className="h-3.5 w-3.5 text-primary" />}
               </div>
               {editingCustomer ? t('common.edit') : t('biz.addCustomer')}
             </DialogTitle>
-            <DialogDescription className="text-xs" style={{ color: THEME.textSecondary }}>
-              {editingCustomer ? `Edit ${editingCustomer.name}` : t('biz.customerName')}
+            <DialogDescription className="text-xs text-muted-foreground" >
+              {editingCustomer ? `Edit ${editingCustomer.name}` : t('biz.customerDesc')}
             </DialogDescription>
           </DialogHeader>
 
-          <Separator style={{ background: THEME.border }} />
+          <Separator className="bg-border" />
 
           <form onSubmit={handleSave} className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
-                {t('biz.customerName')} <span style={{ color: THEME.destructive }}>*</span>
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >
+                {t('biz.customerName')} <span className="text-destructive" >*</span>
               </Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t('biz.customerName')}
-                className="text-sm rounded-lg"
-                style={inputStyle}
+                className="text-sm rounded-lg bg-card border border-border text-foreground"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.customerEmail')}</Label>
+                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.customerEmail')}</Label>
                 <Input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="email@example.com"
-                  className="text-sm rounded-lg"
-                  style={inputStyle}
+                  className="text-sm rounded-lg bg-card border border-border text-foreground"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.customerPhone')}</Label>
+                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.customerPhone')}</Label>
                 <Input
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+62"
-                  className="text-sm rounded-lg"
-                  style={inputStyle}
+                  className="text-sm rounded-lg bg-card border border-border text-foreground"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.customerAddress')}</Label>
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.customerAddress')}</Label>
               <Input
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder={t('biz.customerAddress')}
-                className="text-sm rounded-lg"
-                style={inputStyle}
+                className="text-sm rounded-lg bg-card border border-border text-foreground"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>{t('biz.customerNotes')}</Label>
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.customerNotes')}</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder={t('biz.customerNotes')}
-                className="text-sm rounded-lg resize-none min-h-[60px]"
-                style={inputStyle}
+                className="text-sm rounded-lg resize-none min-h-[60px] bg-card border border-border text-foreground"
               />
             </div>
 
@@ -555,7 +603,7 @@ export default function BusinessCustomers() {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
                 className="rounded-lg text-xs"
-                style={{ borderColor: THEME.border, color: THEME.text }}
+                style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
               >
                 {t('common.cancel')}
               </Button>
@@ -563,7 +611,7 @@ export default function BusinessCustomers() {
                 type="submit"
                 disabled={saving || !formData.name.trim()}
                 className="rounded-lg text-xs"
-                style={{ backgroundColor: THEME.primary, color: '#000' }}
+                style={{ backgroundColor: 'var(--primary)', color: '#000' }}
               >
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 {t('common.save')}
@@ -575,20 +623,20 @@ export default function BusinessCustomers() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="rounded-xl" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <AlertDialogContent className="rounded-xl bg-card border border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm" style={{ color: THEME.text }}>{t('common.delete')}</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs" style={{ color: THEME.textSecondary }}>
+            <AlertDialogTitle className="text-sm text-foreground" >{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground" >
               {t('kas.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-lg text-xs" style={{ borderColor: THEME.border, color: THEME.text }}>
+            <AlertDialogCancel className="rounded-lg text-xs" style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}>
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="rounded-lg text-xs bg-red-500 hover:bg-red-600 text-white border-0"
+              className="rounded-lg text-xs bg-destructive hover:bg-destructive/90 text-foreground border-0"
             >
               {t('common.delete')}
             </AlertDialogAction>

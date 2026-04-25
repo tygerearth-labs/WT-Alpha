@@ -101,8 +101,48 @@ export async function GET(
       return saleObj;
     });
 
+    // Summary using realizedAmount for installment sales
+    const tunaiSales = sales.filter((s) => !s.installmentTempo || s.installmentTempo <= 0);
+    const cicilanSales = sales.filter((s) => s.installmentTempo && s.installmentTempo > 0);
+    const tunaiTotal = tunaiSales.reduce((sum, s) => sum + s.amount, 0);
+    let cicilanRealizedTotal = 0;
+    let cicilanFullTotal = 0;
+    let cicilanRemainingTotal = 0;
+    let cicilanDPTotal = 0;
+    let cicilanInstallmentsTotal = 0;
+
+    for (const s of cicilanSales) {
+      const dp = s.downPayment || 0;
+      const paidInstallments = debtPaymentMap.get(s.id) || 0;
+      const realized = dp + paidInstallments;
+      cicilanRealizedTotal += realized;
+      cicilanFullTotal += s.amount;
+      cicilanRemainingTotal += s.amount - realized;
+      cicilanDPTotal += dp;
+      cicilanInstallmentsTotal += paidInstallments;
+    }
+
+    const totalRealized = tunaiTotal + cicilanRealizedTotal;
+
+    const summary = {
+      totalPenjualan: tunaiTotal + cicilanFullTotal,
+      totalTerealisasi: totalRealized,
+      totalBelumTerealisasi: cicilanRemainingTotal,
+      jumlahTransaksi: sales.length,
+      tunai: { jumlah: tunaiSales.length, total: tunaiTotal },
+      cicilan: {
+        jumlah: cicilanSales.length,
+        totalProduk: cicilanFullTotal,
+        totalTerealisasi: cicilanRealizedTotal,
+        totalDPDiterima: cicilanDPTotal,
+        totalCicilanDiterima: cicilanInstallmentsTotal,
+        totalSisa: cicilanRemainingTotal,
+      },
+    };
+
     return NextResponse.json({
       sales: salesWithRealized,
+      summary,
       pagination: { page, pageSize, hasMore: sales.length === pageSize },
     });
   } catch (error) {

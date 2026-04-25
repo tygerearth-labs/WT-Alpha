@@ -31,6 +31,20 @@ export async function POST(
       return NextResponse.json({ error: 'Debt not found' }, { status: 404 });
     }
 
+    // Load full debt with payments for running bill and installment tracking
+    const debtWithPayments = await db.businessDebt.findUnique({
+      where: { id: debtId },
+      include: {
+        payments: {
+          select: { amount: true, paymentDate: true },
+          orderBy: { paymentDate: 'asc' },
+        },
+      },
+    });
+    const debtPayments = debtWithPayments?.payments || [];
+    const totalPaidSoFar = debtPayments.reduce((sum, p) => sum + p.amount, 0);
+    const paidInstallmentCount = debtPayments.length;
+
     // Resolve phone number: try customer via referenceId first, then match by counterpart name, fallback to business phone
     let phone = debt.business.phone || '';
 
@@ -125,6 +139,24 @@ export async function POST(
     let message: string;
 
     if (debt.type === 'piutang') {
+      // Build running bill section
+      const isInstallment = debt.installmentPeriod && debt.installmentPeriod > 0;
+      const installmentProgressLine = isInstallment
+        ? `📈 *Progres Cicilan:* Cicilan ke-${paidInstallmentCount} dari ${debt.installmentPeriod}`
+        : '';
+      const runningBillLines = [
+        ``,
+        `📊 *Running Bill:*`,
+        `Total Tagihan: ${formatCurrency(debt.amount)}`,
+        debt.downPayment ? `Uang Muka (DP): ${formatCurrency(debt.downPayment)}` : '',
+        `Sudah Dibayar: ${formatCurrency(totalPaidSoFar)}`,
+        `Sisa Tagihan: ${formatCurrency(debt.remaining)}`,
+        installmentProgressLine,
+        debt.nextInstallmentDate
+          ? `Cicilan Berikutnya: ${formatDate(new Date(debt.nextInstallmentDate))}`
+          : '',
+      ].filter(Boolean).join('\n');
+
       if (invoiceResult) {
         // ── Invoice-based message ──
         const invoiceStatus = {
@@ -138,32 +170,31 @@ export async function POST(
           ? formatDate(new Date(invoiceResult.dueDate))
           : 'Belum ditentukan';
 
-        const installmentLines = debt.installmentPeriod && debt.installmentPeriod > 0
+        const installmentDetailLines = isInstallment
           ? [
               ``,
               `📋 *Detail Cicilan:*`,
-              `Tempo: ${debt.installmentPeriod} bulan`,
+              `Cicilan ke-${paidInstallmentCount} dari ${debt.installmentPeriod}`,
               `Cicilan per bulan: ${formatCurrency(debt.installmentAmount || 0)}`,
               debt.nextInstallmentDate
-                ? `Cicilan berikutnya: ${formatDate(new Date(debt.nextInstallmentDate))}`
+                ? `Jatuh Tempo Cicilan Berikutnya: ${formatDate(new Date(debt.nextInstallmentDate))}`
                 : '',
             ].join('\n')
           : '';
 
         message = [
-          `*INVOICE PEMBAYARAN*`,
+          `*INVOICE / TAGIHAN PEMBAYARAN*`,
           ``,
           `Halo *${debt.counterpart}*, 👋`,
           ``,
-          `Berikut detail invoice kami yang perlu diselesaikan:`,
+          `Berikut tagihan kami yang perlu diselesaikan:`,
           ``,
           `🧾 *Nomor Invoice:* ${invoiceResult.invoiceNumber}`,
           `💰 *Total Tagihan:* ${formatCurrency(invoiceResult.total)}`,
           `📅 *Jatuh Tempo:* ${invoiceDueStr}`,
-          `📊 *Status Pembayaran:* ${invoiceStatus}`,
-          installmentLines,
-          ``,
-          `💰 *Sisa yang Harus Dibayar:* ${formatCurrency(debt.remaining)}`,
+          `📊 *Status:* ${invoiceStatus}`,
+          installmentDetailLines,
+          runningBillLines,
           ``,
         ].join('\n');
 
@@ -178,35 +209,35 @@ export async function POST(
           `Terima kasih atas kepercayaan dan kerjasamanya! 🙏`,
         ].join('\n');
       } else {
-        // ── Fallback: no invoice, use debt details with tempo info ──
+        // ── No invoice: use debt details with full bill info ──
         const dueDateStr = debt.dueDate
           ? formatDate(new Date(debt.dueDate))
           : 'Belum ditentukan';
 
-        const installmentLines = debt.installmentPeriod && debt.installmentPeriod > 0
+        const installmentDetailLines = isInstallment
           ? [
               ``,
               `📋 *Detail Cicilan:*`,
-              `Jumlah Tempo: ${debt.installmentPeriod} bulan`,
+              `Cicilan ke-${paidInstallmentCount} dari ${debt.installmentPeriod}`,
               `Cicilan per bulan: ${formatCurrency(debt.installmentAmount || 0)}`,
               debt.downPayment ? `Uang Muka (DP): ${formatCurrency(debt.downPayment)}` : '',
               debt.nextInstallmentDate
-                ? `Cicilan berikutnya jatuh tempo: ${formatDate(new Date(debt.nextInstallmentDate))}`
+                ? `Jatuh Tempo Cicilan Berikutnya: ${formatDate(new Date(debt.nextInstallmentDate))}`
                 : '',
             ].join('\n')
           : '';
 
         message = [
-          `*Reminder Pembayaran Piutang*`,
+          `*TAGIHAN PEMBAYARAN*`,
           ``,
           `Halo *${debt.counterpart}*, 👋`,
           ``,
-          `Kami ingin mengingatkan mengenai pembayaran yang belum lunas dengan rincian berikut:`,
+          `Berikut tagihan kami yang belum lunas:`,
           ``,
           `💰 *Total Piutang:* ${formatCurrency(debt.amount)}`,
-          `📉 *Sisa yang Harus Dibayar:* ${formatCurrency(debt.remaining)}`,
           `📅 *Jatuh Tempo:* ${dueDateStr}`,
-          installmentLines,
+          installmentDetailLines,
+          runningBillLines,
           ``,
         ].join('\n');
 

@@ -75,20 +75,6 @@ import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductList from './ProductList';
 
-const THEME = {
-  bg: '#000000',
-  surface: '#121212',
-  primary: '#BB86FC',
-  secondary: '#03DAC6',
-  destructive: '#CF6679',
-  warning: '#F9A825',
-  muted: '#9E9E9E',
-  border: 'rgba(255,255,255,0.08)',
-  borderHover: 'rgba(255,255,255,0.15)',
-  text: '#FFFFFF',
-  textSecondary: '#B3B3B3',
-};
-
 interface Customer {
   id: string;
   name: string;
@@ -122,15 +108,15 @@ interface Sale {
 }
 
 const PAYMENT_METHODS = [
-  { value: 'cash', labelKey: 'biz.paymentCash', icon: Banknote, color: THEME.secondary },
-  { value: 'transfer', labelKey: 'biz.paymentTransfer', icon: CreditCard, color: THEME.primary },
-  { value: 'qris', labelKey: 'biz.paymentQRIS', icon: QrCode, color: THEME.warning },
+  { value: 'cash', labelKey: 'biz.paymentCash', icon: Banknote, color: 'var(--secondary)' },
+  { value: 'transfer', labelKey: 'biz.paymentTransfer', icon: CreditCard, color: 'var(--primary)' },
+  { value: 'qris', labelKey: 'biz.paymentQRIS', icon: QrCode, color: 'var(--warning)' },
 ];
 
 const paymentIconMap: Record<string, string> = {
-  cash: THEME.secondary,
-  transfer: THEME.primary,
-  qris: THEME.warning,
+  cash: 'var(--secondary)',
+  transfer: 'var(--primary)',
+  qris: 'var(--warning)',
 };
 
 // Animated counter hook
@@ -443,34 +429,28 @@ export default function BusinessSales() {
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p style={{ color: THEME.muted }} className="text-center">{t('biz.registerFirst')}</p>
+        <p className="text-muted-foreground text-center">{t('biz.registerFirst')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Info Banner */}
-      <div
-        className="flex items-start gap-2.5 p-3 rounded-lg text-[11px]"
-        style={{ background: `${THEME.primary}08`, border: `1px solid ${THEME.primary}20` }}
-      >
-        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: THEME.primary }} />
-        <span style={{ color: THEME.textSecondary }}>
+      <div className="flex items-start gap-2 p-2.5 rounded-lg text-[11px] bg-primary/5 border border-primary/15">
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />
+        <span className="text-muted-foreground">
           Catat semua penjualan Anda. Untuk penjualan cicilan, sistem akan otomatis membuat piutang dan invoice.
         </span>
       </div>
 
       {/* Tab Toggle — simple design */}
       <div
-        className="relative flex gap-1 rounded-lg p-0.5 w-fit"
-        style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+        className="relative flex gap-1 rounded-lg p-0.5 w-fit bg-card border border-border"
       >
         <div
-          className="absolute top-0.5 bottom-0.5 rounded-md"
-          style={{
-            background: THEME.primary,
-            opacity: 0.15,
+          className="absolute top-0.5 bottom-0.5 rounded-md bg-primary opacity-15"
+            style={{
             width: 'calc(50% - 3px)',
             left: activeTab === 'sales' ? '2px' : 'calc(50% + 1px)',
             transition: 'all 0.2s ease',
@@ -481,10 +461,7 @@ export default function BusinessSales() {
           size="sm"
           onClick={() => setActiveTab('sales')}
           className="relative z-10 rounded-md px-4 transition-colors duration-200"
-          style={{
-            color: activeTab === 'sales' ? THEME.primary : THEME.muted,
-            fontWeight: activeTab === 'sales' ? 600 : 400,
-          }}
+          style={{ fontWeight: activeTab === 'sales' ? 600 : 400 }}
         >
           <ShoppingBag className="h-3.5 w-3.5 mr-1.5" />
           {t('biz.penjualan')}
@@ -494,10 +471,7 @@ export default function BusinessSales() {
           size="sm"
           onClick={() => setActiveTab('products')}
           className="relative z-10 rounded-md px-4 transition-colors duration-200"
-          style={{
-            color: activeTab === 'products' ? THEME.primary : THEME.muted,
-            fontWeight: activeTab === 'products' ? 600 : 400,
-          }}
+          style={{ fontWeight: activeTab === 'products' ? 600 : 400 }}
         >
           <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
           {t('biz.products')}
@@ -512,28 +486,26 @@ export default function BusinessSales() {
       ) : (
         <div key="sales">
           {/* Summary Cards — Clean flat design */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-2.5 mb-3">
             {/* Total Penjualan (Tunai) */}
             <Card
-              className="rounded-xl overflow-hidden"
-              style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+              className="rounded-xl overflow-hidden bg-card border border-border"
             >
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center gap-2 mb-1.5">
                   <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center"
-                    style={{ background: `${THEME.secondary}15` }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-secondary/15"
                   >
-                    <Banknote className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+                    <Banknote className="h-3.5 w-3.5" style={{ color: 'var(--secondary)' }} />
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                  <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     Total Tunai
                   </span>
                 </div>
-                <p className="text-sm sm:text-base font-bold tabular-nums" style={{ color: THEME.text }}>
+                <p className="text-sm sm:text-base font-bold tabular-nums text-foreground">
                   {formatAmount(animatedTunai)}
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>
+                <p className="text-[10px] mt-0.5 text-muted-foreground">
                   {filteredSales.filter((s) => (s.installmentTempo ?? 0) <= 0).length} transaksi
                 </p>
               </CardContent>
@@ -541,25 +513,23 @@ export default function BusinessSales() {
 
             {/* Total Penjualan (Cicilan) */}
             <Card
-              className="rounded-xl overflow-hidden"
-              style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+              className="rounded-xl overflow-hidden bg-card border border-border"
             >
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center gap-2 mb-1.5">
                   <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center"
-                    style={{ background: `${THEME.primary}15` }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/15"
                   >
-                    <Wallet className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                    <Wallet className="h-3.5 w-3.5" style={{ color: 'var(--primary)' }} />
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                  <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     Total Cicilan
                   </span>
                 </div>
-                <p className="text-sm sm:text-base font-bold tabular-nums" style={{ color: THEME.text }}>
+                <p className="text-sm sm:text-base font-bold tabular-nums text-foreground">
                   {formatAmount(animatedCicilan)}
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: THEME.muted }}>
+                <p className="text-[10px] mt-0.5 text-muted-foreground">
                   {filteredSales.filter((s) => (s.installmentTempo ?? 0) > 0).length} cicilan · realisasi
                 </p>
               </CardContent>
@@ -570,15 +540,15 @@ export default function BusinessSales() {
           <div className="flex items-center justify-between gap-3 mb-4 px-1">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
-                <Receipt className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-                <span className="text-[11px]" style={{ color: THEME.textSecondary }}>{t('biz.cashDate')}</span>
-                <span className="text-[11px] font-semibold tabular-nums" style={{ color: THEME.text }}>{formatAmount(animatedToday)}</span>
-                <span className="text-[10px]" style={{ color: THEME.muted }}>({todaySales.length})</span>
+                <Receipt className="h-3.5 w-3.5" style={{ color: 'var(--primary)' }} />
+                <span className="text-[11px] text-muted-foreground">{t('biz.cashDate')}</span>
+                <span className="text-[11px] font-semibold tabular-nums text-foreground">{formatAmount(animatedToday)}</span>
+                <span className="text-[10px] text-muted-foreground">({todaySales.length})</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Calculator className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
-                <span className="text-[11px]" style={{ color: THEME.textSecondary }}>Rata-rata</span>
-                <span className="text-[11px] font-semibold tabular-nums" style={{ color: THEME.text }}>{formatAmount(animatedAvg)}</span>
+                <Calculator className="h-3.5 w-3.5" style={{ color: 'var(--warning)' }} />
+                <span className="text-[11px] text-muted-foreground">Rata-rata</span>
+                <span className="text-[11px] font-semibold tabular-nums text-foreground">{formatAmount(animatedAvg)}</span>
               </div>
             </div>
           </div>
@@ -586,16 +556,15 @@ export default function BusinessSales() {
           {/* Header with Search & Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-sm font-bold flex items-center gap-2" style={{ color: THEME.text }}>
-                <ShoppingBag className="h-4 w-4" style={{ color: THEME.secondary }} />
+              <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                <ShoppingBag className="h-4 w-4" style={{ color: 'var(--secondary)' }} />
                 {t('biz.penjualan')}
               </h2>
             </div>
             <Button
               onClick={openCreateDialog}
               size="sm"
-              className="rounded-lg"
-              style={{ background: THEME.primary, color: '#000' }}
+              className="rounded-lg bg-primary text-primary-foreground"
             >
               <Plus className="h-3.5 w-3.5 mr-1" />
               {t('biz.addSale')}
@@ -605,28 +574,18 @@ export default function BusinessSales() {
           {/* Search + Filter Row */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: THEME.muted }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('common.search') + '...'}
-                className="pl-9 rounded-lg text-sm"
-                style={{
-                  background: THEME.surface,
-                  border: `1px solid ${THEME.border}`,
-                  color: THEME.text,
-                }}
+                className="pl-9 rounded-lg text-sm bg-card border border-border text-foreground"
               />
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <button
                 onClick={() => setPaymentFilter('all')}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200"
-                style={{
-                  background: paymentFilter === 'all' ? `${THEME.text}15` : 'transparent',
-                  color: paymentFilter === 'all' ? THEME.text : THEME.muted,
-                  border: `1px solid ${paymentFilter === 'all' ? THEME.borderHover : 'transparent'}`,
-                }}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200 ${paymentFilter === 'all' ? 'bg-foreground/15 text-foreground border border-border' : 'text-muted-foreground border border-transparent'}`}
               >
                 Semua
               </button>
@@ -639,8 +598,8 @@ export default function BusinessSales() {
                     className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200"
                     style={
                       paymentFilter === m.value
-                        ? { backgroundColor: `${m.color}15`, borderColor: `${m.color}30`, color: m.color, border: `1px solid ${m.color}30` }
-                        : { color: THEME.muted, border: '1px solid transparent' }
+                        ? { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)', color: m.color, border: '1px solid rgba(255,255,255,0.12)' }
+                        : { color: 'var(--muted-foreground)', border: '1px solid transparent' }
                     }
                   >
                     <Icon className="h-2.5 w-2.5" />
@@ -654,27 +613,26 @@ export default function BusinessSales() {
           {/* Table */}
           <div>
             <Card
-              className="rounded-xl overflow-hidden"
-              style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+              className="rounded-xl overflow-hidden bg-card border border-border"
             >
               <CardContent className="p-0">
                 {loading ? (
                   <div className="space-y-2 p-4">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 rounded-lg" style={{ background: THEME.border }} />
+                      <Skeleton key={i} className="h-10 rounded-lg bg-border" />
                     ))}
                   </div>
                 ) : filteredSales.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-6">
-                    <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-4" style={{ background: `${THEME.secondary}10`, border: `1px solid ${THEME.border}` }}>
-                      <PackageOpen className="h-6 w-6" style={{ color: THEME.muted }} />
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-secondary/5 border border-border">
+                      <PackageOpen className="h-6 w-6 text-muted-foreground" />
                     </div>
-                    <p className="text-sm font-medium" style={{ color: THEME.textSecondary }}>
+                    <p className="text-sm font-medium text-muted-foreground">
                       {search || paymentFilter !== 'all'
                         ? 'Tidak ada penjualan yang cocok'
                         : t('biz.noBizData')}
                     </p>
-                    <p className="text-xs mt-1" style={{ color: THEME.muted }}>
+                    <p className="text-xs mt-1 text-muted-foreground">
                       {search || paymentFilter !== 'all'
                         ? 'Coba ubah filter pencarian Anda'
                         : 'Mulai catat penjualan pertama Anda'}
@@ -683,8 +641,7 @@ export default function BusinessSales() {
                       <Button
                         onClick={openCreateDialog}
                         size="sm"
-                        className="mt-4 rounded-lg text-sm"
-                        style={{ background: THEME.primary, color: '#000' }}
+                        className="mt-4 rounded-lg text-sm bg-primary text-primary-foreground"
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" />
                         {t('biz.addSale')}
@@ -695,20 +652,20 @@ export default function BusinessSales() {
                   <div className="max-h-[500px] overflow-y-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow style={{ borderBottom: `1px solid ${THEME.border}` }}>
-                          <TableHead className="text-[10px] font-medium uppercase tracking-wider w-[80px] sm:w-[110px] py-2" style={{ color: THEME.muted }}>
+                        <TableRow style={{ borderBottom: '1px solid var(--border)' }}>
+                          <TableHead className="text-[10px] font-medium uppercase tracking-wider w-[80px] sm:w-[110px] py-2 text-muted-foreground">
                             {t('biz.cashDate')}
                           </TableHead>
-                          <TableHead className="text-[10px] font-medium uppercase tracking-wider py-2" style={{ color: THEME.muted }}>
+                          <TableHead className="text-[10px] font-medium uppercase tracking-wider py-2 text-muted-foreground">
                             {t('biz.saleDescription')}
                           </TableHead>
-                          <TableHead className="text-[10px] font-medium uppercase tracking-wider hidden sm:table-cell py-2" style={{ color: THEME.muted }}>
+                          <TableHead className="text-[10px] font-medium uppercase tracking-wider hidden sm:table-cell py-2 text-muted-foreground">
                             {t('biz.saleCustomer')}
                           </TableHead>
-                          <TableHead className="text-[10px] font-medium uppercase tracking-wider hidden lg:table-cell w-[120px] py-2" style={{ color: THEME.muted }}>
+                          <TableHead className="text-[10px] font-medium uppercase tracking-wider hidden lg:table-cell w-[120px] py-2 text-muted-foreground">
                             Status
                           </TableHead>
-                          <TableHead className="text-[10px] font-medium uppercase tracking-wider text-right w-[130px] sm:w-[180px] py-2" style={{ color: THEME.muted }}>
+                          <TableHead className="text-[10px] font-medium uppercase tracking-wider text-right w-[130px] sm:w-[180px] py-2 text-muted-foreground">
                             {t('biz.saleAmount')}
                           </TableHead>
                           <TableHead className="w-[68px] sm:w-20" />
@@ -718,8 +675,8 @@ export default function BusinessSales() {
                         <AnimatePresence mode="popLayout">
                           {filteredSales.map((sale, i) => {
                             const pColor = sale.paymentMethod
-                              ? paymentIconMap[sale.paymentMethod] || THEME.primary
-                              : THEME.primary;
+                              ? paymentIconMap[sale.paymentMethod] || 'var(--primary)'
+                              : 'var(--primary)';
                             const isInstallment = (sale.installmentTempo ?? 0) > 0;
                             const hasDP = (sale.downPayment ?? 0) > 0;
                             const hasInvestor = (sale.investorSharePct ?? 0) > 0;
@@ -736,11 +693,9 @@ export default function BusinessSales() {
                                 exit="exit"
                                 layout
                                 className="group cursor-default transition-colors duration-150"
-                                style={{
-                                  background: i % 2 === 0 ? 'transparent' : `${THEME.border}`,
-                                }}
+                                style={i % 2 === 1 ? { background: 'var(--border)' } : undefined}
                               >
-                                <TableCell className="text-[11px] sm:text-xs py-2 font-mono" style={{ color: THEME.textSecondary }}>
+                                <TableCell className="text-[11px] sm:text-xs py-2 font-mono text-muted-foreground">
                                   {new Date(sale.date).toLocaleDateString('id-ID', {
                                     day: 'numeric',
                                     month: 'short',
@@ -749,7 +704,7 @@ export default function BusinessSales() {
                                 </TableCell>
                                 <TableCell className="py-2">
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-xs font-medium max-w-[200px] truncate" style={{ color: THEME.text }}>
+                                    <span className="text-xs font-medium max-w-[200px] truncate text-foreground">
                                       {sale.description}
                                     </span>
                                     {/* Badges row */}
@@ -759,8 +714,8 @@ export default function BusinessSales() {
                                           variant="outline"
                                           className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
                                           style={{
-                                            backgroundColor: `${THEME.warning}15`,
-                                            color: THEME.warning,
+                                            backgroundColor: 'rgba(249, 168, 37, 0.15)',
+                                            color: 'var(--warning)',
                                           }}
                                         >
                                           <Layers className="h-2 w-2 mr-0.5" />
@@ -770,11 +725,7 @@ export default function BusinessSales() {
                                       {sale.paymentMethod && (
                                         <Badge
                                           variant="outline"
-                                          className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
-                                          style={{
-                                            backgroundColor: `${pColor}15`,
-                                            color: pColor,
-                                          }}
+                                          className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 bg-primary/15 text-primary"
                                         >
                                           {(() => {
                                             const M = PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod);
@@ -793,7 +744,7 @@ export default function BusinessSales() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="py-2 hidden sm:table-cell">
-                                  <span className="text-xs" style={{ color: THEME.textSecondary }}>
+                                  <span className="text-xs text-muted-foreground">
                                     {sale.customer?.name || '—'}
                                   </span>
                                 </TableCell>
@@ -806,8 +757,8 @@ export default function BusinessSales() {
                                           variant="outline"
                                           className="text-[9px] font-bold border-0 rounded-full px-1.5 py-0"
                                           style={{
-                                            backgroundColor: `${THEME.primary}15`,
-                                            color: THEME.primary,
+                                            backgroundColor: 'rgba(187, 134, 252, 0.15)',
+                                            color: 'var(--primary)',
                                           }}
                                         >
                                           <Repeat className="h-2.5 w-2.5 mr-0.5" />
@@ -819,8 +770,8 @@ export default function BusinessSales() {
                                           variant="outline"
                                           className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
                                           style={{
-                                            backgroundColor: `${THEME.secondary}15`,
-                                            color: THEME.secondary,
+                                            backgroundColor: 'rgba(3, 218, 198, 0.15)',
+                                            color: 'var(--secondary)',
                                           }}
                                         >
                                           <ArrowDownToLine className="h-2.5 w-2.5 mr-0.5" />
@@ -832,8 +783,8 @@ export default function BusinessSales() {
                                           variant="outline"
                                           className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
                                           style={{
-                                            backgroundColor: `${THEME.warning}15`,
-                                            color: THEME.warning,
+                                            backgroundColor: 'rgba(249, 168, 37, 0.15)',
+                                            color: 'var(--warning)',
                                           }}
                                         >
                                           <Users className="h-2.5 w-2.5 mr-0.5" />
@@ -844,31 +795,30 @@ export default function BusinessSales() {
                                     {/* Installment progress bar */}
                                     {isInstallment && hasDP && (
                                       <div className="w-full max-w-[100px]">
-                                        <div className="h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                                        <div className="h-1 rounded-full overflow-hidden bg-border">
                                           <motion.div
-                                            className="h-full rounded-full"
-                                            style={{ background: THEME.secondary }}
+                                            className="h-full rounded-full bg-secondary"
                                             initial={{ width: 0 }}
                                             animate={{ width: `${Math.min(dpPercent, 100)}%` }}
                                             transition={{ delay: i * 0.04 + 0.2, duration: 0.6, ease: 'easeOut' as const }}
                                           />
                                         </div>
-                                        <span className="text-[9px] mt-0.5 block tabular-nums" style={{ color: THEME.muted }}>
+                                        <span className="text-[9px] mt-0.5 block tabular-nums text-muted-foreground">
                                           DP {formatAmount(sale.downPayment!)}
                                         </span>
                                       </div>
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-xs text-right font-semibold py-2 tabular-nums" style={{ color: THEME.secondary }}>
+                                <TableCell className="text-xs text-right font-semibold py-2 tabular-nums" style={{ color: 'var(--secondary)' }}>
                                   {isInstallment ? (
                                     <div className="flex flex-col items-end gap-0">
                                       <span className="font-semibold">+{formatAmount(sale.amount)}</span>
-                                      <span className="text-[9px]" style={{ color: THEME.muted }}>
+                                      <span className="text-[9px] text-muted-foreground">
                                         DP {formatAmount(sale.downPayment ?? 0)} · Sisa {formatAmount(sale.amount - (sale.realizedAmount ?? sale.downPayment ?? 0))}
                                       </span>
                                       {hasInvestor && sale.downPayment && sale.installmentAmount && (
-                                        <span className="text-[8px]" style={{ color: THEME.warning }}>
+                                        <span className="text-[8px]" style={{ color: 'var(--warning)' }}>
                                           Inv DP {sale.investorSharePct}%={formatAmount((sale.downPayment * (sale.investorSharePct ?? 0)) / 100)} · Cicilan {sale.investorSharePct}%={formatAmount((sale.installmentAmount * (sale.investorSharePct ?? 0)) / 100)}/tempo
                                         </span>
                                       )}
@@ -882,8 +832,7 @@ export default function BusinessSales() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 w-7 p-0 rounded-md"
-                                      style={{ color: THEME.muted }}
+                                      className="h-7 w-7 p-0 rounded-md text-muted-foreground"
                                       onClick={() => openEditDialog(sale)}
                                     >
                                       <Pencil className="h-3 w-3" />
@@ -891,8 +840,7 @@ export default function BusinessSales() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 w-7 p-0 rounded-md"
-                                      style={{ color: THEME.muted }}
+                                      className="h-7 w-7 p-0 rounded-md text-muted-foreground"
                                       onClick={() => setDeleteId(sale.id)}
                                     >
                                       <Trash2 className="h-3 w-3" />
@@ -906,11 +854,11 @@ export default function BusinessSales() {
                       </TableBody>
                     </Table>
                     {/* Table footer */}
-                    <div className="px-4 py-2 flex items-center justify-between" style={{ borderTop: `1px solid ${THEME.border}`, background: THEME.surface }}>
-                      <span className="text-[11px]" style={{ color: THEME.muted }}>
+                    <div className="px-4 py-2 flex items-center justify-between border-t border-border bg-card">
+                      <span className="text-[11px] text-muted-foreground">
                         {filteredSales.length} transaksi
                       </span>
-                      <span className="text-xs font-bold tabular-nums" style={{ color: THEME.secondary }}>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>
                         Total: {formatAmount(total)}
                       </span>
                     </div>
@@ -923,50 +871,46 @@ export default function BusinessSales() {
           {/* Add/Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent
-              className="rounded-xl overflow-hidden max-h-[90vh] flex flex-col"
-              style={{
-                background: THEME.surface,
-                border: `1px solid ${THEME.border}`,
-              }}
+              className="rounded-xl overflow-hidden max-h-[90vh] flex flex-col bg-card border border-border"
             >
               {/* Accent line at top */}
-              <div className="h-[2px] shrink-0" style={{ background: `linear-gradient(to right, ${THEME.secondary}, ${THEME.primary}, ${THEME.warning})` }} />
+              <div className="h-[2px] shrink-0" style={{ background: "linear-gradient(to right, var(--secondary), var(--primary), var(--warning))" }} />
               <DialogHeader className="pt-1 shrink-0">
-                <DialogTitle className="text-base font-semibold flex items-center gap-2" style={{ color: THEME.text }}>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
+                <DialogTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/15">
                     {editingSale ? (
-                      <Pencil className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                      <Pencil className="h-3.5 w-3.5" style={{ color: 'var(--primary)' }} />
                     ) : (
-                      <Plus className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                      <Plus className="h-3.5 w-3.5" style={{ color: 'var(--primary)' }} />
                     )}
                   </div>
                   {editingSale ? t('common.edit') : t('biz.addSale')}
                 </DialogTitle>
-                <DialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
+                <DialogDescription className="pl-9 text-muted-foreground">
                   {t('biz.saleDescription')}
                 </DialogDescription>
               </DialogHeader>
 
-              <form id="sale-form" onSubmit={handleSave} className="space-y-4 mt-1 overflow-y-auto flex-1 pr-1 scrollbar-thin">
+              <form id="sale-form" onSubmit={handleSave} className="space-y-3 mt-1 overflow-y-auto flex-1 pr-1 scrollbar-thin">
                 {/* Product Quick Select */}
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                  <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {t('biz.selectProduct')}
                   </Label>
                   <Select value={selectedProductId} onValueChange={(v) => handleProductSelect(v)}>
-                    <SelectTrigger className="rounded-lg text-sm" style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}>
+                    <SelectTrigger className="rounded-lg text-sm bg-card border border-border text-foreground">
                       <SelectValue placeholder={t('biz.selectProduct')} />
                     </SelectTrigger>
-                    <SelectContent className="rounded-lg" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+                    <SelectContent className="rounded-lg bg-card border border-border">
                       {products
                         .filter((p) => p.stock > 0)
                         .map((p) => (
-                          <SelectItem key={p.id} value={p.id} className="text-sm rounded-md" style={{ color: THEME.text }}>
+                          <SelectItem key={p.id} value={p.id} className="text-sm rounded-md text-foreground">
                             <div className="flex items-center justify-between w-full gap-4">
                               <span className="truncate">{p.name}</span>
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-medium" style={{ color: THEME.secondary }}>{formatAmount(p.price)}</span>
-                                <span className="text-[10px] rounded-full px-1.5 py-0.5" style={{ color: THEME.muted, background: THEME.border }}>
+                                <span className="text-xs font-medium" style={{ color: 'var(--secondary)' }}>{formatAmount(p.price)}</span>
+                                <span className="text-[10px] rounded-full px-1.5 py-0.5" style={{ color: 'var(--muted-foreground)', background: 'var(--border)' }}>
                                   stok {p.stock}
                                 </span>
                               </div>
@@ -976,7 +920,7 @@ export default function BusinessSales() {
                     </SelectContent>
                   </Select>
                   {isProductAutoFill && (
-                    <p className="text-[10px] flex items-center gap-1" style={{ color: THEME.secondary }}>
+                    <p className="text-[10px] flex items-center gap-1" style={{ color: 'var(--secondary)' }}>
                       <BarChart3 className="h-2.5 w-2.5" />
                       Harga & deskripsi terisi otomatis dari produk
                     </p>
@@ -986,24 +930,24 @@ export default function BusinessSales() {
                 {/* Category Selection */}
                 {categories.length > 0 && (
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                    <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                       {t('biz.cashCategory')}
                     </Label>
                     <Select
                       value={formData.categoryId}
                       onValueChange={(v) => setFormData((prev) => ({ ...prev, categoryId: v }))}
                     >
-                      <SelectTrigger className="rounded-lg text-sm" style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}>
+                      <SelectTrigger className="rounded-lg text-sm bg-card border border-border text-foreground">
                         <SelectValue placeholder={t('biz.cashCategory')} />
                       </SelectTrigger>
-                      <SelectContent className="rounded-lg" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
-                        <SelectItem value="" className="text-sm rounded-md" style={{ color: THEME.muted }}>
+                      <SelectContent className="rounded-lg bg-card border border-border">
+                        <SelectItem value="" className="text-sm rounded-md text-muted-foreground">
                           Tanpa kategori
                         </SelectItem>
                         {categories.map((c) => (
-                          <SelectItem key={c.id} value={c.id} className="text-sm rounded-md" style={{ color: THEME.text }}>
+                          <SelectItem key={c.id} value={c.id} className="text-sm rounded-md text-foreground">
                             <span className="flex items-center gap-2">
-                              <Layers className="h-3 w-3" style={{ color: THEME.warning }} />
+                              <Layers className="h-3 w-3" style={{ color: 'var(--warning)' }} />
                               {c.name}
                             </span>
                           </SelectItem>
@@ -1015,50 +959,39 @@ export default function BusinessSales() {
 
                 {/* Description */}
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
-                    {t('biz.saleDescription')} <span style={{ color: THEME.destructive }}>*</span>
+                  <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {t('biz.saleDescription')} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     value={formData.description}
                     onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                     placeholder={t('biz.saleDescription')}
-                    className="rounded-lg text-sm"
-                    style={{
-                      background: THEME.surface,
-                      border: `1px solid ${THEME.border}`,
-                      color: THEME.text,
-                    }}
+                    className="rounded-lg text-sm bg-card border border-border text-foreground"
                   />
                 </div>
 
                 {/* Amount with Live Preview */}
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
-                    {t('biz.saleAmount')} <span style={{ color: THEME.destructive }}>*</span>
+                  <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {t('biz.saleAmount')} <span className="text-destructive">*</span>
                   </Label>
                   <div className="relative">
-                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: THEME.muted }} />
+                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
                       type="number"
                       value={formData.amount}
                       onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
                       placeholder="0"
                       min="0"
-                      className="pl-9 pr-4 rounded-lg text-base font-semibold tabular-nums"
-                      style={{
-                        background: THEME.surface,
-                        border: `1px solid ${THEME.border}`,
-                        color: THEME.text,
-                      }}
+                      className="pl-9 pr-4 rounded-lg text-base font-semibold tabular-nums bg-card border border-border text-foreground"
                     />
                   </div>
                   {formData.amount && parseFloat(formData.amount) > 0 && (
                     <div
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-                      style={{ background: `${THEME.secondary}08`, border: `1px solid ${THEME.secondary}20` }}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/5 border border-secondary/15"
                     >
-                      <CircleDollarSign className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
-                      <span className="text-xs font-semibold tabular-nums" style={{ color: THEME.secondary }}>
+                      <CircleDollarSign className="h-3.5 w-3.5" style={{ color: 'var(--secondary)' }} />
+                      <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--secondary)' }}>
                         {formatAmount(parseFloat(formData.amount))}
                       </span>
                     </div>
@@ -1067,16 +1000,15 @@ export default function BusinessSales() {
 
                 {/* Installment Toggle */}
                 <div
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5"
-                  style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 bg-card border border-border"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
-                      <Repeat className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/15">
+                      <Repeat className="h-3.5 w-3.5" style={{ color: 'var(--primary)' }} />
                     </div>
                     <div>
-                      <span className="text-xs font-medium" style={{ color: THEME.text }}>{t('biz.isInstallment')}</span>
-                      <p className="text-[10px]" style={{ color: THEME.muted }}>Aktifkan cicilan & investor</p>
+                      <span className="text-xs font-medium text-foreground">{t('biz.isInstallment')}</span>
+                      <p className="text-[10px] text-muted-foreground">Aktifkan cicilan & investor</p>
                     </div>
                   </div>
                   <Switch
@@ -1104,12 +1036,12 @@ export default function BusinessSales() {
                       exit="exit"
                       className="overflow-hidden"
                     >
-                      <div className="rounded-lg p-3 space-y-3" style={{ background: `${THEME.primary}06`, border: `1px solid ${THEME.primary}20` }}>
+                      <div className="rounded-lg p-3 space-y-3 bg-primary/5 border border-primary/15">
                         {/* DP Amount & DP Percentage */}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: THEME.textSecondary }}>
-                              <ArrowDownToLine className="h-2.5 w-2.5" style={{ color: THEME.secondary }} />
+                            <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground">
+                              <ArrowDownToLine className="h-2.5 w-2.5" style={{ color: 'var(--secondary)' }} />
                               {t('biz.downPayment')} (Rp)
                             </Label>
                             <Input
@@ -1118,13 +1050,12 @@ export default function BusinessSales() {
                               onChange={(e) => handleDownPaymentChange(e.target.value)}
                               placeholder="0"
                               min="0"
-                              className="rounded-lg text-sm tabular-nums"
-                              style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+                              className="rounded-lg text-sm tabular-nums bg-card border border-border text-foreground"
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: THEME.textSecondary }}>
-                              <Percent className="h-2.5 w-2.5" style={{ color: THEME.secondary }} />
+                            <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground">
+                              <Percent className="h-2.5 w-2.5" style={{ color: 'var(--secondary)' }} />
                               DP (%)
                             </Label>
                             <Input
@@ -1135,16 +1066,15 @@ export default function BusinessSales() {
                               min="0"
                               max="100"
                               step="0.1"
-                              className="rounded-lg text-sm tabular-nums"
-                              style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+                              className="rounded-lg text-sm tabular-nums bg-card border border-border text-foreground"
                             />
                           </div>
                         </div>
 
                         {/* Tenor (months) */}
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: THEME.textSecondary }}>
-                            <Repeat className="h-2.5 w-2.5" style={{ color: THEME.primary }} />
+                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground">
+                            <Repeat className="h-2.5 w-2.5" style={{ color: 'var(--primary)' }} />
                             {t('biz.installmentPeriod')}
                           </Label>
                           <Input
@@ -1153,36 +1083,34 @@ export default function BusinessSales() {
                             onChange={(e) => setFormData((prev) => ({ ...prev, installmentTempo: e.target.value }))}
                             placeholder="0"
                             min="1"
-                            className="rounded-lg text-sm tabular-nums w-full sm:w-1/2"
-                            style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+                            className="rounded-lg text-sm tabular-nums w-full sm:w-1/2 bg-card border border-border text-foreground"
                           />
                         </div>
 
                         {/* Tanggal Jatuh Tempo Cicilan */}
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: THEME.textSecondary }}>
-                            <CalendarDays className="h-2.5 w-2.5" style={{ color: THEME.destructive }} />
+                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground">
+                            <CalendarDays className="h-2.5 w-2.5 text-destructive" />
                             Tanggal Jatuh Tempo
                           </Label>
                           <Input
                             type="date"
                             value={formData.installmentDueDate}
                             onChange={(e) => setFormData((prev) => ({ ...prev, installmentDueDate: e.target.value }))}
-                            className="rounded-lg text-sm w-full sm:w-1/2"
-                            style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+                            className="rounded-lg text-sm w-full sm:w-1/2 bg-card border border-border text-foreground"
                           />
                           {formData.installmentDueDate && computedTenor > 0 && (
-                            <p className="text-[10px]" style={{ color: THEME.muted }}>
+                            <p className="text-[10px] text-muted-foreground">
                               Cicilan {computedTenor}× mulai{' '}
-                              <span style={{ color: THEME.destructive }}>{new Date(formData.installmentDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              <span className="text-destructive">{new Date(formData.installmentDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                             </p>
                           )}
                         </div>
 
                         {/* Investor Share */}
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: THEME.textSecondary }}>
-                            <Users className="h-2.5 w-2.5" style={{ color: THEME.warning }} />
+                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground">
+                            <Users className="h-2.5 w-2.5" style={{ color: 'var(--warning)' }} />
                             Bagi Investor (%)
                           </Label>
                           <Input
@@ -1193,35 +1121,34 @@ export default function BusinessSales() {
                             min="0"
                             max="100"
                             step="0.1"
-                            className="rounded-lg text-sm tabular-nums w-full sm:w-1/2"
-                            style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+                            className="rounded-lg text-sm tabular-nums w-full sm:w-1/2 bg-card border border-border text-foreground"
                           />
                         </div>
 
                         {/* Live Preview Box */}
                         {(computedAmount > 0 || computedTenor > 0) && (
-                          <div className="rounded-lg p-2.5 space-y-1.5" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
-                            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: THEME.textSecondary }}>
+                          <div className="rounded-lg p-2.5 space-y-1.5 bg-card border border-border">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                               Ringkasan Cicilan
                             </p>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="flex flex-col">
-                                <span className="text-[9px] uppercase" style={{ color: THEME.muted }}>{t('biz.remainingAfterDP')}</span>
-                                <span className="text-xs font-bold tabular-nums" style={{ color: THEME.secondary }}>
+                                <span className="text-[9px] uppercase text-muted-foreground">{t('biz.remainingAfterDP')}</span>
+                                <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>
                                   {formatAmount(remaining)}
                                 </span>
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[9px] uppercase" style={{ color: THEME.muted }}>{t('biz.installmentAmount')}</span>
-                                <span className="text-xs font-bold tabular-nums" style={{ color: THEME.primary }}>
+                                <span className="text-[9px] uppercase text-muted-foreground">{t('biz.installmentAmount')}</span>
+                                <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--primary)' }}>
                                   {computedTenor > 0 ? formatAmount(monthlyInstallment) : '—'}
                                 </span>
                               </div>
                             </div>
                             {investorSharePct > 0 && monthlyInstallment > 0 && (
-                              <div className="flex flex-col pt-1" style={{ borderTop: `1px solid ${THEME.border}` }}>
-                                <span className="text-[9px] uppercase" style={{ color: THEME.muted }}>Bagi Investor ({investorSharePct}%)</span>
-                                <span className="text-xs font-bold tabular-nums" style={{ color: THEME.warning }}>
+                              <div className="flex flex-col pt-1 border-t border-border">
+                                <span className="text-[9px] uppercase text-muted-foreground">Bagi Investor ({investorSharePct}%)</span>
+                                <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--warning)' }}>
                                   {formatAmount(investorShareAmount)} / bulan
                                 </span>
                               </div>
@@ -1229,10 +1156,9 @@ export default function BusinessSales() {
                             {/* Progress bar preview */}
                             {computedAmount > 0 && computedDP > 0 && (
                               <div className="pt-1">
-                                <div className="h-1 rounded-full overflow-hidden" style={{ background: THEME.border }}>
+                                <div className="h-1 rounded-full overflow-hidden bg-border">
                                   <motion.div
-                                    className="h-full rounded-full"
-                                    style={{ background: THEME.secondary }}
+                                    className="h-full rounded-full bg-secondary"
                                     initial={{ width: 0 }}
                                     animate={{
                                       width: `${Math.min((computedDP / computedAmount) * 100, 100)}%`,
@@ -1240,7 +1166,7 @@ export default function BusinessSales() {
                                     transition={{ duration: 0.4, ease: 'easeOut' as const }}
                                   />
                                 </div>
-                                <p className="text-[9px] mt-0.5 tabular-nums" style={{ color: THEME.muted }}>
+                                <p className="text-[9px] mt-0.5 tabular-nums text-muted-foreground">
                                   DP {((computedDP / computedAmount) * 100).toFixed(1)}% dari total
                                 </p>
                               </div>
@@ -1254,19 +1180,19 @@ export default function BusinessSales() {
 
                 {/* Customer */}
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                  <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {t('biz.saleCustomer')}
                   </Label>
                   <Select
                     value={formData.customerId}
                     onValueChange={(v) => setFormData((prev) => ({ ...prev, customerId: v }))}
                   >
-                    <SelectTrigger className="rounded-lg text-sm" style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}>
+                    <SelectTrigger className="rounded-lg text-sm bg-card border border-border text-foreground">
                       <SelectValue placeholder={t('biz.saleCustomer')} />
                     </SelectTrigger>
-                    <SelectContent className="rounded-lg" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+                    <SelectContent className="rounded-lg bg-card border border-border">
                       {customers.map((c) => (
-                        <SelectItem key={c.id} value={c.id} className="text-sm rounded-md" style={{ color: THEME.text }}>
+                        <SelectItem key={c.id} value={c.id} className="text-sm rounded-md text-foreground">
                           {c.name}
                         </SelectItem>
                       ))}
@@ -1277,33 +1203,32 @@ export default function BusinessSales() {
                 {/* Date & Payment Method */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                    <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                       {t('biz.saleDate')}
                     </Label>
                     <Input
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                      className="rounded-lg text-sm"
-                      style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}
+                      className="rounded-lg text-sm bg-card border border-border text-foreground"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                    <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                       {t('biz.salePaymentMethod')}
                     </Label>
                     <Select
                       value={formData.paymentMethod}
                       onValueChange={(v) => setFormData((prev) => ({ ...prev, paymentMethod: v }))}
                     >
-                      <SelectTrigger className="rounded-lg text-sm" style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, color: THEME.text }}>
+                      <SelectTrigger className="rounded-lg text-sm bg-card border border-border text-foreground">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-lg" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+                      <SelectContent className="rounded-lg bg-card border border-border">
                         {PAYMENT_METHODS.map((m) => {
                           const Icon = m.icon;
                           return (
-                            <SelectItem key={m.value} value={m.value} className="text-sm rounded-md" style={{ color: THEME.text }}>
+                            <SelectItem key={m.value} value={m.value} className="text-sm rounded-md text-foreground">
                               <span className="flex items-center gap-2">
                                 <Icon className="h-3 w-3" style={{ color: m.color }} />
                                 {t(m.labelKey)}
@@ -1318,30 +1243,25 @@ export default function BusinessSales() {
 
                 {/* Notes */}
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: THEME.textSecondary }}>
+                  <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {t('biz.customerNotes')}
                   </Label>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder={t('biz.customerNotes')}
-                    className="min-h-[60px] rounded-lg text-sm resize-none"
-                    style={{
-                      background: THEME.surface,
-                      border: `1px solid ${THEME.border}`,
-                      color: THEME.text,
-                    }}
+                    className="min-h-[60px] rounded-lg text-sm resize-none bg-card border border-border text-foreground"
                   />
                 </div>
               </form>
 
-              <DialogFooter className="gap-2 pt-2 shrink-0" style={{ borderTop: `1px solid ${THEME.border}` }}>
+              <DialogFooter className="gap-2 pt-2 shrink-0 border-t border-border">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
                   className="rounded-lg text-sm"
-                  style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.textSecondary }}
+                  style={{ border: '1px solid var(--border)', color: 'var(--muted-foreground)' }}
                 >
                   {t('common.cancel')}
                 </Button>
@@ -1349,8 +1269,7 @@ export default function BusinessSales() {
                   type="submit"
                   form="sale-form"
                   disabled={saving || !formData.description || !formData.amount}
-                  className="rounded-lg text-sm disabled:opacity-50"
-                  style={{ background: THEME.primary, color: '#000' }}
+                  className="rounded-lg text-sm disabled:opacity-50 bg-primary text-primary-foreground"
                 >
                   {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                   {t('common.save')}
@@ -1362,32 +1281,28 @@ export default function BusinessSales() {
           {/* Delete Confirmation */}
           <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
             <AlertDialogContent
-              className="rounded-xl"
-              style={{
-                background: THEME.surface,
-                border: `1px solid ${THEME.border}`,
-              }}
+              className="rounded-xl bg-card border border-border"
             >
-              <div className="h-[2px] -mt-6 mb-4 -mx-6 mt-[-1.25rem] rounded-t-xl" style={{ background: THEME.destructive }} />
+              <div className="h-[2px] -mt-6 mb-4 -mx-6 mt-[-1.25rem] rounded-t-xl bg-destructive" />
               <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2" style={{ color: THEME.text }}>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${THEME.destructive}15` }}>
-                    <Trash2 className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
+                <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-destructive/15">
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </div>
                   {t('common.delete')}
                 </AlertDialogTitle>
-                <AlertDialogDescription className="pl-9" style={{ color: THEME.textSecondary }}>
+                <AlertDialogDescription className="pl-9 text-muted-foreground">
                   {t('kas.deleteDesc')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="rounded-lg text-sm" style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.textSecondary }}>
+                <AlertDialogCancel className="rounded-lg text-sm border border-border text-muted-foreground">
                   {t('common.cancel')}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
                   className="rounded-lg text-sm border-0"
-                  style={{ background: THEME.destructive, color: THEME.text }}
+                  style={{ background: 'var(--destructive)', color: 'var(--foreground)' }}
                 >
                   {t('common.delete')}
                 </AlertDialogAction>
@@ -1398,24 +1313,20 @@ export default function BusinessSales() {
           {/* Post-Sale Invoice Prompt */}
           <Dialog open={showInvoicePrompt} onOpenChange={(open) => !open && setShowInvoicePrompt(false)}>
             <DialogContent
-              className="rounded-xl sm:max-w-[380px]"
-              style={{
-                background: THEME.surface,
-                border: `1px solid ${THEME.border}`,
-              }}
+              className="rounded-xl sm:max-w-[380px] bg-card border border-border"
             >
-              <div className="h-[2px] -mt-6 mb-4 -mx-6 mt-[-1.25rem] rounded-t-xl" style={{ background: `linear-gradient(to right, ${THEME.secondary}, ${THEME.primary})` }} />
+              <div className="h-[2px] -mt-6 mb-4 -mx-6 mt-[-1.25rem] rounded-t-xl" style={{ background: 'linear-gradient(to right, var(--secondary), var(--primary))' }} />
               <DialogHeader className="text-center">
                 <div className="flex flex-col items-center gap-3 pt-1">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${THEME.secondary}15`, border: `1px solid ${THEME.secondary}20` }}>
-                    <CheckCircle className="h-6 w-6" style={{ color: THEME.secondary }} />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-secondary/15 border border-border">
+                    <CheckCircle className="h-6 w-6" style={{ color: 'var(--secondary)' }} />
                   </div>
                   <div>
-                    <DialogTitle className="text-base font-bold flex items-center justify-center gap-2" style={{ color: THEME.text }}>
-                      <Receipt className="h-4 w-4" style={{ color: THEME.primary }} />
+                    <DialogTitle className="text-base font-bold flex items-center justify-center gap-2 text-foreground">
+                      <Receipt className="h-4 w-4" style={{ color: 'var(--primary)' }} />
                       Kirim Invoice?
                     </DialogTitle>
-                    <DialogDescription className="mt-1.5 text-xs" style={{ color: THEME.textSecondary }}>
+                    <DialogDescription className="mt-1.5 text-xs text-muted-foreground">
                       Penjualan berhasil disimpan. Kirim invoice ke pelanggan?
                     </DialogDescription>
                   </div>
@@ -1427,8 +1338,7 @@ export default function BusinessSales() {
                     setShowInvoicePrompt(false);
                     toast.info('Silakan buat invoice dari halaman Invoice');
                   }}
-                  className="w-full rounded-lg text-sm font-semibold"
-                  style={{ background: THEME.primary, color: '#000' }}
+                  className="w-full rounded-lg text-sm font-semibold bg-primary text-primary-foreground"
                 >
                   <Receipt className="h-3.5 w-3.5 mr-2" />
                   Buat Invoice
@@ -1437,7 +1347,7 @@ export default function BusinessSales() {
                   variant="ghost"
                   onClick={() => setShowInvoicePrompt(false)}
                   className="w-full rounded-lg text-sm"
-                  style={{ border: `1px solid ${THEME.borderHover}`, color: THEME.textSecondary }}
+                  style={{ border: '1px solid var(--border)', color: 'var(--muted-foreground)' }}
                 >
                   Nanti Saja
                 </Button>

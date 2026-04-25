@@ -30,7 +30,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { type, amount, description, category, date, referenceId, notes } = body;
+    const { type, amount, description, category, date, referenceId, notes, source, investorId } = body;
 
     const updateData: Record<string, unknown> = {};
     if (type !== undefined) updateData.type = type;
@@ -40,6 +40,8 @@ export async function PUT(
     if (date !== undefined) updateData.date = date ? new Date(date) : new Date();
     if (referenceId !== undefined) updateData.referenceId = referenceId;
     if (notes !== undefined) updateData.notes = notes;
+    if (source !== undefined) updateData.source = source || null;
+    if (investorId !== undefined) updateData.investorId = investorId || null;
 
     const updated = await db.businessCash.update({
       where: { id },

@@ -237,7 +237,7 @@ export default function ProductList() {
   const getStockBadge = (stock: number) => {
     if (stock === 0) {
       return (
-        <Badge variant="outline" className="text-xs font-normal border-0 bg-[#FF5252]/20 text-[#FF5252]">
+        <Badge variant="outline" className="text-xs font-normal border-0 bg-destructive/20 text-destructive">
           {t('biz.outOfStock')}
         </Badge>
       );
@@ -250,7 +250,7 @@ export default function ProductList() {
       );
     }
     return (
-      <Badge variant="outline" className="text-xs font-normal border-0 bg-[#03DAC6]/20 text-[#03DAC6]">
+      <Badge variant="outline" className="text-xs font-normal border-0 bg-secondary/20 text-secondary">
         {stock}
       </Badge>
     );
@@ -259,46 +259,46 @@ export default function ProductList() {
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-white/50 text-center">{t('biz.registerFirst')}</p>
+        <p className="text-muted-foreground/50 text-center">{t('biz.registerFirst')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Summary Cards */}
       {!loading && summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+          <Card className="bg-card border border-border rounded-xl p-3">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-                <Package className="h-5 w-5 text-[#03DAC6]" />
+              <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+                <Package className="h-5 w-5 text-secondary" />
               </div>
               <div>
-                <p className="text-xs text-white/50">{t('biz.totalProducts')}</p>
-                <p className="text-lg font-bold text-white">{summary.totalActive}</p>
+                <p className="text-xs text-muted-foreground/50">{t('biz.totalProducts')}</p>
+                <p className="text-base font-bold text-foreground">{summary.totalActive}</p>
               </div>
             </div>
           </Card>
-          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-4">
+          <Card className="bg-card border border-border rounded-xl p-3">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-[#BB86FC]" />
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs text-white/50">{t('biz.totalStockValue')}</p>
-                <p className="text-lg font-bold text-white">{formatAmount(summary.totalStockValue)}</p>
+                <p className="text-xs text-muted-foreground/50">{t('biz.totalStockValue')}</p>
+                <p className="text-base font-bold text-foreground">{formatAmount(summary.totalStockValue)}</p>
               </div>
             </div>
           </Card>
-          <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-xl p-4">
+          <Card className="bg-card border border-border rounded-xl p-3">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#FF5252]/10 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-[#FF5252]" />
+              <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-xs text-white/50">{t('biz.lowStock')}</p>
-                <p className="text-lg font-bold text-white">
+                <p className="text-xs text-muted-foreground/50">{t('biz.lowStock')}</p>
+                <p className="text-base font-bold text-foreground">
                   {summary.lowStock + summary.outOfStock}
                 </p>
               </div>
@@ -310,15 +310,15 @@ export default function ProductList() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Boxes className="h-5 w-5 text-[#BB86FC]" />
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Boxes className="h-5 w-5 text-primary" />
             {t('biz.products')}
           </h2>
         </div>
         <Button
           onClick={openCreateDialog}
           size="sm"
-          className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
+          className="bg-primary text-black hover:bg-primary"
         >
           <Plus className="h-4 w-4 mr-1" />
           {t('biz.addProduct')}
@@ -326,26 +326,26 @@ export default function ProductList() {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/30" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('common.search') + '...'}
-            className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 pl-9"
+            className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/30 pl-9"
           />
         </div>
         <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v === '__all__' ? '' : v)}>
-          <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white w-full sm:w-[160px]">
+          <SelectTrigger className="bg-muted/30 border-border text-foreground w-full sm:w-[160px]">
             <SelectValue placeholder={t('biz.productCategory')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__" className="text-white">
+            <SelectItem value="__all__" className="text-foreground">
               {t('biz.productCategory')}
             </SelectItem>
             {CATEGORY_OPTIONS.map((c) => (
-              <SelectItem key={c.value} value={c.value} className="text-white">
+              <SelectItem key={c.value} value={c.value} className="text-foreground">
                 {c.label}
               </SelectItem>
             ))}
@@ -354,16 +354,16 @@ export default function ProductList() {
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl">
+      <Card className="bg-card border border-border rounded-2xl">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-3 p-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-lg bg-white/[0.06]" />
+                <Skeleton key={i} className="h-12 rounded-lg bg-muted/40" />
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-white/40">
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/40">
               <Package className="h-10 w-10 mb-2 opacity-40" />
               <p className="text-sm">{t('biz.noProducts')}</p>
             </div>
@@ -371,58 +371,58 @@ export default function ProductList() {
             <div className="max-h-[500px] overflow-y-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-white/[0.06] hover:bg-transparent">
-                    <TableHead className="text-white/50 text-xs">{t('biz.productName')}</TableHead>
-                    <TableHead className="text-white/50 text-xs hidden sm:table-cell">{t('biz.productSku')}</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">{t('biz.productPrice')}</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">{t('biz.productStock')}</TableHead>
-                    <TableHead className="text-white/50 text-xs hidden md:table-cell">{t('biz.productCategory')}</TableHead>
-                    <TableHead className="text-white/50 text-xs hidden lg:table-cell">{t('dashboard.active')}</TableHead>
-                    <TableHead className="text-white/50 text-xs w-24" />
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground/50 text-xs">{t('biz.productName')}</TableHead>
+                    <TableHead className="text-muted-foreground/50 text-xs hidden sm:table-cell">{t('biz.productSku')}</TableHead>
+                    <TableHead className="text-muted-foreground/50 text-xs text-right">{t('biz.productPrice')}</TableHead>
+                    <TableHead className="text-muted-foreground/50 text-xs text-right">{t('biz.productStock')}</TableHead>
+                    <TableHead className="text-muted-foreground/50 text-xs hidden md:table-cell">{t('biz.productCategory')}</TableHead>
+                    <TableHead className="text-muted-foreground/50 text-xs hidden lg:table-cell">{t('dashboard.active')}</TableHead>
+                    <TableHead className="text-muted-foreground/50 text-xs w-24" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.map((product) => (
                     <TableRow
                       key={product.id}
-                      className={`border-white/[0.04] hover:bg-white/[0.02] ${!product.isActive ? 'opacity-50' : ''}`}
+                      className={`border-border hover:bg-muted/20 ${!product.isActive ? 'opacity-50' : ''}`}
                     >
-                      <TableCell className="text-white text-xs py-3 font-medium max-w-[180px] truncate">
+                      <TableCell className="text-foreground text-xs py-2 font-medium max-w-[180px] truncate">
                         {product.name}
                       </TableCell>
-                      <TableCell className="py-3 hidden sm:table-cell">
-                        <span className="text-white/60 text-xs font-mono">{product.sku || '-'}</span>
+                      <TableCell className="py-2 hidden sm:table-cell">
+                        <span className="text-muted-foreground/60 text-xs font-mono">{product.sku || '-'}</span>
                       </TableCell>
-                      <TableCell className="text-xs text-right font-medium py-3 text-[#03DAC6]">
+                      <TableCell className="text-xs text-right font-medium py-2 text-secondary">
                         {formatAmount(product.price)}
                       </TableCell>
-                      <TableCell className="py-3 text-right">
+                      <TableCell className="py-2 text-right">
                         {getStockBadge(product.stock)}
                       </TableCell>
-                      <TableCell className="py-3 hidden md:table-cell">
+                      <TableCell className="py-2 hidden md:table-cell">
                         {product.category && (
-                          <Badge variant="outline" className="text-xs font-normal border-0 bg-white/[0.06] text-white/70">
+                          <Badge variant="outline" className="text-xs font-normal border-0 bg-muted/40 text-muted-foreground/70">
                             {product.category}
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="py-3 hidden lg:table-cell">
+                      <TableCell className="py-2 hidden lg:table-cell">
                         <Badge
                           variant="outline"
                           className={`text-xs font-normal border-0 ${
                             product.isActive
-                              ? 'bg-[#03DAC6]/20 text-[#03DAC6]'
-                              : 'bg-white/[0.06] text-white/50'
+                              ? 'bg-secondary/20 text-secondary'
+                              : 'bg-muted/40 text-muted-foreground/50'
                           }`}
                         >
                           {product.isActive ? t('biz.active') : t('biz.inactive')}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 text-right">
+                      <TableCell className="py-2 text-right">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-white/40 hover:text-white hover:bg-white/10"
+                          className="h-8 w-8 p-0 text-muted-foreground/40 hover:text-foreground hover:bg-white/10"
                           onClick={() => openEditDialog(product)}
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -430,7 +430,7 @@ export default function ProductList() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-white/40 hover:text-red-400 hover:bg-white/10"
+                          className="h-8 w-8 p-0 text-muted-foreground/40 hover:text-destructive hover:bg-white/10"
                           onClick={() => setDeleteId(product.id)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -447,41 +447,41 @@ export default function ProductList() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white sm:max-w-[500px]">
+        <DialogContent className="bg-card border border-border text-foreground sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-white">
+            <DialogTitle className="text-foreground">
               {editingProduct ? t('biz.editProduct') : t('biz.addProduct')}
             </DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogDescription className="text-muted-foreground/60">
               {editingProduct ? t('biz.editProduct') : t('biz.addProduct')}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave} className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2 sm:col-span-1">
-                <Label className="text-white/80">{t('biz.productName')} *</Label>
+                <Label className="text-muted-foreground/80">{t('biz.productName')} *</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={t('biz.productName')}
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/30"
                 />
               </div>
               <div className="space-y-2 col-span-2 sm:col-span-1">
-                <Label className="text-white/80">{t('biz.productSku')}</Label>
+                <Label className="text-muted-foreground/80">{t('biz.productSku')}</Label>
                 <Input
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                   placeholder={t('biz.productSku')}
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 font-mono"
+                  className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/30 font-mono"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.productPrice')} *</Label>
+                <Label className="text-muted-foreground/80">{t('biz.productPrice')} *</Label>
                 <Input
                   type="number"
                   value={formData.price}
@@ -489,32 +489,32 @@ export default function ProductList() {
                   placeholder="0"
                   min="0"
                   step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/30"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.productStock')}</Label>
+                <Label className="text-muted-foreground/80">{t('biz.productStock')}</Label>
                 <Input
                   type="number"
                   value={formData.stock}
                   onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                  className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/30"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.productCategory')}</Label>
+                <Label className="text-muted-foreground/80">{t('biz.productCategory')}</Label>
                 <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                  <SelectTrigger className="bg-muted/30 border-border text-foreground">
                     <SelectValue placeholder={t('biz.productCategory')} />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORY_OPTIONS.map((c) => (
-                      <SelectItem key={c.value} value={c.value} className="text-white">
+                      <SelectItem key={c.value} value={c.value} className="text-foreground">
                         {c.label}
                       </SelectItem>
                     ))}
@@ -522,14 +522,14 @@ export default function ProductList() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-white/80">{t('biz.productUnit')}</Label>
+                <Label className="text-muted-foreground/80">{t('biz.productUnit')}</Label>
                 <Select value={formData.unit} onValueChange={(v) => setFormData({ ...formData, unit: v })}>
-                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
+                  <SelectTrigger className="bg-muted/30 border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {UNIT_OPTIONS.map((u) => (
-                      <SelectItem key={u.value} value={u.value} className="text-white">
+                      <SelectItem key={u.value} value={u.value} className="text-foreground">
                         {u.label}
                       </SelectItem>
                     ))}
@@ -539,12 +539,12 @@ export default function ProductList() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-white/80">{t('biz.productDescription')}</Label>
+              <Label className="text-muted-foreground/80">{t('biz.productDescription')}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder={t('biz.productDescription')}
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[60px]"
+                className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/30 min-h-[60px]"
               />
             </div>
 
@@ -554,7 +554,7 @@ export default function ProductList() {
                   checked={formData.isActive}
                   onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-                <Label className="text-white/80 cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
+                <Label className="text-muted-foreground/80 cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
                   {formData.isActive ? t('biz.active') : t('biz.inactive')}
                 </Label>
               </div>
@@ -565,14 +565,14 @@ export default function ProductList() {
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
-                className="border-white/[0.1] text-white hover:bg-white/10"
+                className="border-border text-foreground hover:bg-white/10"
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !formData.name || !formData.price}
-                className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
+                className="bg-primary text-black hover:bg-primary"
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('common.save')}
@@ -584,20 +584,20 @@ export default function ProductList() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border border-white/[0.06] text-white">
+        <AlertDialogContent className="bg-card border border-border text-foreground">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
-            <AlertDialogDescription className="text-white/60">
+            <AlertDialogTitle className="text-foreground">{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground/60">
               {t('kas.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
+            <AlertDialogCancel className="border-border text-foreground hover:bg-white/10">
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600 text-white border-0"
+              className="bg-destructive hover:bg-destructive/90 text-foreground border-0"
             >
               {t('common.delete')}
             </AlertDialogAction>

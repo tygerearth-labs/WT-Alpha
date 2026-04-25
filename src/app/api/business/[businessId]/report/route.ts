@@ -109,15 +109,29 @@ export async function GET(
       }
 
       report.sales = {
-        data: sales.map((s) => ({
-          tanggal: new Date(s.date).toLocaleDateString('id-ID'),
-          pelanggan: s.customer?.name || '-',
-          deskripsi: s.description,
-          jumlah: s.amount,
-          metodePembayaran: s.paymentMethod || '-',
-          catatan: s.notes || '',
-          tipe: (s.installmentTempo && s.installmentTempo > 0) ? 'cicilan' : 'tunai',
-        })),
+        data: sales.map((s) => {
+          const isInstallment = s.installmentTempo && s.installmentTempo > 0;
+          const dp = s.downPayment || 0;
+          const debtInfo = isInstallment ? debtPaymentMap.get(s.id) : undefined;
+          const realized = isInstallment
+            ? dp + (debtInfo?.totalPaid || 0)
+            : s.amount;
+          const sisa = isInstallment
+            ? (debtInfo?.remaining ?? (s.amount - dp))
+            : 0;
+          return {
+            tanggal: new Date(s.date).toLocaleDateString('id-ID'),
+            pelanggan: s.customer?.name || '-',
+            deskripsi: s.description,
+            jumlah: s.amount,
+            metodePembayaran: s.paymentMethod || '-',
+            catatan: s.notes || '',
+            tipe: isInstallment ? 'cicilan' : 'tunai',
+            downPayment: isInstallment ? dp : undefined,
+            realizedAmount: realized,
+            sisaPiutang: isInstallment ? sisa : 0,
+          };
+        }),
         summary: {
           totalPenjualan: totalSales,
           jumlahTransaksi: sales.length,
@@ -431,8 +445,8 @@ export async function GET(
 
     // Overall summary (only for full report)
     if (type === 'full') {
-      const salesData = report.sales as { summary?: Record<string, number>; salesBreakdown?: Record<string, Record<string, number>> } | undefined;
-      const cashData = report.cash as { summary?: Record<string, number> } | undefined;
+      const salesData = report.sales as { summary?: Record<string, number>; salesBreakdown?: Record<string, Record<string, number>>; data?: Array<Record<string, unknown>> } | undefined;
+      const cashData = report.cash as { summary?: Record<string, number>; data?: Array<Record<string, unknown>> } | undefined;
       const debtsData = report.debts as { summary?: Record<string, number> } | undefined;
       const salesSummary = salesData?.summary;
       const salesBreakdown = salesData?.salesBreakdown;
@@ -455,6 +469,75 @@ export async function GET(
         saldoBersih: cashSummary?.saldoBersih || 0,
         totalHutang: debtsSummary?.totalHutang || 0,
         totalPiutang: debtsSummary?.totalPiutang || 0,
+      };
+
+      // ── taxAudit section: for tax reporting purposes ──
+      const tunaiTotal = salesBreakdown?.tunai?.total || 0;
+      const dpDiterima = salesBreakdown?.cicilan?.totalDPDiterima || 0;
+      const cicilanDiterima = salesBreakdown?.cicilan?.totalCicilanDiterima || 0;
+      const totalPengeluaran = cashSummary?.totalKasKeluar || 0;
+
+      // Per-category expense breakdown from cash entries
+      const cashDataRaw = cashData?.data || [];
+      const expenseByCategory = new Map<string, number>();
+      for (const entry of cashDataRaw) {
+        if (entry.tipe === 'kas_keluar' && entry.kategori && entry.kategori !== '-') {
+          const cat = entry.kategori as string;
+          const amt = entry.jumlah as number;
+          expenseByCategory.set(cat, (expenseByCategory.get(cat) || 0) + amt);
+        }
+      }
+      const pengeluaranPerKategori = Array.from(expenseByCategory.entries())
+        .map(([kategori, jumlah]) => ({ kategori, jumlah }))
+        .sort((a, b) => b.jumlah - a.jumlah);
+
+      report.taxAudit = {
+        pendapatanTunai: {
+          total: tunaiTotal,
+          items: (salesData?.data || []).filter((s) => s.tipe === 'tunai').map((s) => ({
+            tanggal: s.tanggal,
+            pelanggan: s.pelanggan,
+            deskripsi: s.deskripsi,
+            jumlah: s.jumlah,
+          })),
+        },
+        dpDiterima: {
+          total: dpDiterima,
+          items: (salesData?.data || []).filter((s) => s.tipe === 'cicilan').map((s) => ({
+            tanggal: s.tanggal,
+            pelanggan: s.pelanggan,
+            deskripsi: s.deskripsi,
+            dp: s.downPayment || 0,
+          })),
+        },
+        cicilanDiterima: {
+          total: cicilanDiterima,
+          items: (salesData?.data || []).filter((s) => s.tipe === 'cicilan').map((s) => ({
+            tanggal: s.tanggal,
+            pelanggan: s.pelanggan,
+            deskripsi: s.deskripsi,
+            jumlah: s.jumlah,
+            terealisasi: s.realizedAmount || 0,
+            sisa: s.sisaPiutang || 0,
+          })),
+        },
+        pendapatanBelumTerealisasi: {
+          total: unrealizedIncome,
+          items: (salesData?.data || []).filter((s) => s.tipe === 'cicilan' && (s.sisaPiutang || 0) > 0).map((s) => ({
+            tanggal: s.tanggal,
+            pelanggan: s.pelanggan,
+            deskripsi: s.deskripsi,
+            totalProduk: s.jumlah,
+            terealisasi: s.realizedAmount || 0,
+            sisa: s.sisaPiutang || 0,
+          })),
+        },
+        pengeluaranPerKategori,
+        labaRugi: {
+          pendapatanRealized: realizedIncome,
+          totalPengeluaran,
+          labaBersih: realizedIncome - totalPengeluaran,
+        },
       };
     }
 

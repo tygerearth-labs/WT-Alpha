@@ -293,10 +293,10 @@ export default function BusinessCategoryManager() {
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' as const }}
         />
       </div>
-      <p className="text-sm font-medium text-white/40 mb-1">
+      <p className="text-sm font-medium text-muted-foreground/40 mb-1">
         Belum ada kategori {activeTab === 'pemasukan' ? t('biz.pemasukan') : activeTab === 'pengeluaran' ? t('biz.pengeluaran') : 'Produk'}
       </p>
-      <p className="text-xs text-white/25 text-center max-w-[240px] mb-4">
+      <p className="text-xs text-muted-foreground/25 text-center max-w-[240px] mb-4">
         Tambahkan kategori untuk mengorganisir data bisnis Anda
       </p>
       <Button
@@ -320,7 +320,7 @@ export default function BusinessCategoryManager() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="h-14 rounded-xl bg-white/[0.03] animate-pulse"
+          className="h-14 rounded-xl bg-muted/20 animate-pulse"
           style={{ animationDelay: `${i * 0.08}s` }}
         />
       ))}
@@ -330,7 +330,7 @@ export default function BusinessCategoryManager() {
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <p className="text-white/50 text-center">{t('biz.registerFirst')}</p>
+        <p className="text-muted-foreground/50 text-center">{t('biz.registerFirst')}</p>
       </div>
     );
   }
@@ -344,7 +344,7 @@ export default function BusinessCategoryManager() {
     >
       {/* ── Header Card ── */}
       <motion.div variants={cardPopVariants}>
-        <Card className="bg-[#1A1A2E] border-white/[0.06] overflow-hidden">
+        <Card className="bg-card border-border overflow-hidden">
           {/* Gradient header strip */}
           <div
             className="h-1 w-full"
@@ -365,10 +365,10 @@ export default function BusinessCategoryManager() {
                   <Layers className="h-5 w-5" style={{ color: typeConfig.accentColor }} />
                 </div>
                 <div>
-                  <CardTitle className="text-white text-sm md:text-base font-semibold flex items-center gap-2">
+                  <CardTitle className="text-foreground text-sm md:text-base font-semibold flex items-center gap-2">
                     {t('biz.addCategory')}
                   </CardTitle>
-                  <p className="text-xs text-white/30 mt-0.5">
+                  <p className="text-xs text-muted-foreground/30 mt-0.5">
                     Kelola kategori {activeTab === 'pemasukan' ? t('biz.pemasukan') : activeTab === 'pengeluaran' ? t('biz.pengeluaran') : 'Produk'}
                   </p>
                 </div>
@@ -400,7 +400,7 @@ export default function BusinessCategoryManager() {
           }}
         >
           <div
-            className="bg-[#1A1A2E] border border-white/[0.06] rounded-2xl p-1.5 relative overflow-hidden"
+            className="bg-card border border-border rounded-2xl p-1.5 relative overflow-hidden"
           >
             {/* Decorative gradient circle */}
             <div
@@ -421,8 +421,8 @@ export default function BusinessCategoryManager() {
                     className={cn(
                       'relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 data-[state=active]:bg-transparent data-[state=active]:shadow-none',
                       isActive
-                        ? 'text-white'
-                        : 'text-white/40 hover:text-white/60'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground/40 hover:text-muted-foreground/60'
                     )}
                   >
                     {isActive && (
@@ -472,18 +472,18 @@ export default function BusinessCategoryManager() {
               {/* ── Search Bar ── */}
               <div className="mb-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/25" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/25" />
                   <Input
                     placeholder={t('common.search') + '...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-10 bg-[#1A1A2E] border-white/[0.06] text-white placeholder:text-white/25 text-sm rounded-xl focus:border-white/[0.15] focus:ring-1 focus:ring-white/[0.06]"
+                    className="pl-10 h-10 bg-card border-border text-foreground placeholder:text-muted-foreground/25 text-sm rounded-xl focus:border-foreground/15 focus:ring-1 focus:ring-ring"
                   />
                 </div>
               </div>
 
               {/* ── Category List ── */}
-              <Card className="bg-[#1A1A2E] border-white/[0.06] overflow-hidden">
+              <Card className="bg-card border-border overflow-hidden">
                 <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
                   {loading ? (
                     renderSkeleton()
@@ -491,7 +491,7 @@ export default function BusinessCategoryManager() {
                     searchQuery ? (
                       <div className="flex flex-col items-center py-10 px-6">
                         <Search className="h-8 w-8 text-white/15 mb-3" />
-                        <p className="text-sm text-white/30">Tidak ditemukan</p>
+                        <p className="text-sm text-muted-foreground/30">Tidak ditemukan</p>
                         <p className="text-xs text-white/20 mt-0.5">
                           Coba kata kunci lain untuk &quot;{searchQuery}&quot;
                         </p>
@@ -501,7 +501,7 @@ export default function BusinessCategoryManager() {
                     )
                   ) : (
                     <motion.div
-                      className="divide-y divide-white/[0.04]"
+                      className="divide-y divide-border"
                       variants={containerVariants}
                       initial="hidden"
                       animate="visible"
@@ -516,7 +516,7 @@ export default function BusinessCategoryManager() {
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-                            className="flex items-center gap-3 px-4 md:px-5 py-3.5 group hover:bg-white/[0.02] transition-all duration-200"
+                            className="flex items-center gap-3 px-4 md:px-5 py-3.5 group hover:bg-muted/20 transition-all duration-200"
                           >
                             {/* Color dot */}
                             <div
@@ -537,7 +537,7 @@ export default function BusinessCategoryManager() {
 
                             {/* Name */}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-white/80 truncate group-hover:text-white transition-colors">
+                              <p className="text-sm font-medium text-muted-foreground/80 truncate group-hover:text-foreground transition-colors">
                                 {category.name}
                               </p>
                             </div>
@@ -555,13 +555,13 @@ export default function BusinessCategoryManager() {
                             </Badge>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                            <div className="flex items-center gap-1 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 shrink-0">
                               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => openEditDialog(category)}
-                                  className="h-8 w-8 p-0 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06]"
+                                  className="h-8 w-8 p-0 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/40"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
@@ -574,7 +574,7 @@ export default function BusinessCategoryManager() {
                                     setDeletingCategory(category);
                                     setDeleteDialogOpen(true);
                                   }}
-                                  className="h-8 w-8 p-0 rounded-lg text-white/40 hover:text-[#CF6679] hover:bg-[#CF6679]/[0.08]"
+                                  className="h-8 w-8 p-0 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/[0.08]"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -589,8 +589,8 @@ export default function BusinessCategoryManager() {
 
                 {/* Footer count */}
                 {!loading && categories.length > 0 && (
-                  <div className="px-5 py-2.5 border-t border-white/[0.04]">
-                    <p className="text-[11px] text-white/25">
+                  <div className="px-5 py-2.5 border-t border-border">
+                    <p className="text-[11px] text-muted-foreground/25">
                       {filteredCategories.length} kategori
                       {searchQuery && ` ditemukan dari ${categories.length}`}
                     </p>
@@ -605,7 +605,7 @@ export default function BusinessCategoryManager() {
       {/* ── Add / Edit Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="bg-[#1A1A2E] border-white/[0.08] sm:max-w-md rounded-2xl"
+          className="bg-card border-border sm:max-w-md rounded-2xl"
         >
           {/* Gradient header line */}
           <div
@@ -615,7 +615,7 @@ export default function BusinessCategoryManager() {
             }}
           />
           <DialogHeader className="pt-2">
-            <DialogTitle className="text-white text-base font-semibold flex items-center gap-2">
+            <DialogTitle className="text-foreground text-base font-semibold flex items-center gap-2">
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-lg"
                 style={{
@@ -626,7 +626,7 @@ export default function BusinessCategoryManager() {
               </div>
               {editingCategory ? t('biz.editCategory') : t('biz.addCategory')}
             </DialogTitle>
-            <DialogDescription className="text-white/40 text-xs">
+            <DialogDescription className="text-muted-foreground/40 text-xs">
               {editingCategory
                 ? 'Ubah detail kategori yang sudah ada'
                 : 'Buat kategori baru untuk data bisnis Anda'
@@ -637,7 +637,7 @@ export default function BusinessCategoryManager() {
           <div className="space-y-5 py-2">
             {/* Type indicator (read-only) */}
             <div className="space-y-2">
-              <Label className="text-white/50 text-xs">{t('biz.categoryType')}</Label>
+              <Label className="text-muted-foreground/50 text-xs">{t('biz.categoryType')}</Label>
               <div
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm"
                 style={{
@@ -646,7 +646,7 @@ export default function BusinessCategoryManager() {
                 }}
               >
                 <TypeIcon className="h-4 w-4" style={{ color: typeConfig.accentColor }} />
-                <span className="text-white/70 font-medium capitalize">
+                <span className="text-muted-foreground/70 font-medium capitalize">
                   {activeTab === 'pemasukan' ? t('biz.pemasukan') : activeTab === 'pengeluaran' ? t('biz.pengeluaran') : 'Produk'}
                 </span>
               </div>
@@ -654,7 +654,7 @@ export default function BusinessCategoryManager() {
 
             {/* Name input */}
             <div className="space-y-2">
-              <Label htmlFor="category-name" className="text-white/50 text-xs">
+              <Label htmlFor="category-name" className="text-muted-foreground/50 text-xs">
                 {t('biz.categoryName')}
               </Label>
               <Input
@@ -662,7 +662,7 @@ export default function BusinessCategoryManager() {
                 placeholder="Masukkan nama kategori..."
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                className="h-10 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 text-sm rounded-xl focus:border-white/[0.15] focus:ring-1 focus:ring-white/[0.06]"
+                className="h-10 bg-muted/30 border-border text-foreground placeholder:text-white/20 text-sm rounded-xl focus:border-foreground/15 focus:ring-1 focus:ring-ring"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && formData.name.trim()) handleSave();
                 }}
@@ -671,7 +671,7 @@ export default function BusinessCategoryManager() {
 
             {/* Color picker */}
             <div className="space-y-2">
-              <Label className="text-white/50 text-xs flex items-center gap-1.5">
+              <Label className="text-muted-foreground/50 text-xs flex items-center gap-1.5">
                 <Palette className="h-3 w-3" />
                 {t('biz.categoryColor')}
               </Label>
@@ -684,7 +684,7 @@ export default function BusinessCategoryManager() {
                     whileTap={{ scale: 0.9 }}
                     className={cn(
                       'h-10 w-10 rounded-xl transition-all duration-200 relative',
-                      formData.color === color && 'ring-2 ring-offset-2 ring-offset-[#1A1A2E]'
+                      formData.color === color && 'ring-2 ring-offset-2 ring-offset-card'
                     )}
                     style={{
                       backgroundColor: color,
@@ -716,7 +716,7 @@ export default function BusinessCategoryManager() {
             <Button
               variant="ghost"
               onClick={() => setDialogOpen(false)}
-              className="text-white/50 hover:text-white hover:bg-white/[0.06] rounded-xl text-sm"
+              className="text-muted-foreground/50 hover:text-foreground hover:bg-muted/40 rounded-xl text-sm"
             >
               {t('common.cancel')}
             </Button>
@@ -750,22 +750,22 @@ export default function BusinessCategoryManager() {
 
       {/* ── Delete Confirmation Dialog ── */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-[#1A1A2E] border-white/[0.08] sm:max-w-md rounded-2xl">
+        <AlertDialogContent className="bg-card border-border sm:max-w-md rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white text-base font-semibold flex items-center gap-2">
+            <AlertDialogTitle className="text-foreground text-base font-semibold flex items-center gap-2">
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-lg"
                 style={{
                   backgroundColor: 'rgba(207,102,121,0.12)',
                 }}
               >
-                <Trash2 className="h-4 w-4 text-[#CF6679]" />
+                <Trash2 className="h-4 w-4 text-destructive" />
               </div>
               Hapus Kategori
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-white/40 text-sm">
+            <AlertDialogDescription className="text-muted-foreground/40 text-sm">
               Apakah Anda yakin ingin menghapus kategori{' '}
-              <span className="text-white/70 font-medium">
+              <span className="text-muted-foreground/70 font-medium">
                 &quot;{deletingCategory?.name}&quot;
               </span>
               ? Tindakan ini tidak dapat dibatalkan.
@@ -773,14 +773,14 @@ export default function BusinessCategoryManager() {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel
-              className="text-white/50 hover:text-white hover:bg-white/[0.06] border-white/[0.08] rounded-xl text-sm"
+              className="text-muted-foreground/50 hover:text-foreground hover:bg-muted/40 border-border rounded-xl text-sm"
             >
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-[#CF6679] hover:bg-[#CF6679]/90 text-white rounded-xl text-sm font-medium"
+              className="bg-destructive hover:bg-destructive/90 text-foreground rounded-xl text-sm font-medium"
             >
               {deleting ? (
                 <motion.div

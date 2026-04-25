@@ -336,12 +336,16 @@ model BusinessCash {
   category    String?  // e.g. "modal", "operasional", "gaji", "investor_modal", etc.
   date        DateTime @default(now())
   referenceId String?  // optional link to sale/invoice/investor
+  source      String?  // where money came from / deducted from: "kas_besar", "kas_kecil", "investor"
+  investorId  String?
+  investor    BusinessInvestor? @relation(fields: [investorId], references: [id], onDelete: SetNull)
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([businessId, type, date])
   @@index([businessId, date])
+  @@index([investorId])
 }
 
 model BusinessCategory {
@@ -376,6 +380,7 @@ model BusinessInvestor {
   joinDate           DateTime @default(now())
   createdAt          DateTime @default(now())
   updatedAt          DateTime @default(now())
+  cashEntries        BusinessCash[]
 
   @@index([businessId, status])
 }
