@@ -57,8 +57,52 @@ export async function GET(
       take: pageSize,
     });
 
+    // For installment sales, compute realizedAmount from linked piutang debt payments
+    // Collect all installment sale IDs
+    const installmentSaleIds = sales
+      .filter((s) => s.installmentTempo && s.installmentTempo > 0)
+      .map((s) => s.id);
+
+    // Batch fetch debts linked to these sales via referenceId
+    let debtPaymentMap = new Map<string, number>(); // saleId -> total paid installments sum
+    if (installmentSaleIds.length > 0) {
+      const linkedDebts = await db.businessDebt.findMany({
+        where: {
+          businessId,
+          type: 'piutang',
+          referenceId: { in: installmentSaleIds },
+        },
+        include: {
+          payments: {
+            select: { amount: true },
+          },
+        },
+      });
+
+      for (const debt of linkedDebts) {
+        if (debt.referenceId) {
+          const totalPaid = debt.payments.reduce((sum, p) => sum + p.amount, 0);
+          debtPaymentMap.set(debt.referenceId, totalPaid);
+        }
+      }
+    }
+
+    // Attach realizedAmount to each sale
+    const salesWithRealized = sales.map((sale) => {
+      const saleObj = sale as Record<string, unknown>;
+      if (sale.installmentTempo && sale.installmentTempo > 0) {
+        // Installment sale: realizedAmount = downPayment + sum of paid installments
+        const paidInstallments = debtPaymentMap.get(sale.id) || 0;
+        saleObj.realizedAmount = (sale.downPayment || 0) + paidInstallments;
+      } else {
+        // Non-installment: realizedAmount = amount
+        saleObj.realizedAmount = sale.amount;
+      }
+      return saleObj;
+    });
+
     return NextResponse.json({
-      sales,
+      sales: salesWithRealized,
       pagination: { page, pageSize, hasMore: sales.length === pageSize },
     });
   } catch (error) {
@@ -138,11 +182,41 @@ export async function POST(
     const numDP = downPayment ? parseFloat(String(downPayment)) : null;
     const numInstAmount = installmentAmount ? parseFloat(String(installmentAmount)) : null;
 
+    // Auto-generate invoice for installment sales if no invoiceId is provided
+    let finalInvoiceId = invoiceId;
+    const isInstallment = numTempo && numTempo > 0;
+    if (isInstallment && !finalInvoiceId) {
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+      const invoiceDueDate = installmentDueDate
+        ? new Date(installmentDueDate)
+        : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
+
+      const invoiceItems = JSON.stringify([
+        { description, qty: 1, price: numAmount, total: numAmount },
+      ]);
+
+      const invoice = await db.businessInvoice.create({
+        data: {
+          businessId,
+          invoiceNumber,
+          customerId: customerId || null,
+          items: invoiceItems,
+          subtotal: numAmount,
+          tax: 0,
+          discount: 0,
+          total: numAmount,
+          status: 'pending',
+          dueDate: invoiceDueDate,
+        },
+      });
+      finalInvoiceId = invoice.id;
+    }
+
     const sale = await db.businessSale.create({
       data: {
         businessId,
         customerId,
-        invoiceId,
+        invoiceId: finalInvoiceId,
         description,
         amount: numAmount,
         date: date ? new Date(date) : new Date(),
@@ -175,7 +249,7 @@ export async function POST(
         const piutangDueDate = installmentDueDate ? new Date(installmentDueDate) : (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d; })();
         const nextDate = new Date(piutangDueDate.getTime());
 
-        await db.businessDebt.create({
+        const createdDebt = await db.businessDebt.create({
           data: {
             businessId,
             type: 'piutang',
@@ -189,6 +263,7 @@ export async function POST(
             installmentPeriod: numTempo,
             nextInstallmentDate: nextDate,
             dueDate: piutangDueDate,
+            referenceId: sale.id,
           },
         });
       } catch (piutangErr) {
@@ -218,7 +293,15 @@ export async function POST(
       console.error('Sale notification error:', notifError);
     }
 
-    return NextResponse.json({ sale }, { status: 201 });
+    // Attach realizedAmount to the created sale
+    const saleObj = sale as Record<string, unknown>;
+    if (isInstallment) {
+      saleObj.realizedAmount = numDP || 0; // Just created, only DP received so far
+    } else {
+      saleObj.realizedAmount = numAmount;
+    }
+
+    return NextResponse.json({ sale: saleObj }, { status: 201 });
   } catch (error) {
     console.error('Sales POST error:', error);
     return NextResponse.json(

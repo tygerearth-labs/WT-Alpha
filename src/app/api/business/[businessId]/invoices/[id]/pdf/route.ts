@@ -50,6 +50,12 @@ export async function GET(
       where: { businessId: invoice.businessId },
     });
 
+    // Fetch bank accounts from BusinessBankAccount table
+    const bankAccounts = await db.businessBankAccount.findMany({
+      where: { businessId: invoice.businessId },
+      orderBy: [{ isDefault: 'desc' }, { displayOrder: 'asc' }],
+    });
+
     // Extract settings with defaults
     const settings = {
       template: invoiceSettings?.template || 'modern',
@@ -335,32 +341,49 @@ export async function GET(
         align: 'right',
       });
 
-      // Payment info
+      // Payment info - use BusinessBankAccount records if available, fallback to InvoiceSettings
       let paymentY = totalsY + 15;
-      if (settings.bankName || settings.bankAccount) {
+      const hasBanks = bankAccounts.length > 0;
+      const hasLegacyBank = settings.bankName || settings.bankAccount;
+      if (hasBanks || hasLegacyBank) {
         doc.setFontSize(11);
         doc.setFont('times', 'bold');
         doc.text('Informasi Pembayaran:', 14, paymentY);
         doc.setFont('times', 'normal');
         doc.setFontSize(9);
-        if (settings.bankName) {
-          doc.text(`Bank: ${settings.bankName}`, 14, paymentY + 6);
+        if (hasBanks) {
+          let bankLineY = paymentY + 6;
+          for (let i = 0; i < bankAccounts.length; i++) {
+            const ba = bankAccounts[i];
+            const prefix = bankAccounts.length > 1 ? `${i + 1}. ` : '';
+            doc.text(`Bank: ${prefix}${ba.bankName}`, 14, bankLineY);
+            bankLineY += 5;
+            doc.text(`No. Rekening: ${ba.accountNumber}`, 14, bankLineY);
+            bankLineY += 5;
+            doc.text(`Atas Nama: ${ba.accountHolder}`, 14, bankLineY);
+            bankLineY += 7;
+          }
+          paymentY = bankLineY;
+        } else {
+          if (settings.bankName) {
+            doc.text(`Bank: ${settings.bankName}`, 14, paymentY + 6);
+          }
+          if (settings.bankAccount) {
+            doc.text(
+              `No. Rekening: ${settings.bankAccount}`,
+              14,
+              paymentY + 11
+            );
+          }
+          if (settings.bankHolder) {
+            doc.text(
+              `Atas Nama: ${settings.bankHolder}`,
+              14,
+              paymentY + 16
+            );
+          }
+          paymentY += 25;
         }
-        if (settings.bankAccount) {
-          doc.text(
-            `No. Rekening: ${settings.bankAccount}`,
-            14,
-            paymentY + 11
-          );
-        }
-        if (settings.bankHolder) {
-          doc.text(
-            `Atas Nama: ${settings.bankHolder}`,
-            14,
-            paymentY + 16
-          );
-        }
-        paymentY += 25;
       }
 
       // Notes section
@@ -639,9 +662,11 @@ export async function GET(
       });
       doc.setTextColor(0, 0, 0);
 
-      // Payment info - minimal style
+      // Payment info - minimal style, use BusinessBankAccount if available
       let paymentY = totalsY + 15;
-      if (settings.bankName || settings.bankAccount) {
+      const hasBankAccounts = bankAccounts.length > 0;
+      const hasLegacyBanks = settings.bankName || settings.bankAccount;
+      if (hasBankAccounts || hasLegacyBanks) {
         doc.setDrawColor(230, 230, 230);
         doc.setLineWidth(0.2);
         doc.line(14, paymentY - 4, 196, paymentY - 4);
@@ -651,25 +676,40 @@ export async function GET(
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
-        if (settings.bankName) {
-          doc.text(`Bank: ${settings.bankName}`, 14, paymentY + 5);
-        }
-        if (settings.bankAccount) {
-          doc.text(
-            `No. Rekening: ${settings.bankAccount}`,
-            14,
-            paymentY + 9
-          );
-        }
-        if (settings.bankHolder) {
-          doc.text(
-            `Atas Nama: ${settings.bankHolder}`,
-            14,
-            paymentY + 13
-          );
+        if (hasBankAccounts) {
+          let bankLineY = paymentY + 5;
+          for (let i = 0; i < bankAccounts.length; i++) {
+            const ba = bankAccounts[i];
+            const prefix = bankAccounts.length > 1 ? `${i + 1}. ` : '';
+            doc.text(`Bank: ${prefix}${ba.bankName}`, 14, bankLineY);
+            bankLineY += 4;
+            doc.text(`No. Rekening: ${ba.accountNumber}`, 14, bankLineY);
+            bankLineY += 4;
+            doc.text(`Atas Nama: ${ba.accountHolder}`, 14, bankLineY);
+            bankLineY += 5;
+          }
+          paymentY = bankLineY + 3;
+        } else {
+          if (settings.bankName) {
+            doc.text(`Bank: ${settings.bankName}`, 14, paymentY + 5);
+          }
+          if (settings.bankAccount) {
+            doc.text(
+              `No. Rekening: ${settings.bankAccount}`,
+              14,
+              paymentY + 9
+            );
+          }
+          if (settings.bankHolder) {
+            doc.text(
+              `Atas Nama: ${settings.bankHolder}`,
+              14,
+              paymentY + 13
+            );
+          }
+          paymentY += 22;
         }
         doc.setTextColor(0, 0, 0);
-        paymentY += 22;
       }
 
       // Notes section
@@ -957,32 +997,49 @@ export async function GET(
       });
       doc.setTextColor(0, 0, 0);
 
-      // Payment info
+      // Payment info - use BusinessBankAccount if available
       let paymentY = totalsY + 15;
-      if (settings.bankName || settings.bankAccount) {
+      const hasModernBanks = bankAccounts.length > 0;
+      const hasModernLegacyBanks = settings.bankName || settings.bankAccount;
+      if (hasModernBanks || hasModernLegacyBanks) {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.text('Informasi Pembayaran:', 14, paymentY);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-        if (settings.bankName) {
-          doc.text(`Bank: ${settings.bankName}`, 14, paymentY + 6);
+        if (hasModernBanks) {
+          let bankLineY = paymentY + 6;
+          for (let i = 0; i < bankAccounts.length; i++) {
+            const ba = bankAccounts[i];
+            const prefix = bankAccounts.length > 1 ? `${i + 1}. ` : '';
+            doc.text(`Bank: ${prefix}${ba.bankName}`, 14, bankLineY);
+            bankLineY += 5;
+            doc.text(`No. Rekening: ${ba.accountNumber}`, 14, bankLineY);
+            bankLineY += 5;
+            doc.text(`Atas Nama: ${ba.accountHolder}`, 14, bankLineY);
+            bankLineY += 7;
+          }
+          paymentY = bankLineY;
+        } else {
+          if (settings.bankName) {
+            doc.text(`Bank: ${settings.bankName}`, 14, paymentY + 6);
+          }
+          if (settings.bankAccount) {
+            doc.text(
+              `No. Rekening: ${settings.bankAccount}`,
+              14,
+              paymentY + 11
+            );
+          }
+          if (settings.bankHolder) {
+            doc.text(
+              `Atas Nama: ${settings.bankHolder}`,
+              14,
+              paymentY + 16
+            );
+          }
+          paymentY += 25;
         }
-        if (settings.bankAccount) {
-          doc.text(
-            `No. Rekening: ${settings.bankAccount}`,
-            14,
-            paymentY + 11
-          );
-        }
-        if (settings.bankHolder) {
-          doc.text(
-            `Atas Nama: ${settings.bankHolder}`,
-            14,
-            paymentY + 16
-          );
-        }
-        paymentY += 25;
       }
 
       // Notes section
@@ -1050,11 +1107,11 @@ export async function GET(
     // Generate base64
     const pdfBase64 = doc.output('datauristring').split(',')[1];
 
-    // Save pdfUrl to database
+    // Save pdfUrl to database (store a reasonable length indicator)
     await db.businessInvoice.update({
       where: { id: invoice.id },
       data: {
-        pdfUrl: `data:application/pdf;base64,${pdfBase64.substring(0, 50)}...`,
+        pdfUrl: `generated:${new Date().toISOString()}`,
       },
     });
 

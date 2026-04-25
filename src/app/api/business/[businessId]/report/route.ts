@@ -60,6 +60,54 @@ export async function GET(
       });
 
       const totalSales = sales.reduce((sum, s) => sum + s.amount, 0);
+
+      // ── salesBreakdown: tunai vs cicilan ──
+      const tunaiSales = sales.filter((s) => !s.installmentTempo || s.installmentTempo <= 0);
+      const cicilanSales = sales.filter((s) => s.installmentTempo && s.installmentTempo > 0);
+
+      // For cicilan sales, compute realized amounts from linked piutang debt payments
+      const cicilanSaleIds = cicilanSales.map((s) => s.id);
+      let debtPaymentMap = new Map<string, { totalPaid: number; dp: number; remaining: number }>();
+      if (cicilanSaleIds.length > 0) {
+        const linkedDebts = await db.businessDebt.findMany({
+          where: {
+            businessId,
+            type: 'piutang',
+            referenceId: { in: cicilanSaleIds },
+          },
+          include: {
+            payments: {
+              select: { amount: true },
+            },
+          },
+        });
+        for (const debt of linkedDebts) {
+          if (debt.referenceId) {
+            const totalPaid = debt.payments.reduce((sum, p) => sum + p.amount, 0);
+            debtPaymentMap.set(debt.referenceId, {
+              totalPaid,
+              dp: debt.downPayment || 0,
+              remaining: debt.remaining,
+            });
+          }
+        }
+      }
+
+      const tunaiTotal = tunaiSales.reduce((sum, s) => sum + s.amount, 0);
+      let cicilanTotalProduct = 0;
+      let cicilanTotalDP = 0;
+      let cicilanTotalInstallments = 0;
+      let cicilanTotalRemaining = 0;
+      for (const s of cicilanSales) {
+        cicilanTotalProduct += s.amount;
+        const dp = s.downPayment || 0;
+        const debtInfo = debtPaymentMap.get(s.id);
+        const installmentsPaid = debtInfo ? debtInfo.totalPaid : 0;
+        cicilanTotalDP += dp;
+        cicilanTotalInstallments += installmentsPaid;
+        cicilanTotalRemaining += debtInfo ? debtInfo.remaining : (s.amount - dp);
+      }
+
       report.sales = {
         data: sales.map((s) => ({
           tanggal: new Date(s.date).toLocaleDateString('id-ID'),
@@ -68,11 +116,26 @@ export async function GET(
           jumlah: s.amount,
           metodePembayaran: s.paymentMethod || '-',
           catatan: s.notes || '',
+          tipe: (s.installmentTempo && s.installmentTempo > 0) ? 'cicilan' : 'tunai',
         })),
         summary: {
           totalPenjualan: totalSales,
           jumlahTransaksi: sales.length,
           rataRata: sales.length > 0 ? totalSales / sales.length : 0,
+        },
+        salesBreakdown: {
+          tunai: {
+            jumlahTransaksi: tunaiSales.length,
+            total: tunaiTotal,
+          },
+          cicilan: {
+            jumlahTransaksi: cicilanSales.length,
+            totalProduk: cicilanTotalProduct,
+            totalDPDiterima: cicilanTotalDP,
+            totalCicilanDiterima: cicilanTotalInstallments,
+            totalTerealisasi: cicilanTotalDP + cicilanTotalInstallments,
+            totalSisa: cicilanTotalRemaining,
+          },
         },
       };
     }
@@ -118,6 +181,12 @@ export async function GET(
       const debts = await db.businessDebt.findMany({
         where: { businessId },
         orderBy: { createdAt: 'asc' },
+        include: {
+          payments: {
+            select: { amount: true, paymentDate: true, paymentMethod: true },
+            orderBy: { paymentDate: 'asc' },
+          },
+        },
       });
 
       const totalHutang = debts
@@ -144,6 +213,122 @@ export async function GET(
           activeDebts: debts.filter((d) => d.status === 'active').length,
         },
       };
+
+      // ── piutangDetail: all piutang debts with payment status, categorized by status ──
+      const piutangDebts = debts.filter((d) => d.type === 'piutang');
+      const piutangDetail = {
+        berjalan: piutangDebts
+          .filter((d) => d.status === 'active' || d.status === 'partially_paid')
+          .map((d) => {
+            const paidAmount = d.payments.reduce((sum, p) => sum + p.amount, 0);
+            return {
+              id: d.id,
+              pihak: d.counterpart,
+              jumlah: d.amount,
+              dibayar: paidAmount,
+              sisa: d.remaining,
+              tanggalJatuhTempo: d.dueDate ? new Date(d.dueDate).toLocaleDateString('id-ID') : '-',
+              status: d.status,
+              jumlahCicilan: d.installmentPeriod,
+              tempoTerbayar: d.payments.length,
+            };
+          }),
+        menunggak: piutangDebts
+          .filter((d) => d.status === 'overdue')
+          .map((d) => {
+            const paidAmount = d.payments.reduce((sum, p) => sum + p.amount, 0);
+            return {
+              id: d.id,
+              pihak: d.counterpart,
+              jumlah: d.amount,
+              dibayar: paidAmount,
+              sisa: d.remaining,
+              tanggalJatuhTempo: d.dueDate ? new Date(d.dueDate).toLocaleDateString('id-ID') : '-',
+              status: d.status,
+              jumlahCicilan: d.installmentPeriod,
+              tempoTerbayar: d.payments.length,
+            };
+          }),
+        selesai: piutangDebts
+          .filter((d) => d.status === 'paid')
+          .map((d) => {
+            const paidAmount = d.payments.reduce((sum, p) => sum + p.amount, 0);
+            return {
+              id: d.id,
+              pihak: d.counterpart,
+              jumlah: d.amount,
+              dibayar: paidAmount,
+              sisa: d.remaining,
+              tanggalJatuhTempo: d.dueDate ? new Date(d.dueDate).toLocaleDateString('id-ID') : '-',
+              status: d.status,
+            };
+          }),
+        ringkasan: {
+          totalBerjalan: piutangDebts.filter((d) => d.status === 'active' || d.status === 'partially_paid').length,
+          totalMenunggak: piutangDebts.filter((d) => d.status === 'overdue').length,
+          totalSelesai: piutangDebts.filter((d) => d.status === 'paid').length,
+          nominalBerjalan: piutangDebts.filter((d) => d.status === 'active' || d.status === 'partially_paid').reduce((s, d) => s + d.remaining, 0),
+          nominalMenunggak: piutangDebts.filter((d) => d.status === 'overdue').reduce((s, d) => s + d.remaining, 0),
+          nominalSelesai: piutangDebts.filter((d) => d.status === 'paid').reduce((s, d) => s + d.amount, 0),
+        },
+      };
+      report.piutangDetail = piutangDetail;
+
+      // ── hutangDetail: all hutang debts with payment status ──
+      const hutangDebts = debts.filter((d) => d.type === 'hutang');
+      const hutangDetail = {
+        aktif: hutangDebts
+          .filter((d) => d.status === 'active' || d.status === 'partially_paid')
+          .map((d) => {
+            const paidAmount = d.payments.reduce((sum, p) => sum + p.amount, 0);
+            return {
+              id: d.id,
+              pihak: d.counterpart,
+              jumlah: d.amount,
+              dibayar: paidAmount,
+              sisa: d.remaining,
+              tanggalJatuhTempo: d.dueDate ? new Date(d.dueDate).toLocaleDateString('id-ID') : '-',
+              status: d.status,
+            };
+          }),
+        terlambat: hutangDebts
+          .filter((d) => d.status === 'overdue')
+          .map((d) => {
+            const paidAmount = d.payments.reduce((sum, p) => sum + p.amount, 0);
+            return {
+              id: d.id,
+              pihak: d.counterpart,
+              jumlah: d.amount,
+              dibayar: paidAmount,
+              sisa: d.remaining,
+              tanggalJatuhTempo: d.dueDate ? new Date(d.dueDate).toLocaleDateString('id-ID') : '-',
+              status: d.status,
+            };
+          }),
+        lunas: hutangDebts
+          .filter((d) => d.status === 'paid')
+          .map((d) => {
+            const paidAmount = d.payments.reduce((sum, p) => sum + p.amount, 0);
+            return {
+              id: d.id,
+              pihak: d.counterpart,
+              jumlah: d.amount,
+              dibayar: paidAmount,
+              sisa: d.remaining,
+              tanggalJatuhTempo: d.dueDate ? new Date(d.dueDate).toLocaleDateString('id-ID') : '-',
+              status: d.status,
+            };
+          }),
+        ringkasan: {
+          totalAktif: hutangDebts.filter((d) => d.status === 'active' || d.status === 'partially_paid').length,
+          totalTerlambat: hutangDebts.filter((d) => d.status === 'overdue').length,
+          totalLunas: hutangDebts.filter((d) => d.status === 'paid').length,
+          nominalAktif: hutangDebts.filter((d) => d.status === 'active' || d.status === 'partially_paid').reduce((s, d) => s + d.remaining, 0),
+          nominalTerlambat: hutangDebts.filter((d) => d.status === 'overdue').reduce((s, d) => s + d.remaining, 0),
+          nominalLunas: hutangDebts.filter((d) => d.status === 'paid').reduce((s, d) => s + d.amount, 0),
+        },
+      };
+      report.hutangDetail = hutangDetail;
     }
 
     if (type === 'full' || type === 'invoices') {
@@ -246,16 +431,24 @@ export async function GET(
 
     // Overall summary (only for full report)
     if (type === 'full') {
-      const salesData = report.sales as { summary?: Record<string, number> } | undefined;
+      const salesData = report.sales as { summary?: Record<string, number>; salesBreakdown?: Record<string, Record<string, number>> } | undefined;
       const cashData = report.cash as { summary?: Record<string, number> } | undefined;
       const debtsData = report.debts as { summary?: Record<string, number> } | undefined;
       const salesSummary = salesData?.summary;
+      const salesBreakdown = salesData?.salesBreakdown;
       const cashSummary = cashData?.summary;
       const debtsSummary = debtsData?.summary;
 
+      // Compute realized income: tunai total + cicilan realized (DP + installments received)
+      const realizedIncome = (salesBreakdown?.tunai?.total || 0) + (salesBreakdown?.cicilan?.totalTerealisasi || 0);
+      const unrealizedIncome = (salesBreakdown?.cicilan?.totalSisa || 0);
+
       report.overallSummary = {
         totalPendapatan: salesSummary?.totalPenjualan || 0,
+        pendapatanTerealisasi: realizedIncome,
+        pendapatanBelumTerealisasi: unrealizedIncome,
         totalPengeluaran: cashSummary?.totalKasKeluar || 0,
+        labaKotor: realizedIncome - (cashSummary?.totalKasKeluar || 0),
         laba: (salesSummary?.totalPenjualan || 0) - (cashSummary?.totalKasKeluar || 0),
         totalKasBesar: cashSummary?.totalKasBesar || 0,
         totalKasKecil: cashSummary?.totalKasKecil || 0,
