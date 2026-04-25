@@ -52,8 +52,8 @@ export async function GET(
     // Period-based date filtering (takes precedence over startDate/endDate)
     if (period) {
       const now = new Date();
-      let from: Date;
-      let to: Date;
+      let from: Date | undefined;
+      let to: Date | undefined;
       switch (period) {
         case 'day': {
           const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());

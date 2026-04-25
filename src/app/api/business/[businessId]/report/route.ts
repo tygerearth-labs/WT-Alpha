@@ -523,7 +523,7 @@ export async function GET(
         },
         pendapatanBelumTerealisasi: {
           total: unrealizedIncome,
-          items: (salesData?.data || []).filter((s) => s.tipe === 'cicilan' && (s.sisaPiutang || 0) > 0).map((s) => ({
+          items: (salesData?.data || []).filter((s) => s.tipe === 'cicilan' && Number(s.sisaPiutang || 0) > 0).map((s) => ({
             tanggal: s.tanggal,
             pelanggan: s.pelanggan,
             deskripsi: s.deskripsi,
