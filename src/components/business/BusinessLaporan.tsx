@@ -882,12 +882,12 @@ export default function BusinessLaporan() {
               </div>
               <Label className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>{t('biz.cashDate')}</Label>
             </div>
-            <div className="flex items-center gap-2 flex-1 flex-wrap">
+            <div className="flex items-center gap-2 flex-1 flex-wrap sm:flex-nowrap">
               <Input
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-36 h-8 text-xs rounded-lg"
+                className="w-full sm:w-36 h-8 text-xs rounded-lg"
                 style={inputStyle}
               />
               <div className="h-5 w-6 rounded flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--primary) 8%, transparent)' }}>
@@ -897,7 +897,7 @@ export default function BusinessLaporan() {
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-36 h-8 text-xs rounded-lg"
+                className="w-full sm:w-36 h-8 text-xs rounded-lg"
                 style={inputStyle}
               />
             </div>
@@ -956,7 +956,7 @@ export default function BusinessLaporan() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full sm:w-auto rounded-xl p-1 h-auto" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+        <TabsList className="w-full sm:w-auto rounded-xl p-1 h-auto overflow-x-auto flex-nowrap" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
           {[
             { value: 'labaRugi', label: 'Laba Rugi', color: 'var(--secondary)' },
             { value: 'arusKas', label: 'Arus Kas', color: 'var(--primary)' },
@@ -1325,7 +1325,35 @@ export default function BusinessLaporan() {
                   {piutangAnalysis.top5.length === 0 ? (
                     <p className="text-xs text-center py-4" style={{ color: 'var(--muted-foreground)' }}>Tidak ada piutang outstanding</p>
                   ) : (
-                    <div className="max-h-96 overflow-y-auto">
+                    <>
+                      {/* Mobile Card List */}
+                      <div className="sm:hidden space-y-2">
+                        {piutangAnalysis.top5.map((d, idx) => {
+                          const paidPct = d.amount > 0 ? ((d.amount - d.remaining) / d.amount) * 100 : 0;
+                          return (
+                            <div key={d.id} className="p-2.5 rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <span className="text-[10px] font-medium" style={{ color: 'var(--muted-foreground)' }}>#{idx + 1}</span>
+                                  <p className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{d.counterpart}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs font-bold tabular-nums" style={{ color: 'var(--warning)' }}>{formatAmount(d.remaining)}</p>
+                                  <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>dari {formatAmount(d.amount)}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                                  <div className="h-full rounded-full" style={{ width: `${paidPct}%`, backgroundColor: paidPct >= 100 ? 'var(--secondary)' : 'var(--primary)' }} />
+                                </div>
+                                <span className="text-[10px] tabular-nums" style={{ color: 'var(--muted-foreground)' }}>{paidPct.toFixed(0)}%</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Desktop Table */}
+                      <div className="hidden sm:block max-h-96 overflow-y-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -1362,6 +1390,7 @@ export default function BusinessLaporan() {
                         </TableBody>
                       </Table>
                     </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -1381,7 +1410,26 @@ export default function BusinessLaporan() {
                   {piutangDetail.length === 0 ? (
                     <EmptyState icon={CreditCard} color={'var(--secondary)'} text="Tidak ada piutang yang belum lunas" />
                   ) : (
-                    <div className="max-h-96 overflow-y-auto">
+                    <>
+                      {/* Mobile Card List */}
+                      <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                        {piutangDetail.map((row) => (
+                          <div key={row.id} className="p-3 flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{row.counterpart}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px]" style={{ color: 'var(--secondary)' }}>Bayar {formatAmount(row.paid)}</span>
+                                {row.daysOverdue > 0 && (
+                                  <span className="text-[9px] font-medium px-1 py-0.5 rounded" style={{ backgroundColor: row.daysOverdue > 30 ? 'color-mix(in srgb, var(--destructive) 8%, transparent)' : 'color-mix(in srgb, var(--warning) 8%, transparent)', color: row.daysOverdue > 30 ? 'var(--destructive)' : 'var(--warning)' }}>{row.daysOverdue}d</span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold tabular-nums shrink-0" style={{ color: 'var(--warning)' }}>{formatAmount(row.remaining)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Desktop Table */}
+                      <div className="hidden sm:block max-h-96 overflow-y-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -1420,6 +1468,7 @@ export default function BusinessLaporan() {
                         </TableBody>
                       </Table>
                     </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -1442,7 +1491,25 @@ export default function BusinessLaporan() {
               ) : !data || data.sales.length === 0 ? (
                 <EmptyState icon={TrendingUp} color={'var(--primary)'} text="Belum ada penjualan di periode ini" />
               ) : (
-                <div className="max-h-96 overflow-y-auto">
+                <>
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                    {data.sales.map((sale) => (
+                      <div key={sale.id} className="p-3 flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{sale.description}</p>
+                          <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                            {sale.date}
+                            {sale.customer && <> · {sale.customer}</>}
+                            {sale.tipe === 'cicilan' && <span className="ml-1 text-[9px] px-1 py-0.5 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)', color: 'var(--primary)' }}>Cicilan</span>}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: 'var(--secondary)' }}>{formatAmount(sale.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-96 overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -1475,6 +1542,7 @@ export default function BusinessLaporan() {
                     </TableBody>
                   </Table>
                 </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -1495,7 +1563,21 @@ export default function BusinessLaporan() {
               ) : !data || data.expenses.length === 0 ? (
                 <EmptyState icon={TrendingDown} color={'var(--destructive)'} text="Belum ada pengeluaran di periode ini" />
               ) : (
-                <div className="max-h-96 overflow-y-auto">
+                <>
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                    {data.expenses.map((exp) => (
+                      <div key={exp.id} className="p-3 flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{exp.description}</p>
+                          <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>{exp.date}{exp.category && <> · {exp.category}</>}</p>
+                        </div>
+                        <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: 'var(--destructive)' }}>-{formatAmount(exp.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-96 overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -1519,6 +1601,7 @@ export default function BusinessLaporan() {
                     </TableBody>
                   </Table>
                 </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -1539,7 +1622,31 @@ export default function BusinessLaporan() {
               ) : !data || data.invoices.length === 0 ? (
                 <EmptyState icon={Receipt} color={'var(--warning)'} text="Belum ada invoice di periode ini" />
               ) : (
-                <div className="max-h-96 overflow-y-auto">
+                <>
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                    {data.invoices.map((inv) => {
+                      const statusStyle = inv.status === 'paid'
+                        ? { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)' }
+                        : inv.status === 'overdue'
+                          ? { backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)' }
+                          : { backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)', color: 'var(--warning)' };
+                      return (
+                        <div key={inv.id} className="p-3 flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{inv.invoiceNumber}</p>
+                            <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>{inv.customer && <>{inv.customer} · </>}{inv.date}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--foreground)' }}>{formatAmount(inv.total)}</span>
+                            <span className="block text-[9px] font-medium px-1.5 py-0.5 rounded" style={statusStyle}>{inv.status}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-96 overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -1572,6 +1679,7 @@ export default function BusinessLaporan() {
                     </TableBody>
                   </Table>
                 </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -1592,7 +1700,24 @@ export default function BusinessLaporan() {
               ) : !data || data.debts.length === 0 ? (
                 <EmptyState icon={CreditCard} color={'var(--secondary)'} text="Belum ada hutang/piutang" />
               ) : (
-                <div className="max-h-96 overflow-y-auto">
+                <>
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                    {data.debts.map((debt) => (
+                      <div key={debt.id} className="p-3 flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{debt.counterpart}</p>
+                            <Badge variant="outline" className="text-[9px] font-medium rounded-full px-1.5 py-0" style={debt.type === 'hutang' ? { backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)' } : { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)' }}>{debt.type}</Badge>
+                          </div>
+                          <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{formatAmount(debt.amount)}</p>
+                        </div>
+                        <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: debt.remaining > 0 ? 'var(--warning)' : 'var(--secondary)' }}>{debt.remaining > 0 ? formatAmount(debt.remaining) : t('biz.debtPaid')}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-96 overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -1624,6 +1749,7 @@ export default function BusinessLaporan() {
                     </TableBody>
                   </Table>
                 </div>
+                </>
               )}
             </CardContent>
           </Card>

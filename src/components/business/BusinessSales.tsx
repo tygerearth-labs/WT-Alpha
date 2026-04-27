@@ -573,7 +573,7 @@ export default function BusinessSales() {
 
           {/* Search + Filter Row */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 value={search}
@@ -582,7 +582,7 @@ export default function BusinessSales() {
                 className="pl-9 rounded-lg text-sm bg-card border border-border text-foreground"
               />
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap pb-1">
               <button
                 onClick={() => setPaymentFilter('all')}
                 className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200 ${paymentFilter === 'all' ? 'bg-foreground/15 text-foreground border border-border' : 'text-muted-foreground border border-transparent'}`}
@@ -649,7 +649,88 @@ export default function BusinessSales() {
                     )}
                   </div>
                 ) : (
-                  <div className="max-h-[500px] overflow-y-auto">
+                  <>
+                    {/* Mobile Card List */}
+                    <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border">
+                      <AnimatePresence mode="popLayout">
+                        {filteredSales.map((sale, i) => {
+                          const isInstallment = (sale.installmentTempo ?? 0) > 0;
+                          const hasDP = (sale.downPayment ?? 0) > 0;
+                          return (
+                            <motion.div
+                              key={sale.id}
+                              custom={i}
+                              variants={rowVariants}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              layout
+                              className="p-3 space-y-2"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-medium truncate text-foreground">{sale.description}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    {new Date(sale.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {sale.customer?.name && <> · {sale.customer.name}</>}
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-xs font-semibold tabular-nums" style={{ color: 'var(--secondary)' }}>
+                                    +{formatAmount(sale.amount)}
+                                  </p>
+                                  {isInstallment && hasDP && (
+                                    <p className="text-[9px] text-muted-foreground">
+                                      DP {formatAmount(sale.downPayment!)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {sale.paymentMethod && (() => {
+                                    const M = PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod);
+                                    if (!M) return null;
+                                    const Icon = M.icon;
+                                    return (
+                                      <Badge variant="outline" className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 bg-primary/15 text-primary">
+                                        <Icon className="h-2 w-2 mr-0.5" />
+                                        {t(M.labelKey)}
+                                      </Badge>
+                                    );
+                                  })()}
+                                  {sale.category && (
+                                    <Badge variant="outline" className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0" style={{ backgroundColor: 'rgba(249, 168, 37, 0.15)', color: 'var(--warning)' }}>
+                                      {sale.category.name}
+                                    </Badge>
+                                  )}
+                                  {isInstallment && (
+                                    <Badge variant="outline" className="text-[9px] font-bold border-0 rounded-full px-1.5 py-0" style={{ backgroundColor: 'rgba(187, 134, 252, 0.15)', color: 'var(--primary)' }}>
+                                      Cicilan
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => openEditDialog(sale)}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => setDeleteId(sale.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                      <div className="px-3 py-2 flex items-center justify-between border-t border-border bg-card">
+                        <span className="text-[11px] text-muted-foreground">{filteredSales.length} transaksi</span>
+                        <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>Total: {formatAmount(total)}</span>
+                      </div>
+                    </div>
+
+                    {/* Desktop Table */}
+                    <div className="hidden sm:block max-h-[500px] overflow-y-auto">
                     <Table>
                       <TableHeader>
                         <TableRow style={{ borderBottom: '1px solid var(--border)' }}>
@@ -828,11 +909,11 @@ export default function BusinessSales() {
                                   )}
                                 </TableCell>
                                 <TableCell className="py-2 text-right">
-                                  <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
+                                  <div className="flex items-center justify-end gap-0.5 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                      className="h-9 w-9 sm:h-7 sm:w-7 p-0 rounded-md text-muted-foreground"
                                       onClick={() => openEditDialog(sale)}
                                     >
                                       <Pencil className="h-3 w-3" />
@@ -840,7 +921,7 @@ export default function BusinessSales() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                      className="h-9 w-9 sm:h-7 sm:w-7 p-0 rounded-md text-muted-foreground"
                                       onClick={() => setDeleteId(sale.id)}
                                     >
                                       <Trash2 className="h-3 w-3" />
@@ -863,6 +944,7 @@ export default function BusinessSales() {
                       </span>
                     </div>
                   </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -871,7 +953,7 @@ export default function BusinessSales() {
           {/* Add/Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent
-              className="rounded-xl overflow-hidden max-h-[90vh] flex flex-col bg-card border border-border"
+              className="rounded-xl overflow-hidden max-h-[90vh] flex flex-col bg-card border border-border w-[95vw] sm:max-w-lg"
             >
               {/* Accent line at top */}
               <div className="h-[2px] shrink-0" style={{ background: "linear-gradient(to right, var(--secondary), var(--primary), var(--warning))" }} />
@@ -1038,7 +1120,7 @@ export default function BusinessSales() {
                     >
                       <div className="rounded-lg p-3 space-y-3 bg-primary/5 border border-primary/15">
                         {/* DP Amount & DP Percentage */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground">
                               <ArrowDownToLine className="h-2.5 w-2.5" style={{ color: 'var(--secondary)' }} />
@@ -1201,7 +1283,7 @@ export default function BusinessSales() {
                 </div>
 
                 {/* Date & Payment Method */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                       {t('biz.saleDate')}
@@ -1313,7 +1395,7 @@ export default function BusinessSales() {
           {/* Post-Sale Invoice Prompt */}
           <Dialog open={showInvoicePrompt} onOpenChange={(open) => !open && setShowInvoicePrompt(false)}>
             <DialogContent
-              className="rounded-xl sm:max-w-[380px] bg-card border border-border"
+              className="rounded-xl w-[95vw] sm:max-w-[380px] bg-card border border-border"
             >
               <div className="h-[2px] -mt-6 mb-4 -mx-6 mt-[-1.25rem] rounded-t-xl" style={{ background: 'linear-gradient(to right, var(--secondary), var(--primary))' }} />
               <DialogHeader className="text-center">

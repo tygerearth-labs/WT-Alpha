@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, CheckCircle2, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, CheckCircle2, Loader2, TrendingUp, TrendingDown, ChevronDown, Search } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { Category } from '@/types/transaction.types';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { format } from 'date-fns';
 import { useTranslation } from '@/hooks/useTranslation';
 import { dispatchNotificationEvent } from '@/lib/notificationEvents';
@@ -34,10 +35,12 @@ export function QuickTransaction() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [catPickerOpen, setCatPickerOpen] = useState(false);
+  const [catSearch, setCatSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const fetchCategories = useCallback(async () => {
     try {
-      // Single fetch for all categories — client-side filter handles type separation
       const res = await fetch('/api/categories');
       if (!res.ok) {
         toast.error(t('common.error'));
@@ -54,13 +57,28 @@ export function QuickTransaction() {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Filter categories by type
-  const filteredCategories = categories.filter(c => c.type === type);
+  // Filter categories by type and search
+  const filteredCategories = categories
+    .filter(c => c.type === type)
+    .filter(c => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()));
 
   // Reset category when type changes
   useEffect(() => {
     setCategoryId('');
   }, [type]);
+
+  // Focus search input when picker opens
+  useEffect(() => {
+    if (catPickerOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+    if (!catPickerOpen) {
+      setCatSearch('');
+    }
+  }, [catPickerOpen]);
+
+  // Get selected category object
+  const selectedCategory = categories.find(c => c.id === categoryId);
 
   const handleSubmit = async () => {
     const parsedAmount = parseFloat(amount);
@@ -88,13 +106,11 @@ export function QuickTransaction() {
       });
 
       if (response.ok) {
-        // Notify NotificationCenter to refresh badge immediately
         dispatchNotificationEvent('notification-created');
         setShowSuccess(true);
         setTimeout(() => {
           setShowSuccess(false);
           setOpen(false);
-          // Reset form
           setAmount('');
           setDescription('');
           setCategoryId('');
@@ -126,7 +142,6 @@ export function QuickTransaction() {
         }}
         aria-label={t('quickEntry.ariaLabel')}
       >
-        {/* Pulse ring animation */}
         <span
           className="absolute inset-0 rounded-2xl animate-ping opacity-20"
           style={{ background: THEME.primary }}
@@ -232,33 +247,135 @@ export function QuickTransaction() {
                   </div>
                 </div>
 
-                {/* Category Select */}
+                {/* Category Picker — Popover-based (works inside Sheet/Dialog) */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium" style={{ color: THEME.textSecondary }}>
                     {t('kas.categories')}
                   </label>
-                  <Select value={categoryId || undefined} onValueChange={setCategoryId}>
-                    <SelectTrigger
-                      className="w-full h-10 text-xs"
+                  <Popover open={catPickerOpen} onOpenChange={setCatPickerOpen} modal={false}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center justify-between w-full h-10 px-3 rounded-lg text-xs transition-all duration-200"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${catPickerOpen ? THEME.primary + '60' : THEME.border}`,
+                          color: selectedCategory ? THEME.text : THEME.muted,
+                          boxShadow: catPickerOpen ? `0 0 12px ${THEME.primary}10` : 'none',
+                        }}
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          {selectedCategory ? (
+                            <>
+                              <span
+                                className="grid place-items-center w-5 h-5 rounded-md shrink-0"
+                                style={{ background: `${selectedCategory.color || '#6b7280'}18` }}
+                              >
+                                <DynamicIcon
+                                  name={selectedCategory.icon || 'Tag'}
+                                  className="h-3 w-3"
+                                  style={{ color: selectedCategory.color || '#6b7280' }}
+                                />
+                              </span>
+                              <span className="truncate">{selectedCategory.name}</span>
+                            </>
+                          ) : (
+                            <span>{t('quickEntry.selectCategoryPlaceholder')}</span>
+                          )}
+                        </span>
+                        <ChevronDown
+                          className="h-3.5 w-3.5 shrink-0 ml-2 transition-transform duration-200"
+                          style={{
+                            transform: catPickerOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            color: THEME.muted,
+                          }}
+                        />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      side="top"
+                      sideOffset={8}
+                      className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl overflow-hidden border-0 shadow-2xl"
                       style={{
-                        background: 'rgba(255,255,255,0.04)',
+                        background: '#1A1A2E',
                         border: `1px solid ${THEME.border}`,
-                        color: categoryId ? THEME.text : THEME.muted,
+                        maxHeight: '240px',
+                      }}
+                      onOpenAutoFocus={(e) => {
+                        e.preventDefault();
+                        searchInputRef.current?.focus();
                       }}
                     >
-                      <SelectValue placeholder={t('quickEntry.selectCategoryPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCategories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          <span className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cat.color || '#6b7280' }} />
-                            {cat.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      {/* Search input */}
+                      <div className="p-2 border-b" style={{ borderColor: THEME.border }}>
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: THEME.muted }} />
+                          <input
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder={t('quickEntry.searchCategory') || 'Cari kategori...'}
+                            value={catSearch}
+                            onChange={(e) => setCatSearch(e.target.value)}
+                            className="w-full h-8 pl-8 pr-3 rounded-lg text-xs outline-none"
+                            style={{
+                              background: 'rgba(255,255,255,0.06)',
+                              border: `1px solid ${THEME.border}`,
+                              color: THEME.text,
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {/* Category list */}
+                      <div className="overflow-y-auto" style={{ maxHeight: '192px' }}>
+                        {filteredCategories.length === 0 ? (
+                          <div className="py-6 text-center text-xs" style={{ color: THEME.muted }}>
+                            {catSearch ? (t('quickEntry.noCategoryFound') || 'Kategori tidak ditemukan') : (t('quickEntry.noCategoryAvailable') || 'Belum ada kategori')}
+                          </div>
+                        ) : (
+                          filteredCategories.map(cat => {
+                            const isSelected = cat.id === categoryId;
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  setCategoryId(cat.id);
+                                  setCatPickerOpen(false);
+                                }}
+                                className="flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-xs transition-colors duration-150"
+                                style={{
+                                  background: isSelected ? `${cat.color || THEME.primary}12` : 'transparent',
+                                  color: isSelected ? THEME.text : THEME.textSecondary,
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isSelected) e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                <span
+                                  className="grid place-items-center w-6 h-6 rounded-lg shrink-0"
+                                  style={{ background: `${cat.color || '#6b7280'}18` }}
+                                >
+                                  <DynamicIcon
+                                    name={cat.icon || 'Tag'}
+                                    className="h-3.5 w-3.5"
+                                    style={{ color: cat.color || '#6b7280' }}
+                                  />
+                                </span>
+                                <span className="flex-1 truncate font-medium">{cat.name}</span>
+                                {isSelected && (
+                                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: cat.color || THEME.primary }} />
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Description + Date — side by side on md+ */}

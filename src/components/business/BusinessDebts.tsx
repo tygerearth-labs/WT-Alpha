@@ -474,7 +474,7 @@ export default function BusinessDebts() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 mb-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 mb-2">
           {/* Total Amount */}
           <Card
             className="rounded-xl p-3 sm:p-4 bg-card border border-border"
@@ -599,7 +599,84 @@ export default function BusinessDebts() {
               ) : filtered.length === 0 ? (
                 <DebtEmptyState type={activeTab} />
               ) : (
-                <div className="max-h-[500px] overflow-y-auto">
+                <>
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border">
+                    <AnimatePresence>
+                      {filtered.map((debt, index) => {
+                        const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
+                        const paidPercent = debt.amount > 0 ? Math.round(((debt.amount - debt.remaining) / debt.amount) * 100) : 0;
+                        const dueDateInfo = getDueDateInfo(debt.dueDate, debt.remaining, debt);
+                        return (
+                          <motion.div
+                            key={debt.id}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="p-3 space-y-2"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-xs font-medium truncate text-foreground">{debt.counterpart}</p>
+                                  {isInstallment && (
+                                    <Badge className="text-[9px] font-bold px-1.5 py-0 h-4 leading-none" style={{ background: 'var(--warning)', color: 'var(--warning)', borderWidth: '1px', borderColor: 'var(--warning)' }}>
+                                      {t('biz.installmentBadge')}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {debt.description && (
+                                  <p className="text-[10px] mt-0.5 truncate text-muted-foreground opacity-60">{debt.description}</p>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-xs font-semibold tabular-nums text-foreground">{formatAmount(debt.remaining)}</p>
+                                <p className="text-[10px] text-muted-foreground">dari {formatAmount(debt.amount)}</p>
+                              </div>
+                            </div>
+                            {debt.remaining > 0 && (
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
+                                  <div className="h-full rounded-full" style={{ width: `${paidPercent}%`, background: paidPercent >= 75 ? 'var(--secondary)' : paidPercent >= 40 ? 'var(--warning)' : 'var(--destructive)', transition: 'width 0.6s ease' }} />
+                                </div>
+                                <span className="text-[10px] tabular-nums text-muted-foreground">{paidPercent}%</span>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                {debt.remaining > 0 && dueDateInfo.label && (
+                                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: dueDateInfo.bg, color: dueDateInfo.color }}>{dueDateInfo.label}</span>
+                                )}
+                                {debt.remaining <= 0 && (
+                                  <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--secondary)' }}><CheckCircle2 className="h-3 w-3" />{t('biz.debtPaid')}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-0.5">
+                                {debt.remaining > 0 && (
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => openPaymentDialog(debt)}>
+                                    <CreditCard className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md hover:bg-[#25D36615]" style={{ color: '#25D366' }} onClick={() => handleRemind(debt.id)} disabled={sendingRemind === debt.id}>
+                                  {sendingRemind === debt.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => openEditDialog(debt)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => setDeleteId(debt.id)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-[500px] overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-b border-border">
@@ -815,6 +892,7 @@ export default function BusinessDebts() {
                     </TableBody>
                   </Table>
                 </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -824,7 +902,7 @@ export default function BusinessDebts() {
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-card border border-border text-foreground"
+          className="w-[95vw] sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-card border border-border text-foreground"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
@@ -921,7 +999,7 @@ export default function BusinessDebts() {
               >
                 <p className="text-xs font-medium" style={{ color: 'var(--warning)' }}>{t('biz.installmentInfo')}</p>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">{t('biz.downPayment')}</Label>
                     <Input
@@ -1068,7 +1146,7 @@ export default function BusinessDebts() {
       {/* Partial Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent
-          className="sm:max-w-[420px] bg-card border border-border text-foreground"
+          className="w-[95vw] sm:max-w-[420px] bg-card border border-border text-foreground"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">

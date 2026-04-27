@@ -434,18 +434,18 @@ export default function BusinessCustomers() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-primary"
+                              className="h-9 w-9 p-0 rounded-lg text-muted-foreground hover:text-primary"
                               onClick={() => openEditDialog(customer)}
                             >
-                              <Pencil className="h-3 w-3" />
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive"
+                              className="h-9 w-9 p-0 rounded-lg text-muted-foreground hover:text-destructive"
                               onClick={() => setDeleteId(customer.id)}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -530,7 +530,7 @@ export default function BusinessCustomers() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                className="h-9 w-9 sm:h-7 sm:w-7 p-0 rounded-md text-muted-foreground"
                                 onClick={() => openEditDialog(customer)}
                               >
                                 <Pencil className="h-3 w-3" />
@@ -538,7 +538,7 @@ export default function BusinessCustomers() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                className="h-9 w-9 sm:h-7 sm:w-7 p-0 rounded-md text-muted-foreground"
                                 onClick={() => setDeleteId(customer.id)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -558,7 +558,7 @@ export default function BusinessCustomers() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-xl sm:max-w-[460px] bg-card border border-border">
+        <DialogContent className="rounded-xl w-[95vw] sm:max-w-[460px] bg-card border border-border">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground" >
               <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/12">

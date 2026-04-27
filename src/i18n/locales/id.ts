@@ -904,6 +904,9 @@ export const translations = {
     saveTransaction: 'Simpan Transaksi',
     ariaLabel: 'Tambah Transaksi Cepat',
     selectCategoryPlaceholder: 'Pilih kategori',
+    searchCategory: 'Cari kategori...',
+    noCategoryFound: 'Kategori tidak ditemukan',
+    noCategoryAvailable: 'Belum ada kategori',
   },
   transactionList: {
     searchPlaceholder: 'Cari berdasarkan deskripsi atau kategori...',

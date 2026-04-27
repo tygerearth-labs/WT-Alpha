@@ -47,6 +47,8 @@ import {
   Palette,
   Layers,
 } from 'lucide-react';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
+import { IconPicker } from '@/components/shared/IconPicker';
 
 /* ── Constants ── */
 const COLORS = [
@@ -140,7 +142,7 @@ export default function BusinessCategoryManager() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState({ name: '', color: COLORS[0] });
+  const [formData, setFormData] = useState({ name: '', color: COLORS[0], icon: 'Tag' });
   const [saving, setSaving] = useState(false);
 
   // Delete dialog state
@@ -176,14 +178,14 @@ export default function BusinessCategoryManager() {
   /* ── Open create dialog ── */
   const openCreateDialog = () => {
     setEditingCategory(null);
-    setFormData({ name: '', color: COLORS[0] });
+    setFormData({ name: '', color: COLORS[0], icon: 'Tag' });
     setDialogOpen(true);
   };
 
   /* ── Open edit dialog ── */
   const openEditDialog = (category: Category) => {
     setEditingCategory(category);
-    setFormData({ name: category.name, color: category.color || COLORS[0] });
+    setFormData({ name: category.name, color: category.color || COLORS[0], icon: category.icon || 'Tag' });
     setDialogOpen(true);
   };
 
@@ -197,6 +199,7 @@ export default function BusinessCategoryManager() {
         type: activeTab,
         name: formData.name.trim(),
         color: formData.color,
+        icon: formData.icon,
       };
 
       let res: Response;
@@ -400,7 +403,7 @@ export default function BusinessCategoryManager() {
           }}
         >
           <div
-            className="bg-card border border-border rounded-2xl p-1.5 relative overflow-hidden"
+            className="bg-card border border-border rounded-2xl p-1.5 relative overflow-x-auto"
           >
             {/* Decorative gradient circle */}
             <div
@@ -518,7 +521,7 @@ export default function BusinessCategoryManager() {
                             exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
                             className="flex items-center gap-3 px-4 md:px-5 py-3.5 group hover:bg-muted/20 transition-all duration-200"
                           >
-                            {/* Color dot */}
+                            {/* Icon */}
                             <div
                               className="h-8 w-8 rounded-lg shrink-0 flex items-center justify-center"
                               style={{
@@ -526,12 +529,10 @@ export default function BusinessCategoryManager() {
                                 boxShadow: `0 0 10px ${category.color || typeConfig.accentColor}08`,
                               }}
                             >
-                              <div
-                                className="h-3 w-3 rounded-full"
-                                style={{
-                                  backgroundColor: category.color || typeConfig.accentColor,
-                                  boxShadow: `0 0 6px ${category.color || typeConfig.accentColor}60`,
-                                }}
+                              <DynamicIcon
+                                name={category.icon || 'Tag'}
+                                className="h-4 w-4"
+                                style={{ color: category.color || typeConfig.accentColor }}
                               />
                             </div>
 
@@ -555,13 +556,13 @@ export default function BusinessCategoryManager() {
                             </Badge>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                            <div className="flex items-center gap-1 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 shrink-0">
                               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => openEditDialog(category)}
-                                  className="h-8 w-8 p-0 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/40"
+                                  className="h-9 w-9 sm:h-8 sm:w-8 p-0 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/40"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
@@ -574,7 +575,7 @@ export default function BusinessCategoryManager() {
                                     setDeletingCategory(category);
                                     setDeleteDialogOpen(true);
                                   }}
-                                  className="h-8 w-8 p-0 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/[0.08]"
+                                  className="h-9 w-9 sm:h-8 sm:w-8 p-0 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/[0.08]"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -605,7 +606,7 @@ export default function BusinessCategoryManager() {
       {/* ── Add / Edit Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="bg-card border-border sm:max-w-md rounded-2xl"
+          className="bg-card border-border w-[95vw] sm:max-w-md rounded-2xl"
         >
           {/* Gradient header line */}
           <div
@@ -669,13 +670,26 @@ export default function BusinessCategoryManager() {
               />
             </div>
 
+            {/* Icon Picker */}
+            <div className="space-y-2">
+              <Label className="text-muted-foreground/50 text-xs flex items-center gap-1.5">
+                <Tag className="h-3 w-3" />
+                Icon
+              </Label>
+              <IconPicker
+                value={formData.icon}
+                onChange={(iconName) => setFormData((prev) => ({ ...prev, icon: iconName }))}
+                accentColor={typeConfig.accentColor}
+              />
+            </div>
+
             {/* Color picker */}
             <div className="space-y-2">
               <Label className="text-muted-foreground/50 text-xs flex items-center gap-1.5">
                 <Palette className="h-3 w-3" />
                 {t('biz.categoryColor')}
               </Label>
-              <div className="grid grid-cols-6 gap-2.5">
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5">
                 {COLORS.map((color) => (
                   <motion.button
                     key={color}
@@ -750,7 +764,7 @@ export default function BusinessCategoryManager() {
 
       {/* ── Delete Confirmation Dialog ── */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border sm:max-w-md rounded-2xl">
+        <AlertDialogContent className="bg-card border-border w-[95vw] sm:max-w-md rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground text-base font-semibold flex items-center gap-2">
               <div

@@ -904,6 +904,9 @@ export const translations = {
     saveTransaction: 'Save Transaction',
     ariaLabel: 'Quick Add Transaction',
     selectCategoryPlaceholder: 'Select category',
+    searchCategory: 'Search categories...',
+    noCategoryFound: 'No category found',
+    noCategoryAvailable: 'No categories available',
   },
   transactionList: {
     searchPlaceholder: 'Search by description or category...',

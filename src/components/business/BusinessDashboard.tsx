@@ -72,6 +72,7 @@ interface AllocationBreakdown {
   expenseFromInvestor: number;
   kasBesarSaldo: number;
   kasKecilSaldo: number;
+  investorSaldo: number;
   netCash: number;
   breakdown: AllocationBreakdownItem[];
 }
@@ -239,7 +240,7 @@ function HealthRing({ score, color, grade }: { score: number; color: string; gra
 
   return (
     <div className="relative flex items-center justify-center">
-      <svg width="128" height="128" viewBox={`0 0 ${center * 2} ${center * 2}`} className="-rotate-90">
+      <svg viewBox={`0 0 ${center * 2} ${center * 2}`} className="w-[100px] h-[100px] sm:w-32 sm:h-32 -rotate-90">
         <circle
           cx={center} cy={center} r={radius}
           stroke="var(--border)"
@@ -261,13 +262,13 @@ function HealthRing({ score, color, grade }: { score: number; color: string; gra
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className="text-2xl font-bold tabular-nums leading-none"
+          className="text-xl sm:text-2xl font-bold tabular-nums leading-none"
           style={{ color }}
         >
           {displayScore}
         </span>
         <span
-          className="text-base font-black mt-0.5"
+          className="text-sm sm:text-base font-black mt-0.5"
           style={{ color }}
         >
           {grade}
@@ -768,7 +769,7 @@ export default function BusinessDashboard() {
   // Kas & Dana data
   const kasBesarSaldo = data.allocationBreakdown?.kasBesarSaldo ?? (data.totalKasBesar ?? 0);
   const kasKecilSaldo = data.allocationBreakdown?.kasKecilSaldo ?? (data.totalKasKecil ?? 0);
-  const investorSaldo = data.allocationBreakdown?.investorTotal ?? 0;
+  const investorSaldo = data.allocationBreakdown?.investorSaldo ?? ((data.allocationBreakdown?.investorTotal ?? 0) - (data.allocationBreakdown?.expenseFromInvestor ?? 0));
   const allocationNetCash = data.allocationBreakdown?.netCash ?? (data.netCash ?? 0);
 
   const kasDanaCards = [
@@ -861,10 +862,10 @@ export default function BusinessDashboard() {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] uppercase tracking-wide font-medium mb-0.5 text-muted-foreground">
+                <p className="text-[10px] sm:text-[11px] uppercase tracking-wide font-medium mb-0.5 truncate text-muted-foreground">
                   {stat.label}
                 </p>
-                <p className="text-sm font-bold leading-tight text-foreground">
+                <p className="text-xs sm:text-sm font-bold leading-tight truncate text-foreground">
                   {formatAmount(stat.value)}
                 </p>
                 <div className="flex items-end justify-between mt-2 gap-2">
@@ -884,7 +885,7 @@ export default function BusinessDashboard() {
       {/* ── Section 2: Quick Actions ── */}
       <Card className="overflow-hidden border-border">
         <CardContent className="px-3 sm:px-4 py-2.5">
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 shrink-0">
               <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -892,7 +893,7 @@ export default function BusinessDashboard() {
               </span>
             </div>
             <Separator orientation="vertical" className="h-4" />
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 overflow-x-auto flex-nowrap min-w-0">
               {quickActions.map((action) => {
                 const Icon = action.icon;
                 return (
@@ -946,7 +947,7 @@ export default function BusinessDashboard() {
                     {item.label}
                   </span>
                 </div>
-                <p className="text-sm font-bold leading-tight" style={{ color: item.color }}>
+                <p className="text-xs sm:text-sm font-bold leading-tight truncate" style={{ color: item.color }}>
                   {formatAmount(item.value)}
                 </p>
               </CardContent>
@@ -1032,18 +1033,18 @@ export default function BusinessDashboard() {
                             className="h-2 w-2 rounded-sm"
                             style={{ backgroundColor: item.fill }}
                           />
-                          <span className="text-[11px] font-medium text-muted-foreground">{item.name}</span>
+                          <span className="text-[11px] font-medium text-muted-foreground truncate">{item.name}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-muted-foreground bg-border">
                             {pct.toFixed(1)}%
                           </span>
-                          <span className="text-sm font-bold tabular-nums text-foreground">
+                          <span className="text-xs sm:text-sm font-bold tabular-nums text-foreground">
                             {formatAmount(item.value)}
                           </span>
                         </div>
                       </div>
-                      <div className="h-6 rounded-lg overflow-hidden relative bg-border">
+                      <div className="h-5 sm:h-6 rounded-lg overflow-hidden relative bg-border">
                         <div
                           className="h-full rounded-lg relative overflow-hidden transition-all duration-700"
                           style={{
@@ -1207,16 +1208,16 @@ export default function BusinessDashboard() {
                 {debtsDueSoonWithBadge.map((debt) => (
                   <div
                     key={debt.id}
-                    className="flex items-center gap-2.5 py-2 px-2.5 rounded-lg transition-colors duration-150 hover:bg-white/[0.02] border-b border-border"
+                    className="flex items-center gap-2 sm:gap-2.5 py-1.5 sm:py-2 px-2 sm:px-2.5 rounded-lg transition-colors duration-150 hover:bg-white/[0.02] border-b border-border"
                   >
                     <div
-                      className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
+                      className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg shrink-0"
                       style={{
                         backgroundColor: alpha(debt.badgeColor, 7),
                         border: `1px solid ${alpha(debt.badgeColor, 12)}`,
                       }}
                     >
-                      <Clock className="h-3.5 w-3.5" style={{ color: debt.badgeColor }} />
+                      <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" style={{ color: debt.badgeColor }} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[12px] truncate font-medium text-foreground">{debt.counterpart}</p>
@@ -1236,9 +1237,9 @@ export default function BusinessDashboard() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[12px] font-bold tabular-nums" style={{ color: debt.badgeColor }}>{formatAmount(debt.remaining)}</p>
+                      <p className="text-[11px] sm:text-[12px] font-bold tabular-nums" style={{ color: debt.badgeColor }}>{formatAmount(debt.remaining)}</p>
                       <span
-                        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block"
+                        className="text-[8px] sm:text-[9px] font-semibold px-1 sm:px-1.5 py-0.5 rounded-full mt-0.5 inline-block whitespace-nowrap"
                         style={{ color: debt.badgeColor, backgroundColor: alpha(debt.badgeColor, 8) }}
                       >
                         {debt.badgeLabel}
@@ -1267,7 +1268,8 @@ export default function BusinessDashboard() {
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2 pb-4">
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {piutangSummaryCards.map((item) => {
               const Icon = item.icon;
               return (
@@ -1289,18 +1291,19 @@ export default function BusinessDashboard() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-lg font-bold tabular-nums text-foreground">
+                      <span className="text-base sm:text-lg font-bold tabular-nums text-foreground">
                         {item.count}
                       </span>
                       <span className="text-[10px] text-muted-foreground">cicilan</span>
                     </div>
-                    <span className="text-[11px] font-bold tabular-nums" style={{ color: item.color }}>
+                    <span className="text-[10px] sm:text-[11px] font-bold tabular-nums" style={{ color: item.color }}>
                       {formatAmount(item.amount)}
                     </span>
                   </div>
                 </div>
               );
             })}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -1329,13 +1332,13 @@ export default function BusinessDashboard() {
                 return (
                   <div
                     key={product.name}
-                    className="p-2.5 rounded-lg space-y-2 transition-all duration-200 border border-border"
+                    className="p-2 sm:p-2.5 rounded-lg space-y-1.5 sm:space-y-2 transition-all duration-200 border border-border"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 2%, transparent)' }}
                   >
                     {/* Rank + Name */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <div
-                        className="flex h-6 w-6 items-center justify-center rounded-md shrink-0 text-[10px] font-bold"
+                        className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-md shrink-0 text-[9px] sm:text-[10px] font-bold"
                         style={{
                           backgroundColor: idx < 3 ? alpha(rankColor, 12) : 'color-mix(in srgb, var(--muted-foreground) 7%, transparent)',
                           color: idx < 3 ? rankColor : 'var(--muted-foreground)',
@@ -1344,13 +1347,13 @@ export default function BusinessDashboard() {
                       >
                         #{idx + 1}
                       </div>
-                      <span className="text-[12px] truncate font-medium flex-1 min-w-0 text-foreground">
+                      <span className="text-[11px] sm:text-[12px] truncate font-medium flex-1 min-w-0 text-foreground">
                         {product.name}
                       </span>
                     </div>
 
                     {/* Progress bar */}
-                    <div className="h-2 rounded-full overflow-hidden bg-border">
+                    <div className="h-1.5 sm:h-2 rounded-full overflow-hidden bg-border">
                       <div
                         className="h-full rounded-full transition-all duration-700"
                         style={{
@@ -1363,10 +1366,10 @@ export default function BusinessDashboard() {
 
                     {/* Stats row */}
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[9px] sm:text-[10px] text-muted-foreground">
                         {product.totalQuantity} pcs terjual
                       </span>
-                      <span className="text-[11px] font-bold tabular-nums text-primary">
+                      <span className="text-[10px] sm:text-[11px] font-bold tabular-nums text-primary">
                         {formatAmount(product.totalRevenue)}
                       </span>
                     </div>
@@ -1441,13 +1444,13 @@ export default function BusinessDashboard() {
                           return (
                             <div
                               key={item.id}
-                              className="flex items-center gap-2.5 py-2 rounded-lg px-2 -mx-1 transition-colors duration-150 cursor-default hover:bg-white/[0.03]"
+                              className="flex items-center gap-2 sm:gap-2.5 py-1.5 sm:py-2 rounded-lg px-2 -mx-1 transition-colors duration-150 cursor-default hover:bg-white/[0.03]"
                             >
                               <div
-                                className="flex h-7 w-7 items-center justify-center rounded-md shrink-0"
+                                className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md shrink-0"
                                 style={{ backgroundColor: alpha(actColor, 7) }}
                               >
-                                <ActIcon className="h-3 w-3" style={{ color: actColor }} />
+                                <ActIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" style={{ color: actColor }} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[12px] truncate font-medium text-muted-foreground">
@@ -1465,7 +1468,7 @@ export default function BusinessDashboard() {
                                   </span>
                                 </div>
                               </div>
-                              <span className="text-sm font-bold ml-1 shrink-0 tabular-nums" style={{ color: actColor }}>
+                              <span className="text-xs sm:text-sm font-bold ml-1 shrink-0 tabular-nums" style={{ color: actColor }}>
                                 {isExpense ? '-' : '+'}{formatAmount(item.amount)}
                               </span>
                             </div>
@@ -1495,7 +1498,7 @@ export default function BusinessDashboard() {
             {/* Tip icon + dots */}
             <div className="flex flex-col items-center gap-1.5 shrink-0">
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-xl"
+                className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl"
                 style={{
                   background: alpha(currentTip.color, 8),
                   border: `1px solid ${alpha(currentTip.color, 12)}`,
@@ -1532,7 +1535,7 @@ export default function BusinessDashboard() {
                 >
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <Lightbulb className="h-3 w-3" style={{ color: currentTip.color }} />
-                    <span className="text-sm font-semibold text-foreground">{currentTip.title}</span>
+                    <span className="text-xs sm:text-sm font-semibold text-foreground">{currentTip.title}</span>
                     <span
                       className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
                       style={{
@@ -1549,7 +1552,7 @@ export default function BusinessDashboard() {
             </div>
 
             {/* Nav arrows */}
-            <div className="flex flex-col gap-0.5 shrink-0">
+            <div className="hidden sm:flex flex-col gap-0.5 shrink-0">
               <button
                 className="h-6 w-6 rounded-md flex items-center justify-center transition-colors duration-150 bg-border text-muted-foreground"
                 onClick={() => setTipIndex((prev) => (prev - 1 + bizTips.length) % bizTips.length)}

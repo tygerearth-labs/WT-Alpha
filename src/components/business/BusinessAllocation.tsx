@@ -270,7 +270,7 @@ export default function BusinessAllocation() {
 
       {/* Summary Stat Cards */}
       {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
           {[
             { label: t('biz.totalAllocated'), value: formatAmount(totalAllocated), icon: DollarSign, color: 'var(--primary)' },
             { label: t('biz.allocationPercent'), value: `${avgPercentage.toFixed(1)}%`, icon: Percent, color: 'var(--secondary)' },
@@ -374,7 +374,32 @@ export default function BusinessAllocation() {
           ) : allocations.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className="max-h-96 overflow-y-auto">
+            <>
+              {/* Mobile Card List */}
+              <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                {allocations.map((alloc, idx) => (
+                  <div key={alloc.id} className="p-3 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium truncate text-foreground">{alloc.sale?.description || '-'}</p>
+                        <p className="text-[10px] text-muted-foreground">{new Date(alloc.allocatedAt).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-semibold tabular-nums text-primary">{formatAmount(alloc.amount)}</p>
+                        {alloc.percentage > 0 && (
+                          <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 12%, transparent)' }}>{alloc.percentage}%</Badge>
+                        )}
+                      </div>
+                    </div>
+                    {alloc.personalNote && (
+                      <p className="text-[10px] truncate text-muted-foreground">{alloc.personalNote}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden sm:block max-h-96 overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-b border-border">
@@ -425,14 +450,15 @@ export default function BusinessAllocation() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Add Allocation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-xl sm:max-w-[460px] bg-card border border-border">
+        <DialogContent className="rounded-xl w-[95vw] sm:max-w-[460px] bg-card border border-border">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground" >
               <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-secondary/12">
@@ -481,7 +507,7 @@ export default function BusinessAllocation() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.allocationPercent')}</Label>
                 <Input

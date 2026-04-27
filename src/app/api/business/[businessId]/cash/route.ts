@@ -141,6 +141,7 @@ export async function GET(
         expenseFromInvestor,
         kasBesarSaldo,
         kasKecilSaldo,
+        investorSaldo,
         netCash,
         allocationBreakdown: [
           { source: 'kas_besar', total: kasBesarTotal, expenses: expenseFromKasBesar, saldo: kasBesarSaldo },
@@ -220,6 +221,69 @@ export async function POST(
         { error: 'Type must be kas_besar, kas_kecil, kas_keluar, or investor' },
         { status: 400 }
       );
+    }
+
+    // ── Balance validation for expenses (kas_keluar) ──
+    if (type === 'kas_keluar' && source) {
+      // Fetch all cash entries to calculate current saldo of the source
+      const allCashEntries = await db.businessCash.findMany({
+        where: { businessId },
+        select: { type: true, amount: true, source: true, investorId: true },
+      });
+
+      let sourceSaldo = 0;
+      let sourceLabel = '';
+
+      if (source === 'kas_besar') {
+        const total = allCashEntries.filter((c) => c.type === 'kas_besar').reduce((s, c) => s + c.amount, 0);
+        const expenses = allCashEntries.filter((c) => c.type === 'kas_keluar' && c.source === 'kas_besar').reduce((s, c) => s + c.amount, 0);
+        sourceSaldo = total - expenses;
+        sourceLabel = 'Kas Besar';
+      } else if (source === 'kas_kecil') {
+        const total = allCashEntries.filter((c) => c.type === 'kas_kecil').reduce((s, c) => s + c.amount, 0);
+        const expenses = allCashEntries.filter((c) => c.type === 'kas_keluar' && c.source === 'kas_kecil').reduce((s, c) => s + c.amount, 0);
+        sourceSaldo = total - expenses;
+        sourceLabel = 'Kas Kecil';
+      } else if (source === 'investor') {
+        // For investor source, check the specific investor's saldo or total investor saldo
+        if (investorId) {
+          // Check specific investor's investment - expenses from this investor
+          const investorEntry = await db.businessInvestor.findUnique({ where: { id: investorId } });
+          const investorTotalFromCash = allCashEntries.filter((c) => c.type === 'investor' && c.investorId === investorId).reduce((s, c) => s + c.amount, 0);
+          const totalInvestment = investorEntry ? investorEntry.totalInvestment : investorTotalFromCash;
+          const expensesFromInvestor = allCashEntries.filter((c) => c.type === 'kas_keluar' && c.source === 'investor' && c.investorId === investorId).reduce((s, c) => s + c.amount, 0);
+          sourceSaldo = Math.max(totalInvestment, investorTotalFromCash) - expensesFromInvestor;
+          sourceLabel = investorEntry ? `Investor (${investorEntry.name})` : 'Investor';
+        } else {
+          // No specific investor - check total investor saldo
+          const total = allCashEntries.filter((c) => c.type === 'investor').reduce((s, c) => s + c.amount, 0);
+          // Also consider BusinessInvestor records which may have higher totalInvestment
+          const investorAggregate = await db.businessInvestor.aggregate({
+            _sum: { totalInvestment: true },
+            where: { businessId, status: 'active' },
+          });
+          const totalInvestment = Math.max(total, investorAggregate._sum.totalInvestment || 0);
+          const expenses = allCashEntries.filter((c) => c.type === 'kas_keluar' && c.source === 'investor').reduce((s, c) => s + c.amount, 0);
+          sourceSaldo = totalInvestment - expenses;
+          sourceLabel = 'Dana Investor';
+        }
+      }
+
+      if (numAmount > sourceSaldo) {
+        return NextResponse.json(
+          {
+            error: `Saldo ${sourceLabel} tidak mencukupi`,
+            code: 'INSUFFICIENT_BALANCE',
+            details: {
+              source,
+              sourceSaldo,
+              requestedAmount: numAmount,
+              shortfall: numAmount - sourceSaldo,
+            },
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const cashEntry = await db.businessCash.create({

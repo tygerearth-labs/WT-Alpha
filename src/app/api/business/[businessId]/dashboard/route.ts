@@ -54,6 +54,7 @@ export async function GET(
       topProductsRaw,
       piutangAll,
       allCashForAllocation,
+      investorAggregate,
     ] = await Promise.all([
       // Total revenue from sales
       db.businessSale.aggregate({
@@ -199,6 +200,12 @@ export async function GET(
           source: true,
         },
       }),
+
+      // Total investment from BusinessInvestor records (authoritative source)
+      db.businessInvestor.aggregate({
+        _sum: { totalInvestment: true },
+        where: { businessId, status: 'active' },
+      }),
     ]);
 
     const totalRevenue = salesResult._sum.amount || 0;
@@ -301,7 +308,9 @@ export async function GET(
       allocationBreakdown: (() => {
         const allocKasBesarTotal = allCashForAllocation.filter((c) => c.type === 'kas_besar').reduce((s, c) => s + c.amount, 0);
         const allocKasKecilTotal = allCashForAllocation.filter((c) => c.type === 'kas_kecil').reduce((s, c) => s + c.amount, 0);
-        const allocInvestorTotal = allCashForAllocation.filter((c) => c.type === 'investor').reduce((s, c) => s + c.amount, 0);
+        const cashInvestorTotal = allCashForAllocation.filter((c) => c.type === 'investor').reduce((s, c) => s + c.amount, 0);
+        // Use the higher value: BusinessInvestor records (authoritative) or BusinessCash entries
+        const allocInvestorTotal = Math.max(cashInvestorTotal, investorAggregate._sum.totalInvestment || 0);
         const allocExpenseKasBesar = allCashForAllocation.filter((c) => c.type === 'kas_keluar' && c.source === 'kas_besar').reduce((s, c) => s + c.amount, 0);
         const allocExpenseKasKecil = allCashForAllocation.filter((c) => c.type === 'kas_keluar' && c.source === 'kas_kecil').reduce((s, c) => s + c.amount, 0);
         const allocExpenseInvestor = allCashForAllocation.filter((c) => c.type === 'kas_keluar' && c.source === 'investor').reduce((s, c) => s + c.amount, 0);
@@ -319,6 +328,7 @@ export async function GET(
           expenseFromInvestor: allocExpenseInvestor,
           kasBesarSaldo,
           kasKecilSaldo,
+          investorSaldo,
           netCash: kasBesarSaldo + kasKecilSaldo + investorSaldo - unallocatedExpenses,
           breakdown: [
             { source: 'kas_besar', total: allocKasBesarTotal, expenses: allocExpenseKasBesar, saldo: kasBesarSaldo },

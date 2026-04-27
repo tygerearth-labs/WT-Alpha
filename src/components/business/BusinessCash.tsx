@@ -77,6 +77,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -185,6 +186,7 @@ interface Category {
   name: string;
   type: string;
   color?: string | null;
+  icon?: string | null;
 }
 
 interface InvestorHistoryItem {
@@ -517,6 +519,16 @@ export default function BusinessCash() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [piutangSearch, setPiutangSearch] = useState('');
 
+  // ── Tab Switcher Dialog State ──
+  const [tabSwitcherOpen, setTabSwitcherOpen] = useState(false);
+
+  // ── Source Balance State ──
+  const [sourceBalances, setSourceBalances] = useState({
+    kasBesarSaldo: 0,
+    kasKecilSaldo: 0,
+    investorSaldo: 0,
+  });
+
   // ── Animated Counters (Arus Kas) ──
   const animIncome = useAnimatedCounter(incomeTotal);
   const animExpense = useAnimatedCounter(expenseTotal);
@@ -550,8 +562,11 @@ export default function BusinessCash() {
       fetch(`/api/business/${businessId}/sales?pageSize=20`).then((r) =>
         r.ok ? r.json() : { sales: [], summary: {} }
       ),
+      fetch(`/api/business/${businessId}/cash?summary=true`).then((r) =>
+        r.ok ? r.json() : {}
+      ),
     ])
-      .then(([besarData, kecilData, keluarData, catData, salesRes]) => {
+      .then(([besarData, kecilData, keluarData, catData, salesRes, summaryData]) => {
         const besarEntries: CashEntry[] = besarData?.cashEntries || [];
         const kecilEntries: CashEntry[] = kecilData?.cashEntries || [];
         const keluarEntries: CashEntry[] = keluarData?.cashEntries || [];
@@ -563,6 +578,14 @@ export default function BusinessCash() {
         setExpenseTotal(exp);
         setCashCategories(catData?.categories || []);
         setSalesData(salesRes?.sales || []);
+        // Update source balances for validation
+        if (summaryData) {
+          setSourceBalances({
+            kasBesarSaldo: summaryData.kasBesarSaldo || 0,
+            kasKecilSaldo: summaryData.kasKecilSaldo || 0,
+            investorSaldo: summaryData.investorSaldo || 0,
+          });
+        }
       })
       .catch(() => {
         setCashEntries([]);
@@ -915,6 +938,28 @@ export default function BusinessCash() {
   const handleCashSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessId || !cashForm.description || !cashForm.amount) return;
+
+    // Client-side balance validation for kas_keluar
+    if (cashForm.type === 'kas_keluar' && cashForm.source) {
+      const numAmount = parseFloat(cashForm.amount);
+      let currentSaldo = 0;
+      let sourceLabel = '';
+      if (cashForm.source === 'kas_besar') {
+        currentSaldo = sourceBalances.kasBesarSaldo;
+        sourceLabel = 'Kas Besar';
+      } else if (cashForm.source === 'kas_kecil') {
+        currentSaldo = sourceBalances.kasKecilSaldo;
+        sourceLabel = 'Kas Kecil';
+      } else if (cashForm.source === 'investor') {
+        currentSaldo = sourceBalances.investorSaldo;
+        sourceLabel = 'Dana Investor';
+      }
+      if (numAmount > currentSaldo) {
+        toast.error(`Saldo ${sourceLabel} tidak mencukupi (Sisa: ${formatAmount(currentSaldo)})`);
+        return;
+      }
+    }
+
     setCashSaving(true);
     try {
       const url = editingCashEntry
@@ -942,7 +987,15 @@ export default function BusinessCash() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.code === 'INSUFFICIENT_BALANCE') {
+          toast.error(errData.error || 'Saldo tidak mencukupi');
+        } else {
+          throw new Error();
+        }
+        return;
+      }
       toast.success(editingCashEntry ? t('biz.businessUpdated') : t('biz.businessCreated'));
       setCashDialogOpen(false);
       fetchAllCashData();
@@ -974,6 +1027,18 @@ export default function BusinessCash() {
     if (!businessId || !quickForm.description || !quickForm.amount) return;
     const numAmount = parseFloat(quickForm.amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
+
+    // Balance validation for quick add (kas_keluar)
+    if (cashSubTab === 'kas_keluar') {
+      let defaultSource: 'kas_besar' | 'kas_kecil' | 'investor' | '' = 'kas_kecil';
+      let currentSaldo = sourceBalances.kasKecilSaldo;
+      let sourceLabel = 'Kas Kecil';
+      if (numAmount > currentSaldo) {
+        toast.error(`Saldo ${sourceLabel} tidak mencukupi (Sisa: ${formatAmount(currentSaldo)})`);
+        return;
+      }
+    }
+
     setQuickSaving(true);
     try {
       let defaultSource: 'kas_besar' | 'kas_kecil' | 'investor' | '' = '';
@@ -997,7 +1062,15 @@ export default function BusinessCash() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.code === 'INSUFFICIENT_BALANCE') {
+          toast.error(errData.error || 'Saldo tidak mencukupi');
+        } else {
+          throw new Error();
+        }
+        return;
+      }
       toast.success(t('biz.businessCreated'));
       setQuickForm({ description: '', amount: '' });
       setQuickAddOpen(false);
@@ -1017,7 +1090,7 @@ export default function BusinessCash() {
       const res = await fetch(`/api/business/${businessId}/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'pengeluaran', name: newCategoryName.trim(), color: '#03DAC6' }),
+        body: JSON.stringify({ type: 'pengeluaran', name: newCategoryName.trim(), color: '#03DAC6', icon: 'Tag' }),
       });
       if (!res.ok) throw new Error();
       toast.success('Kategori berhasil ditambahkan');
@@ -1156,39 +1229,109 @@ export default function BusinessCash() {
   // ══════════════════════════════════════════════════════════════════
   // ── RENDER ────────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════
+
+  // Current tab info for floating button display
+  const currentTabInfo = mainTabs.find((mt) => mt.key === mainTab)!;
+  const CurrentTabIcon = currentTabInfo.icon;
+
   return (
     <div className="space-y-3">
-      {/* ── Main Tab Header ── */}
-      <div className="flex gap-1 rounded-xl p-1 w-fit bg-white/[0.03] border border-border">
-        {mainTabs.map((mt) => {
-          const Icon = mt.icon;
-          const isActive = mainTab === mt.key;
-          return (
-            <Button
-              key={mt.key}
-              variant="ghost"
-              size="sm"
-              onClick={() => setMainTab(mt.key)}
-              className={cn(
-                'rounded-lg px-3 sm:px-4 transition-colors duration-200 text-xs',
-                isActive ? 'font-semibold' : '',
-              )}
-              style={isActive ? { color: mt.color, background: alpha(mt.color, 8) } : { color: c.muted }}
+      {/* ── Floating Tab Switcher Button ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <motion.button
+            onClick={() => setTabSwitcherOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card hover:bg-muted/30 transition-all duration-200 group"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div
+              className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: alpha(currentTabInfo.color, 12) }}
             >
-              <Icon className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline">{mt.label}</span>
-              <span className="sm:hidden">{mt.label.split(' ')[0]}</span>
-            </Button>
-          );
-        })}
+              <CurrentTabIcon className="h-3.5 w-3.5" style={{ color: currentTabInfo.color }} />
+            </div>
+            <span className="text-sm font-semibold" style={{ color: currentTabInfo.color }}>
+              {currentTabInfo.label}
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors" />
+          </motion.button>
+        </div>
       </div>
+
+      {/* ── Tab Switcher Dialog ── */}
+      <Dialog open={tabSwitcherOpen} onOpenChange={setTabSwitcherOpen}>
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-sm">
+          <DialogTitle className="sr-only">Pilih Halaman</DialogTitle>
+          <DialogDescription className="sr-only">Pilih halaman cashflow yang ingin ditampilkan</DialogDescription>
+          <div className="px-5 pt-5 pb-3">
+            <p className="text-sm font-semibold text-foreground">Pilih Halaman</p>
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">Pindah antar modul cashflow bisnis</p>
+          </div>
+          <div className="px-3 pb-4 space-y-2">
+            {mainTabs.map((mt) => {
+              const Icon = mt.icon;
+              const isActive = mainTab === mt.key;
+              return (
+                <motion.button
+                  key={mt.key}
+                  onClick={() => {
+                    setMainTab(mt.key);
+                    setTabSwitcherOpen(false);
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left',
+                    isActive ? '' : 'hover:bg-white/[0.03]'
+                  )}
+                  style={isActive ? {
+                    background: alpha(mt.color, 10),
+                    border: `1px solid ${alpha(mt.color, 20)}`,
+                  } : {
+                    background: 'transparent',
+                    border: '1px solid transparent',
+                  }}
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div
+                    className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: alpha(mt.color, isActive ? 18 : 8) }}
+                  >
+                    <Icon className="h-4 w-4" style={{ color: isActive ? mt.color : c.muted }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn('text-sm', isActive ? 'font-semibold' : 'font-medium')} style={{ color: isActive ? mt.color : c.foreground }}>
+                      {mt.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/40 mt-0.5">
+                      {mt.key === 'arus_kas' && 'Kelola arus kas besar, kecil & keluar'}
+                      {mt.key === 'investor' && 'Data modal & profit sharing investor'}
+                      {mt.key === 'piutang' && 'Kelola piutang, cicilan & pembayaran'}
+                    </p>
+                  </div>
+                  {isActive && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="h-5 w-5 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: alpha(mt.color, 20) }}
+                    >
+                      <CheckCircle2 className="h-3 w-3" style={{ color: mt.color }} />
+                    </motion.div>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AnimatePresence mode="wait">
         {/* ══════════════════════════════════════════════════ */}
         {/* ── TAB 1: ARUS KAS ─────────────────────────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
         {mainTab === 'arus_kas' && (
-          <div key="arus_kas" className="space-y-3">
+          <div key="arus_kas" className="space-y-3 p-3 sm:p-4">
             {/* ── Flow Summary Cards ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               {/* Total Pemasukan */}
@@ -1477,7 +1620,7 @@ export default function BusinessCash() {
             )}
 
             {/* ── Period Filter ── */}
-            <div className="flex gap-1 rounded-lg p-0.5 w-fit bg-white/[0.03] border border-border">
+            <div className="flex gap-1 rounded-lg p-0.5 w-fit bg-white/[0.03] border border-border overflow-x-auto">
               {PERIOD_OPTIONS.map((opt) => {
                 const isActive = cashPeriod === opt.value;
                 return (
@@ -1521,7 +1664,11 @@ export default function BusinessCash() {
                         key={cat.id}
                         className="flex items-center gap-1.5 rounded-full px-2.5 py-1 border border-border bg-white/[0.02]"
                       >
-                        <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: cat.color || c.secondary }} />
+                        <DynamicIcon
+                          name={cat.icon || 'Tag'}
+                          className="h-3 w-3 shrink-0"
+                          style={{ color: cat.color || c.secondary }}
+                        />
                         <span className="text-[11px] text-foreground">{cat.name}</span>
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
@@ -1595,6 +1742,17 @@ export default function BusinessCash() {
                 </div>
               </div>
 
+              {/* Mobile Search Bar */}
+              <div className="relative flex-1 sm:hidden">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={cashSearch}
+                  onChange={(e) => setCashSearch(e.target.value)}
+                  placeholder={t('common.search') + '...'}
+                  className="pl-8 rounded-lg h-8 text-xs bg-white/[0.03] border border-border text-foreground w-full"
+                />
+              </div>
+
               <Button
                 onClick={openCashCreate}
                 size="sm"
@@ -1610,13 +1768,13 @@ export default function BusinessCash() {
               className="rounded-xl overflow-hidden border transition-colors duration-200"
               style={{ borderColor: alpha(subTypeConfig.color, 20) }}
             >
-              <CardContent className="p-2.5">
-                <div className="flex items-center gap-2">
+              <CardContent className="p-2.5 sm:p-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setQuickAddOpen(!quickAddOpen)}
-                    className="rounded-lg h-7 px-2 text-xs font-medium shrink-0"
+                    className="rounded-lg h-8 sm:h-7 px-3 sm:px-2 text-xs font-medium shrink-0 w-fit"
                     style={{ color: subTypeConfig.color, backgroundColor: alpha(subTypeConfig.color, 8) }}
                   >
                     {quickAddOpen ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
@@ -1625,17 +1783,17 @@ export default function BusinessCash() {
                   <AnimatePresence>
                     {quickAddOpen && (
                       <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: 'auto' }}
-                        exit={{ opacity: 0, width: 0 }}
-                        className="flex items-center gap-2 overflow-hidden flex-1"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 overflow-hidden"
                       >
                         <Input
                           value={quickForm.description}
                           onChange={(e) => setQuickForm({ ...quickForm, description: e.target.value })}
                           onKeyDown={(e) => e.key === 'Enter' && handleQuickAddSave()}
                           placeholder="Deskripsi..."
-                          className="h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1 min-w-0"
+                          className="h-8 sm:h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1 min-w-0"
                         />
                         <div className="relative shrink-0">
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">Rp</span>
@@ -1645,14 +1803,14 @@ export default function BusinessCash() {
                             onChange={(e) => setQuickForm({ ...quickForm, amount: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && handleQuickAddSave()}
                             placeholder="0"
-                            className="h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground w-[120px] pl-7"
+                            className="h-8 sm:h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground w-full sm:w-[120px] pl-7"
                           />
                         </div>
                         <Button
                           onClick={handleQuickAddSave}
                           disabled={!quickForm.description || !quickForm.amount || quickSaving}
                           size="sm"
-                          className="rounded-lg h-7 px-3 text-xs shrink-0"
+                          className="rounded-lg h-8 sm:h-7 px-4 sm:px-3 text-xs shrink-0"
                           style={{ backgroundColor: subTypeConfig.color, color: 'white' }}
                         >
                           {quickSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Simpan'}
@@ -1712,7 +1870,83 @@ export default function BusinessCash() {
                         </Button>
                       </div>
                     )}
-                  <div className="max-h-[500px] overflow-y-auto">
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-[500px] overflow-y-auto space-y-2 p-3">
+                    <AnimatePresence mode="popLayout">
+                      {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
+                        const isExpense = entry.type === 'kas_keluar';
+                        const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
+                        const sourceInfo = getEntrySourceLabel(entry);
+                        return (
+                          <motion.div
+                            key={entry.id}
+                            custom={index}
+                            variants={{
+                              hidden: { opacity: 0, y: -4 },
+                              show: (i: number) => ({
+                                opacity: 1, y: 0,
+                                transition: { delay: i * 0.02, duration: 0.2 },
+                              }),
+                              exit: { opacity: 0, transition: { duration: 0.15 } },
+                            }}
+                            initial="hidden"
+                            animate="show"
+                            layout
+                            className="rounded-lg p-3 border border-border bg-white/[0.01]"
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {isExpense ? (
+                                  <ArrowDownRight className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                                ) : (
+                                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-secondary" />
+                                )}
+                                <span className="text-xs font-medium truncate text-foreground">{entry.description}</span>
+                              </div>
+                              <span className={cn("text-xs font-bold tabular-nums shrink-0", isExpense ? "text-destructive" : "text-secondary")}>
+                                {isExpense ? '-' : '+'}{formatAmount(entry.amount)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-mono text-muted-foreground">{formatDate(entry.date)}</span>
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
+                                style={{ backgroundColor: alpha(sourceInfo.color, 8), color: sourceInfo.color }}
+                              >
+                                {sourceInfo.label}
+                              </Badge>
+                              {entry.category && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 gap-0.5 whitespace-nowrap"
+                                  style={{ backgroundColor: alpha(entryColor.color, 8), color: entryColor.color }}
+                                >
+                                  {(() => {
+                                    const catInfo = cashCategories.find(c => c.name === entry.category);
+                                    return catInfo?.icon ? (
+                                      <DynamicIcon name={catInfo.icon} className="h-2.5 w-2.5 shrink-0" style={{ color: catInfo.color || entryColor.color }} />
+                                    ) : null;
+                                  })()}
+                                  {entry.category}
+                                </Badge>
+                              )}
+                              <div className="ml-auto flex items-center gap-0.5">
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-md text-muted-foreground" onClick={() => openCashEdit(entry)}>
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-md text-muted-foreground" onClick={() => setCashDeleteId(entry.id)}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-[500px] overflow-y-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-b border-border hover:bg-transparent">
@@ -1722,10 +1956,10 @@ export default function BusinessCash() {
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             {t('biz.cashDescription')}
                           </TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell w-[110px]">
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[110px]">
                             Sumber
                           </TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             {t('biz.cashCategory')}
                           </TableHead>
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">
@@ -1768,20 +2002,9 @@ export default function BusinessCash() {
                                       <ArrowUpRight className="h-3 w-3 shrink-0 text-secondary" />
                                     )}
                                     <span className="truncate">{entry.description}</span>
-                                    {/* Inline source badge for kas_keluar on all screen sizes */}
-                                    {isExpense && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 shrink-0 sm:hidden whitespace-nowrap"
-                                        style={{ backgroundColor: alpha(sourceInfo.color, 8), color: sourceInfo.color }}
-                                      >
-                                        {sourceInfo.label}
-                                      </Badge>
-                                    )}
                                   </span>
                                 </TableCell>
-                                {/* Source Column (visible sm+) */}
-                                <TableCell className="py-2 hidden sm:table-cell">
+                                <TableCell className="py-2">
                                   <Badge
                                     variant="outline"
                                     className="text-[10px] font-medium border-0 rounded-full px-2 py-0"
@@ -1790,13 +2013,19 @@ export default function BusinessCash() {
                                     {sourceInfo.label}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="py-2 hidden sm:table-cell">
+                                <TableCell className="py-2">
                                   {entry.category ? (
                                     <Badge
                                       variant="outline"
-                                      className="text-[10px] font-medium border-0 rounded-full px-2 py-0"
+                                      className="text-[10px] font-medium border-0 rounded-full px-2 py-0 gap-1"
                                       style={{ backgroundColor: alpha(entryColor.color, 8), color: entryColor.color }}
                                     >
+                                      {(() => {
+                                        const catInfo = cashCategories.find(c => c.name === entry.category);
+                                        return catInfo?.icon ? (
+                                          <DynamicIcon name={catInfo.icon} className="h-2.5 w-2.5 shrink-0" style={{ color: catInfo.color || entryColor.color }} />
+                                        ) : null;
+                                      })()}
                                       {entry.category}
                                     </Badge>
                                   ) : (
@@ -1810,7 +2039,7 @@ export default function BusinessCash() {
                                   {formatAmount(entry.amount)}
                                 </TableCell>
                                 <TableCell className="py-2 text-right">
-                                  <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md text-muted-foreground" onClick={() => openCashEdit(entry)}>
                                       <Pencil className="h-3 w-3" />
                                     </Button>
@@ -1849,7 +2078,7 @@ export default function BusinessCash() {
         {/* ── TAB 2: INVESTOR ─────────────────────────────────── */}
         {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'investor' && (
-          <div key="investor" className="space-y-3">
+          <div key="investor" className="space-y-3 p-3 sm:p-4">
             {/* ── Investor Summary Cards ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               <Card className="rounded-xl overflow-hidden border border-primary/15">
@@ -1938,14 +2167,14 @@ export default function BusinessCash() {
                       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
                     >
                       <Card className="rounded-xl overflow-hidden transition-colors duration-200 border border-primary/15 hover:border-primary/30">
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="flex items-start justify-between mb-2">
+                        <CardContent className="p-2.5 sm:p-3">
+                          <div className="flex items-start justify-between mb-1.5 sm:mb-2">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/8 text-primary">
+                              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/8 text-primary">
                                 {inv.name.charAt(0).toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <p className="text-xs font-semibold truncate max-w-[140px] text-foreground">{inv.name}</p>
+                                <p className="text-xs font-semibold truncate max-w-[120px] sm:max-w-[140px] text-foreground">{inv.name}</p>
                                 <Badge
                                   variant="outline"
                                   className={cn(
@@ -2028,13 +2257,76 @@ export default function BusinessCash() {
                     </Badge>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
+                    {/* Mobile Card List */}
+                    <div className="sm:hidden space-y-2">
+                      <AnimatePresence mode="popLayout">
+                        {investorHistory.map((item, index) => {
+                          const typeConfig = {
+                            modal_masuk: { label: 'Modal Masuk', color: c.primary, bg: alpha(c.primary, 8) },
+                            dp_penjualan: { label: 'DP Penjualan', color: c.secondary, bg: alpha(c.secondary, 8) },
+                            penjualan_lunas: { label: 'Penjualan', color: '#14b8a6', bg: 'color-mix(in srgb, #14b8a6 8%, transparent)' },
+                            cicilan_diterima: { label: 'Cicilan', color: '#a855f7', bg: 'color-mix(in srgb, #a855f7 8%, transparent)' },
+                          }[item.type];
+                          return (
+                            <motion.div
+                              key={item.id}
+                              custom={index}
+                              variants={{
+                                hidden: { opacity: 0, y: -4 },
+                                show: (i: number) => ({
+                                  opacity: 1, y: 0,
+                                  transition: { delay: i * 0.015, duration: 0.15 },
+                                }),
+                                exit: { opacity: 0, transition: { duration: 0.1 } },
+                              }}
+                              initial="hidden"
+                              animate="show"
+                              layout
+                              className="rounded-lg p-2.5 border border-border bg-white/[0.01]"
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap shrink-0"
+                                    style={{ backgroundColor: typeConfig.bg, color: typeConfig.color }}
+                                  >
+                                    {typeConfig.label}
+                                  </Badge>
+                                  <span className="text-xs truncate text-foreground">
+                                    {item.investorName && item.type === 'modal_masuk' && (
+                                      <span className="text-muted-foreground mr-1">{item.investorName}</span>
+                                    )}
+                                    {item.description}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: typeConfig.color }}>
+                                  +{formatAmount(item.amount)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                <span className="font-mono">{formatDate(item.date)}</span>
+                                {item.customerName && (
+                                  <>
+                                    <span className="text-border">•</span>
+                                    <span className="truncate">{item.customerName}</span>
+                                  </>
+                                )}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
+                    {/* Desktop Table */}
+                    <div className="hidden sm:block">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-b border-border hover:bg-transparent">
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[80px]">Tanggal</TableHead>
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tipe</TableHead>
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Pelanggan</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pelanggan</TableHead>
                           <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[110px]">Bagian Investor</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2082,7 +2374,7 @@ export default function BusinessCash() {
                                   )}
                                   {item.description}
                                 </TableCell>
-                                <TableCell className="text-xs py-2 hidden sm:table-cell text-muted-foreground">
+                                <TableCell className="text-xs py-2 text-muted-foreground">
                                   {item.customerName || (
                                     item.investorName && item.type !== 'modal_masuk' ? item.investorName : '—'
                                   )}
@@ -2096,6 +2388,7 @@ export default function BusinessCash() {
                         </AnimatePresence>
                       </TableBody>
                     </Table>
+                    </div>
                   </div>
                   {/* Total investor income */}
                   <div className="border-t border-border mt-2 pt-2 flex items-center justify-between">
@@ -2111,7 +2404,7 @@ export default function BusinessCash() {
         )}
         {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'piutang' && (
-          <div key="piutang" className="space-y-3">
+          <div key="piutang" className="space-y-3 p-3 sm:p-4">
             {/* ── Piutang Info Banner ── */}
             <div className="rounded-xl p-3 flex items-start gap-2.5 bg-muted-foreground/3 border border-border">
               <Info className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -2242,13 +2535,13 @@ export default function BusinessCash() {
                   );
                 })}
               </div>
-              <div className="relative flex-1 max-w-[200px]">
+              <div className="relative flex-1 sm:max-w-[200px] w-full">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   value={piutangSearch}
                   onChange={(e) => setPiutangSearch(e.target.value)}
                   placeholder={t('common.search') + '...'}
-                  className="pl-8 rounded-lg h-8 text-xs bg-white/[0.03] border border-border text-foreground"
+                  className="pl-8 rounded-lg h-8 text-xs bg-white/[0.03] border border-border text-foreground w-full"
                 />
               </div>
             </div>
@@ -2270,7 +2563,92 @@ export default function BusinessCash() {
                     description="Semua piutang dalam kategori ini sudah bersih"
                   />
                 ) : (
-                  <div className="max-h-[480px] overflow-y-auto">
+                  <>
+                    {/* Mobile Card List */}
+                    <div className="sm:hidden max-h-[480px] overflow-y-auto space-y-2 p-3">
+                      <AnimatePresence mode="popLayout">
+                        {piutangDebts.map((debt, index) => {
+                          const statusCfg = getStatusConfig(debt.status);
+                          const paidAmount = getDebtPaidAmount(debt.id);
+                          const overdueDays = debt.dueDate && debt.status !== 'paid'
+                            ? differenceInDays(new Date(), parseISO(debt.dueDate))
+                            : null;
+                          const isOverdue = overdueDays !== null && overdueDays > 0;
+                          return (
+                            <motion.div
+                              key={debt.id}
+                              custom={index}
+                              variants={{
+                                hidden: { opacity: 0, y: -4 },
+                                show: (i: number) => ({
+                                  opacity: 1, y: 0,
+                                  transition: { delay: i * 0.02, duration: 0.2 },
+                                }),
+                                exit: { opacity: 0, transition: { duration: 0.15 } },
+                              }}
+                              initial="hidden"
+                              animate="show"
+                              layout
+                              className="rounded-lg p-3 border border-border bg-white/[0.01]"
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center text-[10px] font-bold shrink-0 text-muted-foreground">
+                                    {debt.counterpart.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium truncate text-foreground">{debt.counterpart}</p>
+                                    {debt.description && (
+                                      <p className="text-[10px] truncate text-muted-foreground">{debt.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 shrink-0"
+                                  style={{ backgroundColor: alpha(statusCfg.color, 8), color: statusCfg.color }}
+                                >
+                                  {statusCfg.label}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-3 text-[10px] mb-1.5">
+                                <span className="text-muted-foreground">Total: <span className="font-semibold text-foreground">{formatAmount(debt.amount)}</span></span>
+                                <span className="text-muted-foreground">Dibayar: <span className="font-semibold" style={{ color: statusCfg.color }}>{formatAmount(paidAmount)}</span></span>
+                                <span className="text-muted-foreground">Sisa: <span className="font-bold" style={{ color: statusCfg.color }}>{formatAmount(debt.remaining)}</span></span>
+                              </div>
+                              {debt.dueDate && (
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                  <span className={cn("text-[10px] font-mono", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                    {formatDate(debt.dueDate)}
+                                  </span>
+                                  {isOverdue && (
+                                    <span className="text-[9px] px-1.5 py-px rounded-full font-medium bg-destructive text-primary-foreground">
+                                      {overdueDays} hari
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1.5 pt-1.5 border-t border-border">
+                                {debt.status !== 'paid' && (
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-medium rounded-md text-secondary" onClick={() => openPaymentDialog(debt)}>
+                                    <CircleDollarSign className="h-3 w-3 mr-1" />Bayar
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-medium rounded-md" style={{ color: '#25D366' }} onClick={() => sendReminder(debt)}>
+                                  <MessageCircle className="h-3 w-3 mr-1" />Tagih
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-medium rounded-md text-muted-foreground ml-auto" onClick={() => openDetailDialog(debt)}>
+                                  <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
+                    {/* Desktop Table */}
+                    <div className="hidden sm:block max-h-[480px] overflow-y-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-b border-border hover:bg-transparent">
@@ -2399,6 +2777,7 @@ export default function BusinessCash() {
                       </TableBody>
                     </Table>
                   </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -2410,7 +2789,7 @@ export default function BusinessCash() {
       {/* ── CASH ENTRY DIALOG ──────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={cashDialogOpen} onOpenChange={setCashDialogOpen}>
-        <DialogContent className="rounded-xl bg-card border border-border">
+        <DialogContent className="w-[95vw] sm:max-w-lg rounded-xl bg-card border border-border">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <div
@@ -2464,23 +2843,24 @@ export default function BusinessCash() {
             {cashForm.type === 'kas_kecil' && (
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Sumber Dana</Label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {([
-                    { value: 'kas_besar' as const, label: 'Kas Besar', color: c.secondary },
-                    { value: 'investor' as const, label: 'Dana Investor', color: c.primary },
+                    { value: 'kas_besar' as const, label: 'Kas Besar', color: c.secondary, saldo: sourceBalances.kasBesarSaldo },
+                    { value: 'investor' as const, label: 'Dana Investor', color: c.primary, saldo: sourceBalances.investorSaldo },
                   ]).map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => setCashForm({ ...cashForm, source: opt.value, investorId: '' })}
-                      className="py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-200"
+                      className="py-1.5 px-1 rounded-lg text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
                       style={
                         cashForm.source === opt.value
                           ? { backgroundColor: alpha(opt.color, 8), color: opt.color, borderColor: alpha(opt.color, 25) }
                           : { borderColor: c.border, color: c.muted }
                       }
                     >
-                      {opt.label}
+                      <span>{opt.label}</span>
+                      <span className="text-[9px] opacity-70">{formatAmount(opt.saldo)}</span>
                     </button>
                   ))}
                 </div>
@@ -2517,27 +2897,44 @@ export default function BusinessCash() {
             {cashForm.type === 'kas_keluar' && (
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Dibayar Dari</Label>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                   {([
-                    { value: 'kas_kecil' as const, label: 'Kas Kecil', color: c.warning },
-                    { value: 'kas_besar' as const, label: 'Kas Besar', color: c.secondary },
-                    { value: 'investor' as const, label: 'Investor', color: c.primary },
+                    { value: 'kas_kecil' as const, label: 'Kas Kecil', color: c.warning, saldo: sourceBalances.kasKecilSaldo },
+                    { value: 'kas_besar' as const, label: 'Kas Besar', color: c.secondary, saldo: sourceBalances.kasBesarSaldo },
+                    { value: 'investor' as const, label: 'Investor', color: c.primary, saldo: sourceBalances.investorSaldo },
                   ]).map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => setCashForm({ ...cashForm, source: opt.value, investorId: '' })}
-                      className="py-1.5 rounded-lg text-[11px] font-medium border transition-all duration-200"
+                      className="py-1.5 px-1 rounded-lg text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
                       style={
                         cashForm.source === opt.value
                           ? { backgroundColor: alpha(opt.color, 8), color: opt.color, borderColor: alpha(opt.color, 25) }
                           : { borderColor: c.border, color: c.muted }
                       }
                     >
-                      {opt.label}
+                      <span>{opt.label}</span>
+                      <span className="text-[9px] opacity-70">{formatAmount(opt.saldo)}</span>
                     </button>
                   ))}
                 </div>
+                {/* Balance warning */}
+                {cashForm.source && parseFloat(cashForm.amount || '0') > 0 && (() => {
+                  const currentSaldo = cashForm.source === 'kas_besar' ? sourceBalances.kasBesarSaldo
+                    : cashForm.source === 'kas_kecil' ? sourceBalances.kasKecilSaldo
+                    : sourceBalances.investorSaldo;
+                  const numAmount = parseFloat(cashForm.amount || '0');
+                  if (numAmount > currentSaldo) {
+                    return (
+                      <div className="flex items-center gap-1.5 p-2 rounded-lg bg-destructive/8 border border-destructive/15">
+                        <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                        <span className="text-[10px] text-destructive font-medium">Saldo tidak mencukupi! Sisa: {formatAmount(currentSaldo)}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 {/* Investor dropdown when source is investor */}
                 {cashForm.source === 'investor' && (
                   <Select
@@ -2693,7 +3090,7 @@ export default function BusinessCash() {
       {/* ── INVESTOR DIALOG ────────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={investorDialogOpen} onOpenChange={setInvestorDialogOpen}>
-        <DialogContent className="rounded-xl bg-card border border-border">
+        <DialogContent className="w-[95vw] sm:max-w-lg rounded-xl bg-card border border-border">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/5">
@@ -2721,7 +3118,7 @@ export default function BusinessCash() {
             </div>
 
             {/* Phone & Email */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   <Phone className="h-3 w-3 inline mr-1" />Telepon
@@ -3179,7 +3576,7 @@ export default function BusinessCash() {
       {/* ── DELETE CONFIRMATION ────────────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════ */}
       <AlertDialog open={!!cashDeleteId} onOpenChange={(open) => !open && setCashDeleteId(null)}>
-        <AlertDialogContent className="rounded-xl bg-card border border-border">
+        <AlertDialogContent className="w-[95vw] sm:max-w-md rounded-xl bg-card border border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-foreground">
               <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-destructive/5">
