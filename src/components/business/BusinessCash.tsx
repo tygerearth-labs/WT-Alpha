@@ -564,7 +564,7 @@ export default function BusinessCash() {
       ),
       fetch(`/api/business/${businessId}/cash?summary=true`).then((r) =>
         r.ok ? r.json() : {}
-      ),
+      ) as Promise<Record<string, number>>,
     ])
       .then(([besarData, kecilData, keluarData, catData, salesRes, summaryData]) => {
         const besarEntries: CashEntry[] = besarData?.cashEntries || [];
