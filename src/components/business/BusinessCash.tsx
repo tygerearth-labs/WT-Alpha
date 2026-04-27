@@ -1249,7 +1249,7 @@ export default function BusinessCash() {
               className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
               style={{ background: alpha(currentTabInfo.color, 12) }}
             >
-              <CurrentTabIcon className="h-3.5 w-3.5" style={{ color: currentTabInfo.color }} />
+              <span style={{ color: currentTabInfo.color }}><CurrentTabIcon className="h-3.5 w-3.5" /></span>
             </div>
             <span className="text-sm font-semibold" style={{ color: currentTabInfo.color }}>
               {currentTabInfo.label}
@@ -1297,7 +1297,7 @@ export default function BusinessCash() {
                     className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: alpha(mt.color, isActive ? 18 : 8) }}
                   >
-                    <Icon className="h-4 w-4" style={{ color: isActive ? mt.color : c.muted }} />
+                    <span style={{ color: isActive ? mt.color : c.muted }}><Icon className="h-4 w-4" /></span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={cn('text-sm', isActive ? 'font-semibold' : 'font-medium')} style={{ color: isActive ? mt.color : c.foreground }}>
@@ -2796,7 +2796,7 @@ export default function BusinessCash() {
                 className="h-7 w-7 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: alpha(subTypeConfig.color, 8) }}
               >
-                {editingCashEntry ? <Pencil className="h-3.5 w-3.5" style={{ color: subTypeConfig.color }} /> : <Plus className="h-3.5 w-3.5" style={{ color: subTypeConfig.color }} />}
+                <span style={{ color: subTypeConfig.color }}>{editingCashEntry ? <Pencil className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}</span>
               </div>
               {editingCashEntry ? t('common.edit') : t('biz.addCashEntry')}
             </DialogTitle>
@@ -2829,7 +2829,7 @@ export default function BusinessCash() {
                     return (
                       <SelectItem key={key} value={key} className="rounded-lg">
                         <span className="flex items-center gap-2">
-                          <Icon className="h-3.5 w-3.5" style={{ color: cfg.color }} />
+                          <span style={{ color: cfg.color }}><Icon className="h-3.5 w-3.5" /></span>
                           {t(cfg.label)}
                         </span>
                       </SelectItem>
