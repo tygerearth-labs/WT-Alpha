@@ -44,6 +44,7 @@ import {
   Landmark,
   CircleDollarSign,
   Download,
+  Users,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -76,6 +77,8 @@ interface AllocationBreakdown {
   kasKecilSaldo: number;
   investorSaldo: number;
   netCash: number;
+  investorModalTotal?: number;
+  investorIncomeTotal?: number;
   breakdown: AllocationBreakdownItem[];
 }
 
@@ -128,6 +131,33 @@ interface DashboardData {
     selesai: PiutangSummaryItem;
   };
   allocationBreakdown: AllocationBreakdown;
+  investorSummary?: {
+    totalModalMasuk: number;
+    totalPendapatan: number;
+    totalPengeluaran: number;
+    totalSaldo: number;
+    activeInvestors: number;
+  };
+  investorBreakdown?: Array<{
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    totalInvestment: number;
+    profitSharePct: number;
+    status: string;
+    modalMasuk: number;
+    pendapatan: number;
+    pengeluaran: number;
+    totalModal: number;
+    saldo: number;
+    recentEntries: Array<{
+      type: 'modal_masuk' | 'pendapatan' | 'pengeluaran';
+      amount: number;
+      description: string;
+      date: string;
+    }>;
+  }>;
 }
 
 /* ── Helpers ── */
@@ -773,12 +803,13 @@ export default function BusinessDashboard() {
   const kasBesarSaldo = data.allocationBreakdown?.kasBesarSaldo ?? (data.totalKasBesar ?? 0);
   const kasKecilSaldo = data.allocationBreakdown?.kasKecilSaldo ?? (data.totalKasKecil ?? 0);
   const investorSaldo = data.allocationBreakdown?.investorSaldo ?? ((data.allocationBreakdown?.investorTotal ?? 0) - (data.allocationBreakdown?.expenseFromInvestor ?? 0));
+  const investorIncomeTotal = data.allocationBreakdown?.investorIncomeTotal ?? 0;
   const allocationNetCash = data.allocationBreakdown?.netCash ?? (data.netCash ?? 0);
 
   const kasDanaCards = [
     { label: 'Kas Besar', value: kasBesarSaldo, icon: Landmark, color: 'var(--secondary)' as string, bgColor: 'color-mix(in srgb, var(--secondary) 6%, transparent)' as string },
     { label: 'Kas Kecil', value: kasKecilSaldo, icon: Wallet, color: 'var(--primary)' as string, bgColor: 'color-mix(in srgb, var(--primary) 6%, transparent)' as string },
-    { label: 'Dana Investor', value: investorSaldo, icon: HandCoins, color: '#BB86FC' as string, bgColor: 'color-mix(in srgb, var(--primary) 6%, transparent)' as string },
+    { label: 'Dana Investor', value: investorSaldo, icon: HandCoins, color: '#BB86FC' as string, bgColor: 'color-mix(in srgb, #BB86FC 6%, transparent)' as string, subText: data.allocationBreakdown?.investorModalTotal ? `Modal: ${formatAmount(data.allocationBreakdown.investorModalTotal)}${investorIncomeTotal > 0 ? ` · Pendapatan: ${formatAmount(investorIncomeTotal)}` : ''}` : undefined },
     { label: 'Net Cash', value: allocationNetCash, icon: Activity, color: (allocationNetCash >= 0 ? 'var(--secondary)' : 'var(--destructive)') as string, bgColor: (allocationNetCash >= 0 ? 'color-mix(in srgb, var(--secondary) 6%, transparent)' : 'color-mix(in srgb, var(--destructive) 6%, transparent)') as string },
   ];
 
@@ -955,11 +986,160 @@ export default function BusinessDashboard() {
                 <p className="text-xs sm:text-sm font-bold leading-tight truncate" style={{ color: item.color }}>
                   {formatAmount(item.value)}
                 </p>
+                {item.subText && (
+                  <p className="text-[10px] text-muted-foreground mt-1 truncate">{item.subText}</p>
+                )}
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {/* ── Section 2c: Investor Detail Cards ── */}
+      {data.investorBreakdown && data.investorBreakdown.length > 0 && (
+        <Card className="border-border">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#BB86FC' }} />
+                <Users className="h-3.5 w-3.5" style={{ color: '#BB86FC' }} />
+                Detail Dana Investor
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {data.investorSummary && (
+                  <>
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ color: '#BB86FC', backgroundColor: alpha('#BB86FC', 8) }}>
+                      {data.investorSummary.activeInvestors} investor aktif
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-4">
+            {/* Summary row */}
+            {data.investorSummary && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                {[
+                  { label: 'Total Modal Masuk', value: data.investorSummary.totalModalMasuk, color: 'var(--secondary)' as string },
+                  { label: 'Pendapatan Investor', value: data.investorSummary.totalPendapatan, color: '#4CAF50' as string },
+                  { label: 'Pengeluaran Investor', value: data.investorSummary.totalPengeluaran, color: 'var(--destructive)' as string },
+                  { label: 'Saldo Investor', value: data.investorSummary.totalSaldo, color: '#BB86FC' as string },
+                ].map((item) => (
+                  <div key={item.label} className="p-2.5 rounded-lg" style={{ backgroundColor: alpha(item.color, 5) }}>
+                    <p className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground mb-1">{item.label}</p>
+                    <p className="text-xs sm:text-sm font-bold tabular-nums" style={{ color: item.color }}>
+                      {formatAmount(item.value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Per-investor cards */}
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+              {data.investorBreakdown.map((inv) => {
+                const saldoPct = inv.totalModal > 0 ? (inv.saldo / inv.totalModal) * 100 : 0;
+                const saldoColor = inv.saldo >= 0 ? '#BB86FC' : 'var(--destructive)';
+                return (
+                  <div key={inv.id} className="p-3 sm:p-4 rounded-xl border border-border space-y-3" style={{ backgroundColor: alpha('#BB86FC', 2) }}>
+                    {/* Investor header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: alpha('#BB86FC', 10) }}>
+                          <HandCoins className="h-4 w-4" style={{ color: '#BB86FC' }} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{inv.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {inv.profitSharePct > 0 && (
+                              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md" style={{ color: '#BB86FC', backgroundColor: alpha('#BB86FC', 8) }}>
+                                Bagian {inv.profitSharePct}%
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              Modal: {formatAmount(inv.totalModal)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm sm:text-base font-bold tabular-nums" style={{ color: saldoColor }}>
+                          {formatAmount(inv.saldo)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">Saldo</p>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="h-2 rounded-full overflow-hidden bg-border">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${Math.min(Math.max(saldoPct, 0), 100)}%`,
+                          backgroundColor: saldoColor,
+                        }}
+                      />
+                    </div>
+
+                    {/* Detail breakdown */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center p-2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 5%, transparent)' }}>
+                        <p className="text-[9px] uppercase tracking-wide font-medium text-muted-foreground mb-0.5">Modal Masuk</p>
+                        <p className="text-[11px] sm:text-xs font-bold tabular-nums text-secondary">
+                          {formatAmount(inv.modalMasuk)}
+                        </p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, #4CAF50 5%, transparent)' }}>
+                        <p className="text-[9px] uppercase tracking-wide font-medium text-muted-foreground mb-0.5">Pendapatan</p>
+                        <p className="text-[11px] sm:text-xs font-bold tabular-nums" style={{ color: '#4CAF50' }}>
+                          {formatAmount(inv.pendapatan)}
+                        </p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 5%, transparent)' }}>
+                        <p className="text-[9px] uppercase tracking-wide font-medium text-muted-foreground mb-0.5">Pengeluaran</p>
+                        <p className="text-[11px] sm:text-xs font-bold tabular-nums text-destructive">
+                          {formatAmount(inv.pengeluaran)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Recent entries */}
+                    {inv.recentEntries && inv.recentEntries.length > 0 && (
+                      <div className="space-y-1 pt-1 border-t border-border">
+                        <p className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground mb-1.5">Transaksi Terakhir</p>
+                        {inv.recentEntries.map((entry, idx) => {
+                          const isExpense = entry.type === 'pengeluaran';
+                          const entryColor = isExpense ? 'var(--destructive)' : entry.type === 'pendapatan' ? '#4CAF50' : 'var(--secondary)';
+                          const EntryIcon = isExpense ? ArrowDownRight : ArrowUpRight;
+                          return (
+                            <div key={idx} className="flex items-center justify-between py-1">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex h-5 w-5 items-center justify-center rounded-md shrink-0" style={{ backgroundColor: alpha(entryColor, 8) }}>
+                                  <EntryIcon className="h-2.5 w-2.5" style={{ color: entryColor }} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] truncate text-foreground">{entry.description}</p>
+                                  <p className="text-[9px] text-muted-foreground">
+                                    {entry.type === 'modal_masuk' ? 'Modal Masuk' : entry.type === 'pendapatan' ? 'Pendapatan' : 'Pengeluaran'}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-[10px] font-bold tabular-nums shrink-0 ml-2" style={{ color: entryColor }}>
+                                {isExpense ? '-' : '+'}{formatAmount(entry.amount)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Section 3: Health Score + Revenue vs Expense + Status Ringkas ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

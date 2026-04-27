@@ -1332,122 +1332,81 @@ export default function BusinessCash() {
         {/* ══════════════════════════════════════════════════ */}
         {mainTab === 'arus_kas' && (
           <div key="arus_kas" className="space-y-3 p-3 sm:p-4">
-            {/* ── Flow Summary Cards ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-              {/* Total Pemasukan */}
-              <Card
-                className="rounded-xl overflow-hidden transition-colors duration-200 cursor-default border border-border hover:border-secondary/25"
-              >
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-secondary/8">
-                      <ArrowUpRight className="h-3.5 w-3.5 text-secondary" />
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Total Pemasukan
-                    </span>
-                  </div>
-                  <p className="text-sm font-bold tabular-nums text-secondary">
-                    {formatAmount(animIncome)}
-                  </p>
-                  <div className="mt-2">
-                    <MiniCashSparkline color={c.secondary} value={animIncome} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Total Pengeluaran */}
-              <Card
-                className="rounded-xl overflow-hidden transition-colors duration-200 cursor-default border border-border hover:border-destructive/25"
-              >
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-destructive/8">
-                      <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Total Pengeluaran
-                    </span>
-                  </div>
-                  <p className="text-sm font-bold tabular-nums text-destructive">
-                    {formatAmount(animExpense)}
-                  </p>
-                  <div className="mt-2">
-                    <MiniCashSparkline color={c.destructive} value={animExpense} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Arus Bersih */}
-              <Card
-                className={cn(
-                  "rounded-xl overflow-hidden transition-colors duration-200 cursor-default border",
-                  animNet >= 0
-                    ? "border-secondary/20 hover:border-secondary/30"
-                    : "border-border hover:border-destructive/30"
-                )}
-              >
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div
-                      className={cn(
-                        "h-7 w-7 rounded-lg flex items-center justify-center",
-                        animNet >= 0 ? "bg-secondary/8" : "bg-destructive/8"
-                      )}
-                    >
-                      <CircleDollarSign className={cn("h-3.5 w-3.5", animNet >= 0 ? "text-secondary" : "text-destructive")} />
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Arus Bersih
-                    </span>
-                  </div>
-                  <p className={cn("text-sm font-bold tabular-nums", animNet >= 0 ? "text-secondary" : "text-destructive")}>
-                    {animNet >= 0 ? '+' : '-'}
-                    {formatAmount(Math.abs(animNet))}
-                  </p>
-                  <div className="mt-2">
-                    <MiniCashSparkline color={animNet >= 0 ? c.secondary : c.destructive} value={animNet} />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* ── Komposisi Dana — Donut Chart Card ── */}
+            {/* ── Flow Summary — Merged Compact Card ── */}
             <Card className="rounded-xl overflow-hidden border border-border">
               <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-6 w-6 rounded-md flex items-center justify-center bg-primary/8">
-                    <PieChartIcon className="h-3 w-3 text-primary" />
+                {/* Row 1: Pemasukan vs Pengeluaran */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {/* Pemasukan */}
+                  <div className="rounded-lg bg-secondary/5 p-2.5">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <ArrowUpRight className="h-3 w-3 text-secondary" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Pemasukan</span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold tabular-nums text-secondary leading-tight">
+                      {formatAmount(animIncome)}
+                    </p>
+                    <div className="mt-1.5">
+                      <MiniCashSparkline color={c.secondary} value={animIncome} />
+                    </div>
                   </div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Komposisi Dana
-                  </span>
+                  {/* Pengeluaran */}
+                  <div className="rounded-lg bg-destructive/5 p-2.5">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <ArrowDownRight className="h-3 w-3 text-destructive" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Pengeluaran</span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold tabular-nums text-destructive leading-tight">
+                      {formatAmount(animExpense)}
+                    </p>
+                    <div className="mt-1.5">
+                      <MiniCashSparkline color={c.destructive} value={animExpense} />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 sm:gap-6">
-                  {/* Donut Chart */}
-                  <DonutChart segments={donutSegments} size={100} />
-                  {/* Legend */}
-                  <div className="flex-1 space-y-2">
-                    {donutSegments.map((seg) => {
-                      const total = donutSegments.reduce((s, d) => s + d.value, 0);
-                      const pct = total > 0 ? ((seg.value / total) * 100).toFixed(1) : '0.0';
-                      return (
-                        <div key={seg.label} className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
-                            <span className="text-[11px] truncate text-muted-foreground">{seg.label}</span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[11px] font-semibold tabular-nums" style={{ color: seg.color }}>
-                              {formatAmount(seg.value)}
-                            </span>
-                            <span className="text-[10px] tabular-nums min-w-[36px] text-right text-muted-foreground">
-                              {pct}%
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+
+                {/* Divider */}
+                <div className="border-t border-border my-2.5" />
+
+                {/* Row 2: Arus Bersih + Komposisi Dana */}
+                <div className="flex gap-3 sm:gap-4 items-start">
+                  {/* Arus Bersih */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <CircleDollarSign className={cn("h-3 w-3", animNet >= 0 ? "text-secondary" : "text-destructive")} />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Arus Bersih</span>
+                    </div>
+                    <p className={cn("text-xs sm:text-sm font-bold tabular-nums leading-tight", animNet >= 0 ? "text-secondary" : "text-destructive")}>
+                      {animNet >= 0 ? '+' : '-'}
+                      {formatAmount(Math.abs(animNet))}
+                    </p>
+                    <div className="mt-1.5">
+                      <MiniCashSparkline color={animNet >= 0 ? c.secondary : c.destructive} value={animNet} />
+                    </div>
+                  </div>
+
+                  {/* Komposisi Dana — mini donut */}
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center gap-1 mb-1.5">
+                      <PieChartIcon className="h-3 w-3 text-primary" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Komposisi Dana</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <DonutChart segments={donutSegments} size={64} />
+                      <div className="space-y-1">
+                        {donutSegments.map((seg) => {
+                          const total = donutSegments.reduce((s, d) => s + d.value, 0);
+                          const pct = total > 0 ? ((seg.value / total) * 100).toFixed(0) : '0';
+                          return (
+                            <div key={seg.label} className="flex items-center gap-1.5">
+                              <div className="h-1.5 w-1.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
+                              <span className="text-[9px] text-muted-foreground truncate max-w-[70px] sm:max-w-[90px]">{seg.label}</span>
+                              <span className="text-[9px] font-semibold tabular-nums text-muted-foreground">{pct}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -2079,47 +2038,42 @@ export default function BusinessCash() {
         {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'investor' && (
           <div key="investor" className="space-y-3 p-3 sm:p-4">
-            {/* ── Investor Summary Cards ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-              <Card className="rounded-xl overflow-hidden border border-primary/15">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/8">
-                      <HandCoins className="h-3.5 w-3.5 text-primary" />
+            {/* ── Investor Summary — Merged Compact Card ── */}
+            <Card className="rounded-xl overflow-hidden border border-border">
+              <CardContent className="p-3 sm:p-4">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  {/* Total Modal Investor */}
+                  <div className="rounded-lg bg-primary/5 p-2.5 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                      <HandCoins className="h-3 w-3 text-primary" />
+                      <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Modal</span>
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total Modal Investor</span>
+                    <p className="text-[11px] sm:text-sm font-bold tabular-nums text-primary leading-tight">
+                      {formatAmount(animTotalInvestment)}
+                    </p>
                   </div>
-                  <p className="text-sm font-bold tabular-nums text-primary">{formatAmount(animTotalInvestment)}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-xl overflow-hidden border border-secondary/15">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-secondary/8">
-                      <Users className="h-3.5 w-3.5 text-secondary" />
+                  {/* Jumlah Investor */}
+                  <div className="rounded-lg bg-secondary/5 p-2.5 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                      <Users className="h-3 w-3 text-secondary" />
+                      <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Investor</span>
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Jumlah Investor</span>
+                    <p className="text-xs sm:text-sm font-bold text-secondary leading-tight">
+                      {investorSummary.activeCount}
+                      <span className="text-[10px] font-normal ml-0.5 text-muted-foreground">aktif</span>
+                    </p>
                   </div>
-                  <p className="text-sm font-bold text-secondary">
-                    {investorSummary.activeCount}
-                    <span className="text-xs font-normal ml-1.5 text-muted-foreground">aktif</span>
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-xl overflow-hidden border border-warning/15">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-warning/8">
-                      <Percent className="h-3.5 w-3.5 text-warning" />
+                  {/* Rata-rata Bagi Hasil */}
+                  <div className="rounded-lg bg-warning/5 p-2.5 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                      <Percent className="h-3 w-3 text-warning" />
+                      <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Bagi Hasil</span>
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Rata-rata Bagi Hasil</span>
+                    <p className="text-xs sm:text-sm font-bold text-warning leading-tight">{animAvgShare.toFixed(1)}%</p>
                   </div>
-                  <p className="text-sm font-bold text-warning">{animAvgShare.toFixed(1)}%</p>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* ── Header with Add Button ── */}
             <div className="flex items-center justify-between">
@@ -2139,11 +2093,13 @@ export default function BusinessCash() {
 
             {/* ── Investor Cards ── */}
             {investorLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 rounded-xl bg-card" />
-                ))}
-              </div>
+              <Card className="rounded-xl border border-border">
+                <CardContent className="p-3 space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded-lg bg-card" />
+                  ))}
+                </CardContent>
+              </Card>
             ) : investors.length === 0 ? (
               <Card className="rounded-xl border border-border">
                 <CardContent className="p-0">
@@ -2158,27 +2114,30 @@ export default function BusinessCash() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
-                <AnimatePresence mode="popLayout">
-                  {investors.map((inv) => (
-                    <motion.div
-                      key={inv.id}
-                      layout
-                      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
-                    >
-                      <Card className="rounded-xl overflow-hidden transition-colors duration-200 border border-primary/15 hover:border-primary/30">
-                        <CardContent className="p-2.5 sm:p-3">
-                          <div className="flex items-start justify-between mb-1.5 sm:mb-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/8 text-primary">
-                                {inv.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold truncate max-w-[120px] sm:max-w-[140px] text-foreground">{inv.name}</p>
+              <>
+                {/* Mobile: compact list inside single card */}
+                <Card className="rounded-xl overflow-hidden border border-border sm:hidden">
+                  <CardContent className="p-2">
+                    <AnimatePresence mode="popLayout">
+                      {investors.map((inv) => (
+                        <motion.div
+                          key={inv.id}
+                          layout
+                          exit={{ opacity: 0, height: 0, transition: { duration: 0.15 } }}
+                        >
+                          <div className="flex items-center gap-2 py-2 border-b border-border last:border-b-0">
+                            {/* Avatar */}
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 bg-primary/8 text-primary">
+                              {inv.name.charAt(0).toUpperCase()}
+                            </div>
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-semibold truncate text-foreground">{inv.name}</p>
                                 <Badge
                                   variant="outline"
                                   className={cn(
-                                    "text-[9px] font-medium border-0 rounded-full px-1.5 py-0",
+                                    "text-[8px] font-medium border-0 rounded-full px-1 py-0 shrink-0",
                                     inv.status === 'active'
                                       ? "bg-secondary/15 text-secondary"
                                       : "bg-destructive/15 text-destructive"
@@ -2187,54 +2146,109 @@ export default function BusinessCash() {
                                   {inv.status === 'active' ? 'Aktif' : 'Nonaktif'}
                                 </Badge>
                               </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground">Modal</span>
+                                <span className="text-[11px] font-bold tabular-nums text-primary">{formatAmount(inv.totalInvestment)}</span>
+                                <span className="text-[10px] text-muted-foreground">•</span>
+                                <span className="text-[10px] text-muted-foreground">BH</span>
+                                <span className="text-[11px] font-bold text-warning">{inv.profitSharePct}%</span>
+                              </div>
                             </div>
+                            {/* Edit */}
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 rounded-md shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                              className="h-7 w-7 p-0 rounded-md shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/5"
                               onClick={() => openInvestorEdit(inv)}
                             >
                               <Pencil className="h-3 w-3" />
                             </Button>
                           </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </CardContent>
+                </Card>
 
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Modal</span>
-                              <span className="text-sm font-bold tabular-nums text-primary">{formatAmount(inv.totalInvestment)}</span>
+                {/* Desktop: card grid */}
+                <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                  <AnimatePresence mode="popLayout">
+                    {investors.map((inv) => (
+                      <motion.div
+                        key={inv.id}
+                        layout
+                        exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                      >
+                        <Card className="rounded-xl overflow-hidden transition-colors duration-200 border border-primary/15 hover:border-primary/30">
+                          <CardContent className="p-2.5 sm:p-3">
+                            <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/8 text-primary">
+                                  {inv.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold truncate max-w-[120px] sm:max-w-[140px] text-foreground">{inv.name}</p>
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "text-[9px] font-medium border-0 rounded-full px-1.5 py-0",
+                                      inv.status === 'active'
+                                        ? "bg-secondary/15 text-secondary"
+                                        : "bg-destructive/15 text-destructive"
+                                    )}
+                                  >
+                                    {inv.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 rounded-md shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                onClick={() => openInvestorEdit(inv)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Bagi Hasil</span>
-                              <span className="text-sm font-bold text-warning">{inv.profitSharePct}%</span>
-                            </div>
-                          </div>
 
-                          {(inv.phone || inv.email) && (
-                            <div className="border-t border-border mt-2 pt-2 flex items-center gap-3">
-                              {inv.phone && (
-                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                  <Phone className="h-2.5 w-2.5" />
-                                  {inv.phone}
-                                </span>
-                              )}
-                              {inv.email && (
-                                <span className="flex items-center gap-1 text-[10px] truncate text-muted-foreground">
-                                  <Mail className="h-2.5 w-2.5" />
-                                  {inv.email}
-                                </span>
-                              )}
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Modal</span>
+                                <span className="text-sm font-bold tabular-nums text-primary">{formatAmount(inv.totalInvestment)}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Bagi Hasil</span>
+                                <span className="text-sm font-bold text-warning">{inv.profitSharePct}%</span>
+                              </div>
                             </div>
-                          )}
 
-                          <p className="text-[10px] mt-1 text-muted-foreground">
-                            Bergabung {formatDate(inv.joinDate)}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+                            {(inv.phone || inv.email) && (
+                              <div className="border-t border-border mt-2 pt-2 flex items-center gap-3">
+                                {inv.phone && (
+                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                    <Phone className="h-2.5 w-2.5" />
+                                    {inv.phone}
+                                  </span>
+                                )}
+                                {inv.email && (
+                                  <span className="flex items-center gap-1 text-[10px] truncate text-muted-foreground">
+                                    <Mail className="h-2.5 w-2.5" />
+                                    {inv.email}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            <p className="text-[10px] mt-1 text-muted-foreground">
+                              Bergabung {formatDate(inv.joinDate)}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </>
             )}
 
             {/* ── Riwayat Pemasukan Investor ── */}

@@ -55,6 +55,8 @@ export async function GET(
       piutangAll,
       allCashForAllocation,
       investorAggregate,
+      investorList,
+      investorCashDetailed,
     ] = await Promise.all([
       // Total revenue from sales
       db.businessSale.aggregate({
@@ -198,6 +200,8 @@ export async function GET(
           type: true,
           amount: true,
           source: true,
+          category: true,
+          investorId: true,
         },
       }),
 
@@ -205,6 +209,42 @@ export async function GET(
       db.businessInvestor.aggregate({
         _sum: { totalInvestment: true },
         where: { businessId, status: 'active' },
+      }),
+
+      // Investor list for per-investor breakdown
+      db.businessInvestor.findMany({
+        where: { businessId },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          totalInvestment: true,
+          profitSharePct: true,
+          status: true,
+        },
+      }),
+
+      // All investor-related cash entries for detailed breakdown
+      db.businessCash.findMany({
+        where: {
+          businessId,
+          OR: [
+            { type: 'investor' },
+            { type: 'kas_keluar', source: 'investor' },
+          ],
+        },
+        select: {
+          type: true,
+          amount: true,
+          source: true,
+          category: true,
+          investorId: true,
+          description: true,
+          date: true,
+        },
+        orderBy: { date: 'desc' },
+        take: 200,
       }),
     ]);
 
@@ -279,6 +319,64 @@ export async function GET(
       }
     }
 
+    // ── Per-Investor Breakdown ──
+    const investorBreakdown = investorList.map((inv) => {
+      // Modal masuk: type='investor' AND category != 'investor_pendapatan' for this investor
+      const modalMasuk = investorCashDetailed
+        .filter((c) => c.type === 'investor' && c.category !== 'investor_pendapatan' && (!c.investorId || c.investorId === inv.id))
+        .reduce((s, c) => s + c.amount, 0);
+
+      // Pendapatan investor: type='investor' AND category='investor_pendapatan' for this investor
+      const pendapatan = investorCashDetailed
+        .filter((c) => c.type === 'investor' && c.category === 'investor_pendapatan' && (!c.investorId || c.investorId === inv.id))
+        .reduce((s, c) => s + c.amount, 0);
+
+      // Pengeluaran: type='kas_keluar' AND source='investor' for this investor
+      const pengeluaran = investorCashDetailed
+        .filter((c) => c.type === 'kas_keluar' && c.source === 'investor' && (!c.investorId || c.investorId === inv.id))
+        .reduce((s, c) => s + c.amount, 0);
+
+      // Total modal (max of recorded totalInvestment or actual cash modal masuk)
+      const totalModal = Math.max(inv.totalInvestment || 0, modalMasuk);
+
+      // Saldo = modal + pendapatan - pengeluaran
+      const saldo = totalModal + pendapatan - pengeluaran;
+
+      // Recent cash entries for this investor (last 5)
+      const recentEntries = investorCashDetailed
+        .filter((c) => !c.investorId || c.investorId === inv.id)
+        .slice(0, 5)
+        .map((c) => ({
+          type: c.type === 'investor'
+            ? (c.category === 'investor_pendapatan' ? 'pendapatan' as const : 'modal_masuk' as const)
+            : 'pengeluaran' as const,
+          amount: c.amount,
+          description: c.description,
+          date: c.date,
+        }));
+
+      return {
+        id: inv.id,
+        name: inv.name,
+        phone: inv.phone,
+        email: inv.email,
+        totalInvestment: inv.totalInvestment,
+        profitSharePct: inv.profitSharePct,
+        status: inv.status,
+        modalMasuk,
+        pendapatan,
+        pengeluaran,
+        totalModal,
+        saldo,
+        recentEntries,
+      };
+    });
+
+    // Aggregate investor totals
+    const totalModalMasuk = investorBreakdown.reduce((s, i) => s + i.modalMasuk, 0);
+    const totalPendapatanInvestor = investorBreakdown.reduce((s, i) => s + i.pendapatan, 0);
+    const totalPengeluaranInvestor = investorBreakdown.reduce((s, i) => s + i.pengeluaran, 0);
+
     return NextResponse.json({
       totalRevenue,
       totalExpense,
@@ -308,7 +406,10 @@ export async function GET(
       allocationBreakdown: (() => {
         const allocKasBesarTotal = allCashForAllocation.filter((c) => c.type === 'kas_besar').reduce((s, c) => s + c.amount, 0);
         const allocKasKecilTotal = allCashForAllocation.filter((c) => c.type === 'kas_kecil').reduce((s, c) => s + c.amount, 0);
-        const cashInvestorTotal = allCashForAllocation.filter((c) => c.type === 'investor').reduce((s, c) => s + c.amount, 0);
+        // Investor total = modal masuk + pendapatan dari penjualan/cicilan
+        const allocInvestorModal = allCashForAllocation.filter((c) => c.type === 'investor' && c.category !== 'investor_pendapatan').reduce((s, c) => s + c.amount, 0);
+        const allocInvestorIncome = allCashForAllocation.filter((c) => c.type === 'investor' && c.category === 'investor_pendapatan').reduce((s, c) => s + c.amount, 0);
+        const cashInvestorTotal = allocInvestorModal + allocInvestorIncome;
         // Use the higher value: BusinessInvestor records (authoritative) or BusinessCash entries
         const allocInvestorTotal = Math.max(cashInvestorTotal, investorAggregate._sum.totalInvestment || 0);
         const allocExpenseKasBesar = allCashForAllocation.filter((c) => c.type === 'kas_keluar' && c.source === 'kas_besar').reduce((s, c) => s + c.amount, 0);
@@ -323,6 +424,8 @@ export async function GET(
           kasBesarTotal: allocKasBesarTotal,
           kasKecilTotal: allocKasKecilTotal,
           investorTotal: allocInvestorTotal,
+          investorModalTotal: allocInvestorModal,
+          investorIncomeTotal: allocInvestorIncome,
           expenseFromKasBesar: allocExpenseKasBesar,
           expenseFromKasKecil: allocExpenseKasKecil,
           expenseFromInvestor: allocExpenseInvestor,
@@ -337,6 +440,14 @@ export async function GET(
           ],
         };
       })(),
+      investorSummary: {
+        totalModalMasuk,
+        totalPendapatan: totalPendapatanInvestor,
+        totalPengeluaran: totalPengeluaranInvestor,
+        totalSaldo: investorBreakdown.reduce((s, i) => s + i.saldo, 0),
+        activeInvestors: investorBreakdown.filter((i) => i.status === 'active').length,
+      },
+      investorBreakdown,
     });
   } catch (error) {
     console.error('Dashboard GET error:', error);

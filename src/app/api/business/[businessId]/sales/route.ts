@@ -311,6 +311,50 @@ export async function POST(
       }
     }
 
+    // Auto-create BusinessCash entry for investor share (pemasukan ke dana investor)
+    const numInvestorSharePct = investorSharePct ? parseFloat(String(investorSharePct)) : 0;
+    if (numInvestorSharePct > 0) {
+      try {
+        if (isInstallment && numDP && numDP > 0) {
+          // Installment sale: credit investor share from DP only
+          const investorDpShare = numDP * (numInvestorSharePct / 100);
+          if (investorDpShare > 0) {
+            await db.businessCash.create({
+              data: {
+                businessId,
+                type: 'investor',
+                amount: investorDpShare,
+                description: `Bagian investor (${numInvestorSharePct}%) dari DP: ${description}`,
+                category: 'investor_pendapatan',
+                date: date ? new Date(date) : new Date(),
+                referenceId: sale.id,
+                notes: `Investor share ${numInvestorSharePct}% dari DP penjualan cicilan`,
+              },
+            });
+          }
+        } else if (!isInstallment) {
+          // Non-installment (lunas): credit full investor share
+          const investorShare = numAmount * (numInvestorSharePct / 100);
+          if (investorShare > 0) {
+            await db.businessCash.create({
+              data: {
+                businessId,
+                type: 'investor',
+                amount: investorShare,
+                description: `Bagian investor (${numInvestorSharePct}%) dari penjualan: ${description}`,
+                category: 'investor_pendapatan',
+                date: date ? new Date(date) : new Date(),
+                referenceId: sale.id,
+                notes: `Investor share ${numInvestorSharePct}% dari penjualan lunas`,
+              },
+            });
+          }
+        }
+      } catch (cashErr) {
+        console.error('Auto-create investor cash entry error:', cashErr);
+      }
+    }
+
     // Create notification for new sale
     try {
       const formattedAmount = new Intl.NumberFormat('id-ID', {

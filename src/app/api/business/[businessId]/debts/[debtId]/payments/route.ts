@@ -133,6 +133,35 @@ export async function POST(
       newStatus = debt.status;
     }
 
+    // Auto-create BusinessCash entry for investor share when receiving cicilan
+    if (debt.referenceId && debt.type === 'piutang') {
+      try {
+        const linkedSale = await db.businessSale.findUnique({
+          where: { id: debt.referenceId },
+          select: { investorSharePct: true, description: true },
+        });
+        if (linkedSale && linkedSale.investorSharePct && linkedSale.investorSharePct > 0) {
+          const investorShare = numAmount * (linkedSale.investorSharePct / 100);
+          if (investorShare > 0) {
+            await db.businessCash.create({
+              data: {
+                businessId,
+                type: 'investor',
+                amount: investorShare,
+                description: `Bagian investor (${linkedSale.investorSharePct}%) dari cicilan: ${linkedSale.description}`,
+                category: 'investor_pendapatan',
+                date: paymentDate ? new Date(paymentDate) : new Date(),
+                referenceId: debt.referenceId,
+                notes: `Investor share ${linkedSale.investorSharePct}% dari cicilan piutang`,
+              },
+            });
+          }
+        }
+      } catch (investorCashErr) {
+        console.error('Auto-create investor cash from cicilan error:', investorCashErr);
+      }
+    }
+
     // Update the debt record
     const updateData: Record<string, unknown> = {
       remaining,
