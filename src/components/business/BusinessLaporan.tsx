@@ -917,13 +917,13 @@ export default function BusinessLaporan() {
 
       {/* Enhanced Summary Cards */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" style={{ background: 'var(--card)' }} />
           ))}
         </div>
       ) : data ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
           {summaryCards.map((card) => {
             const Icon = card.icon;
             return (
@@ -1761,7 +1761,7 @@ export default function BusinessLaporan() {
         <Card className="rounded-xl" style={{ background: 'var(--card)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' }}>
           <CardContent className="p-3 sm:p-4">
             <SectionHeader icon={AlertTriangle} color="var(--warning)" title="Detail Audit Pajak" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {[
                 { label: 'Pendapatan Tunai', value: taxAudit.pendapatanTunai, color: 'var(--secondary)', highlight: false },
                 { label: 'Pendapatan Cicilan (Total)', value: taxAudit.pendapatanCicilan, color: 'var(--primary)', highlight: false },

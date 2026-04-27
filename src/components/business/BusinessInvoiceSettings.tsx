@@ -882,7 +882,7 @@ export default function BusinessInvoiceSettings() {
 
         {/* Summary Stat Cards */}
         {!loading && (
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+          <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
             {/* Template Card */}
             <motion.div variants={cardHover} initial="rest" whileHover="hover">
               <Card className="relative overflow-hidden rounded-2xl border-border bg-gradient-to-br from-primary/15 to-primary/[0.02]">
@@ -962,7 +962,7 @@ export default function BusinessInvoiceSettings() {
             ))}
           </motion.div>
         ) : (
-          <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* ========== LEFT COLUMN ========== */}
             <div className="lg:col-span-2 space-y-6">
               {/* 1. Template Selection */}

@@ -294,7 +294,7 @@ export default function BusinessCustomers() {
       </div>
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
         {[
           { label: 'Total Pelanggan', value: customers.length, icon: Users, color: 'var(--primary)' },
           { label: 'Aktif (Transaksi)', value: activeCustomers, icon: ShoppingCart, color: 'var(--secondary)' },

@@ -2139,7 +2139,7 @@ export default function BusinessCash() {
 
             {/* ── Investor Cards ── */}
             {investorLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Skeleton key={i} className="h-24 rounded-xl bg-card" />
                 ))}
@@ -2158,7 +2158,7 @@ export default function BusinessCash() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
                 <AnimatePresence mode="popLayout">
                   {investors.map((inv) => (
                     <motion.div

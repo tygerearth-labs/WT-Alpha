@@ -195,6 +195,8 @@ export default function BusinessSales() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
@@ -398,9 +400,10 @@ export default function BusinessSales() {
           s.description.toLowerCase().includes(search.toLowerCase()) ||
           s.customer?.name.toLowerCase().includes(search.toLowerCase());
         const matchesPayment = paymentFilter === 'all' || s.paymentMethod === paymentFilter;
-        return matchesSearch && matchesPayment;
+        const matchesDate = (!dateFrom || s.date >= dateFrom) && (!dateTo || s.date <= dateTo + 'T23:59:59');
+        return matchesSearch && matchesPayment && matchesDate;
       }),
-    [sales, search, paymentFilter]
+    [sales, search, paymentFilter, dateFrom, dateTo]
   );
 
   const total = filteredSales.reduce((sum, s) => sum + s.amount, 0);
@@ -583,6 +586,23 @@ export default function BusinessSales() {
               />
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap pb-1">
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-8 w-[130px] text-[11px] rounded-lg bg-card border border-border text-foreground"
+                  placeholder="Dari"
+                />
+                <span className="text-[10px] text-muted-foreground">—</span>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-8 w-[130px] text-[11px] rounded-lg bg-card border border-border text-foreground"
+                  placeholder="Sampai"
+                />
+              </div>
               <button
                 onClick={() => setPaymentFilter('all')}
                 className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200 ${paymentFilter === 'all' ? 'bg-foreground/15 text-foreground border border-border' : 'text-muted-foreground border border-transparent'}`}
@@ -1213,7 +1233,7 @@ export default function BusinessSales() {
                             <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                               Ringkasan Cicilan
                             </p>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <div className="flex flex-col">
                                 <span className="text-[9px] uppercase text-muted-foreground">{t('biz.remainingAfterDP')}</span>
                                 <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>

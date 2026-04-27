@@ -687,6 +687,49 @@ html {
   --announcement-height: 0px;
 }
 
+/* Fade-in with subtle upward slide */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Page transition wrapper */
+.page-transition {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* Divider shimmer (vertical variant) */
+@keyframes divider-shimmer {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 0% 200%; }
+}
+
+/* Glass morphism utility */
+.glass {
+  background: rgba(13, 13, 13, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Safe area bottom padding for iOS */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Responsive touch target */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Tabular number font variant */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Quick Entry FAB — responsive bottom positioning */
 .quick-entry-fab {
   bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 20px);

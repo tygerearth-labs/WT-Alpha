@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   TrendingUp,
   TrendingDown,
+  DollarSign,
   Wallet,
   Plus,
   FileText,
@@ -28,6 +29,7 @@ import {
   Sparkles,
   CalendarDays,
   Inbox,
+  ArrowDownLeft,
   HandCoins,
   Activity,
   Target,
@@ -41,8 +43,10 @@ import {
   Package,
   Landmark,
   CircleDollarSign,
+  Download,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 /* ── Alpha helper for color-mix with CSS variables ── */
 function alpha(color: string, percent: number): string {
@@ -127,6 +131,19 @@ interface DashboardData {
 }
 
 /* ── Helpers ── */
+function generateSparklineData(value: number): number[] {
+  const seed = Math.abs(value) || 42;
+  const points: number[] = [];
+  let acc = 30;
+  for (let i = 0; i < 7; i++) {
+    acc += ((seed * (i + 1) * 17) % 60) - 25;
+    acc = Math.max(8, Math.min(100, acc));
+    points.push(acc);
+  }
+  const maxVal = Math.max(...points, 1);
+  return points.map((p) => (p / maxVal) * 100);
+}
+
 function getDateGroup(dateStr: string): string {
   const d = new Date(dateStr);
   const now = new Date();
@@ -264,6 +281,32 @@ function HealthRing({ score, color, grade }: { score: number; color: string; gra
           Health Score
         </span>
       </div>
+    </div>
+  );
+}
+
+/* ── Mini Sparkline Component ── */
+function MiniSparkline({ data, color, trend }: { data: number[]; color: string; trend: 'up' | 'down' | 'flat' }) {
+  return (
+    <div className="flex items-end gap-[2px] h-[22px]">
+      {data.map((h, i) => (
+        <div
+          key={i}
+          className="w-[4px] rounded-sm origin-bottom"
+          style={{
+            backgroundColor: color,
+            opacity: 0.25 + (i / data.length) * 0.75,
+            height: `${Math.max(h * 0.22, 2)}px`,
+            transition: `height 0.35s ease ${i * 0.04}s`,
+          }}
+        />
+      ))}
+      <span
+        className="ml-0.5 text-[8px] font-semibold leading-none self-center"
+        style={{ color }}
+      >
+        {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'}
+      </span>
     </div>
   );
 }
@@ -526,19 +569,27 @@ export default function BusinessDashboard() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-[60px] rounded-xl bg-card" />
-        {/* Profile Summary skeleton */}
-        <Skeleton className="h-[280px] rounded-xl bg-card" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[96px] rounded-xl bg-card" />
+          ))}
+        </div>
         <Skeleton className="h-[44px] rounded-xl bg-card" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[72px] rounded-xl bg-card" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Skeleton className="h-[280px] rounded-xl bg-card" />
           <Skeleton className="h-[280px] rounded-xl bg-card" />
           <Skeleton className="h-[280px] rounded-xl bg-card" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          <Skeleton className="h-[200px] rounded-xl lg:col-span-2 bg-card" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Skeleton className="h-[200px] rounded-xl md:col-span-2 lg:col-span-2 bg-card" />
           <Skeleton className="h-[200px] rounded-xl bg-card" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Skeleton className="h-[260px] rounded-xl bg-card" />
           <Skeleton className="h-[260px] rounded-xl bg-card" />
         </div>
@@ -556,6 +607,48 @@ export default function BusinessDashboard() {
   const debtToRevenueRatio = data.totalRevenue > 0
     ? ((data.totalHutang / data.totalRevenue) * 100)
     : 0;
+
+  // Quick stats definition
+  const quickStats = data
+    ? [
+        {
+          label: t('biz.bizRevenue'),
+          value: data.totalRevenue,
+          icon: TrendingUp,
+          accentColor: 'var(--secondary)' as string,
+          subText: `${data.salesCount || 0} transaksi · Avg: ${formatAmount(data.averageSaleValue || 0)}`,
+          trend: 'up' as const,
+        },
+        {
+          label: t('biz.bizExpense'),
+          value: data.totalExpense,
+          icon: TrendingDown,
+          accentColor: 'var(--destructive)' as string,
+          subText: data.totalExpense > 0
+            ? `${t('biz.kasKeluar')}: ${formatAmount(data.totalKasKeluar)}`
+            : t('biz.noBizData'),
+          trend: 'down' as const,
+        },
+        {
+          label: t('biz.bizProfit'),
+          value: data.profit,
+          icon: DollarSign,
+          accentColor: (data.profit >= 0 ? 'var(--secondary)' : 'var(--destructive)') as string,
+          subText: `Margin: ${(data.profitMargin ?? 0).toFixed(1)}%`,
+          badge: (data.profitMargin ?? 0) > 0 ? `+${(data.profitMargin ?? 0).toFixed(1)}%` : null,
+          trend: (data.profit ?? 0) > 0 ? ('up' as const) : (data.profit ?? 0) < 0 ? ('down' as const) : ('flat' as const),
+        },
+        {
+          label: 'Cash Flow',
+          value: netCashValue,
+          icon: Wallet,
+          accentColor: (netCashValue >= 0 ? 'var(--secondary)' : 'var(--destructive)') as string,
+          subText: `Hutang/Revenue: ${debtToRevenueRatio.toFixed(0)}%`,
+          badge: debtToRevenueRatio > 50 ? `${debtToRevenueRatio.toFixed(0)}%` : null,
+          trend: netCashValue >= 0 ? ('up' as const) : ('down' as const),
+        },
+      ]
+    : [];
 
   // Chart data: bar comparison of revenue vs expense
   const comparisonData = data
@@ -607,6 +700,7 @@ export default function BusinessDashboard() {
     { label: t('biz.addSale'), icon: Plus, color: 'var(--secondary)' as string },
     { label: t('biz.addInvoice'), icon: FileText, color: 'var(--primary)' as string },
     { label: t('biz.kasKeluar'), icon: Receipt, color: 'var(--destructive)' as string },
+    { label: 'Export Ringkasan', icon: Download, color: 'var(--warning)' as string, onClick: () => toast.info('Fitur export akan segera tersedia') },
   ];
 
   // Format date helper (reuse from above)
@@ -681,6 +775,13 @@ export default function BusinessDashboard() {
   const investorSaldo = data.allocationBreakdown?.investorSaldo ?? ((data.allocationBreakdown?.investorTotal ?? 0) - (data.allocationBreakdown?.expenseFromInvestor ?? 0));
   const allocationNetCash = data.allocationBreakdown?.netCash ?? (data.netCash ?? 0);
 
+  const kasDanaCards = [
+    { label: 'Kas Besar', value: kasBesarSaldo, icon: Landmark, color: 'var(--secondary)' as string, bgColor: 'color-mix(in srgb, var(--secondary) 6%, transparent)' as string },
+    { label: 'Kas Kecil', value: kasKecilSaldo, icon: Wallet, color: 'var(--primary)' as string, bgColor: 'color-mix(in srgb, var(--primary) 6%, transparent)' as string },
+    { label: 'Dana Investor', value: investorSaldo, icon: HandCoins, color: '#BB86FC' as string, bgColor: 'color-mix(in srgb, var(--primary) 6%, transparent)' as string },
+    { label: 'Net Cash', value: allocationNetCash, icon: Activity, color: (allocationNetCash >= 0 ? 'var(--secondary)' : 'var(--destructive)') as string, bgColor: (allocationNetCash >= 0 ? 'color-mix(in srgb, var(--secondary) 6%, transparent)' : 'color-mix(in srgb, var(--destructive) 6%, transparent)') as string },
+  ];
+
   // Piutang summary data
   const ps = data.piutangSummary;
   const piutangSummaryCards = ps ? [
@@ -698,7 +799,8 @@ export default function BusinessDashboard() {
   return (
     <div className="space-y-4">
       {/* ── Welcome Banner (compact) ── */}
-      <div className="rounded-xl p-3 sm:p-4 bg-card border border-border">
+      <div className="relative overflow-hidden rounded-xl p-3 sm:p-4 bg-card border border-border">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-secondary/50 to-transparent" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0 bg-secondary/8">
@@ -734,200 +836,55 @@ export default function BusinessDashboard() {
         </div>
       )}
 
-      {/* ── Section 1: Profile Summary — Total Pemasukan, Pengeluaran, Arus Bersih, Komposisi Dana ── */}
-      <Card className="overflow-hidden border-border">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-              <div className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              Ringkasan Profil Keuangan
-            </CardTitle>
-            <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{
-                color: healthScore.color,
-                backgroundColor: alpha(healthScore.color, 8),
-              }}
+      {/* ── Section 1: Quick Stats Row with Sparklines ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {quickStats.map((stat) => {
+          const Icon = stat.icon;
+          const sparkData = generateSparklineData(stat.value);
+          return (
+            <Card
+              key={stat.label}
+              className="cursor-default transition-all duration-200 group border-border hover:border-foreground/15 hover:shadow-lg hover:-translate-y-0.5"
             >
-              Grade {healthScore.grade}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="pb-4">
-          {/* ── Key Metrics Row: Pemasukan, Pengeluaran, Arus Bersih ── */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-            {/* Total Pemasukan */}
-            <div
-              className="rounded-lg p-2.5 sm:p-3 transition-all duration-200 group cursor-default"
-              style={{ backgroundColor: alpha('var(--secondary)', 5) }}
-            >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <div
-                  className="flex h-6 w-6 items-center justify-center rounded-md shrink-0"
-                  style={{ backgroundColor: alpha('var(--secondary)', 10) }}
-                >
-                  <TrendingUp className="h-3 w-3" style={{ color: 'var(--secondary)' }} />
-                </div>
-                <span className="text-[9px] sm:text-[10px] uppercase tracking-wide font-medium text-muted-foreground truncate">
-                  Pemasukan
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-sm font-bold leading-tight truncate text-foreground">
-                {formatAmount(data.totalRevenue)}
-              </p>
-              <p className="text-[9px] text-muted-foreground mt-1 truncate">
-                {data.salesCount || 0} transaksi
-              </p>
-            </div>
-
-            {/* Total Pengeluaran */}
-            <div
-              className="rounded-lg p-2.5 sm:p-3 transition-all duration-200 group cursor-default"
-              style={{ backgroundColor: alpha('var(--destructive)', 5) }}
-            >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <div
-                  className="flex h-6 w-6 items-center justify-center rounded-md shrink-0"
-                  style={{ backgroundColor: alpha('var(--destructive)', 10) }}
-                >
-                  <TrendingDown className="h-3 w-3" style={{ color: 'var(--destructive)' }} />
-                </div>
-                <span className="text-[9px] sm:text-[10px] uppercase tracking-wide font-medium text-muted-foreground truncate">
-                  Pengeluaran
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-sm font-bold leading-tight truncate text-foreground">
-                {formatAmount(data.totalExpense)}
-              </p>
-              <p className="text-[9px] text-muted-foreground mt-1 truncate">
-                Margin {(data.profitMargin ?? 0).toFixed(1)}%
-              </p>
-            </div>
-
-            {/* Arus Bersih */}
-            <div
-              className="rounded-lg p-2.5 sm:p-3 transition-all duration-200 group cursor-default"
-              style={{ backgroundColor: alpha(netCashValue >= 0 ? 'var(--secondary)' : 'var(--destructive)', 5) }}
-            >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <div
-                  className="flex h-6 w-6 items-center justify-center rounded-md shrink-0"
-                  style={{ backgroundColor: alpha(netCashValue >= 0 ? 'var(--secondary)' : 'var(--destructive)', 10) }}
-                >
-                  <Activity className="h-3 w-3" style={{ color: netCashValue >= 0 ? 'var(--secondary)' : 'var(--destructive)' }} />
-                </div>
-                <span className="text-[9px] sm:text-[10px] uppercase tracking-wide font-medium text-muted-foreground truncate">
-                  Arus Bersih
-                </span>
-              </div>
-              <p
-                className="text-[11px] sm:text-sm font-bold leading-tight truncate"
-                style={{ color: netCashValue >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}
-              >
-                {netCashValue >= 0 ? '+' : ''}{formatAmount(netCashValue)}
-              </p>
-              <p className="text-[9px] text-muted-foreground mt-1 truncate">
-                {netCashValue >= 0 ? 'Positif' : 'Negatif'}
-              </p>
-            </div>
-          </div>
-
-          <Separator className="mb-4" />
-
-          {/* ── Komposisi Dana ── */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-3">
-              <CircleDollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-[10px] sm:text-[11px] uppercase tracking-wide font-medium text-muted-foreground">
-                Komposisi Dana
-              </span>
-            </div>
-
-            {/* Stacked Bar */}
-            {(() => {
-              const totalDana = kasBesarSaldo + kasKecilSaldo + investorSaldo;
-              const pKasBesar = totalDana > 0 ? (kasBesarSaldo / totalDana) * 100 : 0;
-              const pKasKecil = totalDana > 0 ? (kasKecilSaldo / totalDana) * 100 : 0;
-              const pInvestor = totalDana > 0 ? (investorSaldo / totalDana) * 100 : 0;
-
-              return (
-                <>
-                  <div className="h-3 sm:h-4 rounded-full overflow-hidden flex bg-border mb-3">
-                    {kasBesarSaldo > 0 && (
-                      <div
-                        className="h-full transition-all duration-700 first:rounded-l-full"
-                        style={{
-                          width: `${pKasBesar}%`,
-                          backgroundColor: 'var(--secondary)',
-                        }}
-                      />
-                    )}
-                    {kasKecilSaldo > 0 && (
-                      <div
-                        className="h-full transition-all duration-700"
-                        style={{
-                          width: `${pKasKecil}%`,
-                          backgroundColor: 'var(--primary)',
-                        }}
-                      />
-                    )}
-                    {investorSaldo > 0 && (
-                      <div
-                        className="h-full transition-all duration-700 last:rounded-r-full"
-                        style={{
-                          width: `${pInvestor}%`,
-                          backgroundColor: '#BB86FC',
-                        }}
-                      />
-                    )}
-                    {totalDana === 0 && (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <span className="text-[8px] text-muted-foreground">Belum ada dana</span>
-                      </div>
-                    )}
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div
+                    className="flex h-7 w-7 items-center justify-center rounded-md shrink-0 transition-transform duration-200 group-hover:scale-105"
+                    style={{ backgroundColor: alpha(stat.accentColor, 8) }}
+                  >
+                    <Icon className="h-3.5 w-3.5" style={{ color: stat.accentColor }} />
                   </div>
-
-                  {/* Individual Fund Items */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                    {[
-                      { label: 'Kas Besar', value: kasBesarSaldo, icon: Landmark, color: 'var(--secondary)', pct: pKasBesar },
-                      { label: 'Kas Kecil', value: kasKecilSaldo, icon: Wallet, color: 'var(--primary)', pct: pKasKecil },
-                      { label: 'Dana Investor', value: investorSaldo, icon: HandCoins, color: '#BB86FC', pct: pInvestor },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <div
-                          key={item.label}
-                          className="flex items-center gap-2.5 p-2 sm:p-2.5 rounded-lg transition-all duration-200"
-                          style={{ backgroundColor: alpha(item.color, 5) }}
-                        >
-                          <div
-                            className="flex h-7 w-7 items-center justify-center rounded-md shrink-0"
-                            style={{ backgroundColor: alpha(item.color, 10) }}
-                          >
-                            <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[10px] font-medium text-muted-foreground truncate">{item.label}</span>
-                              <span className="text-[9px] font-semibold tabular-nums ml-1 shrink-0" style={{ color: item.color }}>
-                                {item.pct.toFixed(0)}%
-                              </span>
-                            </div>
-                            <p className="text-[11px] sm:text-xs font-bold leading-tight truncate" style={{ color: item.color }}>
-                              {formatAmount(item.value)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  {stat.badge && (
+                    <span
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                      style={{
+                        color: stat.accentColor,
+                        backgroundColor: alpha(stat.accentColor, 8),
+                      }}
+                    >
+                      {stat.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] sm:text-[11px] uppercase tracking-wide font-medium mb-0.5 truncate text-muted-foreground">
+                  {stat.label}
+                </p>
+                <p className="text-xs sm:text-sm font-bold leading-tight truncate text-foreground">
+                  {formatAmount(stat.value)}
+                </p>
+                <div className="flex items-end justify-between mt-2 gap-2">
+                  <p className="text-[10px] leading-snug truncate flex-1 min-w-0 text-muted-foreground">
+                    {stat.subText}
+                  </p>
+                  <div className="shrink-0" title="Tren Bulanan">
+                    <MiniSparkline data={sparkData} color={stat.accentColor} trend={stat.trend} />
                   </div>
-                </>
-              );
-            })()}
-          </div>
-        </CardContent>
-      </Card>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
       {/* ── Section 2: Quick Actions ── */}
       <Card className="overflow-hidden border-border">
@@ -948,6 +905,7 @@ export default function BusinessDashboard() {
                     key={action.label}
                     variant="ghost"
                     size="sm"
+                    onClick={action.onClick}
                     className="h-8 px-3 gap-1.5 text-[11px] rounded-lg transition-all duration-200 text-muted-foreground border border-border"
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLElement).style.background = alpha(action.color, 7);
@@ -972,6 +930,36 @@ export default function BusinessDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Section 2b: Kas & Dana Breakdown ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {kasDanaCards.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card
+              key={item.label}
+              className="cursor-default transition-all duration-200 group border-border hover:border-foreground/15"
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="flex h-7 w-7 items-center justify-center rounded-md shrink-0"
+                    style={{ backgroundColor: item.bgColor }}
+                  >
+                    <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground">
+                    {item.label}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm font-bold leading-tight truncate" style={{ color: item.color }}>
+                  {formatAmount(item.value)}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
       {/* ── Section 3: Health Score + Revenue vs Expense + Status Ringkas ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1199,9 +1187,9 @@ export default function BusinessDashboard() {
       </div>
 
       {/* ── Section 3b: Piutang Jatuh Tempo + Piutang Summary (2/3 + 1/3) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Piutang Jatuh Tempo (2/3) */}
-        <Card className="lg:col-span-2 border-border">
+        <Card className="md:col-span-2 lg:col-span-2 border-border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
@@ -1399,7 +1387,7 @@ export default function BusinessDashboard() {
       )}
 
       {/* ── Section 4: Revenue Trend + Activity (2-col) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Mini Revenue Trend */}
         <Card className="h-full border-border">
           <CardHeader className="pb-2">

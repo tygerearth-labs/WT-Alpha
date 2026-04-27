@@ -53,7 +53,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface InvoiceItem {
   description: string;
@@ -391,7 +391,7 @@ export default function BusinessInvoice() {
 
       {/* Summary Stat Cards */}
       {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
           {statCards.map((card, idx) => (
             <Card key={idx} className="rounded-xl overflow-hidden bg-card border border-border">
               <CardContent className="p-3 sm:p-4">
@@ -439,72 +439,127 @@ export default function BusinessInvoice() {
               <p className="text-xs mt-1 text-muted-foreground" >Create your first invoice to get started</p>
             </div>
           ) : (
-            <div className="max-h-[500px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-border hover:bg-transparent">
-                    <TableHead className="text-[11px] font-medium text-muted-foreground" >{t('biz.invoiceNumber')}</TableHead>
-                    <TableHead className="text-[11px] font-medium hidden sm:table-cell text-muted-foreground" >{t('biz.invoiceCustomer')}</TableHead>
-                    <TableHead className="text-[11px] font-medium text-muted-foreground" >{t('biz.invoiceStatus')}</TableHead>
-                    <TableHead className="text-[11px] font-medium hidden md:table-cell text-muted-foreground" >{t('biz.invoiceDueDate')}</TableHead>
-                    <TableHead className="text-[11px] font-medium text-right text-muted-foreground" >{t('biz.invoiceTotal')}</TableHead>
-                    <TableHead className="text-[11px] font-medium w-32" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <AnimatePresence>
-                    {filteredInvoices.map((inv) => {
-                      const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
-                      const StatusIcon = statusStyle.icon;
-                      return (
-                        <tr
-                          key={inv.id}
-                          className="transition-colors duration-150 group cursor-default border-b border-border"
-                        >
-                          <TableCell className="text-xs py-2 font-medium text-foreground" >
-                            <div className="flex items-center gap-2">
+            <>
+              {/* Mobile Card List */}
+              <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border">
+                <AnimatePresence mode="popLayout">
+                  {filteredInvoices.map((inv, index) => {
+                    const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
+                    const StatusIcon = statusStyle.icon;
+                    return (
+                      <motion.div
+                        key={inv.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ delay: index * 0.03, duration: 0.2 }}
+                        className="p-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
                               <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.dotColor }} />
-                              {inv.invoiceNumber}
+                              <p className="text-xs font-semibold truncate text-foreground">{inv.invoiceNumber}</p>
                             </div>
-                          </TableCell>
-                          <TableCell className="py-2 hidden sm:table-cell">
-                            <span className="text-xs text-muted-foreground" >{inv.customer?.name || '-'}</span>
-                          </TableCell>
-                          <TableCell className="py-2">
+                            {inv.customer?.name && (
+                              <p className="text-[10px] text-muted-foreground mb-1.5 truncate">{inv.customer.name}</p>
+                            )}
                             <Badge variant="outline" className="text-[10px] font-medium gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color, borderColor: 'transparent' }}>
                               <StatusIcon className="h-2.5 w-2.5" />
                               {t(statusStyle.label)}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs py-2 hidden md:table-cell text-muted-foreground" >
-                            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '-'}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-semibold py-2 text-foreground" >
-                            {formatAmount(inv.total)}
-                          </TableCell>
-                          <TableCell className="py-2 text-right">
-                            <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => setViewInvoice(inv)}>
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
-                                {downloading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => openEditDialog(inv)}>
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => setDeleteId(inv.id)}>
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </tr>
-                      );
-                    })}
-                  </AnimatePresence>
-                </TableBody>
-              </Table>
-            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs font-bold tabular-nums text-foreground">{formatAmount(inv.total)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-0.5 mt-2 pt-2 border-t border-border">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => setViewInvoice(inv)}>
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
+                            {downloading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => openEditDialog(inv)}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => setDeleteId(inv.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+              {/* Desktop Table */}
+              <div className="hidden sm:block max-h-[500px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border hover:bg-transparent">
+                      <TableHead className="text-[11px] font-medium text-muted-foreground" >{t('biz.invoiceNumber')}</TableHead>
+                      <TableHead className="text-[11px] font-medium hidden sm:table-cell text-muted-foreground" >{t('biz.invoiceCustomer')}</TableHead>
+                      <TableHead className="text-[11px] font-medium text-muted-foreground" >{t('biz.invoiceStatus')}</TableHead>
+                      <TableHead className="text-[11px] font-medium hidden md:table-cell text-muted-foreground" >{t('biz.invoiceDueDate')}</TableHead>
+                      <TableHead className="text-[11px] font-medium text-right text-muted-foreground" >{t('biz.invoiceTotal')}</TableHead>
+                      <TableHead className="text-[11px] font-medium w-32" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <AnimatePresence>
+                      {filteredInvoices.map((inv) => {
+                        const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
+                        const StatusIcon = statusStyle.icon;
+                        return (
+                          <tr
+                            key={inv.id}
+                            className="transition-colors duration-150 group cursor-default border-b border-border"
+                          >
+                            <TableCell className="text-xs py-2 font-medium text-foreground" >
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.dotColor }} />
+                                {inv.invoiceNumber}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-2 hidden sm:table-cell">
+                              <span className="text-xs text-muted-foreground" >{inv.customer?.name || '-'}</span>
+                            </TableCell>
+                            <TableCell className="py-2">
+                              <Badge variant="outline" className="text-[10px] font-medium gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color, borderColor: 'transparent' }}>
+                                <StatusIcon className="h-2.5 w-2.5" />
+                                {t(statusStyle.label)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs py-2 hidden md:table-cell text-muted-foreground" >
+                              {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '-'}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-semibold py-2 text-foreground" >
+                              {formatAmount(inv.total)}
+                            </TableCell>
+                            <TableCell className="py-2 text-right">
+                              <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => setViewInvoice(inv)}>
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
+                                  {downloading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => openEditDialog(inv)}>
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => setDeleteId(inv.id)}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </tr>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
