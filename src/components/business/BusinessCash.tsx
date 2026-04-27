@@ -1083,18 +1083,38 @@ export default function BusinessCash() {
   };
 
   // ── Category CRUD ──
-  const handleAddCategory = async () => {
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [selectedCategoryIcon, setSelectedCategoryIcon] = useState('Tag');
+  const ICON_PICKER_OPTIONS = [
+    'Tag', 'ShoppingBag', 'Receipt', 'Briefcase', 'Car', 'Home', 'Laptop', 'Smartphone',
+    'Coffee', 'UtensilsCrossed', 'Pill', 'Fuel', 'Truck', 'Wrench', 'Hammer', 'Paintbrush',
+    'GraduationCap', 'BookOpen', 'Plane', 'Bus', 'Train', 'Heart', 'Dumbbell', 'Music',
+    'Gamepad2', 'Camera', 'Tv', 'Headphones', 'Zap', 'Droplets', 'Flame', 'Leaf',
+    'Gift', 'Shirt', 'Landmark', 'CreditCard', 'Banknote', 'Coins', 'FileText',
+    'Lightbulb', 'Star', 'Package', 'Store', 'Building', 'Phone', 'Mail',
+    'Stethoscope', 'Baby', 'Dog', 'TreePine', 'Umbrella', 'Trophy', 'Crown', 'Gem',
+  ];
+
+  const openCategoryDialog = () => {
+    setNewCategoryName('');
+    setSelectedCategoryIcon('Tag');
+    setCategoryDialogOpen(true);
+  };
+
+  const handleAddCategoryFromDialog = async () => {
     if (!businessId || !newCategoryName.trim()) return;
     setCategorySaving(true);
     try {
       const res = await fetch(`/api/business/${businessId}/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'pengeluaran', name: newCategoryName.trim(), color: '#03DAC6', icon: 'Tag' }),
+        body: JSON.stringify({ type: 'pengeluaran', name: newCategoryName.trim(), color: '#03DAC6', icon: selectedCategoryIcon }),
       });
       if (!res.ok) throw new Error();
       toast.success('Kategori berhasil ditambahkan');
       setNewCategoryName('');
+      setSelectedCategoryIcon('Tag');
+      setCategoryDialogOpen(false);
       fetchAllCashData();
     } catch {
       toast.error(t('common.error'));
@@ -1416,7 +1436,7 @@ export default function BusinessCash() {
             {allPiutang.length > 0 && (
               <Card className="rounded-xl overflow-hidden border border-primary/15">
                 <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-2.5">
                     <div className="h-6 w-6 rounded-md flex items-center justify-center bg-primary/8">
                       <TrendingUp className="h-3 w-3 text-primary" />
                     </div>
@@ -1424,7 +1444,32 @@ export default function BusinessCash() {
                       Realisasi Pendapatan
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  {/* Mobile: compact vertical */}
+                  <div className="sm:hidden space-y-2">
+                    <div className="flex items-center justify-between rounded-lg bg-white/[0.03] p-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                        <span className="text-[10px] text-muted-foreground">Tercatat</span>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums text-primary">{formatAmount(cashflowRealization.pendapatanTercatat)}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-white/[0.03] p-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full bg-secondary" />
+                        <span className="text-[10px] text-muted-foreground">Diterima</span>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums text-secondary">{formatAmount(cashflowRealization.sudahDiterima)}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-white/[0.03] p-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full bg-warning" />
+                        <span className="text-[10px] text-muted-foreground">Belum</span>
+                      </div>
+                      <span className="text-xs font-bold tabular-nums text-warning">{formatAmount(cashflowRealization.belumDiterima)}</span>
+                    </div>
+                  </div>
+                  {/* Desktop: horizontal */}
+                  <div className="hidden sm:grid sm:grid-cols-3 gap-3">
                     <div>
                       <p className="text-[9px] uppercase tracking-wider mb-1 text-muted-foreground">Pendapatan Tercatat</p>
                       <p className="text-sm font-bold tabular-nums text-primary">{formatAmount(cashflowRealization.pendapatanTercatat)}</p>
@@ -1439,9 +1484,9 @@ export default function BusinessCash() {
                     </div>
                   </div>
                   {cashflowRealization.pendapatanTercatat > 0 && (
-                    <div className="border-t border-border mt-3 pt-3">
+                    <div className="border-t border-border mt-2.5 pt-2.5">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
+                        <div className="flex-1 h-2 rounded-full overflow-hidden bg-border">
                           <div
                             className="h-full rounded-full bg-secondary transition-all duration-700"
                             style={{
@@ -1449,7 +1494,7 @@ export default function BusinessCash() {
                             }}
                           />
                         </div>
-                        <span className="text-[10px] tabular-nums min-w-[32px] text-right text-muted-foreground">
+                        <span className="text-xs tabular-nums min-w-[36px] text-right font-semibold text-muted-foreground">
                           {Math.round((cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}%
                         </span>
                       </div>
@@ -1505,7 +1550,7 @@ export default function BusinessCash() {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-1.5 flex-wrap mb-1">
                                   <Badge
                                     variant="outline"
                                     className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
@@ -1522,25 +1567,48 @@ export default function BusinessCash() {
                                       Investor {sale.investorSharePct}%
                                     </Badge>
                                   )}
+                                  {sale.paymentMethod && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
+                                      style={{ backgroundColor: alpha(c.muted, 6), color: c.muted }}
+                                    >
+                                      {sale.paymentMethod}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <p className="text-xs font-medium truncate text-foreground">{sale.description}</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
-                                  <span>{formatDate(sale.date)}</span>
-                                  {sale.customer?.name && (
-                                    <>
+                                <div className="text-[10px] text-muted-foreground mt-0.5 space-y-0.5">
+                                  <p className="flex items-center gap-1.5">
+                                    <span>{formatDate(sale.date)}</span>
+                                    {sale.customer?.name && (
+                                      <>
+                                        <span className="text-border">•</span>
+                                        <span className="truncate max-w-[100px]">{sale.customer.name}</span>
+                                      </>
+                                    )}
+                                  </p>
+                                  {isInstallment && sale.downPayment && sale.downPayment > 0 && (
+                                    <p className="flex items-center gap-2">
+                                      <span>DP <span className="font-semibold text-foreground">{formatAmount(sale.downPayment)}</span></span>
                                       <span className="text-border">•</span>
-                                      <span className="truncate max-w-[100px]">{sale.customer.name}</span>
-                                    </>
+                                      <span>Cicilan <span className="font-semibold text-foreground">{formatAmount(sale.installmentAmount || 0)}/{sale.installmentTempo}x</span></span>
+                                    </p>
                                   )}
-                                </p>
+                                </div>
                               </div>
-                              <div className="text-right shrink-0">
+                              <div className="text-right shrink-0 min-w-[80px]">
+                                <p className="text-[9px] text-muted-foreground">Total</p>
                                 <p className="text-xs font-bold tabular-nums" style={{ color: saleColor }}>
-                                  {formatAmount(realized)}
+                                  {formatAmount(sale.amount)}
                                 </p>
                                 {isInstallment && (
                                   <>
-                                    <p className="text-[9px] tabular-nums text-muted-foreground">
+                                    <div className="mt-1 pt-1 border-t border-border">
+                                      <p className="text-[8px] text-muted-foreground">Tercatat</p>
+                                      <p className="text-[10px] font-semibold tabular-nums text-secondary">{formatAmount(realized)}</p>
+                                    </div>
+                                    <p className="text-[8px] tabular-nums text-destructive mt-0.5">
                                       sisa {formatAmount(remaining)}
                                     </p>
                                     <div className="flex items-center gap-1 mt-1">
@@ -1559,16 +1627,6 @@ export default function BusinessCash() {
                                 )}
                               </div>
                             </div>
-                            {isInstallment && sale.downPayment && sale.downPayment > 0 && (
-                              <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-border">
-                                <span className="text-[9px] text-muted-foreground">
-                                  DP: <span className="font-semibold text-foreground">{formatAmount(sale.downPayment)}</span>
-                                </span>
-                                <span className="text-[9px] text-muted-foreground">
-                                  Cicilan: <span className="font-semibold text-foreground">{formatAmount(sale.installmentAmount || 0)}/{sale.installmentTempo}x</span>
-                                </span>
-                              </div>
-                            )}
                           </motion.div>
                         );
                       })}
@@ -1612,60 +1670,134 @@ export default function BusinessCash() {
                       </Badge>
                     )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground">Tambah ↓</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openCategoryDialog}
+                    className="h-7 px-2 text-[10px] font-medium rounded-lg text-muted-foreground hover:text-secondary hover:bg-secondary/5"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Tambah
+                  </Button>
                 </div>
 
-                {/* Category List */}
-                {cashCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
+                {/* Category List — row style */}
+                {cashCategories.length > 0 ? (
+                  <div className="space-y-0.5">
                     {cashCategories.map((cat) => (
                       <div
                         key={cat.id}
-                        className="flex items-center gap-1.5 rounded-full px-2.5 py-1 border border-border bg-white/[0.02]"
+                        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-white/[0.03] transition-colors group"
                       >
-                        <DynamicIcon
-                          name={cat.icon || 'Tag'}
-                          className="h-3 w-3 shrink-0"
-                          style={{ color: cat.color || c.secondary }}
-                        />
-                        <span className="text-[11px] text-foreground">{cat.name}</span>
+                        <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(cat.color || c.secondary, 10) }}>
+                          <DynamicIcon
+                            name={cat.icon || 'Tag'}
+                            className="h-3.5 w-3.5"
+                            style={{ color: cat.color || c.secondary }}
+                          />
+                        </div>
+                        <span className="text-xs text-foreground flex-1 min-w-0 truncate">{cat.name}</span>
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
-                          className="h-3.5 w-3.5 rounded-full flex items-center justify-center hover:bg-destructive/15 transition-colors text-muted-foreground hover:text-destructive"
+                          className="h-6 w-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-destructive/15 transition-all text-muted-foreground hover:text-destructive"
                         >
-                          <X className="h-2.5 w-2.5" />
+                          <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
                     ))}
                   </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground text-center py-3">Belum ada kategori</p>
                 )}
-
-                {/* Add Category Inline Form */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-                    placeholder="Nama kategori baru..."
-                    className="h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground"
-                  />
-                  <Button
-                    onClick={handleAddCategory}
-                    disabled={!newCategoryName.trim() || categorySaving}
-                    size="sm"
-                    className="rounded-lg h-7 px-3 bg-secondary text-secondary-foreground hover:bg-secondary/90 text-xs"
-                  >
-                    {categorySaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Simpan'}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
+
+            {/* ── Category Dialog ── */}
+            <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+              <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md">
+                <DialogTitle className="sr-only">Tambah Kategori</DialogTitle>
+                <DialogDescription className="sr-only">Tambah kategori pengeluaran baru</DialogDescription>
+                <div className="px-5 pt-5 pb-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-secondary/10">
+                      <Tag className="h-4 w-4 text-secondary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Tambah Kategori</p>
+                      <p className="text-[11px] text-muted-foreground/60">Pilih ikon dan nama kategori baru</p>
+                    </div>
+                  </div>
+                  {/* Icon Picker */}
+                  <div className="mb-4">
+                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-2 block">Pilih Ikon</Label>
+                    <div className="grid grid-cols-8 gap-1.5 max-h-[160px] overflow-y-auto p-1">
+                      {ICON_PICKER_OPTIONS.map((iconName) => {
+                        const isSelected = selectedCategoryIcon === iconName;
+                        return (
+                          <button
+                            key={iconName}
+                            type="button"
+                            onClick={() => setSelectedCategoryIcon(iconName)}
+                            className={cn(
+                              "h-9 w-full rounded-lg flex items-center justify-center transition-all duration-150",
+                              isSelected
+                                ? "bg-secondary/15 border border-secondary/30 ring-1 ring-secondary/20"
+                                : "bg-white/[0.03] border border-transparent hover:bg-white/[0.06] hover:border-white/[0.08]"
+                            )}
+                          >
+                            <DynamicIcon
+                              name={iconName}
+                              className={cn("h-4 w-4 transition-colors", isSelected ? "text-secondary" : "text-muted-foreground")}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {/* Selected icon preview + Name */}
+                  <div className="mb-4">
+                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-2 block">Nama Kategori</Label>
+                    <div className="flex items-center gap-2">
+                      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 bg-secondary/10">
+                        <DynamicIcon name={selectedCategoryIcon} className="h-4 w-4 text-secondary" />
+                      </div>
+                      <Input
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddCategoryFromDialog()}
+                        placeholder="Contoh: Operasional Kendaraan"
+                        className="h-9 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className="px-5 pb-5 pt-0">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setCategoryDialogOpen(false)}
+                      className="flex-1 h-9 rounded-lg text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      onClick={handleAddCategoryFromDialog}
+                      disabled={!newCategoryName.trim() || categorySaving}
+                      className="flex-1 h-9 rounded-lg text-xs bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                    >
+                      {categorySaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Simpan Kategori'}
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* ── Sub-tab toggle + Search + Add Button ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-2 flex-1">
                 {/* Sub-tabs */}
-                <div className="flex gap-1 rounded-lg p-0.5 bg-white/[0.03] border border-border">
+                <div className="flex gap-1 rounded-lg p-0.5 bg-white/[0.02] border border-border/50">
                   {(Object.keys(CASH_SUB_TYPES) as CashSubType[]).map((key) => {
                     const cfg = CASH_SUB_TYPES[key];
                     const Icon = cfg.icon;
@@ -1674,10 +1806,10 @@ export default function BusinessCash() {
                       <button
                         key={key}
                         onClick={() => setCashSubTab(key)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200"
                         style={
                           isActive
-                            ? { backgroundColor: alpha(cfg.color, 8), color: cfg.color }
+                            ? { backgroundColor: alpha(cfg.color, 15), color: cfg.color, boxShadow: `0 0 0 1px ${alpha(cfg.color, 25)}` }
                             : { color: c.muted }
                         }
                       >
@@ -1722,64 +1854,98 @@ export default function BusinessCash() {
               </Button>
             </div>
 
-            {/* ── Quick Add Inline Form ── */}
-            <Card
-              className="rounded-xl overflow-hidden border transition-colors duration-200"
-              style={{ borderColor: alpha(subTypeConfig.color, 20) }}
+            {/* ── Quick Add FAB (Bottom Floating) ── */}
+            <motion.button
+              onClick={() => setQuickAddOpen(!quickAddOpen)}
+              className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-30 h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
+              style={{
+                background: `linear-gradient(135deg, ${subTypeConfig.color}, ${subTypeConfig.color}88)`,
+              }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              animate={{ rotate: quickAddOpen ? 45 : 0 }}
             >
-              <CardContent className="p-2.5 sm:p-3">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setQuickAddOpen(!quickAddOpen)}
-                    className="rounded-lg h-8 sm:h-7 px-3 sm:px-2 text-xs font-medium shrink-0 w-fit"
-                    style={{ color: subTypeConfig.color, backgroundColor: alpha(subTypeConfig.color, 8) }}
+              <Plus className="h-5 w-5 text-white" />
+            </motion.button>
+
+            {/* Quick Add Bottom Sheet */}
+            <AnimatePresence>
+              {quickAddOpen && (
+                <>
+                  {/* Backdrop */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setQuickAddOpen(false)}
+                    className="fixed inset-0 bg-black/40 z-40 sm:hidden"
+                  />
+                  {/* Sheet */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 80 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 80 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                    className="fixed bottom-0 left-0 right-0 z-50 sm:bottom-auto sm:right-6 sm:left-auto sm:top-auto sm:z-50 sm:w-[340px]"
+                    style={{ bottom: 0 }}
                   >
-                    {quickAddOpen ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                    <span className="ml-1">Quick Add</span>
-                  </Button>
-                  <AnimatePresence>
-                    {quickAddOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 overflow-hidden"
-                      >
+                    <div className="bg-[#1a1a1a] border-t border-white/[0.08] sm:border sm:border-white/[0.08] sm:rounded-2xl sm:shadow-2xl p-4 sm:p-5">
+                      {/* Handle bar (mobile) */}
+                      <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mb-3 sm:hidden" />
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: alpha(subTypeConfig.color, 12) }}>
+                          <Plus className="h-3.5 w-3.5" style={{ color: subTypeConfig.color }} />
+                        </div>
+                        <span className="text-sm font-semibold text-foreground">Quick Add</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                          style={{ backgroundColor: alpha(subTypeConfig.color, 8), color: subTypeConfig.color }}>
+                          {t(subTypeConfig.label)}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
                         <Input
                           value={quickForm.description}
                           onChange={(e) => setQuickForm({ ...quickForm, description: e.target.value })}
                           onKeyDown={(e) => e.key === 'Enter' && handleQuickAddSave()}
-                          placeholder="Deskripsi..."
-                          className="h-8 sm:h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1 min-w-0"
+                          placeholder="Deskripsi transaksi..."
+                          className="h-10 text-sm rounded-xl bg-white/[0.04] border border-border text-foreground"
+                          autoFocus
                         />
-                        <div className="relative shrink-0">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">Rp</span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">Rp</span>
                           <Input
                             type="number"
                             value={quickForm.amount}
                             onChange={(e) => setQuickForm({ ...quickForm, amount: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && handleQuickAddSave()}
                             placeholder="0"
-                            className="h-8 sm:h-7 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground w-full sm:w-[120px] pl-7"
+                            className="h-10 text-sm rounded-xl bg-white/[0.04] border border-border text-foreground pl-8"
                           />
                         </div>
-                        <Button
-                          onClick={handleQuickAddSave}
-                          disabled={!quickForm.description || !quickForm.amount || quickSaving}
-                          size="sm"
-                          className="rounded-lg h-8 sm:h-7 px-4 sm:px-3 text-xs shrink-0"
-                          style={{ backgroundColor: subTypeConfig.color, color: 'white' }}
-                        >
-                          {quickSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Simpan'}
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </CardContent>
-            </Card>
+                        <div className="flex gap-2 pt-1">
+                          <Button
+                            variant="ghost"
+                            onClick={() => setQuickAddOpen(false)}
+                            className="flex-1 h-10 rounded-xl text-sm text-muted-foreground hover:text-foreground"
+                          >
+                            Batal
+                          </Button>
+                          <Button
+                            onClick={handleQuickAddSave}
+                            disabled={!quickForm.description || !quickForm.amount || quickSaving}
+                            className="flex-1 h-10 rounded-xl text-sm font-medium"
+                            style={{ backgroundColor: subTypeConfig.color, color: 'white' }}
+                          >
+                            {quickSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
 
             {/* ── Sub-total indicator ── */}
             <div className="flex items-center gap-2">
