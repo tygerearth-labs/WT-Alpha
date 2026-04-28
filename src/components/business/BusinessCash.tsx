@@ -442,6 +442,7 @@ export default function BusinessCash() {
 
   // ── Arus Kas State ──
   const [cashSubTab, setCashSubTab] = useState<CashSubType>('kas_besar');
+  const [cashFilter, setCashFilter] = useState<'all' | 'masuk' | 'keluar'>('all');
   const [cashPeriod, setCashPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
   const [cashEntries, setCashEntries] = useState<CashEntry[]>([]);
   const [incomeTotal, setIncomeTotal] = useState<number>(0);
@@ -468,7 +469,13 @@ export default function BusinessCash() {
 
   // ── Quick Add State ──
   const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [quickForm, setQuickForm] = useState({ description: '', amount: '' });
+  const [quickForm, setQuickForm] = useState({
+    description: '',
+    amount: '',
+    source: '' as 'kas_besar' | 'kas_kecil' | 'investor' | '',
+    investorId: '',
+    category: '',
+  });
   const [quickSaving, setQuickSaving] = useState(false);
 
   // ── Category Management State ──
@@ -530,6 +537,8 @@ export default function BusinessCash() {
   });
 
   // ── Animated Counters (Arus Kas) ──
+  const totalSaldo = sourceBalances.kasBesarSaldo + sourceBalances.kasKecilSaldo + sourceBalances.investorSaldo;
+  const animSaldo = useAnimatedCounter(totalSaldo);
   const animIncome = useAnimatedCounter(incomeTotal);
   const animExpense = useAnimatedCounter(expenseTotal);
   const animNet = useAnimatedCounter(incomeTotal - expenseTotal);
@@ -731,17 +740,17 @@ export default function BusinessCash() {
   // ── Derived Data ──────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════
 
-  // Reset page size and search mode when sub-tab or search changes
+  // Reset page size when filter or search changes
   useEffect(() => {
     setCashPageSize(10);
-  }, [cashSubTab]);
+  }, [cashFilter]);
 
   useEffect(() => {
     if (!cashSearch.trim()) {
       setSearchMode(false);
       setCashPageSize(10);
     } else {
-      // Check if search has matches in other tabs
+      // Check if search has matches beyond the current filter
       const q = cashSearch.toLowerCase();
       const matchesAll = cashEntries.filter(
         (e) =>
@@ -749,17 +758,27 @@ export default function BusinessCash() {
           (e.category && e.category.toLowerCase().includes(q)) ||
           (e.notes && e.notes.toLowerCase().includes(q))
       );
-      const matchesCurrentTab = matchesAll.filter((e) => e.type === cashSubTab);
-      const hasOtherTabMatches = matchesAll.length > matchesCurrentTab.length;
-      setSearchMode(hasOtherTabMatches);
+      const filterFn = cashFilter === 'masuk'
+        ? (e: CashEntry) => e.type === 'kas_besar' || e.type === 'kas_kecil'
+        : cashFilter === 'keluar'
+          ? (e: CashEntry) => e.type === 'kas_keluar'
+          : () => true;
+      const matchesCurrentFilter = matchesAll.filter(filterFn);
+      const hasOtherFilterMatches = matchesAll.length > matchesCurrentFilter.length;
+      setSearchMode(hasOtherFilterMatches);
       setCashPageSize(10);
     }
-  }, [cashSearch, cashEntries, cashSubTab]);
+  }, [cashSearch, cashEntries, cashFilter]);
 
   const filteredCashEntries = useMemo(() => {
+    const filterFn = cashFilter === 'masuk'
+      ? (e: CashEntry) => e.type === 'kas_besar' || e.type === 'kas_kecil'
+      : cashFilter === 'keluar'
+        ? (e: CashEntry) => e.type === 'kas_keluar'
+        : () => true;
     let entries = searchMode
       ? [...cashEntries]
-      : cashEntries.filter((e) => e.type === cashSubTab);
+      : cashEntries.filter(filterFn);
     if (cashSearch.trim()) {
       const q = cashSearch.toLowerCase();
       entries = entries.filter(
@@ -770,7 +789,7 @@ export default function BusinessCash() {
       );
     }
     return entries;
-  }, [cashEntries, cashSubTab, cashSearch, searchMode]);
+  }, [cashEntries, cashFilter, cashSearch, searchMode]);
 
   const currentCashSubTotal = useMemo(() => {
     return filteredCashEntries.reduce((sum, e) => sum + e.amount, 0);
@@ -1028,11 +1047,23 @@ export default function BusinessCash() {
     const numAmount = parseFloat(quickForm.amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
 
+    const effectiveType: CashSubType = cashSubTab === 'kas_keluar' ? 'kas_keluar' : 'kas_besar';
+    const effectiveSource = quickForm.source || (effectiveType === 'kas_keluar' ? 'kas_kecil' : '');
+
     // Balance validation for quick add (kas_keluar)
-    if (cashSubTab === 'kas_keluar') {
-      let defaultSource: 'kas_besar' | 'kas_kecil' | 'investor' | '' = 'kas_kecil';
-      let currentSaldo = sourceBalances.kasKecilSaldo;
-      let sourceLabel = 'Kas Kecil';
+    if (effectiveType === 'kas_keluar' && effectiveSource) {
+      let currentSaldo = 0;
+      let sourceLabel = '';
+      if (effectiveSource === 'kas_besar') {
+        currentSaldo = sourceBalances.kasBesarSaldo;
+        sourceLabel = 'Kas Besar';
+      } else if (effectiveSource === 'kas_kecil') {
+        currentSaldo = sourceBalances.kasKecilSaldo;
+        sourceLabel = 'Kas Kecil';
+      } else if (effectiveSource === 'investor') {
+        currentSaldo = sourceBalances.investorSaldo;
+        sourceLabel = 'Dana Investor';
+      }
       if (numAmount > currentSaldo) {
         toast.error(`Saldo ${sourceLabel} tidak mencukupi (Sisa: ${formatAmount(currentSaldo)})`);
         return;
@@ -1041,20 +1072,19 @@ export default function BusinessCash() {
 
     setQuickSaving(true);
     try {
-      let defaultSource: 'kas_besar' | 'kas_kecil' | 'investor' | '' = '';
-      if (cashSubTab === 'kas_kecil') defaultSource = 'kas_besar';
-      if (cashSubTab === 'kas_keluar') defaultSource = 'kas_kecil';
-
       const body: Record<string, unknown> = {
-        type: cashSubTab,
+        type: effectiveType,
         amount: numAmount,
         description: quickForm.description,
         date: new Date().toISOString().split('T')[0],
-        category: '',
+        category: quickForm.category || undefined,
         notes: '',
       };
-      if (defaultSource) {
-        body.source = defaultSource;
+      if (effectiveSource) {
+        body.source = effectiveSource;
+        if (effectiveSource === 'investor' && quickForm.investorId) {
+          body.investorId = quickForm.investorId;
+        }
       }
 
       const res = await fetch(`/api/business/${businessId}/cash`, {
@@ -1072,7 +1102,7 @@ export default function BusinessCash() {
         return;
       }
       toast.success(t('biz.businessCreated'));
-      setQuickForm({ description: '', amount: '' });
+      setQuickForm({ description: '', amount: '', source: '', investorId: '', category: '' });
       setQuickAddOpen(false);
       fetchAllCashData();
     } catch {
@@ -1352,367 +1382,399 @@ export default function BusinessCash() {
         {/* ══════════════════════════════════════════════════ */}
         {mainTab === 'arus_kas' && (
           <div key="arus_kas" className="space-y-3 p-3 sm:p-4">
-            {/* ── Flow Summary — Merged Compact Card ── */}
-            <Card className="rounded-xl overflow-hidden border border-border">
-              <CardContent className="p-3 sm:p-4">
-                {/* Row 1: Pemasukan vs Pengeluaran */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  {/* Pemasukan */}
-                  <div className="rounded-lg bg-secondary/5 p-2.5">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <ArrowUpRight className="h-3 w-3 text-secondary" />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Pemasukan</span>
-                    </div>
-                    <p className="text-xs sm:text-sm font-bold tabular-nums text-secondary leading-tight">
-                      {formatAmount(animIncome)}
-                    </p>
-                    <div className="mt-1.5">
-                      <MiniCashSparkline color={c.secondary} value={animIncome} />
-                    </div>
+            {/* ══════════════════════════════════════════════ */}
+            {/* SECTION 1: SALDO OVERVIEW (Accountant Hero)    */}
+            {/* ══════════════════════════════════════════════ */}
+            <Card className="rounded-xl overflow-hidden border border-border/50">
+              <CardContent className="p-4 sm:p-5">
+                {/* Header: title + period filter */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-primary" />
+                    <h2 className="text-sm font-bold text-foreground">Saldo Dana</h2>
                   </div>
-                  {/* Pengeluaran */}
-                  <div className="rounded-lg bg-destructive/5 p-2.5">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <ArrowDownRight className="h-3 w-3 text-destructive" />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Pengeluaran</span>
-                    </div>
-                    <p className="text-xs sm:text-sm font-bold tabular-nums text-destructive leading-tight">
-                      {formatAmount(animExpense)}
-                    </p>
-                    <div className="mt-1.5">
-                      <MiniCashSparkline color={c.destructive} value={animExpense} />
-                    </div>
+                  <div className="flex gap-0.5 rounded-lg p-0.5 bg-white/[0.03] border border-border/30">
+                    {PERIOD_OPTIONS.map((opt) => {
+                      const isActive = cashPeriod === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => setCashPeriod(opt.value)}
+                          className="px-2 py-1 rounded-md text-[10px] font-medium transition-all duration-150"
+                          style={isActive ? { backgroundColor: alpha(c.primary, 12), color: c.primary } : { color: c.muted }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Divider */}
-                <div className="border-t border-border my-2.5" />
+                {/* Total Saldo — big number */}
+                <div className="text-center mb-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Total Saldo Saat Ini</p>
+                  <motion.p
+                    key={totalSaldo}
+                    initial={{ scale: 0.95, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                    className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground"
+                  >
+                    {formatAmount(animSaldo)}
+                  </motion.p>
+                </div>
 
-                {/* Row 2: Arus Bersih + Komposisi Dana */}
-                <div className="flex gap-3 sm:gap-4 items-start">
-                  {/* Arus Bersih */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <CircleDollarSign className={cn("h-3 w-3", animNet >= 0 ? "text-secondary" : "text-destructive")} />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Arus Bersih</span>
+                {/* Period Flow Row: Pemasukan / Pengeluaran / Arus Bersih */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="rounded-lg bg-secondary/5 p-2.5 text-center">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <ArrowUpRight className="h-3 w-3 text-secondary" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Masuk</span>
                     </div>
-                    <p className={cn("text-xs sm:text-sm font-bold tabular-nums leading-tight", animNet >= 0 ? "text-secondary" : "text-destructive")}>
-                      {animNet >= 0 ? '+' : '-'}
-                      {formatAmount(Math.abs(animNet))}
-                    </p>
-                    <div className="mt-1.5">
-                      <MiniCashSparkline color={animNet >= 0 ? c.secondary : c.destructive} value={animNet} />
-                    </div>
+                    <p className="text-[11px] sm:text-xs font-bold tabular-nums text-secondary">{formatAmount(animIncome)}</p>
+                    <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
                   </div>
+                  <div className="rounded-lg bg-destructive/5 p-2.5 text-center">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <ArrowDownRight className="h-3 w-3 text-destructive" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Keluar</span>
+                    </div>
+                    <p className="text-[11px] sm:text-xs font-bold tabular-nums text-destructive">{formatAmount(animExpense)}</p>
+                    <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                  </div>
+                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: animNet >= 0 ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)' }}>
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <CircleDollarSign className={cn("h-3 w-3", animNet >= 0 ? "text-secondary" : "text-destructive")} />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Bersih</span>
+                    </div>
+                    <p className={cn("text-[11px] sm:text-xs font-bold tabular-nums", animNet >= 0 ? "text-secondary" : "text-destructive")}>
+                      {animNet >= 0 ? '+' : '-'}{formatAmount(Math.abs(animNet))}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                  </div>
+                </div>
 
-                  {/* Komposisi Dana — mini donut */}
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center gap-1 mb-1.5">
-                      <PieChartIcon className="h-3 w-3 text-primary" />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Komposisi Dana</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <DonutChart segments={donutSegments} size={64} />
-                      <div className="space-y-1">
-                        {donutSegments.map((seg) => {
-                          const total = donutSegments.reduce((s, d) => s + d.value, 0);
-                          const pct = total > 0 ? ((seg.value / total) * 100).toFixed(0) : '0';
-                          return (
-                            <div key={seg.label} className="flex items-center gap-1.5">
-                              <div className="h-1.5 w-1.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
-                              <span className="text-[9px] text-muted-foreground truncate max-w-[70px] sm:max-w-[90px]">{seg.label}</span>
-                              <span className="text-[9px] font-semibold tabular-nums text-muted-foreground">{pct}%</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                {/* Source Breakdown Chips */}
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30">
+                    <div className="h-1.5 w-1.5 rounded-full bg-secondary" />
+                    <span className="text-[10px] text-muted-foreground">Kas Besar</span>
+                    <span className="text-[10px] font-semibold tabular-nums text-foreground">{formatCompactAmount(sourceBalances.kasBesarSaldo)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30">
+                    <div className="h-1.5 w-1.5 rounded-full bg-warning" />
+                    <span className="text-[10px] text-muted-foreground">Kas Kecil</span>
+                    <span className="text-[10px] font-semibold tabular-nums text-foreground">{formatCompactAmount(sourceBalances.kasKecilSaldo)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="text-[10px] text-muted-foreground">Dana Investor</span>
+                    <span className="text-[10px] font-semibold tabular-nums text-foreground">{formatCompactAmount(sourceBalances.investorSaldo)}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* ── Cashflow Realization Info Card ── */}
-            {allPiutang.length > 0 && (
-              <Card className="rounded-xl overflow-hidden border border-primary/15">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <div className="h-6 w-6 rounded-md flex items-center justify-center bg-primary/8">
-                      <TrendingUp className="h-3 w-3 text-primary" />
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Realisasi Pendapatan
-                    </span>
-                  </div>
-                  {/* Mobile: compact vertical */}
-                  <div className="sm:hidden space-y-2">
-                    <div className="flex items-center justify-between rounded-lg bg-white/[0.03] p-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        <span className="text-[10px] text-muted-foreground">Tercatat</span>
-                      </div>
-                      <span className="text-xs font-bold tabular-nums text-primary">{formatAmount(cashflowRealization.pendapatanTercatat)}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-white/[0.03] p-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-2 w-2 rounded-full bg-secondary" />
-                        <span className="text-[10px] text-muted-foreground">Diterima</span>
-                      </div>
-                      <span className="text-xs font-bold tabular-nums text-secondary">{formatAmount(cashflowRealization.sudahDiterima)}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-white/[0.03] p-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-2 w-2 rounded-full bg-warning" />
-                        <span className="text-[10px] text-muted-foreground">Belum</span>
-                      </div>
-                      <span className="text-xs font-bold tabular-nums text-warning">{formatAmount(cashflowRealization.belumDiterima)}</span>
-                    </div>
-                  </div>
-                  {/* Desktop: horizontal */}
-                  <div className="hidden sm:grid sm:grid-cols-3 gap-3">
-                    <div>
-                      <p className="text-[9px] uppercase tracking-wider mb-1 text-muted-foreground">Pendapatan Tercatat</p>
-                      <p className="text-sm font-bold tabular-nums text-primary">{formatAmount(cashflowRealization.pendapatanTercatat)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] uppercase tracking-wider mb-1 text-muted-foreground">Sudah Diterima</p>
-                      <p className="text-sm font-bold tabular-nums text-secondary">{formatAmount(cashflowRealization.sudahDiterima)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] uppercase tracking-wider mb-1 text-muted-foreground">Belum Diterima</p>
-                      <p className="text-sm font-bold tabular-nums text-warning">{formatAmount(cashflowRealization.belumDiterima)}</p>
-                    </div>
-                  </div>
-                  {cashflowRealization.pendapatanTercatat > 0 && (
-                    <div className="border-t border-border mt-2.5 pt-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 rounded-full overflow-hidden bg-border">
-                          <div
-                            className="h-full rounded-full bg-secondary transition-all duration-700"
-                            style={{
-                              width: `${Math.min(100, (cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs tabular-nums min-w-[36px] text-right font-semibold text-muted-foreground">
-                          {Math.round((cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+            {/* ══════════════════════════════════════════════ */}
+            {/* SECTION 2: FILTER CHIPS + SEARCH + ACTIONS      */}
+            {/* ══════════════════════════════════════════════ */}
+            <div className="flex flex-col gap-2">
+              {/* Filter chips + actions row */}
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1 rounded-xl p-1 bg-white/[0.02] border border-border/30">
+                  {([
+                    { key: 'all' as const, label: 'Semua', color: c.foreground },
+                    { key: 'masuk' as const, label: 'Masuk', color: c.secondary },
+                    { key: 'keluar' as const, label: 'Keluar', color: c.destructive },
+                  ]).map((f) => {
+                    const isActive = cashFilter === f.key;
+                    return (
+                      <button
+                        key={f.key}
+                        onClick={() => setCashFilter(f.key)}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200"
+                        style={
+                          isActive
+                            ? { backgroundColor: alpha(f.color, 12), color: f.color, boxShadow: `0 1px 3px ${alpha(f.color, 10)}` }
+                            : { color: c.muted }
+                        }
+                      >
+                        {f.key === 'masuk' && <ArrowUpRight className="h-3 w-3" />}
+                        {f.key === 'keluar' && <ArrowDownRight className="h-3 w-3" />}
+                        {f.label}
+                      </button>
+                    );
+                  })}
+                </div>
 
-            {/* ── Penjualan Terbaru ── */}
-            {salesData.length > 0 && (
-              <Card className="rounded-xl overflow-hidden border border-border">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="h-6 w-6 rounded-md flex items-center justify-center bg-secondary/8">
-                      <Wallet className="h-3 w-3 text-secondary" />
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Penjualan Terbaru
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-medium border-0 rounded-full px-1.5 py-0"
-                      style={{ backgroundColor: alpha(c.secondary, 8), color: c.secondary }}
-                    >
-                      {salesData.length}
-                    </Badge>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto space-y-2">
-                    <AnimatePresence mode="popLayout">
-                      {salesData.slice(0, 8).map((sale, index) => {
-                        const isInstallment = sale.installmentTempo && sale.installmentTempo > 0;
-                        const realized = sale.realizedAmount || 0;
-                        const remaining = isInstallment ? sale.amount - realized : 0;
-                        const paidPct = sale.amount > 0 ? Math.round((realized / sale.amount) * 100) : 0;
-                        const saleColor = isInstallment ? c.warning : c.secondary;
-                        return (
-                          <motion.div
-                            key={sale.id}
-                            custom={index}
-                            variants={{
-                              hidden: { opacity: 0, x: -6 },
-                              show: (i: number) => ({
-                                opacity: 1, x: 0,
-                                transition: { delay: i * 0.02, duration: 0.2 },
-                              }),
-                              exit: { opacity: 0, transition: { duration: 0.1 } },
-                            }}
-                            initial="hidden"
-                            animate="show"
-                            layout
-                            className="rounded-lg p-2.5 border border-border bg-white/[0.01] hover:bg-white/[0.03] transition-colors duration-150"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
-                                    style={{ backgroundColor: alpha(saleColor, 8), color: saleColor }}
-                                  >
-                                    {isInstallment ? 'Cicilan' : 'Tunai'}
-                                  </Badge>
-                                  {sale.investorSharePct && sale.investorSharePct > 0 && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
-                                      style={{ backgroundColor: alpha(c.primary, 8), color: c.primary }}
-                                    >
-                                      Investor {sale.investorSharePct}%
-                                    </Badge>
-                                  )}
-                                  {sale.paymentMethod && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
-                                      style={{ backgroundColor: alpha(c.muted, 6), color: c.muted }}
-                                    >
-                                      {sale.paymentMethod}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-xs font-medium truncate text-foreground">{sale.description}</p>
-                                <div className="text-[10px] text-muted-foreground mt-0.5 space-y-0.5">
-                                  <p className="flex items-center gap-1.5">
-                                    <span>{formatDate(sale.date)}</span>
-                                    {sale.customer?.name && (
-                                      <>
-                                        <span className="text-border">•</span>
-                                        <span className="truncate max-w-[100px]">{sale.customer.name}</span>
-                                      </>
-                                    )}
-                                  </p>
-                                  {isInstallment && sale.downPayment && sale.downPayment > 0 && (
-                                    <p className="flex items-center gap-2">
-                                      <span>DP <span className="font-semibold text-foreground">{formatAmount(sale.downPayment)}</span></span>
-                                      <span className="text-border">•</span>
-                                      <span>Cicilan <span className="font-semibold text-foreground">{formatAmount(sale.installmentAmount || 0)}/{sale.installmentTempo}x</span></span>
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="text-right shrink-0 min-w-[80px]">
-                                <p className="text-[9px] text-muted-foreground">Total</p>
-                                <p className="text-xs font-bold tabular-nums" style={{ color: saleColor }}>
-                                  {formatAmount(sale.amount)}
-                                </p>
-                                {isInstallment && (
-                                  <>
-                                    <div className="mt-1 pt-1 border-t border-border">
-                                      <p className="text-[8px] text-muted-foreground">Tercatat</p>
-                                      <p className="text-[10px] font-semibold tabular-nums text-secondary">{formatAmount(realized)}</p>
-                                    </div>
-                                    <p className="text-[8px] tabular-nums text-destructive mt-0.5">
-                                      sisa {formatAmount(remaining)}
-                                    </p>
-                                    <div className="flex items-center gap-1 mt-1">
-                                      <div className="h-1 w-12 rounded-full overflow-hidden bg-border">
-                                        <div
-                                          className="h-full rounded-full transition-all duration-500"
-                                          style={{
-                                            width: `${Math.min(100, paidPct)}%`,
-                                            backgroundColor: saleColor,
-                                          }}
-                                        />
-                                      </div>
-                                      <span className="text-[8px] tabular-nums text-muted-foreground">{paidPct}%</span>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* ── Period Filter ── */}
-            <div className="flex gap-1 rounded-lg p-0.5 w-fit bg-white/[0.03] border border-border overflow-x-auto">
-              {PERIOD_OPTIONS.map((opt) => {
-                const isActive = cashPeriod === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => setCashPeriod(opt.value)}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200"
-                    style={
-                      isActive
-                        ? { backgroundColor: alpha(c.secondary, 8), color: c.secondary }
-                        : { color: c.muted }
-                    }
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* ── Kategori Pengeluaran ── */}
-            <Card className="rounded-xl overflow-hidden border border-border">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-semibold text-foreground">Kategori Pengeluaran</span>
-                    {cashCategories.length > 0 && (
-                      <Badge variant="outline" className="text-[10px] font-medium border-0 rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.secondary, 8), color: c.secondary }}>
-                        {cashCategories.length}
-                      </Badge>
-                    )}
-                  </div>
+                {/* Category button — only for keluar filter */}
+                {cashFilter === 'keluar' && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={openCategoryDialog}
-                    className="h-7 px-2 text-[10px] font-medium rounded-lg text-muted-foreground hover:text-secondary hover:bg-secondary/5"
+                    className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-secondary hover:bg-secondary/5 shrink-0"
+                    title="Kelola Kategori"
                   >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Tambah
+                    <Tag className="h-3.5 w-3.5" />
                   </Button>
-                </div>
+                )}
+              </div>
 
-                {/* Category List — row style */}
-                {cashCategories.length > 0 ? (
-                  <div className="space-y-0.5">
-                    {cashCategories.map((cat) => (
-                      <div
-                        key={cat.id}
-                        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-white/[0.03] transition-colors group"
-                      >
-                        <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(cat.color || c.secondary, 10) }}>
-                          <DynamicIcon
-                            name={cat.icon || 'Tag'}
-                            className="h-3.5 w-3.5"
-                            style={{ color: cat.color || c.secondary }}
-                          />
-                        </div>
-                        <span className="text-xs text-foreground flex-1 min-w-0 truncate">{cat.name}</span>
-                        <button
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          className="h-6 w-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-destructive/15 transition-all text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
+              {/* Search + Add button */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={cashSearch}
+                    onChange={(e) => setCashSearch(e.target.value)}
+                    placeholder={t('common.search') + '...'}
+                    className="pl-8 h-8 text-xs rounded-lg bg-white/[0.03] border border-border/30 text-foreground w-full"
+                  />
+                </div>
+                <Button
+                  onClick={openCashCreate}
+                  size="sm"
+                  className="rounded-lg h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <span className="hidden sm:inline">{t('biz.addCashEntry')}</span>
+                  <span className="sm:hidden">Tambah</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════ */}
+            {/* SECTION 3: UNIFIED TRANSACTION LIST             */}
+            {/* ══════════════════════════════════════════════ */}
+            <Card className="rounded-xl overflow-hidden border border-border/50">
+              <CardContent className="p-0">
+                {cashLoading ? (
+                  <div className="space-y-2 p-3 sm:p-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 rounded-lg bg-border" />
                     ))}
                   </div>
+                ) : filteredCashEntries.length === 0 ? (
+                  <EmptyState
+                    icon={<Inbox className="h-8 w-8 text-muted-foreground" />}
+                    accentColor={c.primary}
+                    title="Belum ada transaksi"
+                    description={cashFilter === 'all'
+                      ? 'Mulai catat pemasukan dan pengeluaran Anda'
+                      : cashFilter === 'masuk'
+                        ? 'Belum ada catatan pemasukan'
+                        : 'Belum ada catatan pengeluaran'}
+                    onAction={openCashCreate}
+                    actionLabel={t('biz.addCashEntry')}
+                  />
                 ) : (
-                  <p className="text-[11px] text-muted-foreground text-center py-3">Belum ada kategori</p>
+                  <>
+                    {/* Summary header */}
+                    <div className="flex items-center justify-between px-3 sm:px-4 pt-3 pb-2 border-b border-border/30">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-foreground">
+                          {filteredCashEntries.length} transaksi
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          • Total {formatAmount(currentCashSubTotal)}
+                        </span>
+                      </div>
+                      {searchMode && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-[10px] rounded-md text-muted-foreground hover:text-foreground"
+                          onClick={() => { setCashSearch(''); setSearchMode(false); }}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Reset
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* ── Mobile Card List ── */}
+                    <div className="sm:hidden max-h-[500px] overflow-y-auto space-y-1.5 p-2.5">
+                      <AnimatePresence mode="popLayout">
+                        {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
+                          const isExpense = entry.type === 'kas_keluar';
+                          const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
+                          const sourceInfo = getEntrySourceLabel(entry);
+                          return (
+                            <motion.div
+                              key={entry.id}
+                              custom={index}
+                              variants={{
+                                hidden: { opacity: 0, y: -4 },
+                                show: (i: number) => ({
+                                  opacity: 1, y: 0,
+                                  transition: { delay: i * 0.02, duration: 0.2 },
+                                }),
+                                exit: { opacity: 0, transition: { duration: 0.15 } },
+                              }}
+                              initial="hidden"
+                              animate="show"
+                              layout
+                              className="rounded-lg p-2.5 border border-border/30 bg-white/[0.01] hover:bg-white/[0.02] transition-colors"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                  {isExpense ? (
+                                    <ArrowDownRight className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                                  ) : (
+                                    <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-secondary" />
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium truncate text-foreground">{entry.description}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                      <span className="text-[10px] font-mono text-muted-foreground">{formatDate(entry.date)}</span>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
+                                        style={{ backgroundColor: alpha(sourceInfo.color, 8), color: sourceInfo.color }}
+                                      >
+                                        {sourceInfo.label}
+                                      </Badge>
+                                      {entry.category && (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 gap-0.5"
+                                          style={{ backgroundColor: alpha(entryColor.color, 8), color: entryColor.color }}
+                                        >
+                                          {entry.category}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <span className={cn("text-xs font-bold tabular-nums shrink-0", isExpense ? "text-destructive" : "text-secondary")}>
+                                  {isExpense ? '-' : '+'}{formatAmount(entry.amount)}
+                                </span>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* ── Desktop Table ── */}
+                    <div className="hidden sm:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-b border-border/30 hover:bg-transparent">
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tanggal</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[100px]">Sumber</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kategori</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">Jumlah</TableHead>
+                            <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[70px]"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <AnimatePresence mode="popLayout">
+                            {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
+                              const isExpense = entry.type === 'kas_keluar';
+                              const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
+                              const sourceInfo = getEntrySourceLabel(entry);
+                              return (
+                                <motion.tr
+                                  key={entry.id}
+                                  custom={index}
+                                  variants={{
+                                    hidden: { opacity: 0 },
+                                    show: (i: number) => ({
+                                      opacity: 1,
+                                      transition: { delay: i * 0.01, duration: 0.15 },
+                                    }),
+                                    exit: { opacity: 0, transition: { duration: 0.1 } },
+                                  }}
+                                  initial="hidden"
+                                  animate="show"
+                                  layout
+                                  className="border-b border-border/20 transition-colors hover:bg-white/[0.02]"
+                                >
+                                  <TableCell className="text-xs py-2.5 font-mono text-muted-foreground">{formatDate(entry.date)}</TableCell>
+                                  <TableCell className="text-xs py-2.5 font-medium text-foreground max-w-[180px] truncate">{entry.description}</TableCell>
+                                  <TableCell className="py-2.5">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
+                                      style={{ backgroundColor: alpha(sourceInfo.color, 8), color: sourceInfo.color }}
+                                    >
+                                      {sourceInfo.label}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="py-2.5">
+                                    {entry.category ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 gap-0.5"
+                                        style={{ backgroundColor: alpha(entryColor.color, 8), color: entryColor.color }}
+                                      >
+                                        {(() => {
+                                          const catInfo = cashCategories.find(cat => cat.name === entry.category);
+                                          return catInfo?.icon ? (
+                                            <DynamicIcon name={catInfo.icon} className="h-2.5 w-2.5 shrink-0" style={{ color: catInfo.color || entryColor.color }} />
+                                          ) : null;
+                                        })()}
+                                        {entry.category}
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-[10px] text-muted-foreground">—</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className={cn("text-xs text-right font-bold py-2.5 tabular-nums", isExpense ? "text-destructive" : "text-secondary")}>
+                                    {isExpense ? '-' : '+'}{formatAmount(entry.amount)}
+                                  </TableCell>
+                                  <TableCell className="py-2.5 text-right">
+                                    <div className="flex items-center justify-end gap-0.5">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                        onClick={() => openCashEdit(entry)}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                                        onClick={() => setCashDeleteId(entry.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </motion.tr>
+                              );
+                            })}
+                          </AnimatePresence>
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    {filteredCashEntries.length > cashPageSize && (
+                      <div className="px-3 sm:px-4 py-2.5 border-t border-border/30">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCashPageSize((p) => p + 10)}
+                          className="w-full h-8 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
+                        >
+                          Tampilkan Lebih Banyak
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
 
-            {/* ── Category Dialog ── */}
+            {/* ══════════════════════════════════════════════ */}
+            {/* CATEGORY DIALOG (kept as modal)                */}
+            {/* ══════════════════════════════════════════════ */}
             <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
               <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md">
                 <DialogTitle className="sr-only">Tambah Kategori</DialogTitle>
@@ -1723,14 +1785,36 @@ export default function BusinessCash() {
                       <Tag className="h-4 w-4 text-secondary" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Tambah Kategori</p>
-                      <p className="text-[11px] text-muted-foreground/60">Pilih ikon dan nama kategori baru</p>
+                      <p className="text-sm font-semibold text-foreground">Kelola Kategori</p>
+                      <p className="text-[11px] text-muted-foreground/60">{cashCategories.length} kategori pengeluaran</p>
                     </div>
                   </div>
-                  {/* Icon Picker */}
-                  <div className="mb-4">
+                  {/* Existing categories list */}
+                  {cashCategories.length > 0 && (
+                    <div className="mb-3 space-y-0.5 max-h-[120px] overflow-y-auto">
+                      {cashCategories.map((cat) => (
+                        <div
+                          key={cat.id}
+                          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-white/[0.03] transition-colors group"
+                        >
+                          <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(cat.color || c.secondary, 10) }}>
+                            <DynamicIcon name={cat.icon || 'Tag'} className="h-3.5 w-3.5" style={{ color: cat.color || c.secondary }} />
+                          </div>
+                          <span className="text-xs text-foreground flex-1 min-w-0 truncate">{cat.name}</span>
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="h-6 w-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-destructive/15 transition-all text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Add new category */}
+                  <div className="border-t border-border/30 pt-3">
                     <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-2 block">Pilih Ikon</Label>
-                    <div className="grid grid-cols-8 gap-1.5 max-h-[160px] overflow-y-auto p-1">
+                    <div className="grid grid-cols-8 gap-1.5 max-h-[140px] overflow-y-auto p-0.5 mb-3">
                       {ICON_PICKER_OPTIONS.map((iconName) => {
                         const isSelected = selectedCategoryIcon === iconName;
                         return (
@@ -1739,7 +1823,7 @@ export default function BusinessCash() {
                             type="button"
                             onClick={() => setSelectedCategoryIcon(iconName)}
                             className={cn(
-                              "h-9 w-full rounded-lg flex items-center justify-center transition-all duration-150",
+                              "h-8 w-full rounded-lg flex items-center justify-center transition-all duration-150",
                               isSelected
                                 ? "bg-secondary/15 border border-secondary/30 ring-1 ring-secondary/20"
                                 : "bg-white/[0.03] border border-transparent hover:bg-white/[0.06] hover:border-white/[0.08]"
@@ -1747,26 +1831,23 @@ export default function BusinessCash() {
                           >
                             <DynamicIcon
                               name={iconName}
-                              className={cn("h-4 w-4 transition-colors", isSelected ? "text-secondary" : "text-muted-foreground")}
+                              className={cn("h-3.5 w-3.5 transition-colors", isSelected ? "text-secondary" : "text-muted-foreground")}
                             />
                           </button>
                         );
                       })}
                     </div>
-                  </div>
-                  {/* Selected icon preview + Name */}
-                  <div className="mb-4">
-                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-2 block">Nama Kategori</Label>
+                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5 block">Nama Kategori</Label>
                     <div className="flex items-center gap-2">
-                      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 bg-secondary/10">
-                        <DynamicIcon name={selectedCategoryIcon} className="h-4 w-4 text-secondary" />
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-secondary/10">
+                        <DynamicIcon name={selectedCategoryIcon} className="h-3.5 w-3.5 text-secondary" />
                       </div>
                       <Input
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleAddCategoryFromDialog()}
                         placeholder="Contoh: Operasional Kendaraan"
-                        className="h-9 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1"
+                        className="h-8 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1"
                         autoFocus
                       />
                     </div>
@@ -1779,87 +1860,28 @@ export default function BusinessCash() {
                       onClick={() => setCategoryDialogOpen(false)}
                       className="flex-1 h-9 rounded-lg text-xs text-muted-foreground hover:text-foreground"
                     >
-                      Batal
+                      Tutup
                     </Button>
                     <Button
                       onClick={handleAddCategoryFromDialog}
                       disabled={!newCategoryName.trim() || categorySaving}
                       className="flex-1 h-9 rounded-lg text-xs bg-secondary text-secondary-foreground hover:bg-secondary/90"
                     >
-                      {categorySaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Simpan Kategori'}
+                      {categorySaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Tambah Kategori'}
                     </Button>
                   </div>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
-            {/* ── Sub-tab toggle + Search + Add Button ── */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                {/* Sub-tabs */}
-                <div className="flex gap-1 rounded-lg p-0.5 bg-white/[0.02] border border-border/50">
-                  {(Object.keys(CASH_SUB_TYPES) as CashSubType[]).map((key) => {
-                    const cfg = CASH_SUB_TYPES[key];
-                    const Icon = cfg.icon;
-                    const isActive = cashSubTab === key;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => setCashSubTab(key)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200"
-                        style={
-                          isActive
-                            ? { backgroundColor: alpha(cfg.color, 15), color: cfg.color, boxShadow: `0 0 0 1px ${alpha(cfg.color, 25)}` }
-                            : { color: c.muted }
-                        }
-                      >
-                        <Icon className="h-3 w-3" />
-                        <span className="hidden sm:inline">{t(cfg.label)}</span>
-                        <span className="sm:hidden">{t(cfg.label).replace('Kas ', '')}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Search */}
-                <div className="relative flex-1 max-w-[200px] hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    value={cashSearch}
-                    onChange={(e) => setCashSearch(e.target.value)}
-                    placeholder={t('common.search') + '...'}
-                    className="pl-8 rounded-lg h-8 text-xs bg-white/[0.03] border border-border text-foreground"
-                  />
-                </div>
-              </div>
-
-              {/* Mobile Search Bar */}
-              <div className="relative flex-1 sm:hidden">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  value={cashSearch}
-                  onChange={(e) => setCashSearch(e.target.value)}
-                  placeholder={t('common.search') + '...'}
-                  className="pl-8 rounded-lg h-8 text-xs bg-white/[0.03] border border-border text-foreground w-full"
-                />
-              </div>
-
-              <Button
-                onClick={openCashCreate}
-                size="sm"
-                className="rounded-lg h-8 bg-secondary text-secondary-foreground hover:bg-secondary/90"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                {t('biz.addCashEntry')}
-              </Button>
-            </div>
-
-            {/* ── Quick Add FAB (Bottom Floating) ── */}
+            {/* ══════════════════════════════════════════════ */}
+            {/* SECTION 4: QUICK ADD FAB + BOTTOM SHEET        */}
+            {/* ══════════════════════════════════════════════ */}
             <motion.button
               onClick={() => setQuickAddOpen(!quickAddOpen)}
               className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-30 h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
               style={{
-                background: `linear-gradient(135deg, ${subTypeConfig.color}, ${subTypeConfig.color}88)`,
+                background: `linear-gradient(135deg, ${c.primary}, ${alpha(c.primary, 60)})`,
               }}
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.92 }}
@@ -1868,11 +1890,9 @@ export default function BusinessCash() {
               <Plus className="h-5 w-5 text-white" />
             </motion.button>
 
-            {/* Quick Add Bottom Sheet */}
             <AnimatePresence>
               {quickAddOpen && (
                 <>
-                  {/* Backdrop */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -1880,29 +1900,153 @@ export default function BusinessCash() {
                     onClick={() => setQuickAddOpen(false)}
                     className="fixed inset-0 bg-black/40 z-40 sm:hidden"
                   />
-                  {/* Sheet */}
                   <motion.div
                     initial={{ opacity: 0, y: 80 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 80 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="fixed bottom-0 left-0 right-0 z-50 sm:bottom-auto sm:right-6 sm:left-auto sm:top-auto sm:z-50 sm:w-[340px]"
+                    className="fixed bottom-0 left-0 right-0 z-50 sm:bottom-auto sm:right-6 sm:left-auto sm:top-auto sm:z-50 sm:w-[360px]"
                     style={{ bottom: 0 }}
                   >
-                    <div className="bg-[#1a1a1a] border-t border-white/[0.08] sm:border sm:border-white/[0.08] sm:rounded-2xl sm:shadow-2xl p-4 sm:p-5">
-                      {/* Handle bar (mobile) */}
+                    <div className="bg-[#1a1a1a] border-t border-white/[0.08] sm:border sm:border-white/[0.08] sm:rounded-2xl sm:shadow-2xl p-4 sm:p-5 max-h-[85vh] overflow-y-auto">
                       <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mb-3 sm:hidden" />
+
+                      {/* Header */}
                       <div className="flex items-center gap-2 mb-3">
                         <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: alpha(subTypeConfig.color, 12) }}>
-                          <Plus className="h-3.5 w-3.5" style={{ color: subTypeConfig.color }} />
+                          style={{ backgroundColor: alpha(cashSubTab === 'kas_keluar' ? c.destructive : c.secondary, 12) }}>
+                          <Plus className="h-3.5 w-3.5" style={{ color: cashSubTab === 'kas_keluar' ? c.destructive : c.secondary }} />
                         </div>
                         <span className="text-sm font-semibold text-foreground">Quick Add</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: alpha(subTypeConfig.color, 8), color: subTypeConfig.color }}>
-                          {t(subTypeConfig.label)}
-                        </span>
                       </div>
+
+                      {/* Type selector: Pemasukan / Pengeluaran */}
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <button
+                          onClick={() => { setCashSubTab('kas_besar'); setQuickForm(f => ({ ...f, source: '', investorId: '', category: '' })); }}
+                          className={cn(
+                            "flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border",
+                            cashSubTab !== 'kas_keluar'
+                              ? "bg-secondary/10 border-secondary/20 text-secondary"
+                              : "bg-white/[0.02] border-border/30 text-muted-foreground hover:bg-white/[0.04]"
+                          )}
+                        >
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                          Pemasukan
+                        </button>
+                        <button
+                          onClick={() => { setCashSubTab('kas_keluar'); setQuickForm(f => ({ ...f, source: 'kas_kecil', investorId: '', category: '' })); }}
+                          className={cn(
+                            "flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border",
+                            cashSubTab === 'kas_keluar'
+                              ? "bg-destructive/10 border-destructive/20 text-destructive"
+                              : "bg-white/[0.02] border-border/30 text-muted-foreground hover:bg-white/[0.04]"
+                          )}
+                        >
+                          <ArrowDownRight className="h-3.5 w-3.5" />
+                          Pengeluaran
+                        </button>
+                      </div>
+
+                      {/* Source / Destination Dana */}
+                      <div className="mb-3">
+                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+                          {cashSubTab === 'kas_keluar' ? 'Sumber Dana' : 'Tujuan Dana'}
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {([
+                            { key: 'kas_besar' as const, label: 'Kas Besar', color: c.secondary, icon: Wallet },
+                            { key: 'kas_kecil' as const, label: 'Kas Kecil', color: c.warning, icon: PiggyBank },
+                            { key: 'investor' as const, label: 'Investor', color: c.primary, icon: Users },
+                          ]).map((src) => {
+                            const SrcIcon = src.icon;
+                            const isActive = quickForm.source === src.key;
+                            return (
+                              <button
+                                key={src.key}
+                                type="button"
+                                onClick={() => setQuickForm(f => ({ ...f, source: src.key, investorId: '' }))}
+                                className={cn(
+                                  "flex flex-col items-center gap-1 py-2 rounded-lg border transition-all duration-150",
+                                  isActive
+                                    ? "border-opacity-20"
+                                    : "bg-white/[0.02] border-transparent hover:bg-white/[0.04] hover:border-border/50"
+                                )}
+                                style={isActive ? {
+                                  backgroundColor: alpha(src.color, 8),
+                                  borderColor: alpha(src.color, 20),
+                                } : undefined}
+                              >
+                                <div className="h-6 w-6 rounded-md flex items-center justify-center"
+                                  style={{ backgroundColor: alpha(src.color, isActive ? 15 : 6) }}>
+                                  <SrcIcon className="h-3 w-3" style={{ color: isActive ? src.color : c.muted }} />
+                                </div>
+                                <span className={cn("text-[9px] font-medium leading-tight", isActive ? "" : "text-muted-foreground")}
+                                  style={isActive ? { color: src.color } : undefined}>
+                                  {src.label}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {/* Show specific investor picker when source = investor */}
+                        {quickForm.source === 'investor' && activeInvestors.length > 0 && (
+                          <div className="mt-2">
+                            <select
+                              value={quickForm.investorId}
+                              onChange={(e) => setQuickForm(f => ({ ...f, investorId: e.target.value }))}
+                              className="w-full h-8 text-xs rounded-lg bg-white/[0.04] border border-border text-foreground px-2 appearance-none cursor-pointer"
+                            >
+                              <option value="" className="bg-[#1a1a1a]">Pilih investor...</option>
+                              {activeInvestors.map((inv) => (
+                                <option key={inv.id} value={inv.id} className="bg-[#1a1a1a]">
+                                  {inv.name} ({formatCompactAmount(inv.totalInvestment)})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Category (only for Pengeluaran) */}
+                      {cashSubTab === 'kas_keluar' && cashCategories.length > 0 && (
+                        <div className="mb-3">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+                            Kategori
+                          </label>
+                          <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
+                            {cashCategories.map((cat) => {
+                              const isActive = quickForm.category === cat.name;
+                              return (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => setQuickForm(f => ({ ...f, category: isActive ? '' : cat.name }))}
+                                  className={cn(
+                                    "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium border transition-all duration-150",
+                                    isActive
+                                      ? "border-opacity-20"
+                                      : "bg-white/[0.02] border-transparent hover:bg-white/[0.04]"
+                                  )}
+                                  style={isActive ? {
+                                    backgroundColor: alpha(cat.color || c.secondary, 10),
+                                    borderColor: alpha(cat.color || c.secondary, 20),
+                                    color: cat.color || c.secondary,
+                                  } : { color: c.muted }}
+                                >
+                                  {cat.icon && <DynamicIcon name={cat.icon} className="h-3 w-3 shrink-0" />}
+                                  {cat.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Divider */}
+                      <div className="h-px bg-border/30 my-3" />
+
+                      {/* Description + Amount */}
                       <div className="space-y-2">
                         <Input
                           value={quickForm.description}
@@ -1923,6 +2067,23 @@ export default function BusinessCash() {
                             className="h-10 text-sm rounded-xl bg-white/[0.04] border border-border text-foreground pl-8"
                           />
                         </div>
+
+                        {/* Balance preview */}
+                        {quickForm.source && quickForm.amount && (
+                          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-white/[0.02] border border-border/20">
+                            <span className="text-[10px] text-muted-foreground">
+                              Saldo {quickForm.source === 'kas_besar' ? 'Kas Besar' : quickForm.source === 'kas_kecil' ? 'Kas Kecil' : 'Investor'}
+                            </span>
+                            <span className="text-[10px] font-bold tabular-nums text-muted-foreground">
+                              {formatAmount(
+                                quickForm.source === 'kas_besar' ? sourceBalances.kasBesarSaldo
+                                : quickForm.source === 'kas_kecil' ? sourceBalances.kasKecilSaldo
+                                : sourceBalances.investorSaldo
+                              )}
+                            </span>
+                          </div>
+                        )}
+
                         <div className="flex gap-2 pt-1">
                           <Button
                             variant="ghost"
@@ -1933,9 +2094,9 @@ export default function BusinessCash() {
                           </Button>
                           <Button
                             onClick={handleQuickAddSave}
-                            disabled={!quickForm.description || !quickForm.amount || quickSaving}
+                            disabled={!quickForm.description || !quickForm.amount || (cashSubTab === 'kas_keluar' && !quickForm.source) || quickSaving}
                             className="flex-1 h-10 rounded-xl text-sm font-medium"
-                            style={{ backgroundColor: subTypeConfig.color, color: 'white' }}
+                            style={{ backgroundColor: cashSubTab === 'kas_keluar' ? c.destructive : c.secondary, color: 'white' }}
                           >
                             {quickSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan'}
                           </Button>
@@ -1946,256 +2107,6 @@ export default function BusinessCash() {
                 </>
               )}
             </AnimatePresence>
-
-            {/* ── Sub-total indicator ── */}
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: subTypeConfig.color }} />
-              <span className="text-xs text-muted-foreground">{t('common.total')}:</span>
-              <span className="text-sm font-bold" style={{ color: subTypeConfig.color }}>
-                {formatAmount(currentCashSubTotal)}
-              </span>
-              <span className="text-[10px] text-muted-foreground">({filteredCashEntries.length} transaksi)</span>
-            </div>
-
-            {/* ── Cash Entries Table ── */}
-            <Card className="rounded-xl overflow-hidden border border-border">
-              <CardContent className="p-0">
-                {cashLoading ? (
-                  <div className="space-y-2 p-3 sm:p-4">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 rounded-lg bg-border" />
-                    ))}
-                  </div>
-                ) : filteredCashEntries.length === 0 ? (
-                  <EmptyState
-                    icon={<Inbox className="h-8 w-8 text-muted-foreground" />}
-                    accentColor={subTypeConfig.color}
-                    title="Belum ada transaksi"
-                    description={`Mulai tambahkan catatan ${t(subTypeConfig.label).toLowerCase()} pertama Anda`}
-                    onAction={openCashCreate}
-                    actionLabel={t('biz.addCashEntry')}
-                  />
-                ) : (
-                  <>
-                    {/* Search mode banner */}
-                    {searchMode && (
-                      <div className="flex items-center gap-2 px-3 sm:px-4 pt-3 pb-1">
-                        <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                        <span className="text-[11px] text-muted-foreground">
-                          Menampilkan hasil dari <span className="font-medium text-foreground">semua tab</span> ({filteredCashEntries.length} hasil)
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="ml-auto h-6 px-2 text-[10px] rounded-md text-muted-foreground hover:text-foreground"
-                          onClick={() => { setCashSearch(''); setSearchMode(false); }}
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          Reset
-                        </Button>
-                      </div>
-                    )}
-                  {/* Mobile Card List */}
-                  <div className="sm:hidden max-h-[500px] overflow-y-auto space-y-2 p-3">
-                    <AnimatePresence mode="popLayout">
-                      {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
-                        const isExpense = entry.type === 'kas_keluar';
-                        const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
-                        const sourceInfo = getEntrySourceLabel(entry);
-                        return (
-                          <motion.div
-                            key={entry.id}
-                            custom={index}
-                            variants={{
-                              hidden: { opacity: 0, y: -4 },
-                              show: (i: number) => ({
-                                opacity: 1, y: 0,
-                                transition: { delay: i * 0.02, duration: 0.2 },
-                              }),
-                              exit: { opacity: 0, transition: { duration: 0.15 } },
-                            }}
-                            initial="hidden"
-                            animate="show"
-                            layout
-                            className="rounded-lg p-3 border border-border bg-white/[0.01]"
-                          >
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                {isExpense ? (
-                                  <ArrowDownRight className="h-3.5 w-3.5 shrink-0 text-destructive" />
-                                ) : (
-                                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-secondary" />
-                                )}
-                                <span className="text-xs font-medium truncate text-foreground">{entry.description}</span>
-                              </div>
-                              <span className={cn("text-xs font-bold tabular-nums shrink-0", isExpense ? "text-destructive" : "text-secondary")}>
-                                {isExpense ? '-' : '+'}{formatAmount(entry.amount)}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[10px] font-mono text-muted-foreground">{formatDate(entry.date)}</span>
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
-                                style={{ backgroundColor: alpha(sourceInfo.color, 8), color: sourceInfo.color }}
-                              >
-                                {sourceInfo.label}
-                              </Badge>
-                              {entry.category && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 gap-0.5 whitespace-nowrap"
-                                  style={{ backgroundColor: alpha(entryColor.color, 8), color: entryColor.color }}
-                                >
-                                  {(() => {
-                                    const catInfo = cashCategories.find(c => c.name === entry.category);
-                                    return catInfo?.icon ? (
-                                      <DynamicIcon name={catInfo.icon} className="h-2.5 w-2.5 shrink-0" style={{ color: catInfo.color || entryColor.color }} />
-                                    ) : null;
-                                  })()}
-                                  {entry.category}
-                                </Badge>
-                              )}
-                              <div className="ml-auto flex items-center gap-0.5">
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-md text-muted-foreground" onClick={() => openCashEdit(entry)}>
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-md text-muted-foreground" onClick={() => setCashDeleteId(entry.id)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
-                  {/* Desktop Table */}
-                  <div className="hidden sm:block max-h-[500px] overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-b border-border hover:bg-transparent">
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">
-                            {t('biz.cashDate')}
-                          </TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            {t('biz.cashDescription')}
-                          </TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[110px]">
-                            Sumber
-                          </TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            {t('biz.cashCategory')}
-                          </TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">
-                            {t('biz.cashAmount')}
-                          </TableHead>
-                          <TableHead className="w-16" />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <AnimatePresence mode="popLayout">
-                          {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
-                            const isExpense = entry.type === 'kas_keluar';
-                            const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
-                            const sourceInfo = getEntrySourceLabel(entry);
-                            return (
-                              <motion.tr
-                                key={entry.id}
-                                custom={index}
-                                variants={{
-                                  hidden: { opacity: 0, x: -8 },
-                                  show: (i: number) => ({
-                                    opacity: 1, x: 0,
-                                    transition: { delay: i * 0.02, duration: 0.2 },
-                                  }),
-                                  exit: { opacity: 0, x: 8, transition: { duration: 0.15 } },
-                                }}
-                                initial="hidden"
-                                animate="show"
-                                layout
-                                className="transition-colors duration-150 group cursor-default border-b border-border"
-                              >
-                                <TableCell className="text-xs py-2 font-mono text-muted-foreground">
-                                  {formatDate(entry.date)}
-                                </TableCell>
-                                <TableCell className="text-xs py-2 font-medium max-w-[180px] truncate text-foreground">
-                                  <span className="flex items-center gap-1.5">
-                                    {isExpense ? (
-                                      <ArrowDownRight className="h-3 w-3 shrink-0 text-destructive" />
-                                    ) : (
-                                      <ArrowUpRight className="h-3 w-3 shrink-0 text-secondary" />
-                                    )}
-                                    <span className="truncate">{entry.description}</span>
-                                  </span>
-                                </TableCell>
-                                <TableCell className="py-2">
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] font-medium border-0 rounded-full px-2 py-0"
-                                    style={{ backgroundColor: alpha(sourceInfo.color, 8), color: sourceInfo.color }}
-                                  >
-                                    {sourceInfo.label}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="py-2">
-                                  {entry.category ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[10px] font-medium border-0 rounded-full px-2 py-0 gap-1"
-                                      style={{ backgroundColor: alpha(entryColor.color, 8), color: entryColor.color }}
-                                    >
-                                      {(() => {
-                                        const catInfo = cashCategories.find(c => c.name === entry.category);
-                                        return catInfo?.icon ? (
-                                          <DynamicIcon name={catInfo.icon} className="h-2.5 w-2.5 shrink-0" style={{ color: catInfo.color || entryColor.color }} />
-                                        ) : null;
-                                      })()}
-                                      {entry.category}
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell
-                                  className={cn("text-xs text-right font-semibold py-2 tabular-nums", isExpense ? "text-destructive" : "text-secondary")}
-                                >
-                                  {isExpense ? '-' : '+'}
-                                  {formatAmount(entry.amount)}
-                                </TableCell>
-                                <TableCell className="py-2 text-right">
-                                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md text-muted-foreground" onClick={() => openCashEdit(entry)}>
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md text-muted-foreground" onClick={() => setCashDeleteId(entry.id)}>
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </motion.tr>
-                            );
-                          })}
-                        </AnimatePresence>
-                      </TableBody>
-                    </Table>
-                  </div>
-                  {/* Pagination: Tampilkan Lebih Banyak */}
-                  {filteredCashEntries.length > cashPageSize && (
-                    <div className="flex justify-center py-3 border-t border-border">
-                      <Button
-                        onClick={() => setCashPageSize((p) => p + 10)}
-                        variant="ghost"
-                        className="rounded-lg h-8 px-4 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Tampilkan Lebih Banyak ({filteredCashEntries.length - cashPageSize} lagi)
-                      </Button>
-                    </div>
-                  )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
           </div>
         )}
 
