@@ -535,6 +535,7 @@ model InvoiceSettings {
   bankName      String?                      // bank name for payment info
   bankAccount   String?                      // bank account number
   bankHolder    String?                      // account holder name
+  darkMode      Boolean  @default(true)       // dark/light theme for PDF
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
