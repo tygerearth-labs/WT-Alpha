@@ -252,6 +252,8 @@ model Business {
   debtPayments     BusinessDebtPayment[]
   invoiceSettings  InvoiceSettings?
   products         Product[]
+  budgets          BusinessBudget[]
+  fundAllocations  BusinessFundAllocation[]
 
   @@index([userId, category])
   @@index([userId])
@@ -381,6 +383,7 @@ model BusinessInvestor {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @default(now())
   cashEntries        BusinessCash[]
+  fundAllocations    BusinessFundAllocation[]
 
   @@index([businessId, status])
 }
@@ -577,4 +580,46 @@ model BusinessDebtPayment {
 
   @@index([debtId])
   @@index([businessId])
+}
+
+// ============================================
+// BUSINESS BUDGET MODULE
+// ============================================
+
+model BusinessBudget {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryName  String   // expense category name
+  categoryId    String?  // optional link to BusinessCategory
+  amount        Float    // budget limit for the month
+  period        Int      // month (1-12)
+  year          Int      // year (2025, etc.)
+  notes         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  allocations   BusinessFundAllocation[]
+
+  @@unique([businessId, categoryName, period, year])
+  @@index([businessId, period, year])
+}
+
+model BusinessFundAllocation {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  budgetId      String
+  budget        BusinessBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  fundSource    String   // "kas_besar", "kas_kecil", "investor"
+  investorId    String?
+  investor      BusinessInvestor? @relation(fields: [investorId], references: [id], onDelete: SetNull)
+  amount        Float    // allocated amount from this source
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId, budgetId])
+  @@index([fundSource])
 }
