@@ -573,9 +573,8 @@ export default function BusinessCash() {
       ),
       fetch(`/api/business/${businessId}/cash?summary=true`).then((r) =>
         r.ok ? r.json() : {}
-      ) as Promise<Record<string, number>>,
-    ])
-      .then(([besarData, kecilData, keluarData, catData, salesRes, summaryData]) => {
+      ),
+    ]).then(([besarData, kecilData, keluarData, catData, salesRes, summaryData]: [any, any, any, any, any, Record<string, any>]) => {
         const besarEntries: CashEntry[] = besarData?.cashEntries || [];
         const kecilEntries: CashEntry[] = kecilData?.cashEntries || [];
         const keluarEntries: CashEntry[] = keluarData?.cashEntries || [];
@@ -594,6 +593,9 @@ export default function BusinessCash() {
             kasKecilSaldo: summaryData.kasKecilSaldo || 0,
             investorSaldo: summaryData.investorSaldo || 0,
           });
+          if (summaryData.activeInvestors) {
+            setSummaryActiveInvestors(summaryData.activeInvestors);
+          }
         }
       })
       .catch(() => {
@@ -609,17 +611,21 @@ export default function BusinessCash() {
   const fetchInvestors = useCallback(() => {
     if (!businessId) return;
     setInvestorLoading(true);
-    fetch(`/api/business/${businessId}/investors`)
-      .then((r) => (r.ok ? r.json() : { investors: [], summary: {} }))
-      .then((result) => {
+    Promise.all([
+      fetch(`/api/business/${businessId}/investors`).then((r) => (r.ok ? r.json() : { investors: [], summary: {} })),
+      fetch(`/api/business/${businessId}/cash?type=kas_keluar&source=investor&pageSize=100`).then((r) => (r.ok ? r.json() : { cashEntries: [] })),
+    ])
+      .then(([result, expenseResult]) => {
         setInvestors(result?.investors || []);
         setInvestorSummary(result?.summary || { activeCount: 0, totalInvestment: 0, avgSharePct: 0 });
         setInvestorHistory(result?.investorHistory || []);
+        setInvestorExpenses(expenseResult?.cashEntries || []);
       })
       .catch(() => {
         setInvestors([]);
         setInvestorSummary({ activeCount: 0, totalInvestment: 0, avgSharePct: 0 });
         setInvestorHistory([]);
+        setInvestorExpenses([]);
       })
       .finally(() => setInvestorLoading(false));
   }, [businessId]);
@@ -1048,7 +1054,7 @@ export default function BusinessCash() {
     if (isNaN(numAmount) || numAmount <= 0) return;
 
     const effectiveType: CashSubType = cashSubTab === 'kas_keluar' ? 'kas_keluar' : 'kas_besar';
-    const effectiveSource = quickForm.source || (effectiveType === 'kas_keluar' ? 'kas_kecil' : '');
+    const effectiveSource = quickForm.source || (effectiveType === 'kas_keluar' ? 'kas_kecil' : 'kas_besar');
 
     // Balance validation for quick add (kas_keluar)
     if (effectiveType === 'kas_keluar' && effectiveSource) {
@@ -1247,6 +1253,23 @@ export default function BusinessCash() {
   }, [paymentForm.amount, formatAmount]);
 
   const activeInvestors = useMemo(() => investors.filter((i) => i.status === 'active'), [investors]);
+
+  // ── Summary API active investors (for Quick Add picker) ──
+  const [summaryActiveInvestors, setSummaryActiveInvestors] = useState<Array<{ id: string; name: string; totalInvestment: number; profitSharePct: number }>>([]);
+
+  // ── Quick Add Nominal Preview ──
+  const formattedQuickNominal = useMemo(() => {
+    const num = parseFloat(quickForm.amount);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [quickForm.amount, formatAmount]);
+
+  // ── Investor Expense Data ──
+  const [investorExpenses, setInvestorExpenses] = useState<CashEntry[]>([]);
+  const [investorFilter, setInvestorFilter] = useState<'modal_masuk' | 'pengeluaran' | 'pemasukan'>('modal_masuk');
+
+  // ── Transaction Detail Dialog ──
+  const [transactionDetail, setTransactionDetail] = useState<CashEntry | null>(null);
 
   // ══════════════════════════════════════════════════════════════════
   // ── No Business Guard ─────────────────────────────────────────────
@@ -1615,7 +1638,8 @@ export default function BusinessCash() {
                               initial="hidden"
                               animate="show"
                               layout
-                              className="rounded-lg p-2.5 border border-border/30 bg-white/[0.01] hover:bg-white/[0.02] transition-colors"
+                              className="rounded-lg p-2.5 border border-border/30 bg-white/[0.01] hover:bg-white/[0.02] transition-colors cursor-pointer"
+                              onClick={() => setTransactionDetail(entry)}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -1691,7 +1715,8 @@ export default function BusinessCash() {
                                   initial="hidden"
                                   animate="show"
                                   layout
-                                  className="border-b border-border/20 transition-colors hover:bg-white/[0.02]"
+                                  className="border-b border-border/20 transition-colors hover:bg-white/[0.02] cursor-pointer"
+                                  onClick={() => setTransactionDetail(entry)}
                                 >
                                   <TableCell className="text-xs py-2.5 font-mono text-muted-foreground">{formatDate(entry.date)}</TableCell>
                                   <TableCell className="text-xs py-2.5 font-medium text-foreground max-w-[180px] truncate">{entry.description}</TableCell>
@@ -1990,7 +2015,7 @@ export default function BusinessCash() {
                           })}
                         </div>
                         {/* Show specific investor picker when source = investor */}
-                        {quickForm.source === 'investor' && activeInvestors.length > 0 && (
+                        {quickForm.source === 'investor' && (summaryActiveInvestors.length > 0 || activeInvestors.length > 0) && (
                           <div className="mt-2">
                             <select
                               value={quickForm.investorId}
@@ -1998,7 +2023,11 @@ export default function BusinessCash() {
                               className="w-full h-8 text-xs rounded-lg bg-white/[0.04] border border-border text-foreground px-2 appearance-none cursor-pointer"
                             >
                               <option value="" className="bg-[#1a1a1a]">Pilih investor...</option>
-                              {activeInvestors.map((inv) => (
+                              {summaryActiveInvestors.length > 0 ? summaryActiveInvestors.map((inv) => (
+                                <option key={inv.id} value={inv.id} className="bg-[#1a1a1a]">
+                                  {inv.name} ({formatCompactAmount(inv.totalInvestment)})
+                                </option>
+                              )) : activeInvestors.map((inv) => (
                                 <option key={inv.id} value={inv.id} className="bg-[#1a1a1a]">
                                   {inv.name} ({formatCompactAmount(inv.totalInvestment)})
                                 </option>
@@ -2066,6 +2095,13 @@ export default function BusinessCash() {
                             placeholder="0"
                             className="h-10 text-sm rounded-xl bg-white/[0.04] border border-border text-foreground pl-8"
                           />
+                          {formattedQuickNominal && (
+                            <p className={cn("text-[10px] font-bold tabular-nums mt-1 pl-1 transition-colors duration-200",
+                              cashSubTab === 'kas_keluar' ? 'text-destructive' : 'text-secondary'
+                            )}>
+                              {cashSubTab === 'kas_keluar' ? '-' : '+'}{formattedQuickNominal}
+                            </p>
+                          )}
                         </div>
 
                         {/* Balance preview */}
@@ -2094,7 +2130,7 @@ export default function BusinessCash() {
                           </Button>
                           <Button
                             onClick={handleQuickAddSave}
-                            disabled={!quickForm.description || !quickForm.amount || (cashSubTab === 'kas_keluar' && !quickForm.source) || quickSaving}
+                            disabled={!quickForm.description || !quickForm.amount || quickSaving}
                             className="flex-1 h-10 rounded-xl text-sm font-medium"
                             style={{ backgroundColor: cashSubTab === 'kas_keluar' ? c.destructive : c.secondary, color: 'white' }}
                           >
@@ -2328,8 +2364,8 @@ export default function BusinessCash() {
               </>
             )}
 
-            {/* ── Riwayat Pemasukan Investor ── */}
-            {investorHistory.length > 0 && (
+            {/* ── Riwayat Investor — 3 Filter Tabs ── */}
+            {(investorHistory.length > 0 || investorExpenses.length > 0) && (
               <Card className="rounded-xl overflow-hidden border border-border">
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -2337,157 +2373,395 @@ export default function BusinessCash() {
                       <TrendingUp className="h-3 w-3 text-secondary" />
                     </div>
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Riwayat Pemasukan Investor
+                      Riwayat Investor
                     </span>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-medium border-0 rounded-full px-1.5 py-0"
-                      style={{ backgroundColor: alpha(c.secondary, 8), color: c.secondary }}
-                    >
-                      {investorHistory.length}
-                    </Badge>
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {/* Mobile Card List */}
-                    <div className="sm:hidden space-y-2">
-                      <AnimatePresence mode="popLayout">
-                        {investorHistory.map((item, index) => {
-                          const typeConfig = {
-                            modal_masuk: { label: 'Modal Masuk', color: c.primary, bg: alpha(c.primary, 8) },
-                            dp_penjualan: { label: 'DP Penjualan', color: c.secondary, bg: alpha(c.secondary, 8) },
-                            penjualan_lunas: { label: 'Penjualan', color: '#14b8a6', bg: 'color-mix(in srgb, #14b8a6 8%, transparent)' },
-                            cicilan_diterima: { label: 'Cicilan', color: '#a855f7', bg: 'color-mix(in srgb, #a855f7 8%, transparent)' },
-                          }[item.type];
-                          return (
-                            <motion.div
-                              key={item.id}
-                              custom={index}
-                              variants={{
-                                hidden: { opacity: 0, y: -4 },
-                                show: (i: number) => ({
-                                  opacity: 1, y: 0,
-                                  transition: { delay: i * 0.015, duration: 0.15 },
-                                }),
-                                exit: { opacity: 0, transition: { duration: 0.1 } },
-                              }}
-                              initial="hidden"
-                              animate="show"
-                              layout
-                              className="rounded-lg p-2.5 border border-border bg-white/[0.01]"
-                            >
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap shrink-0"
-                                    style={{ backgroundColor: typeConfig.bg, color: typeConfig.color }}
-                                  >
-                                    {typeConfig.label}
-                                  </Badge>
-                                  <span className="text-xs truncate text-foreground">
-                                    {item.investorName && item.type === 'modal_masuk' && (
-                                      <span className="text-muted-foreground mr-1">{item.investorName}</span>
-                                    )}
-                                    {item.description}
-                                  </span>
+
+                  {/* Filter chip row */}
+                  <div className="flex gap-1.5 mb-3">
+                    {([
+                      { key: 'modal_masuk' as const, label: 'Modal Awal', color: c.primary },
+                      { key: 'pengeluaran' as const, label: 'Pengeluaran', color: c.destructive },
+                      { key: 'pemasukan' as const, label: 'Pemasukan', color: c.secondary },
+                    ]).map((filter) => (
+                      <button
+                        key={filter.key}
+                        onClick={() => setInvestorFilter(filter.key)}
+                        className={cn(
+                          "flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-150 border text-center",
+                          investorFilter === filter.key
+                            ? ""
+                            : "bg-white/[0.02] border-transparent text-muted-foreground hover:bg-white/[0.04]"
+                        )}
+                        style={investorFilter === filter.key ? {
+                          backgroundColor: alpha(filter.color, 10),
+                          borderColor: alpha(filter.color, 20),
+                          color: filter.color,
+                        } : undefined}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Filtered content */}
+                  {investorFilter === 'modal_masuk' && (
+                    <div className="max-h-96 overflow-y-auto">
+                      {(() => {
+                        const modalItems = investorHistory.filter((item) => item.type === 'modal_masuk');
+                        const totalModal = modalItems.reduce((sum, item) => sum + item.amount, 0);
+                        return (
+                          <>
+                            {/* Summary stat */}
+                            <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-primary/5 border border-primary/10 mb-2">
+                              <span className="text-[10px] text-muted-foreground">Total Modal Masuk</span>
+                              <span className="text-xs font-bold tabular-nums text-primary">{formatAmount(totalModal)}</span>
+                            </div>
+                            {modalItems.length === 0 ? (
+                              <div className="py-6 text-center text-[11px] text-muted-foreground">Belum ada modal masuk</div>
+                            ) : (
+                              <>
+                                {/* Mobile Card List */}
+                                <div className="sm:hidden space-y-2">
+                                  <AnimatePresence mode="popLayout">
+                                    {modalItems.map((item, index) => (
+                                      <motion.div
+                                        key={item.id}
+                                        custom={index}
+                                        variants={{
+                                          hidden: { opacity: 0, y: -4 },
+                                          show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.015, duration: 0.15 } }),
+                                          exit: { opacity: 0, transition: { duration: 0.1 } },
+                                        }}
+                                        initial="hidden"
+                                        animate="show"
+                                        layout
+                                        className="rounded-lg p-2.5 border border-border bg-white/[0.01]"
+                                      >
+                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <div className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 bg-primary/8">
+                                              <HandCoins className="h-3 w-3 text-primary" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <span className="text-xs font-medium text-foreground">{item.investorName || 'Investor'}</span>
+                                              <p className="text-[10px] text-muted-foreground truncate">{item.description}</p>
+                                            </div>
+                                          </div>
+                                          <span className="text-xs font-semibold tabular-nums shrink-0 text-primary">
+                                            +{formatAmount(item.amount)}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                          <span className="font-mono">{formatDate(item.date)}</span>
+                                        </div>
+                                      </motion.div>
+                                    ))}
+                                  </AnimatePresence>
                                 </div>
-                                <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: typeConfig.color }}>
-                                  +{formatAmount(item.amount)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                <span className="font-mono">{formatDate(item.date)}</span>
-                                {item.customerName && (
-                                  <>
-                                    <span className="text-border">•</span>
-                                    <span className="truncate">{item.customerName}</span>
-                                  </>
-                                )}
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
+                                {/* Desktop Table */}
+                                <div className="hidden sm:block">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="border-b border-border hover:bg-transparent">
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tanggal</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Investor</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Keterangan</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">Jumlah</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      <AnimatePresence mode="popLayout">
+                                        {modalItems.map((item, index) => (
+                                          <motion.tr
+                                            key={item.id}
+                                            custom={index}
+                                            variants={{
+                                              hidden: { opacity: 0, y: -4 },
+                                              show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.015, duration: 0.15 } }),
+                                              exit: { opacity: 0, transition: { duration: 0.1 } },
+                                            }}
+                                            initial="hidden"
+                                            animate="show"
+                                            layout
+                                            className="border-b border-border transition-colors duration-150"
+                                          >
+                                            <TableCell className="text-xs py-2 font-mono text-muted-foreground">{formatDate(item.date)}</TableCell>
+                                            <TableCell className="text-xs py-2 font-medium text-foreground">{item.investorName || '—'}</TableCell>
+                                            <TableCell className="text-xs py-2 text-muted-foreground max-w-[200px] truncate">{item.description}</TableCell>
+                                            <TableCell className="text-xs text-right font-semibold py-2 tabular-nums text-primary">+{formatAmount(item.amount)}</TableCell>
+                                          </motion.tr>
+                                        ))}
+                                      </AnimatePresence>
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
-                    {/* Desktop Table */}
-                    <div className="hidden sm:block">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-b border-border hover:bg-transparent">
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[80px]">Tanggal</TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tipe</TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pelanggan</TableHead>
-                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[110px]">Bagian Investor</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <AnimatePresence mode="popLayout">
-                          {investorHistory.map((item, index) => {
-                            const typeConfig = {
-                              modal_masuk: { label: 'Modal Masuk', color: c.primary, bg: alpha(c.primary, 8) },
-                              dp_penjualan: { label: 'DP Penjualan', color: c.secondary, bg: alpha(c.secondary, 8) },
-                              penjualan_lunas: { label: 'Penjualan', color: '#14b8a6', bg: 'color-mix(in srgb, #14b8a6 8%, transparent)' },
-                              cicilan_diterima: { label: 'Cicilan', color: '#a855f7', bg: 'color-mix(in srgb, #a855f7 8%, transparent)' },
-                            }[item.type];
-                            return (
-                              <motion.tr
-                                key={item.id}
-                                custom={index}
-                                variants={{
-                                  hidden: { opacity: 0, y: -4 },
-                                  show: (i: number) => ({
-                                    opacity: 1, y: 0,
-                                    transition: { delay: i * 0.015, duration: 0.15 },
-                                  }),
-                                  exit: { opacity: 0, transition: { duration: 0.1 } },
-                                }}
-                                initial="hidden"
-                                animate="show"
-                                layout
-                                className="border-b border-border transition-colors duration-150"
-                              >
-                                <TableCell className="text-xs py-2 font-mono text-muted-foreground">
-                                  {formatDate(item.date)}
-                                </TableCell>
-                                <TableCell className="py-2">
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
-                                    style={{ backgroundColor: typeConfig.bg, color: typeConfig.color }}
-                                  >
-                                    {typeConfig.label}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-xs py-2 max-w-[180px] truncate text-foreground">
-                                  {item.investorName && item.type === 'modal_masuk' && (
-                                    <span className="text-muted-foreground mr-1">{item.investorName}</span>
-                                  )}
-                                  {item.description}
-                                </TableCell>
-                                <TableCell className="text-xs py-2 text-muted-foreground">
-                                  {item.customerName || (
-                                    item.investorName && item.type !== 'modal_masuk' ? item.investorName : '—'
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-xs text-right font-semibold py-2 tabular-nums" style={{ color: typeConfig.color }}>
-                                  +{formatAmount(item.amount)}
-                                </TableCell>
-                              </motion.tr>
-                            );
-                          })}
-                        </AnimatePresence>
-                      </TableBody>
-                    </Table>
+                  )}
+
+                  {investorFilter === 'pengeluaran' && (
+                    <div className="max-h-96 overflow-y-auto">
+                      {(() => {
+                        const totalExp = investorExpenses.reduce((sum, item) => sum + item.amount, 0);
+                        return (
+                          <>
+                            {/* Summary stat */}
+                            <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-destructive/5 border border-destructive/10 mb-2">
+                              <span className="text-[10px] text-muted-foreground">Total Pengeluaran Investor</span>
+                              <span className="text-xs font-bold tabular-nums text-destructive">{formatAmount(totalExp)}</span>
+                            </div>
+                            {investorExpenses.length === 0 ? (
+                              <div className="py-6 text-center text-[11px] text-muted-foreground">Belum ada pengeluaran dari dana investor</div>
+                            ) : (
+                              <>
+                                {/* Mobile Card List */}
+                                <div className="sm:hidden space-y-2">
+                                  <AnimatePresence mode="popLayout">
+                                    {investorExpenses.map((item, index) => (
+                                      <motion.div
+                                        key={item.id}
+                                        custom={index}
+                                        variants={{
+                                          hidden: { opacity: 0, y: -4 },
+                                          show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.015, duration: 0.15 } }),
+                                          exit: { opacity: 0, transition: { duration: 0.1 } },
+                                        }}
+                                        initial="hidden"
+                                        animate="show"
+                                        layout
+                                        className="rounded-lg p-2.5 border border-border bg-white/[0.01]"
+                                      >
+                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <ArrowDownRight className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                                            <div className="min-w-0">
+                                              <p className="text-xs font-medium truncate text-foreground">{item.description}</p>
+                                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                <Badge
+                                                  variant="outline"
+                                                  className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
+                                                  style={{ backgroundColor: alpha(c.primary, 8), color: c.primary }}
+                                                >
+                                                  Investor
+                                                </Badge>
+                                                {item.category && (
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
+                                                    style={{ backgroundColor: alpha(c.destructive, 8), color: c.destructive }}
+                                                  >
+                                                    {item.category}
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <span className="text-xs font-bold tabular-nums shrink-0 text-destructive">
+                                            -{formatAmount(item.amount)}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                          <span className="font-mono">{formatDate(item.date)}</span>
+                                        </div>
+                                      </motion.div>
+                                    ))}
+                                  </AnimatePresence>
+                                </div>
+                                {/* Desktop Table */}
+                                <div className="hidden sm:block">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="border-b border-border hover:bg-transparent">
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tanggal</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Sumber</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kategori</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">Jumlah</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      <AnimatePresence mode="popLayout">
+                                        {investorExpenses.map((item, index) => (
+                                          <motion.tr
+                                            key={item.id}
+                                            custom={index}
+                                            variants={{
+                                              hidden: { opacity: 0, y: -4 },
+                                              show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.015, duration: 0.15 } }),
+                                              exit: { opacity: 0, transition: { duration: 0.1 } },
+                                            }}
+                                            initial="hidden"
+                                            animate="show"
+                                            layout
+                                            className="border-b border-border transition-colors duration-150"
+                                          >
+                                            <TableCell className="text-xs py-2 font-mono text-muted-foreground">{formatDate(item.date)}</TableCell>
+                                            <TableCell className="text-xs py-2 font-medium text-foreground max-w-[180px] truncate">{item.description}</TableCell>
+                                            <TableCell className="py-2">
+                                              <Badge
+                                                variant="outline"
+                                                className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0"
+                                                style={{ backgroundColor: alpha(c.primary, 8), color: c.primary }}
+                                              >
+                                                Investor
+                                              </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-xs py-2 text-muted-foreground">{item.category || '—'}</TableCell>
+                                            <TableCell className="text-xs text-right font-bold py-2 tabular-nums text-destructive">-{formatAmount(item.amount)}</TableCell>
+                                          </motion.tr>
+                                        ))}
+                                      </AnimatePresence>
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
-                  </div>
-                  {/* Total investor income */}
-                  <div className="border-t border-border mt-2 pt-2 flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Pemasukan Investor</span>
-                    <span className="text-sm font-bold tabular-nums text-secondary">
-                      {formatAmount(investorHistory.reduce((sum, item) => sum + item.amount, 0))}
-                    </span>
-                  </div>
+                  )}
+
+                  {investorFilter === 'pemasukan' && (
+                    <div className="max-h-96 overflow-y-auto">
+                      {(() => {
+                        const pemasukanItems = investorHistory.filter((item) => item.type !== 'modal_masuk');
+                        const totalPemasukan = pemasukanItems.reduce((sum, item) => sum + item.amount, 0);
+                        return (
+                          <>
+                            {/* Summary stat */}
+                            <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-secondary/5 border border-secondary/10 mb-2">
+                              <span className="text-[10px] text-muted-foreground">Total Pemasukan Investor</span>
+                              <span className="text-xs font-bold tabular-nums text-secondary">{formatAmount(totalPemasukan)}</span>
+                            </div>
+                            {pemasukanItems.length === 0 ? (
+                              <div className="py-6 text-center text-[11px] text-muted-foreground">Belum ada pemasukan investor</div>
+                            ) : (
+                              <>
+                                {/* Mobile Card List */}
+                                <div className="sm:hidden space-y-2">
+                                  <AnimatePresence mode="popLayout">
+                                    {pemasukanItems.map((item, index) => {
+                                      const typeConfig = {
+                                        dp_penjualan: { label: 'DP Penjualan', color: c.secondary, bg: alpha(c.secondary, 8) },
+                                        penjualan_lunas: { label: 'Penjualan', color: '#14b8a6', bg: 'color-mix(in srgb, #14b8a6 8%, transparent)' },
+                                        cicilan_diterima: { label: 'Cicilan', color: '#a855f7', bg: 'color-mix(in srgb, #a855f7 8%, transparent)' },
+                                      }[item.type];
+                                      return (
+                                        <motion.div
+                                          key={item.id}
+                                          custom={index}
+                                          variants={{
+                                            hidden: { opacity: 0, y: -4 },
+                                            show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.015, duration: 0.15 } }),
+                                            exit: { opacity: 0, transition: { duration: 0.1 } },
+                                          }}
+                                          initial="hidden"
+                                          animate="show"
+                                          layout
+                                          className="rounded-lg p-2.5 border border-border bg-white/[0.01]"
+                                        >
+                                          <div className="flex items-start justify-between gap-2 mb-1">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                              <ArrowUpRight className="h-3.5 w-3.5 shrink-0" style={{ color: typeConfig.color }} />
+                                              <div className="min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap shrink-0"
+                                                    style={{ backgroundColor: typeConfig.bg, color: typeConfig.color }}
+                                                  >
+                                                    {typeConfig.label}
+                                                  </Badge>
+                                                  <span className="text-xs truncate text-foreground">{item.description}</span>
+                                                </div>
+                                                {item.customerName && (
+                                                  <span className="text-[10px] text-muted-foreground">{item.customerName}</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: typeConfig.color }}>
+                                              +{formatAmount(item.amount)}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                            <span className="font-mono">{formatDate(item.date)}</span>
+                                          </div>
+                                        </motion.div>
+                                      );
+                                    })}
+                                  </AnimatePresence>
+                                </div>
+                                {/* Desktop Table */}
+                                <div className="hidden sm:block">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="border-b border-border hover:bg-transparent">
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tanggal</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Tipe</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pelanggan</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">Bagian Investor</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      <AnimatePresence mode="popLayout">
+                                        {pemasukanItems.map((item, index) => {
+                                          const typeConfig = {
+                                            dp_penjualan: { label: 'DP Penjualan', color: c.secondary, bg: alpha(c.secondary, 8) },
+                                            penjualan_lunas: { label: 'Penjualan', color: '#14b8a6', bg: 'color-mix(in srgb, #14b8a6 8%, transparent)' },
+                                            cicilan_diterima: { label: 'Cicilan', color: '#a855f7', bg: 'color-mix(in srgb, #a855f7 8%, transparent)' },
+                                          }[item.type];
+                                          return (
+                                            <motion.tr
+                                              key={item.id}
+                                              custom={index}
+                                              variants={{
+                                                hidden: { opacity: 0, y: -4 },
+                                                show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.015, duration: 0.15 } }),
+                                                exit: { opacity: 0, transition: { duration: 0.1 } },
+                                              }}
+                                              initial="hidden"
+                                              animate="show"
+                                              layout
+                                              className="border-b border-border transition-colors duration-150"
+                                            >
+                                              <TableCell className="text-xs py-2 font-mono text-muted-foreground">{formatDate(item.date)}</TableCell>
+                                              <TableCell className="py-2">
+                                                <Badge
+                                                  variant="outline"
+                                                  className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 whitespace-nowrap"
+                                                  style={{ backgroundColor: typeConfig.bg, color: typeConfig.color }}
+                                                >
+                                                  {typeConfig.label}
+                                                </Badge>
+                                              </TableCell>
+                                              <TableCell className="text-xs py-2 max-w-[180px] truncate text-foreground">{item.description}</TableCell>
+                                              <TableCell className="text-xs py-2 text-muted-foreground">
+                                                {item.customerName || (item.investorName ? item.investorName : '—')}
+                                              </TableCell>
+                                              <TableCell className="text-xs text-right font-semibold py-2 tabular-nums" style={{ color: typeConfig.color }}>
+                                                +{formatAmount(item.amount)}
+                                              </TableCell>
+                                            </motion.tr>
+                                          );
+                                        })}
+                                      </AnimatePresence>
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -3659,6 +3933,130 @@ export default function BusinessCash() {
                 </div>
               )}
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* ── TRANSACTION DETAIL DIALOG ────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      <Dialog open={!!transactionDetail} onOpenChange={(open) => { if (!open) setTransactionDetail(null); }}>
+        <DialogContent className="bg-[#1a1a1a] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md" aria-label="Detail Transaksi">
+          <DialogDescription className="sr-only">Detail transaksi kas</DialogDescription>
+          {transactionDetail && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="p-5"
+            >
+              {/* Type + Source badges */}
+              <div className="flex items-center gap-2 mb-4">
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[10px] font-semibold border-0 rounded-full px-2 py-0.5",
+                    transactionDetail.type === 'kas_keluar'
+                      ? "bg-destructive/10 text-destructive"
+                      : transactionDetail.type === 'kas_kecil'
+                        ? "bg-primary/10 text-primary"
+                        : "bg-secondary/10 text-secondary"
+                  )}
+                >
+                  {transactionDetail.type === 'kas_keluar' ? 'Pengeluaran' : transactionDetail.type === 'kas_kecil' ? 'Pemasukan (Kas Kecil)' : 'Pemasukan (Kas Besar)'}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-medium border-0 rounded-full px-2 py-0.5"
+                  style={{
+                    backgroundColor: alpha(getEntrySourceLabel(transactionDetail).color, 8),
+                    color: getEntrySourceLabel(transactionDetail).color,
+                  }}
+                >
+                  {getEntrySourceLabel(transactionDetail).label}
+                </Badge>
+                {transactionDetail.category && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-medium border-0 rounded-full px-2 py-0.5"
+                    style={{
+                      backgroundColor: alpha(CASH_SUB_TYPES[transactionDetail.type as CashSubType]?.color || c.muted, 8),
+                      color: CASH_SUB_TYPES[transactionDetail.type as CashSubType]?.color || c.muted,
+                    }}
+                  >
+                    {transactionDetail.category}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Description */}
+              <p className="text-base font-semibold text-foreground mb-1">{transactionDetail.description}</p>
+
+              {/* Amount */}
+              <p className={cn(
+                "text-2xl font-bold tabular-nums mb-4",
+                transactionDetail.type === 'kas_keluar' ? 'text-destructive' : 'text-secondary'
+              )}>
+                {transactionDetail.type === 'kas_keluar' ? '-' : '+'}{formatAmount(transactionDetail.amount)}
+              </p>
+
+              {/* Detail rows */}
+              <div className="space-y-2.5 border-t border-white/[0.06] pt-3">
+                {/* Date */}
+                <div className="flex items-center gap-2.5">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-xs text-muted-foreground">Tanggal</span>
+                  <span className="text-xs font-mono text-foreground ml-auto">{formatDate(transactionDetail.date)}</span>
+                </div>
+
+                {/* Notes */}
+                {transactionDetail.notes && (
+                  <div className="flex items-start gap-2.5">
+                    <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="text-xs text-muted-foreground">Catatan</span>
+                    <span className="text-xs text-foreground text-right ml-auto max-w-[200px]">{transactionDetail.notes}</span>
+                  </div>
+                )}
+
+                {/* Investor name */}
+                {transactionDetail.investorId && (() => {
+                  const inv = investors.find((i) => i.id === transactionDetail.investorId);
+                  return inv ? (
+                    <div className="flex items-center gap-2.5">
+                      <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground">Investor</span>
+                      <span className="text-xs font-medium text-foreground ml-auto">{inv.name}</span>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 mt-5">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    openCashEdit(transactionDetail);
+                    setTransactionDetail(null);
+                  }}
+                  className="flex-1 h-10 rounded-xl text-sm font-medium text-foreground hover:bg-white/[0.05]"
+                >
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setCashDeleteId(transactionDetail.id);
+                    setTransactionDetail(null);
+                  }}
+                  className="flex-1 h-10 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/5"
+                >
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Hapus
+                </Button>
+              </div>
+            </motion.div>
           )}
         </DialogContent>
       </Dialog>

@@ -94,14 +94,25 @@ export async function GET(
 
     // If summary=true, return allocation breakdown instead of paginated entries
     if (summaryOnly) {
-      const allCashEntries = await db.businessCash.findMany({
-        where: { businessId },
-        select: {
-          type: true,
-          amount: true,
-          source: true,
-        },
-      });
+      const [allCashEntries, investorAggregate, activeInvestors] = await Promise.all([
+        db.businessCash.findMany({
+          where: { businessId },
+          select: {
+            type: true,
+            amount: true,
+            source: true,
+          },
+        }),
+        db.businessInvestor.aggregate({
+          _sum: { totalInvestment: true },
+          where: { businessId, status: 'active' },
+        }),
+        db.businessInvestor.findMany({
+          where: { businessId, status: 'active' },
+          select: { id: true, name: true, totalInvestment: true, profitSharePct: true },
+          orderBy: { totalInvestment: 'desc' },
+        }),
+      ]);
 
       const kasBesarTotal = allCashEntries
         .filter((c) => c.type === 'kas_besar')
@@ -109,9 +120,11 @@ export async function GET(
       const kasKecilTotal = allCashEntries
         .filter((c) => c.type === 'kas_kecil')
         .reduce((sum, c) => sum + c.amount, 0);
-      const investorTotal = allCashEntries
+      const investorFromCash = allCashEntries
         .filter((c) => c.type === 'investor')
         .reduce((sum, c) => sum + c.amount, 0);
+      // Use max of BusinessCash investor entries and BusinessInvestor.totalInvestment aggregate
+      const investorTotal = Math.max(investorFromCash, investorAggregate._sum.totalInvestment || 0);
 
       // Expenses by source: kas_keluar entries with source field
       const expenseFromKasBesar = allCashEntries
@@ -143,6 +156,7 @@ export async function GET(
         kasKecilSaldo,
         investorSaldo,
         netCash,
+        activeInvestors,
         allocationBreakdown: [
           { source: 'kas_besar', total: kasBesarTotal, expenses: expenseFromKasBesar, saldo: kasBesarSaldo },
           { source: 'kas_kecil', total: kasKecilTotal, expenses: expenseFromKasKecil, saldo: kasKecilSaldo },

@@ -43,7 +43,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle, CreditCard,
   CalendarDays, HeartPulse, TrendingUp, AlertTriangle, CheckCircle2,
-  Clock, DollarSign, MessageCircle, Info,
+  Clock, DollarSign, MessageCircle, Info, CircleDollarSign,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -413,6 +413,31 @@ export default function BusinessDebts() {
   };
 
   const accentColor = activeTab === 'hutang' ? 'var(--destructive)' : 'var(--secondary)';
+
+  // ── Nominal Previews ──
+  const formattedDebtNominal = useMemo(() => {
+    const num = parseFloat(formData.amount);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [formData.amount, formatAmount]);
+
+  const formattedDPNominal = useMemo(() => {
+    const num = parseFloat(formData.downPayment);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [formData.downPayment, formatAmount]);
+
+  const formattedInstallmentNominal = useMemo(() => {
+    const num = parseFloat(formData.installmentAmount);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [formData.installmentAmount, formatAmount]);
+
+  const formattedPayNominal = useMemo(() => {
+    const num = parseFloat(payAmount);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [payAmount, formatAmount]);
 
   if (!businessId) {
     return (
@@ -973,6 +998,19 @@ export default function BusinessDebts() {
                 className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
                 style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
               />
+              {formattedDebtNominal && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="flex items-center gap-1.5 px-1 mt-1"
+                >
+                  <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-semibold tabular-nums" style={{ color: formData.type === 'piutang' ? 'var(--secondary)' : 'var(--destructive)' }}>
+                    {formattedDebtNominal}
+                  </span>
+                </motion.div>
+              )}
             </div>
 
             {/* Installment Toggle */}
@@ -1011,6 +1049,19 @@ export default function BusinessDebts() {
                       className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
                       style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
                     />
+                    {formattedDPNominal && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="flex items-center gap-1.5 px-1 mt-1"
+                      >
+                        <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-sm font-semibold tabular-nums text-foreground">
+                          {formattedDPNominal}
+                        </span>
+                      </motion.div>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">{t('biz.installmentAmount')} *</Label>
@@ -1023,6 +1074,19 @@ export default function BusinessDebts() {
                       className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
                       style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
                     />
+                    {formattedInstallmentNominal && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="flex items-center gap-1.5 px-1 mt-1"
+                      >
+                        <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-sm font-semibold tabular-nums text-foreground">
+                          {formattedInstallmentNominal}
+                        </span>
+                      </motion.div>
+                    )}
                   </div>
                 </div>
 
@@ -1245,6 +1309,19 @@ export default function BusinessDebts() {
                 className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
                 style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
               />
+              {formattedPayNominal && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="flex items-center gap-1.5 px-1 mt-1"
+                >
+                  <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-semibold tabular-nums text-destructive">
+                    -{formattedPayNominal}
+                  </span>
+                </motion.div>
+              )}
               <div className="flex items-center justify-between">
                 <p className="text-[10px] text-muted-foreground opacity-60">
                   Maks: {formatAmount(paymentDebt?.remaining || 0)}

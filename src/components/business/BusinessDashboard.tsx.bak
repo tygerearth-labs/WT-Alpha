@@ -561,42 +561,6 @@ export default function BusinessDashboard() {
     return items;
   }, [data, debtsDueSoonWithBadge]);
 
-  // Top 5 customers by spending (from recentSales)
-  const topCustomers = useMemo(() => {
-    if (!data?.recentSales) return [];
-    const customerMap = new Map<string, { name: string; total: number; count: number }>();
-    data.recentSales.forEach((s) => {
-      const name = s.customer?.name || 'Tanpa Pelanggan';
-      const existing = customerMap.get(name);
-      if (existing) {
-        existing.total += s.amount;
-        existing.count += 1;
-      } else {
-        customerMap.set(name, { name, total: s.amount, count: 1 });
-      }
-    });
-    return Array.from(customerMap.values()).sort((a, b) => b.total - a.total).slice(0, 5);
-  }, [data]);
-
-  // Financial health indicators
-  const financialHealth = useMemo(() => {
-    if (!data) return null;
-    const totalExpense = data.totalExpense ?? 0;
-    const totalRevenue = data.totalRevenue ?? 0;
-    const kasBesarSaldo = data.allocationBreakdown?.kasBesarSaldo ?? 0;
-    const kasKecilSaldo = data.allocationBreakdown?.kasKecilSaldo ?? 0;
-    const totalSaldo = kasBesarSaldo + kasKecilSaldo;
-    const ps = data.piutangSummary;
-    const burnRate = totalExpense;
-    const runway = burnRate > 0 ? Math.floor(totalSaldo / burnRate) : (totalSaldo > 0 ? 99 : 0);
-    const cashRatio = totalExpense > 0 ? totalSaldo / totalExpense : (totalSaldo > 0 ? 99 : 0);
-    const totalPiutangAmount = (ps?.berjalan.amount ?? 0) + (ps?.menunggak.amount ?? 0) + (ps?.selesai.amount ?? 0);
-    const collectionRate = totalPiutangAmount > 0
-      ? Math.round(((ps?.selesai.amount ?? 0) / totalPiutangAmount) * 100) / 100
-      : (totalRevenue > 0 ? 1 : 0);
-    return { burnRate, runway, cashRatio, collectionRate };
-  }, [data]);
-
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -633,12 +597,69 @@ export default function BusinessDashboard() {
   const piutangBerjalan = ps?.berjalan.amount ?? 0;
   const investorSaldo = data.allocationBreakdown?.investorSaldo ?? 0;
 
+  // Cash flow insight text
+  const cashFlowInsight = useMemo(() => {
+    if (!data || data.totalRevenue === 0 && data.totalExpense === 0) return { text: 'Mulai catat transaksi untuk melihat tren arus kas.', color: c.muted };
+    const profit = data.profit ?? 0;
+    const margin = data.profitMargin ?? 0;
+    if (profit > 0 && margin >= 20) return { text: `Posisi kas kuat — laba bersih ${margin.toFixed(0)}% di atas rata-rata industri.`, color: c.secondary };
+    if (profit > 0 && margin >= 10) return { text: `Posisi kas sehat — margin laba ${margin.toFixed(1)}% menunjukkan efisiensi baik.`, color: c.secondary };
+    if (profit > 0) return { text: `Posisi kas positif — margin laba ${margin.toFixed(1)}%. Tingkatkan pendapatan untuk pertumbuhan.`, color: '#4FC3F7' };
+    if (margin > -15) return { text: `Kas menurun ${Math.abs(margin).toFixed(1)}% — perlu evaluasi pengeluaran segera.`, color: c.warning };
+    return { text: `Arus kas kritis — defisit ${Math.abs(margin).toFixed(1)}%. Segera tinjau strategi bisnis.`, color: c.destructive };
+  }, [data]);
+
+  // Top 5 customers by spending (from recentSales)
+  const topCustomers = useMemo(() => {
+    if (!data?.recentSales) return [];
+    const customerMap = new Map<string, { name: string; total: number; count: number }>();
+    data.recentSales.forEach((s) => {
+      const name = s.customer?.name || 'Tanpa Pelanggan';
+      const existing = customerMap.get(name);
+      if (existing) {
+        existing.total += s.amount;
+        existing.count += 1;
+      } else {
+        customerMap.set(name, { name, total: s.amount, count: 1 });
+      }
+    });
+    return Array.from(customerMap.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [data]);
+
+  // Financial health indicators
+  const financialHealth = useMemo(() => {
+    if (!data) return null;
+    const totalExpense = data.totalExpense ?? 0;
+    const totalRevenue = data.totalRevenue ?? 0;
+    const kasBesarSaldo = data.allocationBreakdown?.kasBesarSaldo ?? 0;
+    const kasKecilSaldo = data.allocationBreakdown?.kasKecilSaldo ?? 0;
+    const totalSaldo = kasBesarSaldo + kasKecilSaldo;
+    const ps = data.piutangSummary;
+
+    // Burn Rate: total expenses for the period
+    const burnRate = totalExpense;
+
+    // Runway: months of cash remaining = total saldo / burn rate
+    const runway = burnRate > 0 ? Math.floor(totalSaldo / burnRate) : (totalSaldo > 0 ? 99 : 0);
+
+    // Cash Ratio: (kas_besar + kas_kecil saldo) / total expenses
+    const cashRatio = totalExpense > 0 ? totalSaldo / totalExpense : (totalSaldo > 0 ? 99 : 0);
+
+    // Collection Rate: piutang selesai / total piutang
+    const totalPiutangAmount = (ps?.berjalan.amount ?? 0) + (ps?.menunggak.amount ?? 0) + (ps?.selesai.amount ?? 0);
+    const collectionRate = totalPiutangAmount > 0
+      ? Math.round(((ps?.selesai.amount ?? 0) / totalPiutangAmount) * 100) / 100
+      : (totalRevenue > 0 ? 1 : 0);
+
+    return { burnRate, runway, cashRatio, collectionRate };
+  }, [data]);
+
   // Quick actions with navigation
   const quickActions = [
-    { label: 'Tambah Penjualan', desc: 'Catat penjualan baru', icon: ShoppingBag, color: c.secondary, navPage: 'biz-penjualan' },
-    { label: 'Catat Pengeluaran', desc: 'Input kas keluar', icon: ArrowDownToLine, color: c.destructive, navPage: 'biz-kas' },
-    { label: 'Buat Invoice', desc: 'Kirim tagihan', icon: FileText, color: c.primary, navPage: 'biz-invoice' },
-    { label: 'Lihat Laporan', desc: 'Analisis bisnis', icon: BarChart3, color: c.warning, navPage: 'biz-laporan' },
+    { label: 'Tambah Penjualan', desc: 'Catat penjualan baru', icon: ShoppingBag, color: c.secondary, navPage: 'biz-penjualan' as const },
+    { label: 'Catat Pengeluaran', desc: 'Input kas keluar', icon: ArrowDownToLine, color: c.destructive, navPage: 'biz-kas' as const },
+    { label: 'Buat Invoice', desc: 'Kirim tagihan', icon: FileText, color: c.primary, navPage: 'biz-invoice' as const },
+    { label: 'Lihat Laporan', desc: 'Analisis bisnis', icon: BarChart3, color: c.warning, navPage: 'biz-laporan' as const },
   ];
 
   const handleNav = (page: string) => {
@@ -824,6 +845,59 @@ export default function BusinessDashboard() {
       </Card>
 
       {/* ═══════════════════════════════════════════════════════════════
+          SECTION 1.5: CASH FLOW TREND + INSIGHT
+          ═══════════════════════════════════════════════════════════════ */
+      <Card className="border-border overflow-hidden">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: alpha(c.primary, 10) }}>
+              <Activity className="h-3.5 w-3.5" style={{ color: c.primary }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-foreground">Cash Flow Trend</h3>
+              <p className="text-[10px] text-muted-foreground">Posisi kas periode ini</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {data.profit >= 0 ? (
+                <TrendingUp className="h-3.5 w-3.5" style={{ color: c.secondary }} />
+              ) : (
+                <TrendingDown className="h-3.5 w-3.5" style={{ color: c.destructive }} />
+              )}
+              <span className="text-[11px] font-bold tabular-nums" style={{ color: profitColor }}>
+                {data.profit >= 0 ? '+' : ''}{formatAmount(data.profit)}
+              </span>
+            </div>
+          </div>
+          {/* Mini chart bars (7 bars simulating daily cash position) */}
+          <div className="flex items-end gap-1 h-[40px] mb-3">
+            {generateSparklineData(data.totalRevenue).map((h, i) => {
+              const isLast = i === 6;
+              return (
+                <motion.div
+                  key={i}
+                  className="flex-1 rounded-sm origin-bottom"
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.max(h * 0.4, 4)}px` }}
+                  transition={{ duration: 0.5, delay: i * 0.05 }}
+                  style={{
+                    backgroundColor: isLast ? profitColor : alpha(profitColor, 30),
+                    opacity: isLast ? 1 : 0.4 + (i / 6) * 0.4,
+                  }}
+                />
+              );
+            })}
+          </div>
+          {/* Insight text */}
+          <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ backgroundColor: alpha(cashFlowInsight.color, 5) }}>
+            <Zap className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: cashFlowInsight.color }} />
+            <p className="text-[11px] leading-relaxed" style={{ color: cashFlowInsight.color }}>
+              {cashFlowInsight.text}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══════════════════════════════════════════════════════════════
           SECTION 2: QUICK STATS ROW (4 compact cards)
           ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -859,133 +933,6 @@ export default function BusinessDashboard() {
           );
         })}
       </div>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 2.5: QUICK ACTIONS GRID
-          ═══════════════════════════════════════════════════════════════ */}
-      <Card className="border-border">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
-              <Zap className="h-3.5 w-3.5" style={{ color: c.primary }} />
-              Aksi Cepat
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="pb-4 px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {quickActions.map((action, idx) => {
-              const AIcon = action.icon;
-              return (
-                <motion.div
-                  key={action.label}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: idx * 0.05 }}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto flex-col gap-1.5 rounded-xl border border-border p-3 text-muted-foreground w-full"
-                    style={{ background: 'transparent' }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = alpha(action.color, 7);
-                      (e.currentTarget as HTMLElement).style.borderColor = alpha(action.color, 15);
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = 'transparent';
-                      (e.currentTarget as HTMLElement).style.borderColor = '';
-                    }}
-                    onClick={() => handleNav(action.navPage)}
-                  >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: alpha(action.color, 10) }}>
-                      <AIcon className="h-4 w-4" style={{ color: action.color }} />
-                    </div>
-                    <span className="text-[11px] font-semibold text-foreground">{action.label}</span>
-                    <span className="text-[9px] text-muted-foreground leading-tight">{action.desc}</span>
-                  </Button>
-                </motion.div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 2.6: FINANCIAL HEALTH SCORE CARD
-          ═══════════════════════════════════════════════════════════════ */}
-      {financialHealth && (
-        <Card className="border-border">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: healthScore.color }} />
-                <ShieldCheck className="h-3.5 w-3.5" style={{ color: healthScore.color }} />
-                Kesehatan Finansial
-              </CardTitle>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border-0" style={{ color: healthScore.color, backgroundColor: alpha(healthScore.color, 8) }}>
-                Skor {healthScore.score}/100 • Grade {healthScore.grade}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="pb-4 px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {[
-                {
-                  label: 'Burn Rate',
-                  value: formatAmount(financialHealth.burnRate),
-                  desc: 'Pengeluaran periode ini',
-                  icon: Flame,
-                  color: c.destructive,
-                  status: financialHealth.burnRate > 0 ? 'Aktif' : 'Minimal',
-                },
-                {
-                  label: 'Runway',
-                  value: financialHealth.runway >= 99 ? '99+ bulan' : `${financialHealth.runway} bulan`,
-                  desc: 'Sisa waktu operasional',
-                  icon: Timer,
-                  color: financialHealth.runway >= 6 ? c.secondary : financialHealth.runway >= 3 ? c.warning : c.destructive,
-                  status: financialHealth.runway >= 6 ? 'Aman' : financialHealth.runway >= 3 ? 'Terbatas' : 'Kritis',
-                },
-                {
-                  label: 'Cash Ratio',
-                  value: financialHealth.cashRatio >= 99 ? '∞' : financialHealth.cashRatio.toFixed(2),
-                  desc: 'Saldo Kas / Pengeluaran',
-                  icon: DollarSign,
-                  color: financialHealth.cashRatio >= 1 ? c.secondary : financialHealth.cashRatio >= 0.5 ? c.warning : c.destructive,
-                  status: financialHealth.cashRatio >= 1 ? 'Sehat' : financialHealth.cashRatio >= 0.5 ? 'Waspada' : 'Kritis',
-                },
-                {
-                  label: 'Collection Rate',
-                  value: financialHealth.collectionRate >= 99 ? 'N/A' : `${(financialHealth.collectionRate * 100).toFixed(0)}%`,
-                  desc: 'Piutang Lunas / Total',
-                  icon: Target,
-                  color: financialHealth.collectionRate >= 0.8 ? c.secondary : financialHealth.collectionRate >= 0.5 ? c.warning : c.destructive,
-                  status: financialHealth.collectionRate >= 0.8 ? 'Baik' : financialHealth.collectionRate >= 0.5 ? 'Cukup' : 'Rendah',
-                },
-              ].map((metric) => {
-                const MIcon = metric.icon;
-                return (
-                  <div key={metric.label} className="p-2.5 rounded-xl" style={{ backgroundColor: alpha(metric.color, 4) }}>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <MIcon className="h-3 w-3" style={{ color: metric.color }} />
-                      <span className="text-[9px] uppercase tracking-wider font-medium text-muted-foreground">{metric.label}</span>
-                    </div>
-                    <p className="text-sm font-bold tabular-nums text-foreground leading-tight">{metric.value}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[9px] text-muted-foreground">{metric.desc}</span>
-                    </div>
-                    <span className="text-[9px] font-semibold px-1.5 py-px rounded-full mt-1 inline-block border-0" style={{ color: metric.color, backgroundColor: alpha(metric.color, 8) }}>
-                      {metric.status}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 3: ALERTS / NOTIFICATIONS
@@ -1157,7 +1104,134 @@ export default function BusinessDashboard() {
       </Card>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5: PIUTANG JATUH TEMPO + QUICK ACTIONS
+          SECTION 5: QUICK ACTIONS (prominent, with descriptions)
+          ═══════════════════════════════════════════════════════════════ */
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
+              <Zap className="h-3.5 w-3.5" style={{ color: c.primary }} />
+              Aksi Cepat
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="pb-4 px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {quickActions.map((action, idx) => {
+              const Icon = action.icon;
+              return (
+                <motion.div
+                  key={action.label}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: idx * 0.05 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto flex-col gap-1.5 rounded-xl border border-border p-3 text-muted-foreground w-full"
+                    style={{ background: 'transparent' }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = alpha(action.color, 7);
+                      (e.currentTarget as HTMLElement).style.borderColor = alpha(action.color, 15);
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      (e.currentTarget as HTMLElement).style.borderColor = '';
+                    }}
+                    onClick={() => handleNav(action.navPage)}
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: alpha(action.color, 10) }}>
+                      <Icon className="h-4 w-4" style={{ color: action.color }} />
+                    </div>
+                    <span className="text-[11px] font-semibold text-foreground">{action.label}</span>
+                    <span className="text-[9px] text-muted-foreground leading-tight">{action.desc}</span>
+                  </Button>
+                </motion.div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 5.5: FINANCIAL HEALTH INDICATORS
+          ═══════════════════════════════════════════════════════════════ */
+      {financialHealth && (
+        <Card className="border-border">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: healthScore.color }} />
+                <ShieldCheck className="h-3.5 w-3.5" style={{ color: healthScore.color }} />
+                Kesehatan Finansial
+              </CardTitle>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border-0" style={{ color: healthScore.color, backgroundColor: alpha(healthScore.color, 8) }}>
+                Skor {healthScore.score}/100 • Grade {healthScore.grade}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-4 px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                {
+                  label: 'Burn Rate',
+                  value: formatAmount(financialHealth.burnRate),
+                  desc: 'Pengeluaran periode ini',
+                  icon: Flame,
+                  color: c.destructive,
+                  status: financialHealth.burnRate > 0 ? 'Aktif' : 'Minimal',
+                },
+                {
+                  label: 'Runway',
+                  value: financialHealth.runway >= 99 ? '99+ bulan' : `${financialHealth.runway} bulan`,
+                  desc: 'Sisa waktu operasional',
+                  icon: Timer,
+                  color: financialHealth.runway >= 6 ? c.secondary : financialHealth.runway >= 3 ? c.warning : c.destructive,
+                  status: financialHealth.runway >= 6 ? 'Aman' : financialHealth.runway >= 3 ? 'Terbatas' : 'Kritis',
+                },
+                {
+                  label: 'Cash Ratio',
+                  value: financialHealth.cashRatio >= 99 ? '∞' : financialHealth.cashRatio.toFixed(2),
+                  desc: 'Saldo Kas / Pengeluaran',
+                  icon: DollarSign,
+                  color: financialHealth.cashRatio >= 1 ? c.secondary : financialHealth.cashRatio >= 0.5 ? c.warning : c.destructive,
+                  status: financialHealth.cashRatio >= 1 ? 'Sehat' : financialHealth.cashRatio >= 0.5 ? 'Waspada' : 'Kritis',
+                },
+                {
+                  label: 'Collection Rate',
+                  value: financialHealth.collectionRate >= 99 ? 'N/A' : `${(financialHealth.collectionRate * 100).toFixed(0)}%`,
+                  desc: 'Piutang Lunas / Total',
+                  icon: Target,
+                  color: financialHealth.collectionRate >= 0.8 ? c.secondary : financialHealth.collectionRate >= 0.5 ? c.warning : c.destructive,
+                  status: financialHealth.collectionRate >= 0.8 ? 'Baik' : financialHealth.collectionRate >= 0.5 ? 'Cukup' : 'Rendah',
+                },
+              ].map((metric) => {
+                const MIcon = metric.icon;
+                return (
+                  <div key={metric.label} className="p-2.5 rounded-xl" style={{ backgroundColor: alpha(metric.color, 4) }}>
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <MIcon className="h-3 w-3" style={{ color: metric.color }} />
+                      <span className="text-[9px] uppercase tracking-wider font-medium text-muted-foreground">{metric.label}</span>
+                    </div>
+                    <p className="text-sm font-bold tabular-nums text-foreground leading-tight">{metric.value}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[9px] text-muted-foreground">{metric.desc}</span>
+                    </div>
+                    <span className="text-[9px] font-semibold px-1.5 py-px rounded-full mt-1 inline-block border-0" style={{ color: metric.color, backgroundColor: alpha(metric.color, 8) }}>
+                      {metric.status}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 6: PIUTANG JATUH TEMPO + PIUTANG SUMMARY
           ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Piutang Jatuh Tempo (2/3) */}
@@ -1245,9 +1319,9 @@ export default function BusinessDashboard() {
           </CardContent>
         </Card>
 
-        {/* Top Customers + Piutang Summary (1/3) */}
+        {/* Quick Actions + Piutang Summary (1/3) */}
         <div className="space-y-3">
-          {/* Top Customers */}
+          {/* Top 3 Customers by spending */}
           {topCustomers.length > 0 && (
             <Card className="border-border">
               <CardHeader className="pb-2 pt-4 px-4">
@@ -1318,7 +1392,7 @@ export default function BusinessDashboard() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 6: TOP PRODUCTS + INVESTOR (if any)
+          SECTION 8: TOP PRODUCTS + INVESTOR (if any)
           ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Top Produk Terjual */}
@@ -1483,7 +1557,7 @@ export default function BusinessDashboard() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 7: TIPS + INSIGHT
+          SECTION 9: TIPS + INSIGHT
           ═══════════════════════════════════════════════════════════════ */}
       <Card className="overflow-hidden border-border">
         <CardContent className="p-3 sm:p-4">

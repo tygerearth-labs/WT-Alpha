@@ -140,6 +140,18 @@ export function MainLayout() {
     }, 200);
   }, [currentPage]);
 
+  // Listen for biz-navigate events from child components (e.g., dashboard quick actions)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { page } = (e as CustomEvent).detail;
+      if (page && page !== currentPage) {
+        navigateTo(page as PageType);
+      }
+    };
+    window.addEventListener('biz-navigate', handler);
+    return () => window.removeEventListener('biz-navigate', handler);
+  }, [currentPage, navigateTo]);
+
   // Fetch current month stats for sidebar mini bar
   useEffect(() => {
     if (mode !== 'personal') return;

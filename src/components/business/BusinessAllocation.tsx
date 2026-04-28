@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -36,10 +36,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, ArrowDownToLine, History, Wallet, TrendingUp,
-  Percent, DollarSign, Layers, ArrowUpRight, Lightbulb, Info,
+  Percent, DollarSign, Layers, ArrowUpRight, Lightbulb, Info, CircleDollarSign,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // ─── THEME ─────────────────────────────────────────────────────
 const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
@@ -148,6 +149,12 @@ export default function BusinessAllocation() {
     personalNote: '',
   });
   const [saving, setSaving] = useState(false);
+
+  const formattedAllocNominal = useMemo(() => {
+    const num = parseFloat(formData.amount);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [formData.amount, formatAmount]);
 
   const businessId = activeBusiness?.id;
 
@@ -530,6 +537,19 @@ export default function BusinessAllocation() {
                   min="0"
                   className="text-sm rounded-lg tabular-nums bg-card border border-border text-foreground"
                 />
+                {formattedAllocNominal && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="flex items-center gap-1.5 px-1 mt-1"
+                  >
+                    <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-semibold tabular-nums text-primary">
+                      {formattedAllocNominal}
+                    </span>
+                  </motion.div>
+                )}
               </div>
             </div>
 

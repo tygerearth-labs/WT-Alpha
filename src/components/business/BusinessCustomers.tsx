@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -38,12 +38,20 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays, Phone, Mail, MapPin } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays, Phone, Mail, MapPin, ShoppingBag, Receipt, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+
+// ─── COLOR SYSTEM ─────────────────────────────────────────────
+const c = {
+  primary: 'var(--primary)', secondary: 'var(--secondary)', destructive: 'var(--destructive)',
+  warning: 'var(--warning)', muted: 'var(--muted-foreground)', border: 'var(--border)',
+  foreground: 'var(--foreground)', card: 'var(--card)',
+};
+const alpha = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 
 // ─── THEME ─────────────────────────────────────────────────────
 const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
@@ -87,6 +95,7 @@ export default function BusinessCustomers() {
   const { formatAmount } = useCurrencyFormat();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerSpending, setCustomerSpending] = useState<Record<string, { total: number; method: string | null; txCount: number; lastDate: string | null }>>({});
+  const [customerPiutang, setCustomerPiutang] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -119,33 +128,46 @@ export default function BusinessCustomers() {
 
   const fetchSalesForSpending = useCallback(() => {
     if (!businessId) return;
-    fetch(`/api/business/${businessId}/sales?pageSize=200`)
-      .then((res) => {
+    Promise.all([
+      fetch(`/api/business/${businessId}/sales?pageSize=200`).then((res) => {
         if (!res.ok) return { sales: [] } as { sales: CustomerSale[] };
         return res.json() as Promise<{ sales: CustomerSale[] }>;
-      })
-      .then((data) => {
-        const spendingMap: Record<string, { total: number; methods: Record<string, number>; txCount: number; lastDate: string }> = {};
-        const salesWithCustomer = data?.sales || [];
-        for (const sale of salesWithCustomer) {
-          const custId = sale.customer?.id;
-          if (custId) {
-            if (!spendingMap[custId]) spendingMap[custId] = { total: 0, methods: {}, txCount: 0, lastDate: sale.date };
-            spendingMap[custId].total += sale.amount || 0;
-            spendingMap[custId].txCount += 1;
-            if (sale.date > spendingMap[custId].lastDate) spendingMap[custId].lastDate = sale.date;
-            const method = sale.paymentMethod || 'Lainnya';
-            spendingMap[custId].methods[method] = (spendingMap[custId].methods[method] || 0) + 1;
-          }
+      }),
+      fetch(`/api/business/${businessId}/debts?type=piutang&pageSize=200`).then((res) => {
+        if (!res.ok) return { debts: [] } as { debts: Array<{ counterpart: string; remaining: number; status: string }> };
+        return res.json() as Promise<{ debts: Array<{ counterpart: string; remaining: number; status: string }> }>;
+      }),
+    ]).then(([salesData, debtsData]) => {
+      // Spending aggregation
+      const spendingMap: Record<string, { total: number; methods: Record<string, number>; txCount: number; lastDate: string }> = {};
+      const salesWithCustomer = salesData?.sales || [];
+      for (const sale of salesWithCustomer) {
+        const custId = sale.customer?.id;
+        if (custId) {
+          if (!spendingMap[custId]) spendingMap[custId] = { total: 0, methods: {}, txCount: 0, lastDate: sale.date };
+          spendingMap[custId].total += sale.amount || 0;
+          spendingMap[custId].txCount += 1;
+          if (sale.date > spendingMap[custId].lastDate) spendingMap[custId].lastDate = sale.date;
+          const method = sale.paymentMethod || 'Lainnya';
+          spendingMap[custId].methods[method] = (spendingMap[custId].methods[method] || 0) + 1;
         }
-        const result: Record<string, { total: number; method: string | null; txCount: number; lastDate: string | null }> = {};
-        Object.entries(spendingMap).forEach(([id, data]) => {
-          const topMethod = Object.entries(data.methods).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-          result[id] = { total: data.total, method: topMethod, txCount: data.txCount, lastDate: data.lastDate || null };
-        });
-        setCustomerSpending(result);
-      })
-      .catch(() => {});
+      }
+      const result: Record<string, { total: number; method: string | null; txCount: number; lastDate: string | null }> = {};
+      Object.entries(spendingMap).forEach(([id, data]) => {
+        const topMethod = Object.entries(data.methods).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+        result[id] = { total: data.total, method: topMethod, txCount: data.txCount, lastDate: data.lastDate || null };
+      });
+      setCustomerSpending(result);
+
+      // Piutang aggregation by customer name
+      const piutangMap: Record<string, number> = {};
+      (debtsData?.debts || []).forEach((debt) => {
+        if (debt.status !== 'paid' && debt.counterpart) {
+          piutangMap[debt.counterpart] = (piutangMap[debt.counterpart] || 0) + debt.remaining;
+        }
+      });
+      setCustomerPiutang(piutangMap);
+    }).catch(() => {});
   }, [businessId]);
 
   useEffect(() => {
@@ -219,21 +241,45 @@ export default function BusinessCustomers() {
     }
   };
 
-  const filteredCustomers = customers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone?.includes(search)
-  );
+  const filteredCustomers = useMemo(() => {
+    const base = customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.email?.toLowerCase().includes(search.toLowerCase()) ||
+        c.phone?.includes(search)
+    );
+    // Sort by total spending (highest first)
+    return [...base].sort((a, b) => {
+      const aSpending = customerSpending[a.id]?.total || 0;
+      const bSpending = customerSpending[b.id]?.total || 0;
+      return bSpending - aSpending;
+    });
+  }, [customers, search, customerSpending]);
 
   // ── Quick Stats ──
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+  // Determine customer status based on last transaction
+  const getCustomerStatus = (customer: Customer): { label: string; style: React.CSSProperties } => {
+    const spending = customerSpending[customer.id];
+    const piutangBalance = customerPiutang[customer.name] || 0;
+    if (!spending || spending.txCount === 0) {
+      return { label: 'Baru', style: { backgroundColor: 'color-mix(in srgb, var(--muted-foreground) 8%, transparent)', color: 'var(--muted-foreground)', border: '1px solid color-mix(in srgb, var(--muted-foreground) 15%, transparent)' } };
+    }
+    if (spending.lastDate) {
+      const lastTx = new Date(spending.lastDate);
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      if (lastTx < thirtyDaysAgo) {
+        return { label: 'Tidak Aktif', style: { backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)', color: 'var(--warning)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' } };
+      }
+    }
+    return { label: 'Aktif', style: { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 15%, transparent)' } };
+  };
+
   const activeCustomers = customers.filter((c) => {
     if (!c._count?.sales) return false;
-    // Use _count as proxy for activity
     return (c._count.sales || 0) > 0;
   }).length;
 
@@ -366,7 +412,8 @@ export default function BusinessCustomers() {
                   <AnimatePresence mode="popLayout">
                   {filteredCustomers.map((customer, index) => {
                     const totalCount = (customer._count?.invoices || 0) + (customer._count?.sales || 0);
-                    const badge = getCustomerBadge(totalCount);
+                    const statusBadge = getCustomerStatus(customer);
+                    const piutangBalance = customerPiutang[customer.name] || 0;
                     const spending = customerSpending[customer.id];
                     return (
                       <motion.div
@@ -384,9 +431,14 @@ export default function BusinessCustomers() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1">
                               <p className="text-xs font-semibold truncate text-foreground" >{customer.name}</p>
-                              <Badge variant="outline" className="text-[8px] font-semibold px-1.5 py-0 h-4 rounded-full" style={badge.style}>
-                                {badge.label}
+                              <Badge variant="outline" className="text-[8px] font-semibold px-1.5 py-0 h-4 rounded-full" style={statusBadge.style}>
+                                {statusBadge.label}
                               </Badge>
+                              {piutangBalance > 0 && (
+                                <Badge variant="outline" className="text-[8px] font-semibold px-1.5 py-0 h-4 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: '1px solid color-mix(in srgb, var(--destructive) 15%, transparent)' }}>
+                                  Piutang {formatAmount(piutangBalance)}
+                                </Badge>
+                              )}
                             </div>
                             {/* Contact info */}
                             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-1.5">
@@ -406,24 +458,30 @@ export default function BusinessCustomers() {
                             {/* Spending & method */}
                             <div className="flex items-center gap-2">
                               {spending?.total ? (
-                                <span className="text-[11px] font-bold tabular-nums text-secondary" >{formatAmount(spending.total)}</span>
+                                <span className="flex items-center gap-1 text-[11px] font-bold tabular-nums" style={{ color: c.secondary }}>
+                                  <ShoppingBag className="h-3 w-3" />
+                                  {formatAmount(spending.total)}
+                                </span>
                               ) : (
-                                <span className="text-[11px] text-muted-foreground" >Belum ada transaksi</span>
+                                <span className="text-[11px]" style={{ color: c.muted }}>Belum ada transaksi</span>
                               )}
                               {spending?.method && (
-                                <span className="text-[9px] px-1.5 py-px rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 7%, transparent)', color: 'var(--warning)' }}>
+                                <span className="text-[9px] px-1.5 py-px rounded-full" style={{ backgroundColor: alpha(c.warning, 7), color: c.warning }}>
                                   {spending.method}
                                 </span>
                               )}
                             </div>
-                            {/* Transaction count & last date */}
+                            {/* Transaction count & last date with icons */}
                             <div className="flex items-center gap-3 mt-1">
-                              <span className="text-[10px] text-muted-foreground" >
-                                {spending?.txCount || 0} transaksi
-                              </span>
+                              {spending?.txCount ? (
+                                <span className="flex items-center gap-1 text-[10px]" style={{ color: c.muted }}>
+                                  <Receipt className="h-2.5 w-2.5" />
+                                  {spending.txCount} transaksi
+                                </span>
+                              ) : null}
                               {spending?.lastDate && (
-                                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground" >
-                                  <CalendarDays className="h-2.5 w-2.5" />
+                                <span className="flex items-center gap-1 text-[10px]" style={{ color: c.muted }}>
+                                  <Clock className="h-2.5 w-2.5" />
                                   {new Date(spending.lastDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </span>
                               )}
@@ -472,7 +530,8 @@ export default function BusinessCustomers() {
                   <TableBody>
                     {filteredCustomers.map((customer, index) => {
                       const totalCount = (customer._count?.invoices || 0) + (customer._count?.sales || 0);
-                      const badge = getCustomerBadge(totalCount);
+                      const statusBadge = getCustomerStatus(customer);
+                      const piutangBalance = customerPiutang[customer.name] || 0;
                       const spending = customerSpending[customer.id];
                       const isAlt = index % 2 === 1;
 
@@ -493,9 +552,14 @@ export default function BusinessCustomers() {
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5">
                                   <p className="text-xs font-medium truncate text-foreground" >{customer.name}</p>
-                                  <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 h-4 rounded-full" style={badge.style}>
-                                    {badge.label}
+                                  <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 h-4 rounded-full" style={statusBadge.style}>
+                                    {statusBadge.label}
                                   </Badge>
+                                  {piutangBalance > 0 && (
+                                    <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 h-4 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 8%, transparent)', color: 'var(--destructive)', border: '1px solid color-mix(in srgb, var(--destructive) 15%, transparent)' }}>
+                                      Piutang
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -522,7 +586,16 @@ export default function BusinessCustomers() {
                           <TableCell className="text-xs py-2 hidden lg:table-cell text-muted-foreground" >
                             {spending?.txCount || 0} transaksi
                           </TableCell>
-                          <TableCell className="text-xs py-2 hidden lg:table-cell max-w-[150px] truncate text-muted-foreground" >
+                          <TableCell className="text-xs py-2 hidden lg:table-cell">
+                            {piutangBalance > 0 ? (
+                              <span className="font-semibold tabular-nums" style={{ color: 'var(--destructive)' }}>
+                                {formatAmount(piutangBalance)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground" >-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs py-2 hidden xl:table-cell max-w-[150px] truncate text-muted-foreground" >
                             {customer.phone || '-'}
                           </TableCell>
                           <TableCell className="py-2 text-right">

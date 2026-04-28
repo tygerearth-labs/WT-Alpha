@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -45,9 +45,18 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Package, Search, AlertTriangle, DollarSign, Boxes } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Search, AlertTriangle, DollarSign, Boxes, CircleDollarSign, AlertOctagon, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+// ─── COLOR SYSTEM ─────────────────────────────────────────────
+const c = {
+  primary: 'var(--primary)', secondary: 'var(--secondary)', destructive: 'var(--destructive)',
+  warning: 'var(--warning)', muted: 'var(--muted-foreground)', border: 'var(--border)',
+  foreground: 'var(--foreground)', card: 'var(--card)',
+};
+const alpha = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 
 interface Product {
   id: string;
@@ -98,6 +107,7 @@ export default function ProductList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -114,6 +124,12 @@ export default function ProductList() {
   const [saving, setSaving] = useState(false);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const formattedPriceNominal = useMemo(() => {
+    const num = parseFloat(formData.price);
+    if (isNaN(num) || num <= 0) return '';
+    return formatAmount(num);
+  }, [formData.price, formatAmount]);
 
   const businessId = activeBusiness?.id;
 
@@ -235,26 +251,50 @@ export default function ProductList() {
   };
 
   const getStockBadge = (stock: number) => {
+    const level = getStockLevel(stock);
     if (stock === 0) {
       return (
-        <Badge variant="outline" className="text-xs font-normal border-0 bg-destructive/20 text-destructive">
-          {t('biz.outOfStock')}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-[10px] font-semibold border-0 px-2 py-0.5 h-5 rounded-full" style={{ backgroundColor: level.bg, color: level.color }}>
+            <AlertOctagon className="h-2.5 w-2.5 mr-0.5" />
+            Stok Habis
+          </Badge>
+        </div>
       );
     }
-    if (stock <= 10) {
+    if (stock <= 5) {
       return (
-        <Badge variant="outline" className="text-xs font-normal border-0 bg-yellow-500/20 text-yellow-400">
-          {stock}
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-[10px] font-semibold border-0 px-2 py-0.5 h-5 rounded-full" style={{ backgroundColor: level.bg, color: level.color }}>
+            {stock} pcs
+          </Badge>
+        </div>
+      );
+    }
+    if (stock <= 20) {
+      return (
+        <Badge variant="outline" className="text-[10px] font-normal border-0 px-2 py-0.5 h-5 rounded-full" style={{ backgroundColor: level.bg, color: level.color }}>
+          {stock} pcs
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="text-xs font-normal border-0 bg-secondary/20 text-secondary">
-        {stock}
+      <Badge variant="outline" className="text-[10px] font-normal border-0 px-2 py-0.5 h-5 rounded-full" style={{ backgroundColor: level.bg, color: level.color }}>
+        {stock} pcs
       </Badge>
     );
   };
+
+  const getStockLevel = (stock: number): { label: string; color: string; bg: string; pct: number } => {
+    if (stock === 0) return { label: 'Habis', color: c.destructive, bg: alpha(c.destructive, 8), pct: 0 };
+    if (stock <= 5) return { label: 'Menipis', color: c.warning, bg: alpha(c.warning, 8), pct: Math.min(stock / 5 * 25, 25) };
+    if (stock <= 20) return { label: 'Sedang', color: c.secondary, bg: alpha(c.secondary, 8), pct: 25 + ((stock - 5) / 15) * 25 };
+    return { label: 'Tersedia', color: c.primary, bg: alpha(c.primary, 8), pct: Math.min(50 + ((stock - 20) / 30) * 50, 100) };
+  };
+
+  /* ── Low stock products (stock <= 5) ── */
+  const lowStockProducts = useMemo(() => products.filter(p => p.stock <= 5), [products]);
+  const displayProducts = useMemo(() => showLowStockOnly ? lowStockProducts : products, [showLowStockOnly, lowStockProducts, products]);
 
   if (!businessId) {
     return (
@@ -305,6 +345,65 @@ export default function ProductList() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* Stok Rendah Alert Section */}
+      {!loading && lowStockProducts.length > 0 && (
+        <Card className="rounded-xl border overflow-hidden" style={{ borderColor: alpha(c.destructive, 20), background: alpha(c.destructive, 3) }}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.destructive, 10) }}>
+                  <AlertTriangle className="h-3 w-3" style={{ color: c.destructive }} />
+                </div>
+                <div>
+                  <span className="text-xs font-semibold" style={{ color: c.foreground }}>Stok Rendah</span>
+                  <span className="text-[10px] ml-1.5" style={{ color: c.muted }}>({lowStockProducts.length} produk)</span>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                className="h-7 text-[10px] font-medium rounded-lg"
+                style={{
+                  color: showLowStockOnly ? c.destructive : c.muted,
+                  backgroundColor: showLowStockOnly ? alpha(c.destructive, 10) : 'transparent',
+                }}
+              >
+                <Filter className="h-3 w-3 mr-1" />
+                {showLowStockOnly ? 'Tampilkan Semua' : 'Filter Stok Rendah'}
+              </Button>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {lowStockProducts.slice(0, 8).map(p => (
+                <div
+                  key={p.id}
+                  className="shrink-0 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                  style={{
+                    background: alpha(c.card, 0),
+                    border: `1px solid ${p.stock === 0 ? alpha(c.destructive, 15) : alpha(c.warning, 15)}`,
+                  }}
+                  onClick={() => {
+                    setSearch(p.name);
+                    setShowLowStockOnly(false);
+                  }}
+                >
+                  <div className="h-6 w-6 rounded flex items-center justify-center text-[9px] font-bold" style={{
+                    backgroundColor: p.stock === 0 ? alpha(c.destructive, 12) : alpha(c.warning, 12),
+                    color: p.stock === 0 ? c.destructive : c.warning,
+                  }}>
+                    {p.stock}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium truncate max-w-[100px]" style={{ color: c.foreground }}>{p.name}</p>
+                    <p className="text-[8px]" style={{ color: c.muted }}>{p.unit || 'pcs'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Header */}
@@ -382,13 +481,20 @@ export default function ProductList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product) => (
+                  {displayProducts.map((product) => {
+                    const level = getStockLevel(product.stock);
+                    return (
                     <TableRow
                       key={product.id}
                       className={`border-border hover:bg-muted/20 ${!product.isActive ? 'opacity-50' : ''}`}
                     >
-                      <TableCell className="text-foreground text-xs py-2 font-medium max-w-[180px] truncate">
-                        {product.name}
+                      <TableCell className="text-foreground text-xs py-2 font-medium max-w-[180px]">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{product.name}</span>
+                          <Badge variant="outline" className="text-[8px] font-semibold border-0 px-1.5 py-0 h-4 rounded-full shrink-0" style={{ backgroundColor: level.bg, color: level.color }}>
+                            {level.label}
+                          </Badge>
+                        </div>
                       </TableCell>
                       <TableCell className="py-2 hidden sm:table-cell">
                         <span className="text-muted-foreground/60 text-xs font-mono">{product.sku || '-'}</span>
@@ -396,8 +502,19 @@ export default function ProductList() {
                       <TableCell className="text-xs text-right font-medium py-2 text-secondary">
                         {formatAmount(product.price)}
                       </TableCell>
-                      <TableCell className="py-2 text-right">
-                        {getStockBadge(product.stock)}
+                      <TableCell className="py-2">
+                        <div className="flex flex-col items-end gap-1 min-w-[90px]">
+                          <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.border, 20) }}>
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min(level.pct, 100)}%`,
+                                backgroundColor: level.color,
+                              }}
+                            />
+                          </div>
+                          {getStockBadge(product.stock)}
+                        </div>
                       </TableCell>
                       <TableCell className="py-2 hidden md:table-cell">
                         {product.category && (
@@ -437,7 +554,8 @@ export default function ProductList() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -491,6 +609,19 @@ export default function ProductList() {
                   step="any"
                   className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/30"
                 />
+                {formattedPriceNominal && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="flex items-center gap-1.5 px-1 mt-1"
+                  >
+                    <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-semibold tabular-nums text-secondary">
+                      {formattedPriceNominal}
+                    </span>
+                  </motion.div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-muted-foreground/80">{t('biz.productStock')}</Label>

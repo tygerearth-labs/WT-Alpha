@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -48,13 +48,38 @@ import {
   Plus, Pencil, Trash2, FileText, Download,
   PlusCircle, MinusCircle, Eye, Receipt,
   Clock, CheckCircle2, AlertTriangle, TrendingUp,
-  Landmark, Star, Info, Building2,
+  Landmark, Star, Info, Building2, Search,
+  Send, CalendarDays, ChevronRight, Filter, CircleDollarSign,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// ─── Color System (matching BusinessCash.tsx) ───────────────────────
+const c = {
+  primary: 'var(--primary)',
+  secondary: 'var(--secondary)',
+  destructive: 'var(--destructive)',
+  warning: 'var(--warning)',
+  muted: 'var(--muted-foreground)',
+  border: 'var(--border)',
+  foreground: 'var(--foreground)',
+  card: 'var(--card)',
+};
+const alpha = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
+
+// ─── Animation Variants ─────────────────────────────────────────────
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
+};
+
+// ─── Types ──────────────────────────────────────────────────────────
 interface InvoiceItem {
   description: string;
   qty: number;
@@ -77,14 +102,55 @@ interface Invoice {
   customerId?: string | null;
 }
 
-const STATUS_STYLES: Record<string, { label: string; dotColor: string; icon: React.ComponentType<{ className?: string }>; bg: string; color: string }> = {
-  pending: { label: 'biz.invoicePending', dotColor: 'var(--warning)', icon: Clock, bg: 'color-mix(in srgb, var(--warning) 10%, transparent)', color: 'var(--warning)' },
-  paid: { label: 'biz.invoicePaid', dotColor: 'var(--secondary)', icon: CheckCircle2, bg: 'color-mix(in srgb, var(--secondary) 10%, transparent)', color: 'var(--secondary)' },
-  cancelled: { label: 'biz.invoiceCancelled', dotColor: '#666', icon: AlertTriangle, bg: 'rgba(255,255,255,0.05)', color: 'var(--muted-foreground)' },
-  overdue: { label: 'biz.invoiceOverdue', dotColor: 'var(--destructive)', icon: AlertTriangle, bg: 'color-mix(in srgb, var(--destructive) 10%, transparent)', color: 'var(--destructive)' },
+interface InvoiceSettingsData {
+  template: string;
+  primaryColor: string;
+  secondaryColor: string;
+  logoUrl: string | null;
+  businessName: string | null;
+  businessAddress: string | null;
+  businessPhone: string | null;
+  businessEmail: string | null;
+  businessWebsite: string | null;
+  footerText: string | null;
+}
+
+interface BankAccountInfo {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  isDefault: boolean;
+  displayOrder: number;
+}
+
+// ─── Status Config ──────────────────────────────────────────────────
+const STATUS_CONFIG: Record<string, { label: string; dotColor: string; icon: React.ComponentType<{ className?: string }>; bg: string; color: string }> = {
+  pending: { label: 'biz.invoicePending', dotColor: c.warning, icon: Clock, bg: alpha(c.warning, 10), color: c.warning },
+  paid: { label: 'biz.invoicePaid', dotColor: c.secondary, icon: CheckCircle2, bg: alpha(c.secondary, 10), color: c.secondary },
+  cancelled: { label: 'biz.invoiceCancelled', dotColor: '#666', icon: AlertTriangle, bg: alpha('#666', 8), color: c.muted },
+  overdue: { label: 'biz.invoiceOverdue', dotColor: c.destructive, icon: AlertTriangle, bg: alpha(c.destructive, 10), color: c.destructive },
 };
 
+type StatusFilter = 'all' | 'pending' | 'paid' | 'overdue' | 'cancelled';
+type PeriodFilter = 'month' | 'quarter' | 'year';
 
+const STATUS_CHIPS: { value: StatusFilter; label: string; color: string }[] = [
+  { value: 'all', label: 'Semua', color: c.primary },
+  { value: 'pending', label: 'Terkirim', color: c.warning },
+  { value: 'paid', label: 'Lunas', color: c.secondary },
+  { value: 'overdue', label: 'Jatuh Tempo', color: c.destructive },
+];
+
+const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
+  { value: 'month', label: 'Bulan Ini' },
+  { value: 'quarter', label: '3 Bulan' },
+  { value: 'year', label: 'Tahun' },
+];
+
+// ══════════════════════════════════════════════════════════════════
+//  Main Component
+// ══════════════════════════════════════════════════════════════════
 export default function BusinessInvoice() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
@@ -108,37 +174,16 @@ export default function BusinessInvoice() {
   });
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  /* ---- Invoice Settings for Preview ---- */
-  interface InvoiceSettingsData {
-    template: string;
-    primaryColor: string;
-    secondaryColor: string;
-    logoUrl: string | null;
-    businessName: string | null;
-    businessAddress: string | null;
-    businessPhone: string | null;
-    businessEmail: string | null;
-    businessWebsite: string | null;
-    footerText: string | null;
-  }
   const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettingsData | null>(null);
-
-  /* ---- Bank Accounts ---- */
-  interface BankAccountInfo {
-    id: string;
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-    isDefault: boolean;
-    displayOrder: number;
-  }
   const [bankAccounts, setBankAccounts] = useState<BankAccountInfo[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month');
 
   const businessId = activeBusiness?.id;
 
+  /* ── Data Fetching (unchanged) ────────────────────────────────── */
   const fetchBankAccounts = useCallback(() => {
     if (!businessId) return;
     fetch(`/api/business/${businessId}/bank-accounts`)
@@ -174,7 +219,6 @@ export default function BusinessInvoice() {
     if (businessId) fetchBankAccounts();
   }, [businessId, fetchBankAccounts]);
 
-  // Fetch invoice settings when viewing an invoice
   useEffect(() => {
     if (viewInvoice && businessId) fetchInvoiceSettings();
   }, [viewInvoice, businessId, fetchInvoiceSettings]);
@@ -212,6 +256,7 @@ export default function BusinessInvoice() {
     }
   }, [businessId, fetchInvoices]);
 
+  /* ── CRUD Handlers (unchanged) ────────────────────────────────── */
   const openCreateDialog = () => {
     setEditingInvoice(null);
     const num = `INV-${Date.now().toString(36).toUpperCase()}`;
@@ -338,25 +383,30 @@ export default function BusinessInvoice() {
     }
   };
 
-  const filteredInvoices = invoices.filter(
-    (inv) =>
-      inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customer?.name.toLowerCase().includes(search.toLowerCase())
-  );
+  /* ── Derived Data ─────────────────────────────────────────────── */
+  const periodInvoices = useMemo(() => {
+    if (periodFilter === 'year') return invoices;
+    const now = new Date();
+    const cutoff = periodFilter === 'month'
+      ? new Date(now.getFullYear(), now.getMonth(), 1)
+      : new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    return invoices.filter((inv) => new Date(inv.date) >= cutoff);
+  }, [invoices, periodFilter]);
 
-  /* ---- Summary Stats ---- */
-  const totalInvoices = invoices.length;
-  const paidInvoices = invoices.filter((i) => i.status === 'paid').length;
-  const pendingInvoices = invoices.filter((i) => i.status === 'pending').length;
-  const overdueInvoices = invoices.filter((i) => i.status === 'overdue').length;
-  const totalRevenue = invoices.reduce((s, i) => s + i.total, 0);
+  const filteredInvoices = useMemo(() => {
+    return periodInvoices.filter(
+      (inv) =>
+        (statusFilter === 'all' || inv.status === statusFilter) &&
+        (inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
+          inv.customer?.name.toLowerCase().includes(search.toLowerCase()))
+    );
+  }, [periodInvoices, statusFilter, search]);
 
-  const statCards = [
-    { label: t('biz.invoices'), value: totalInvoices, icon: Receipt, color: 'var(--primary)' },
-    { label: t('biz.invoicePaid'), value: paidInvoices, icon: CheckCircle2, color: 'var(--secondary)' },
-    { label: t('biz.invoicePending'), value: pendingInvoices, icon: Clock, color: 'var(--warning)' },
-    { label: t('biz.bizRevenue'), value: formatAmount(totalRevenue), icon: TrendingUp, color: 'var(--destructive)' },
-  ];
+  const totalInvoices = periodInvoices.length;
+  const totalAmount = periodInvoices.reduce((s, i) => s + i.total, 0);
+  const paidInvoices = periodInvoices.filter((i) => i.status === 'paid').length;
+  const paidPct = totalInvoices > 0 ? Math.round((paidInvoices / totalInvoices) * 100) : 0;
+  const overdueCount = periodInvoices.filter((i) => i.status === 'overdue').length;
 
   if (!businessId) {
     return (
@@ -367,204 +417,367 @@ export default function BusinessInvoice() {
   }
 
   return (
-    <div className="space-y-3">
-      {/* Info Banner */}
-      <div className="flex items-start gap-2 p-2.5 rounded-lg text-[11px]" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
-        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-        <span className="text-muted-foreground" >
-          Kelola invoice/tagihan pelanggan. Invoice cicilan dibuat otomatis dari penjualan cicilan.
-        </span>
-      </div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-base font-bold flex items-center gap-2 text-foreground" >
-          <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-warning/15">
-            <FileText className="h-3.5 w-3.5 text-warning" />
-          </div>
-          {t('biz.invoices')}
-        </h2>
-        <Button onClick={openCreateDialog} size="sm" style={{ backgroundColor: 'var(--primary)', color: '#000' }} className="hover:opacity-90 rounded-lg">
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          {t('biz.addInvoice')}
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
-      {/* Summary Stat Cards */}
-      {!loading && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
-          {statCards.map((card, idx) => (
-            <Card key={idx} className="rounded-xl overflow-hidden bg-card border border-border">
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}20` }}>
-                    <card.icon className="h-3.5 w-3.5" style={{ color: card.color }} />
+        {/* ═══ Invoice Overview Hero ═══ */}
+        <motion.div variants={itemVariants}>
+          <Card className="rounded-xl overflow-hidden border border-border bg-card">
+            <CardContent className="p-4 sm:p-5">
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.primary, 15) }}>
+                    <FileText className="h-4 w-4" style={{ color: c.primary }} />
                   </div>
-                  {idx === 3 && overdueInvoices > 0 && (
-                    <Badge className="text-[10px] px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 10%, transparent)', color: 'var(--destructive)', border: '1px solid color-mix(in srgb, var(--destructive) 19%, transparent)' }}>
-                      {overdueInvoices} {t('biz.invoiceOverdue')}
-                    </Badge>
-                  )}
+                  <div>
+                    <h2 className="text-sm font-bold text-foreground">{t('biz.invoices')}</h2>
+                    <p className="text-[10px] text-muted-foreground">Kelola invoice & tagihan pelanggan</p>
+                  </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground" >{card.label}</p>
-                <p className="text-sm font-bold mt-0.5 text-foreground" >{card.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Search */}
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('common.search') + '...'}
-        className="max-w-sm text-sm bg-card border border-border text-foreground"
-      />
-
-      {/* Table */}
-      <Card className="rounded-xl overflow-hidden bg-card border border-border">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-2 p-3 sm:p-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 rounded-lg bg-card" />
-              ))}
-            </div>
-          ) : filteredInvoices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="h-16 w-16 rounded-xl flex items-center justify-center bg-card border border-border">
-                <FileText className="h-8 w-8 opacity-20" />
-              </div>
-              <p className="text-sm mt-3 text-muted-foreground" >{t('biz.noBizData')}</p>
-              <p className="text-xs mt-1 text-muted-foreground" >Create your first invoice to get started</p>
-            </div>
-          ) : (
-            <>
-              {/* Mobile Card List */}
-              <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border">
-                <AnimatePresence mode="popLayout">
-                  {filteredInvoices.map((inv, index) => {
-                    const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
-                    const StatusIcon = statusStyle.icon;
-                    return (
-                      <motion.div
-                        key={inv.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ delay: index * 0.03, duration: 0.2 }}
-                        className="p-3"
+                <div className="flex items-center gap-2">
+                  {/* Period Filter */}
+                  <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-lg" style={{ backgroundColor: alpha(c.foreground, 4) }}>
+                    {PERIOD_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setPeriodFilter(opt.value)}
+                        className={cn(
+                          'px-2.5 py-1 text-[10px] font-medium rounded-md transition-all',
+                          periodFilter === opt.value
+                            ? 'text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                        style={periodFilter === opt.value ? { backgroundColor: alpha(c.primary, 15), color: c.primary } : {}}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.dotColor }} />
-                              <p className="text-xs font-semibold truncate text-foreground">{inv.invoiceNumber}</p>
-                            </div>
-                            {inv.customer?.name && (
-                              <p className="text-[10px] text-muted-foreground mb-1.5 truncate">{inv.customer.name}</p>
-                            )}
-                            <Badge variant="outline" className="text-[10px] font-medium gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color, borderColor: 'transparent' }}>
-                              <StatusIcon className="h-2.5 w-2.5" />
-                              {t(statusStyle.label)}
-                            </Badge>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-xs font-bold tabular-nums text-foreground">{formatAmount(inv.total)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-end gap-0.5 mt-2 pt-2 border-t border-border">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => setViewInvoice(inv)}>
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
-                            {downloading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => openEditDialog(inv)}>
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md text-muted-foreground" onClick={() => setDeleteId(inv.id)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <Button onClick={openCreateDialog} size="sm" className="rounded-lg" style={{ backgroundColor: c.primary, color: '#000' }}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    {t('biz.addInvoice')}
+                  </Button>
+                </div>
               </div>
-              {/* Desktop Table */}
-              <div className="hidden sm:block max-h-[500px] overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-border hover:bg-transparent">
-                      <TableHead className="text-[11px] font-medium text-muted-foreground" >{t('biz.invoiceNumber')}</TableHead>
-                      <TableHead className="text-[11px] font-medium hidden sm:table-cell text-muted-foreground" >{t('biz.invoiceCustomer')}</TableHead>
-                      <TableHead className="text-[11px] font-medium text-muted-foreground" >{t('biz.invoiceStatus')}</TableHead>
-                      <TableHead className="text-[11px] font-medium hidden md:table-cell text-muted-foreground" >{t('biz.invoiceDueDate')}</TableHead>
-                      <TableHead className="text-[11px] font-medium text-right text-muted-foreground" >{t('biz.invoiceTotal')}</TableHead>
-                      <TableHead className="text-[11px] font-medium w-32" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <AnimatePresence>
-                      {filteredInvoices.map((inv) => {
-                        const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
-                        const StatusIcon = statusStyle.icon;
+
+              {/* Mobile period filter */}
+              <div className="flex sm:hidden items-center gap-1.5 mb-3">
+                {PERIOD_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPeriodFilter(opt.value)}
+                    className={cn(
+                      'px-3 py-1.5 text-[10px] font-medium rounded-full border transition-all',
+                      periodFilter === opt.value
+                        ? 'border-0'
+                        : 'border-0 text-muted-foreground'
+                    )}
+                    style={periodFilter === opt.value ? { backgroundColor: alpha(c.primary, 15), color: c.primary } : { backgroundColor: alpha(c.foreground, 4) }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {/* Total Invoices */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.primary, 12) }}>
+                    <Receipt className="h-4 w-4" style={{ color: c.primary }} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Total Invoice</p>
+                    <p className="text-base font-bold tabular-nums text-foreground">{totalInvoices}</p>
+                  </div>
+                </div>
+                {/* Total Amount */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.secondary, 12) }}>
+                    <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground">Total Amount</p>
+                    <p className="text-base font-bold tabular-nums truncate text-foreground">{formatAmount(totalAmount)}</p>
+                  </div>
+                </div>
+                {/* Paid % */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.warning, 12) }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: c.warning }} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Lunas</p>
+                    <p className="text-base font-bold tabular-nums text-foreground">{paidPct}%</p>
+                  </div>
+                </div>
+                {/* Overdue */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 12) : alpha(c.muted, 6) }}>
+                    <AlertTriangle className="h-4 w-4" style={{ color: overdueCount > 0 ? c.destructive : c.muted }} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Jatuh Tempo</p>
+                    <p className="text-base font-bold tabular-nums text-foreground">{overdueCount}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* ═══ Status Filter Chips + Search ═══ */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
+            {STATUS_CHIPS.map((chip) => (
+              <button
+                key={chip.value}
+                onClick={() => setStatusFilter(chip.value)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full border-0 whitespace-nowrap transition-all shrink-0'
+                )}
+                style={
+                  statusFilter === chip.value
+                    ? { backgroundColor: alpha(chip.color, 15), color: chip.color }
+                    : { backgroundColor: alpha(c.foreground, 5), color: c.muted }
+                }
+              >
+                {chip.label}
+                {chip.value !== 'all' && (
+                  <span className="text-[9px] tabular-nums opacity-60">
+                    {chip.value === 'paid' ? paidInvoices : chip.value === 'overdue' ? overdueCount : periodInvoices.filter((i) => i.status === chip.value).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="relative flex-1 sm:max-w-xs sm:ml-auto">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('common.search') + '...'}
+              className="h-8 pl-8 text-xs bg-transparent border border-border text-foreground rounded-lg"
+            />
+          </div>
+        </motion.div>
+
+        {/* ═══ Invoice List ═══ */}
+        <motion.div variants={itemVariants}>
+          <Card className="rounded-xl overflow-hidden bg-card border border-border">
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-2 p-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded-lg" style={{ backgroundColor: alpha(c.foreground, 4) }} />
+                  ))}
+                </div>
+              ) : filteredInvoices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 px-6">
+                  <div className="h-14 w-14 rounded-xl flex items-center justify-center border border-border mb-3">
+                    <FileText className="h-7 w-7 opacity-20" />
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">Belum ada invoice</p>
+                  <p className="text-xs mt-1 text-center max-w-[200px] text-muted-foreground">
+                    Buat invoice pertama untuk memulai
+                  </p>
+                  <Button
+                    onClick={openCreateDialog}
+                    size="sm"
+                    variant="outline"
+                    className="mt-4 rounded-lg h-8 border-0"
+                    style={{ backgroundColor: alpha(c.primary, 10), color: c.primary }}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    {t('biz.addInvoice')}
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* List summary */}
+                  <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                    <p className="text-[10px] text-muted-foreground">
+                      Menampilkan <span className="text-foreground font-medium">{filteredInvoices.length}</span> invoice
+                      <span className="ml-1 tabular-nums">
+                        — Total: {formatAmount(filteredInvoices.reduce((s, i) => s + i.total, 0))}
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border">
+                    <AnimatePresence mode="popLayout">
+                      {filteredInvoices.map((inv, index) => {
+                        const sc = STATUS_CONFIG[inv.status] || STATUS_CONFIG.pending;
+                        const StatusIcon = sc.icon;
                         return (
-                          <tr
+                          <motion.div
                             key={inv.id}
-                            className="transition-colors duration-150 group cursor-default border-b border-border"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ delay: index * 0.03, duration: 0.25 }}
+                            className="p-3 cursor-pointer"
+                            onClick={() => setViewInvoice(inv)}
                           >
-                            <TableCell className="text-xs py-2 font-medium text-foreground" >
-                              <div className="flex items-center gap-2">
-                                <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: statusStyle.dotColor }} />
-                                {inv.invoiceNumber}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sc.dotColor }} />
+                                  <p className="text-xs font-semibold truncate text-foreground">{inv.invoiceNumber}</p>
+                                </div>
+                                {inv.customer?.name && (
+                                  <p className="text-[10px] text-muted-foreground mb-1 truncate pl-3.5">{inv.customer.name}</p>
+                                )}
                               </div>
-                            </TableCell>
-                            <TableCell className="py-2 hidden sm:table-cell">
-                              <span className="text-xs text-muted-foreground" >{inv.customer?.name || '-'}</span>
-                            </TableCell>
-                            <TableCell className="py-2">
-                              <Badge variant="outline" className="text-[10px] font-medium gap-1 px-1.5 py-0.5 rounded-md" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color, borderColor: 'transparent' }}>
+                              <div className="text-right shrink-0">
+                                <p className="text-xs font-bold tabular-nums text-foreground">{formatAmount(inv.total)}</p>
+                                {inv.dueDate && (
+                                  <p className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
+                                    {new Date(inv.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <Badge
+                                variant="outline"
+                                border-0
+                                className="text-[9px] font-medium gap-1 px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: sc.bg, color: sc.color }}
+                              >
                                 <StatusIcon className="h-2.5 w-2.5" />
-                                {t(statusStyle.label)}
+                                {t(sc.label)}
                               </Badge>
-                            </TableCell>
-                            <TableCell className="text-xs py-2 hidden md:table-cell text-muted-foreground" >
-                              {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '-'}
-                            </TableCell>
-                            <TableCell className="text-xs text-right font-semibold py-2 text-foreground" >
-                              {formatAmount(inv.total)}
-                            </TableCell>
-                            <TableCell className="py-2 text-right">
-                              <div className="flex items-center justify-end gap-0.5 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => setViewInvoice(inv)}>
-                                  <Eye className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
+                              <div className="flex items-center gap-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                  onClick={(e) => { e.stopPropagation(); handleDownloadPDF(inv.id); }}
+                                  disabled={downloading === inv.id}
+                                >
                                   {downloading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                                 </Button>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => openEditDialog(inv)}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                  onClick={(e) => { e.stopPropagation(); openEditDialog(inv); }}
+                                >
                                   <Pencil className="h-3 w-3" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground" onClick={() => setDeleteId(inv.id)}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 rounded-md text-muted-foreground"
+                                  onClick={(e) => { e.stopPropagation(); setDeleteId(inv.id); }}
+                                >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
-                            </TableCell>
-                          </tr>
+                            </div>
+                          </motion.div>
                         );
                       })}
                     </AnimatePresence>
-                  </TableBody>
-                </Table>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                  </div>
 
-      {/* View Invoice Dialog - Themed Preview */}
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-[500px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-border hover:bg-transparent">
+                          <TableHead className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">No. Invoice</TableHead>
+                          <TableHead className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pelanggan</TableHead>
+                          <TableHead className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Status</TableHead>
+                          <TableHead className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Jatuh Tempo</TableHead>
+                          <TableHead className="text-[10px] font-medium text-right text-muted-foreground uppercase tracking-wider">Total</TableHead>
+                          <TableHead className="text-[10px] font-medium w-36" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <AnimatePresence>
+                          {filteredInvoices.map((inv) => {
+                            const sc = STATUS_CONFIG[inv.status] || STATUS_CONFIG.pending;
+                            const StatusIcon = sc.icon;
+                            return (
+                              <tr
+                                key={inv.id}
+                                className="transition-colors duration-150 group cursor-pointer border-b border-border hover:bg-white/[0.02]"
+                                onClick={() => setViewInvoice(inv)}
+                              >
+                                <TableCell className="text-xs py-2.5 font-medium text-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sc.dotColor }} />
+                                    {inv.invoiceNumber}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <span className="text-xs text-muted-foreground">{inv.customer?.name || '-'}</span>
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <Badge
+                                    variant="outline"
+                                    border-0
+                                    className="text-[10px] font-medium gap-1 px-2 py-0.5 rounded-full"
+                                    style={{ backgroundColor: sc.bg, color: sc.color }}
+                                  >
+                                    <StatusIcon className="h-2.5 w-2.5" />
+                                    {t(sc.label)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs py-2.5 hidden md:table-cell text-muted-foreground tabular-nums">
+                                  {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                </TableCell>
+                                <TableCell className="text-xs text-right font-semibold py-2.5 tabular-nums text-foreground">
+                                  {formatAmount(inv.total)}
+                                </TableCell>
+                                <TableCell className="py-2.5 text-right">
+                                  <div className="flex items-center justify-end gap-0.5 opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground"
+                                      onClick={(e) => { e.stopPropagation(); handleDownloadPDF(inv.id); }}
+                                      disabled={downloading === inv.id}
+                                    >
+                                      {downloading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground"
+                                      onClick={(e) => { e.stopPropagation(); openEditDialog(inv); }}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-muted-foreground"
+                                      onClick={(e) => { e.stopPropagation(); setDeleteId(inv.id); }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </tr>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* ═══ View Invoice Dialog ═══ */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
         <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto rounded-xl p-0 bg-card border border-border">
           {viewInvoice && (() => {
@@ -580,12 +793,11 @@ export default function BusinessInvoice() {
             const inv = viewInvoice;
             const taxAmt = inv.tax * inv.subtotal / 100;
             const discAmt = inv.discount * inv.subtotal / 100;
-            const statusStyle = STATUS_STYLES[inv.status] || STATUS_STYLES.pending;
+            const statusStyle = STATUS_CONFIG[inv.status] || STATUS_CONFIG.pending;
             const StatusIcon = statusStyle.icon;
 
             return (
               <div className="w-full">
-                {/* ── MODERN HEADER ── */}
                 {tmpl === 'modern' && (
                   <div className="relative overflow-hidden rounded-t-xl">
                     <div className="px-5 py-5 flex items-start justify-between" style={{ background: `linear-gradient(135deg, ${pColor}, ${sColor})` }}>
@@ -618,17 +830,13 @@ export default function BusinessInvoice() {
                     <div className="h-1" style={{ backgroundColor: sColor }} />
                   </div>
                 )}
-
-                {/* ── CLASSIC HEADER ── */}
                 {tmpl === 'classic' && (
                   <div className="rounded-t-xl">
                     <div className="py-5 text-center" style={{ borderBottom: `2px solid ${pColor}` }}>
-                      {bizLogo && (
-                        <img src={bizLogo} alt="" className="h-10 w-10 rounded-lg object-cover mx-auto mb-2" />
-                      )}
+                      {bizLogo && <img src={bizLogo} alt="" className="h-10 w-10 rounded-lg object-cover mx-auto mb-2" />}
                       <p className="font-bold text-base tracking-wider uppercase" style={{ color: pColor }}>{bizName}</p>
                       {(bizAddr || bizPhone || bizEmail) && (
-                        <p className="text-[10px] mt-1 text-muted-foreground" >
+                        <p className="text-[10px] mt-1 text-muted-foreground">
                           {[bizAddr, bizPhone && `Tel: ${bizPhone}`, bizEmail].filter(Boolean).join(' · ')}
                         </p>
                       )}
@@ -636,8 +844,6 @@ export default function BusinessInvoice() {
                     <div className="h-[1px]" style={{ backgroundColor: pColor, opacity: 0.3 }} />
                   </div>
                 )}
-
-                {/* ── MINIMAL HEADER ── */}
                 {tmpl === 'minimal' && (
                   <div className="px-5 pt-5 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
                     <div className="flex items-center gap-2.5">
@@ -649,43 +855,33 @@ export default function BusinessInvoice() {
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-sm text-foreground" >{bizName}</p>
-                        {bizAddr && <p className="text-[10px] text-muted-foreground" >{bizAddr}</p>}
+                        <p className="font-medium text-sm text-foreground">{bizName}</p>
+                        {bizAddr && <p className="text-[10px] text-muted-foreground">{bizAddr}</p>}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-xs text-foreground" >{inv.invoiceNumber}</p>
-                      <p className="text-[10px] text-muted-foreground" >{new Date(inv.date).toLocaleDateString('id-ID')}</p>
+                      <p className="font-medium text-xs text-foreground">{inv.invoiceNumber}</p>
+                      <p className="text-[10px] text-muted-foreground">{new Date(inv.date).toLocaleDateString('id-ID')}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Body content */}
                 <div className="px-5 py-4 space-y-4">
-                  {/* Status + Date row */}
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="text-[10px] gap-1 px-2 py-0.5 rounded-md" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color, borderColor: 'transparent' }}>
+                    <Badge variant="outline" border-0 className="text-[10px] gap-1 px-2 py-0.5 rounded-full" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}>
                       <StatusIcon className="h-2.5 w-2.5" />
                       {t(statusStyle.label)}
                     </Badge>
                     {inv.dueDate && tmpl !== 'modern' && (
-                      <span className="text-[10px] text-muted-foreground" >
-                        Jatuh Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID')}
-                      </span>
+                      <span className="text-[10px] text-muted-foreground">Jatuh Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID')}</span>
                     )}
                   </div>
-
-                  {/* Customer info */}
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 text-muted-foreground" >
-                        {tmpl === 'minimal' ? 'Bill To' : 'Kepada:'}
-                      </p>
-                      <p className="text-xs font-medium text-foreground" >{inv.customer?.name || '-'}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 text-muted-foreground">{tmpl === 'minimal' ? 'Bill To' : 'Kepada:'}</p>
+                      <p className="text-xs font-medium text-foreground">{inv.customer?.name || '-'}</p>
                     </div>
                   </div>
-
-                  {/* Items Table */}
                   <div className="rounded-lg overflow-hidden border border-border">
                     <div className="grid grid-cols-12 gap-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ backgroundColor: tmpl === 'minimal' ? 'transparent' : `${pColor}20`, color: pColor, borderBottom: '1px solid var(--border)' }}>
                       <span className="col-span-5">Item</span>
@@ -694,114 +890,65 @@ export default function BusinessInvoice() {
                       <span className="col-span-3 text-right">Total</span>
                     </div>
                     {inv.items.map((item, i) => (
-                      <div
-                        key={i}
-                        className="grid grid-cols-12 gap-0 px-3 py-2 text-[11px]"
-                        style={{
-                          borderBottom: i < inv.items.length - 1 ? '1px solid var(--border)' : 'none',
-                          backgroundColor: i % 2 === 1 ? 'rgba(255,255,255,0.02)' : 'transparent',
-                        }}
-                      >
-                        <span className="col-span-5 truncate text-foreground" >{item.description}</span>
-                        <span className="col-span-2 text-center text-muted-foreground" >{item.qty}</span>
-                        <span className="col-span-2 text-right text-muted-foreground" >{formatAmount(item.price)}</span>
-                        <span className="col-span-3 text-right font-medium text-foreground" >{formatAmount(item.qty * item.price)}</span>
+                      <div key={i} className="grid grid-cols-12 gap-0 px-3 py-2 text-[11px]" style={{ borderBottom: i < inv.items.length - 1 ? '1px solid var(--border)' : 'none', backgroundColor: i % 2 === 1 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                        <span className="col-span-5 truncate text-foreground">{item.description}</span>
+                        <span className="col-span-2 text-center text-muted-foreground tabular-nums">{item.qty}</span>
+                        <span className="col-span-2 text-right text-muted-foreground tabular-nums">{formatAmount(item.price)}</span>
+                        <span className="col-span-3 text-right font-medium text-foreground tabular-nums">{formatAmount(item.qty * item.price)}</span>
                       </div>
                     ))}
                   </div>
-
-                  {/* Totals */}
                   <div className="flex justify-end">
                     <div className="w-52 space-y-1 text-xs">
-                      <div className="flex justify-between text-muted-foreground" >
-                        <span>Subtotal</span>
-                        <span>{formatAmount(inv.subtotal)}</span>
-                      </div>
-                      {inv.tax > 0 && (
-                        <div className="flex justify-between text-muted-foreground" >
-                          <span>Pajak ({inv.tax}%)</span>
-                          <span>{formatAmount(taxAmt)}</span>
-                        </div>
-                      )}
-                      {inv.discount > 0 && (
-                        <div className="flex justify-between" style={{ color: sColor }}>
-                          <span>Diskon ({inv.discount}%)</span>
-                          <span>-{formatAmount(discAmt)}</span>
-                        </div>
-                      )}
+                      <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="tabular-nums">{formatAmount(inv.subtotal)}</span></div>
+                      {inv.tax > 0 && <div className="flex justify-between text-muted-foreground"><span>Pajak ({inv.tax}%)</span><span className="tabular-nums">{formatAmount(taxAmt)}</span></div>}
+                      {inv.discount > 0 && <div className="flex justify-between" style={{ color: sColor }}><span>Diskon ({inv.discount}%)</span><span className="tabular-nums">-{formatAmount(discAmt)}</span></div>}
                       <div className="flex justify-between font-bold text-sm pt-2" style={{ color: 'var(--foreground)', borderTop: '1px solid var(--border)' }}>
-                        <span>Total</span>
-                        <span style={{ color: pColor }}>{formatAmount(inv.total)}</span>
+                        <span>Total</span><span className="tabular-nums" style={{ color: pColor }}>{formatAmount(inv.total)}</span>
                       </div>
                     </div>
                   </div>
-
-                  {/* Notes */}
                   {inv.notes && (
                     <div className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-muted-foreground" >Catatan</p>
-                      <p className="text-[11px] leading-relaxed text-muted-foreground" >{inv.notes}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-muted-foreground">Catatan</p>
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">{inv.notes}</p>
                     </div>
                   )}
-
-                  {/* Bank Accounts */}
                   {bankAccounts.length > 0 && (
                     <div className="rounded-lg p-3" style={{ border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-5 w-5 rounded-md flex items-center justify-center" style={{ backgroundColor: `${sColor}20` }}>
                           <Landmark className="h-2.5 w-2.5" style={{ color: sColor }} />
                         </div>
-                        <p className="text-[11px] font-semibold text-muted-foreground" >Rekening Pembayaran</p>
+                        <p className="text-[11px] font-semibold text-muted-foreground">Rekening Pembayaran</p>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {bankAccounts.map((acc) => (
-                          <div
-                            key={acc.id}
-                            className="flex items-start gap-2 p-2 rounded-lg transition-colors"
-                            style={{
-                              backgroundColor: acc.isDefault ? `${sColor}08` : 'transparent',
-                              border: `1px solid ${acc.isDefault ? `${sColor}30` : 'var(--border)'}`,
-                            }}
-                          >
+                          <div key={acc.id} className="flex items-start gap-2 p-2 rounded-lg" style={{ backgroundColor: acc.isDefault ? `${sColor}08` : 'transparent', border: `1px solid ${acc.isDefault ? `${sColor}30` : 'var(--border)'}` }}>
                             <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: acc.isDefault ? `${sColor}15` : 'rgba(255,255,255,0.04)' }}>
                               <Landmark className="h-3 w-3" style={{ color: acc.isDefault ? sColor : 'var(--muted-foreground)' }} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <p className="text-[11px] font-medium truncate text-foreground" >{acc.bankName}</p>
-                                {acc.isDefault && (
-                                  <Badge className="text-[8px] px-1 py-0" style={{ backgroundColor: `${sColor}15`, color: sColor, border: 'transparent' }}>
-                                    <Star className="h-1.5 w-1.5 mr-0.5" />
-                                    Utama
-                                  </Badge>
-                                )}
+                                <p className="text-[11px] font-medium truncate text-foreground">{acc.bankName}</p>
+                                {acc.isDefault && <Badge className="text-[8px] px-1 py-0" style={{ backgroundColor: `${sColor}15`, color: sColor, border: 'transparent' }}><Star className="h-1.5 w-1.5 mr-0.5" />Utama</Badge>}
                               </div>
-                              <p className="text-[10px] font-mono mt-0.5 text-muted-foreground" >{acc.accountNumber}</p>
-                              <p className="text-[10px] mt-0.5 text-muted-foreground" >a.n. {acc.accountHolder}</p>
+                              <p className="text-[10px] font-mono mt-0.5 text-muted-foreground tabular-nums">{acc.accountNumber}</p>
+                              <p className="text-[10px] mt-0.5 text-muted-foreground">a.n. {acc.accountHolder}</p>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-
-                  {/* Footer */}
                   {footerText && (
                     <div className="pt-2 border-t border-border">
-                      <p className="text-[9px] italic text-center text-muted-foreground" >{footerText}</p>
+                      <p className="text-[9px] italic text-center text-muted-foreground">{footerText}</p>
                     </div>
                   )}
                 </div>
-
-                {/* Dialog Footer */}
                 <div className="px-5 pb-4 pt-2 flex justify-end border-t border-border">
-                  <Button
-                    variant="outline"
-                    className="rounded-lg"
-                    style={{ borderColor: `${sColor}30`, color: sColor }}
-                    onClick={() => handleDownloadPDF(inv.id)}
-                    disabled={downloading === inv.id}
-                  >
+                  <Button variant="outline" className="rounded-lg" style={{ borderColor: `${sColor}30`, color: sColor }} onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
                     {downloading === inv.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     {t('biz.downloadPDF')}
                   </Button>
@@ -812,189 +959,211 @@ export default function BusinessInvoice() {
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit Dialog */}
+      {/* ═══ Create/Edit Dialog ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-xl bg-card border border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground" >
-              <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: editingInvoice ? 'var(--warning)' : 'var(--secondary)' }}>
-                {editingInvoice ? <Pencil className="h-3 w-3" style={{ color: editingInvoice ? 'var(--warning)' : 'var(--secondary)' }} /> : <Plus className="h-3 w-3 text-secondary" />}
-              </div>
-              {editingInvoice ? t('common.edit') : t('biz.addInvoice')}
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-xl p-0 bg-card border border-border">
+          <DialogHeader className="p-4 sm:p-5 pb-0">
+            <DialogTitle className="text-sm font-bold text-foreground">
+              {editingInvoice ? 'Edit Invoice' : 'Buat Invoice Baru'}
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground" >
-              {t('biz.generateInvoice')}
+            <DialogDescription className="text-[11px] text-muted-foreground">
+              {editingInvoice ? 'Ubah detail invoice' : 'Isi detail invoice untuk pelanggan'}
             </DialogDescription>
           </DialogHeader>
-
-          <form onSubmit={handleSave} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <form onSubmit={handleSave}>
+            <div className="px-4 sm:px-5 py-4 space-y-4">
+              {/* Customer */}
               <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground" >{t('biz.invoiceNumber')} *</Label>
-                <Input
-                  value={formData.invoiceNumber}
-                  onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                  placeholder="INV-001"
-                  className="text-sm h-9 rounded-lg bg-card border border-border text-foreground"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground" >{t('biz.invoiceCustomer')}</Label>
-                <Select value={formData.customerId} onValueChange={(v) => setFormData({ ...formData, customerId: v })}>
-                  <SelectTrigger className="text-sm h-9 rounded-lg bg-card border border-border text-foreground">
-                    <SelectValue placeholder={t('biz.invoiceCustomer')} />
+                <Label className="text-xs text-muted-foreground">Pelanggan</Label>
+                <Select value={formData.customerId} onValueChange={(val) => setFormData({ ...formData, customerId: val })}>
+                  <SelectTrigger className="h-9 text-xs bg-transparent border-border rounded-lg">
+                    <SelectValue placeholder="Pilih pelanggan (opsional)" />
                   </SelectTrigger>
-                  <SelectContent className="bg-card border border-border">
+                  <SelectContent>
                     {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id} className="text-foreground" >
-                        {c.name}
-                      </SelectItem>
+                      <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Invoice Number + Due Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">No. Invoice</Label>
+                  <Input
+                    value={formData.invoiceNumber}
+                    onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
+                    className="h-9 text-xs bg-transparent border-border rounded-lg"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Jatuh Tempo</Label>
+                  <Input
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="h-9 text-xs bg-transparent border-border rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Item</Label>
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-[10px] rounded-md text-muted-foreground" onClick={addItem}>
+                    <PlusCircle className="h-3 w-3 mr-1" />
+                    Tambah
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {formData.items.map((item, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className="flex-1 grid grid-cols-12 gap-1.5 items-start">
+                        <div className="col-span-6">
+                          <Input
+                            value={item.description}
+                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            placeholder="Deskripsi"
+                            className="h-8 text-[11px] bg-transparent border-border rounded-lg"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input
+                            type="number"
+                            value={item.qty || ''}
+                            onChange={(e) => updateItem(index, 'qty', parseInt(e.target.value) || 0)}
+                            placeholder="Qty"
+                            className="h-8 text-[11px] bg-transparent border-border rounded-lg tabular-nums"
+                            min={1}
+                          />
+                        </div>
+                        <div className="col-span-4">
+                          <Input
+                            type="number"
+                            value={item.price || ''}
+                            onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
+                            placeholder="Harga"
+                            className="h-8 text-[11px] bg-transparent border-border rounded-lg tabular-nums"
+                            min={0}
+                          />
+                          {item.price > 0 && (
+                            <p className="text-[10px] font-semibold tabular-nums text-secondary mt-0.5">
+                              Rp {formatAmount(item.price)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 rounded-md text-muted-foreground shrink-0 mt-0"
+                        onClick={() => removeItem(index)}
+                        disabled={formData.items.length <= 1}
+                      >
+                        <MinusCircle className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tax + Discount */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">PPN (%)</Label>
+                  <Input
+                    type="number"
+                    value={formData.tax}
+                    onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
+                    className="h-9 text-xs bg-transparent border-border rounded-lg tabular-nums"
+                    min={0}
+                    max={100}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Diskon (%)</Label>
+                  <Input
+                    type="number"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                    className="h-9 text-xs bg-transparent border-border rounded-lg tabular-nums"
+                    min={0}
+                    max={100}
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
               <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground" >{t('biz.invoiceDueDate')}</Label>
-                <Input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="text-sm h-9 rounded-lg bg-card border border-border text-foreground"
+                <Label className="text-xs text-muted-foreground">Catatan</Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Catatan tambahan..."
+                  className="text-xs bg-transparent border-border rounded-lg min-h-[60px] resize-none"
+                  rows={2}
                 />
               </div>
-            </div>
 
-            {/* Line Items */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-[11px] text-muted-foreground" >{t('biz.invoiceItems')} *</Label>
-                <Button type="button" variant="ghost" size="sm" onClick={addItem} className="text-xs text-secondary" >
-                  <PlusCircle className="h-3.5 w-3.5 mr-1" />
-                  {t('common.add')}
-                </Button>
-              </div>
-              <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
-                {formData.items.map((item, idx) => (
-                  <div key={idx} className="flex gap-1.5 items-start">
-                    <Input
-                      value={item.description}
-                      onChange={(e) => updateItem(idx, 'description', e.target.value)}
-                      placeholder="Item"
-                      className="flex-1 text-xs h-8 rounded-md bg-card border border-border text-foreground"
-                    />
-                    <Input
-                      type="number"
-                      value={item.qty || ''}
-                      onChange={(e) => updateItem(idx, 'qty', parseInt(e.target.value) || 0)}
-                      placeholder="Qty"
-                      min="1"
-                      className="w-14 text-xs h-8 rounded-md bg-card border border-border text-foreground"
-                    />
-                    <Input
-                      type="number"
-                      value={item.price || ''}
-                      onChange={(e) => updateItem(idx, 'price', parseFloat(e.target.value) || 0)}
-                      placeholder="Harga"
-                      min="0"
-                      className="w-24 text-xs h-8 rounded-md bg-card border border-border text-foreground"
-                    />
-                    {formData.items.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(idx)} className="h-8 w-8 p-0 shrink-0 rounded-md text-muted-foreground">
-                        <MinusCircle className="h-4 w-4" />
-                      </Button>
-                    )}
+              {/* Nominal Preview */}
+              <div className="rounded-lg p-3 space-y-1.5" style={{ backgroundColor: alpha(c.primary, 5), border: `1px solid ${alpha(c.primary, 10)}` }}>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="tabular-nums text-muted-foreground">{formatAmount(getSubtotal())}</span>
+                </div>
+                {parseFloat(formData.tax) > 0 && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-muted-foreground">PPN ({formData.tax}%)</span>
+                    <span className="tabular-nums text-muted-foreground">{formatAmount(getTaxAmount())}</span>
                   </div>
-                ))}
+                )}
+                {parseFloat(formData.discount) > 0 && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-muted-foreground">Diskon ({formData.discount}%)</span>
+                    <span className="tabular-nums" style={{ color: c.destructive }}>-{formatAmount(getDiscountAmount())}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-sm pt-1.5" style={{ borderTop: `1px solid ${alpha(c.primary, 15)}` }}>
+                  <span className="text-foreground">Total</span>
+                  <span className="tabular-nums" style={{ color: c.primary }}>{formatAmount(getTotal())}</span>
+                </div>
               </div>
             </div>
-
-            {/* Tax, Discount */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground" >{t('biz.invoiceTax')} (%)</Label>
-                <Input type="number" value={formData.tax} onChange={(e) => setFormData({ ...formData, tax: e.target.value })} placeholder="0" min="0" className="text-sm h-9 rounded-lg bg-card border border-border text-foreground" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground" >{t('biz.invoiceDiscount')} (%)</Label>
-                <Input type="number" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} placeholder="0" min="0" className="text-sm h-9 rounded-lg bg-card border border-border text-foreground" />
-              </div>
-            </div>
-
-            {/* Totals Preview */}
-            <div className="rounded-lg p-3 space-y-1 text-xs" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
-              <div className="flex justify-between text-muted-foreground" >
-                <span>{t('biz.invoiceSubtotal')}</span>
-                <span>{formatAmount(getSubtotal())}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground" >
-                <span>{t('biz.invoiceTax')}</span>
-                <span>+{formatAmount(getTaxAmount())}</span>
-              </div>
-              <div className="flex justify-between text-secondary" >
-                <span>{t('biz.invoiceDiscount')}</span>
-                <span>-{formatAmount(getDiscountAmount())}</span>
-              </div>
-              <div className="flex justify-between font-bold text-sm pt-2" style={{ color: 'var(--foreground)', borderTop: '1px solid var(--border)' }}>
-                <span>{t('biz.invoiceTotal')}</span>
-                <span className="text-primary" >{formatAmount(getTotal())}</span>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-1.5">
-              <Label className="text-[11px] text-muted-foreground" >{t('biz.customerNotes')}</Label>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder={t('biz.customerNotes')}
-                className="text-xs min-h-[56px] rounded-lg resize-none bg-card border border-border text-foreground"
-              />
-            </div>
-
-            <DialogFooter className="gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-                className="rounded-lg"
-                style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}
-              >
-                {t('common.cancel')}
+            <DialogFooter className="p-4 sm:p-5 pt-0 flex gap-2">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="rounded-lg text-xs h-9 border-border">
+                Batal
               </Button>
               <Button
                 type="submit"
-                disabled={saving || !formData.invoiceNumber || formData.items.every((i) => !i.description.trim())}
-                className="rounded-lg disabled:opacity-40"
-                style={{ backgroundColor: 'var(--primary)', color: '#000' }}
+                disabled={saving || !formData.invoiceNumber || formData.items.every((i) => !i.description)}
+                className="rounded-lg text-xs h-9"
+                style={{ backgroundColor: c.primary, color: '#000' }}
               >
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingInvoice ? t('common.save') : t('biz.generateInvoice')}
+                {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : null}
+                {editingInvoice ? 'Simpan' : 'Buat Invoice'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* ═══ Delete Confirmation ═══ */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent className="rounded-xl bg-card border border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground" >
-              <div className="h-6 w-6 rounded-md flex items-center justify-center bg-destructive/15">
-                <Trash2 className="h-3 w-3 text-destructive" />
-              </div>
-              {t('common.delete')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground" >
-              {t('kas.deleteDesc')}
+            <AlertDialogTitle className="text-sm">Hapus Invoice?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Invoice yang dihapus tidak dapat dikembalikan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-lg" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="rounded-lg" style={{ backgroundColor: 'var(--destructive)', color: 'var(--foreground)', border: 'none' }}>
-              {t('common.delete')}
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-lg text-xs h-9 border-border">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="rounded-lg text-xs h-9" style={{ backgroundColor: c.destructive, color: '#fff' }}>
+              Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -29,6 +29,13 @@ import {
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
+const c = {
+  primary: 'var(--primary)', secondary: 'var(--secondary)', destructive: 'var(--destructive)',
+  warning: 'var(--warning)', muted: 'var(--muted-foreground)', border: 'var(--border)',
+  foreground: 'var(--foreground)', card: 'var(--card)',
+};
+const alpha = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
+
 const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
 const inputStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' };
 
@@ -470,7 +477,33 @@ export default function BusinessLaporan() {
   const [toDate, setToDate] = useState(today.toISOString().split('T')[0]);
 
   const [exporting, setExporting] = useState<string | null>(null);
+  const [plCashData, setPlCashData] = useState<{ totalPendapatan: number; totalPengeluaran: number; loading: boolean }>({ totalPendapatan: 0, totalPengeluaran: 0, loading: false });
   const businessId = activeBusiness?.id;
+
+  /* ── P&L Cash API fetch (kas_besar + kas_kecil = pendapatan, kas_keluar = pengeluaran) ── */
+  const fetchPlCash = useCallback(() => {
+    if (!businessId) return;
+    setPlCashData(prev => ({ ...prev, loading: true }));
+    Promise.all([
+      fetch(`/api/business/${businessId}/cash?type=kas_besar&from=${fromDate}&to=${toDate}`).then(r => r.ok ? r.json() : { data: [] }).catch(() => ({ data: [] })),
+      fetch(`/api/business/${businessId}/cash?type=kas_kecil&from=${fromDate}&to=${toDate}`).then(r => r.ok ? r.json() : { data: [] }).catch(() => ({ data: [] })),
+      fetch(`/api/business/${businessId}/cash?type=kas_keluar&from=${fromDate}&to=${toDate}`).then(r => r.ok ? r.json() : { data: [] }).catch(() => ({ data: [] })),
+    ]).then(([besar, kecil, keluar]) => {
+      const totalPendapatan = (besar.data || []).reduce((s: number, c: { jumlah?: number }) => s + (c.jumlah || 0), 0)
+        + (kecil.data || []).reduce((s: number, c: { jumlah?: number }) => s + (c.jumlah || 0), 0);
+      const totalPengeluaran = (keluar.data || []).reduce((s: number, c: { jumlah?: number }) => s + (c.jumlah || 0), 0);
+      setPlCashData({ totalPendapatan, totalPengeluaran, loading: false });
+    }).catch(() => setPlCashData(prev => ({ ...prev, loading: false })));
+  }, [businessId, fromDate, toDate]);
+
+  useEffect(() => {
+    if (businessId) fetchPlCash();
+  }, [businessId, fetchPlCash]);
+
+  /* ── Computed P&L values ── */
+  const plLaba = plCashData.totalPendapatan - plCashData.totalPengeluaran;
+  const plMargin = plCashData.totalPendapatan > 0 ? (plLaba / plCashData.totalPendapatan) * 100 : 0;
+  const isRugi = plLaba < 0;
 
   const fetchReport = useCallback(() => {
     if (!businessId) return;
@@ -830,6 +863,104 @@ export default function BusinessLaporan() {
 
   return (
     <div className="space-y-3">
+      {/* ═══════════════════════════════════════════════════════════════
+          P&L HERO CARD — Profit & Loss at-a-Glance (from Cash API)
+          ═══════════════════════════════════════════════════════════════ */}
+      <Card className="rounded-xl overflow-hidden" style={{ background: alpha(c.card, 0), border: `1px solid ${alpha(c.border, 0)}` }}>
+        <CardContent className="p-4 sm:p-5">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 10) }}>
+                <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold" style={{ color: c.foreground }}>Profit & Loss</h3>
+                <p className="text-[10px]" style={{ color: c.muted }}>{fromDate} — {toDate}</p>
+              </div>
+            </div>
+            <Badge className="text-[9px] font-semibold rounded-full px-2 py-0.5" style={{
+              backgroundColor: isRugi ? alpha(c.destructive, 10) : alpha(c.secondary, 10),
+              color: isRugi ? c.destructive : c.secondary,
+              border: `1px solid ${isRugi ? alpha(c.destructive, 18) : alpha(c.secondary, 18)}`,
+            }}>
+              {isRugi ? 'Rugi' : 'Laba'}
+            </Badge>
+          </div>
+
+          {plCashData.loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-16 rounded-lg" />
+              <Skeleton className="h-16 rounded-lg" />
+            </div>
+          ) : (
+            <>
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {/* Total Pendapatan */}
+                <div className="p-3 rounded-lg" style={{ backgroundColor: alpha(c.secondary, 5), border: `1px solid ${alpha(c.secondary, 10)}` }}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <ArrowUpRight className="h-3 w-3" style={{ color: c.secondary }} />
+                    <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Pendapatan</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: c.secondary }}>
+                    {formatAmount(plCashData.totalPendapatan)}
+                  </p>
+                  <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>Kas Besar + Kas Kecil</p>
+                </div>
+
+                {/* Total Pengeluaran */}
+                <div className="p-3 rounded-lg" style={{ backgroundColor: alpha(c.destructive, 5), border: `1px solid ${alpha(c.destructive, 10)}` }}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <ArrowDownRight className="h-3 w-3" style={{ color: c.destructive }} />
+                    <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Pengeluaran</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: c.destructive }}>
+                    {formatAmount(plCashData.totalPengeluaran)}
+                  </p>
+                  <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>Kas Keluar</p>
+                </div>
+              </div>
+
+              {/* Laba Kotor Row */}
+              <div className="flex items-center justify-between p-3 rounded-lg mb-3" style={{
+                backgroundColor: isRugi ? alpha(c.destructive, 6) : alpha(c.secondary, 6),
+                border: `1px solid ${isRugi ? alpha(c.destructive, 14) : alpha(c.secondary, 14)}`,
+              }}>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" style={{ color: isRugi ? c.destructive : c.secondary }} />
+                  <span className="text-xs font-semibold" style={{ color: c.foreground }}>Laba Kotor</span>
+                </div>
+                <span className="text-base font-bold tabular-nums" style={{ color: isRugi ? c.destructive : c.secondary }}>
+                  {isRugi ? '-' : '+'}{formatAmount(Math.abs(plLaba))}
+                </span>
+              </div>
+
+              {/* Margin Laba with Progress Bar */}
+              {plCashData.totalPendapatan > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Margin Laba</span>
+                    <span className="text-xs font-bold tabular-nums" style={{ color: isRugi ? c.destructive : c.secondary }}>
+                      {plMargin.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.border, 20) }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.min(Math.max(plMargin, 0), 100)}%`,
+                        backgroundColor: isRugi ? c.destructive : c.secondary,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Info Banner */}
       <div className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
         <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />
@@ -953,6 +1084,126 @@ export default function BusinessLaporan() {
           })}
         </div>
       ) : null}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          P&L SUMMARY CARD (Profit & Loss At-a-Glance)
+          ═══════════════════════════════════════════════════════════════ */}
+      {!loading && data && (
+        <Card className="rounded-xl" style={cardStyle}>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)' }}>
+                <TrendingUp className="h-3.5 w-3.5" style={{ color: 'var(--secondary)' } as React.CSSProperties} />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>Laporan Laba Rugi</h3>
+                <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                  {fromDate} — {toDate}
+                </p>
+              </div>
+            </div>
+
+            {/* P&L Rows */}
+            <div className="space-y-1.5">
+              {/* Revenue */}
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 4%, transparent)' }}>
+                <div className="flex items-center gap-2">
+                  <ArrowUpRight className="h-3.5 w-3.5" style={{ color: 'var(--secondary)' } as React.CSSProperties} />
+                  <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>Total Pendapatan</span>
+                </div>
+                <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--secondary)' }}>
+                  {formatAmount(data.summary.totalRevenue)}
+                </span>
+              </div>
+              {/* Expenses */}
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 4%, transparent)' }}>
+                <div className="flex items-center gap-2">
+                  <ArrowDownRight className="h-3.5 w-3.5" style={{ color: 'var(--destructive)' } as React.CSSProperties} />
+                  <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>Total Pengeluaran</span>
+                </div>
+                <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--destructive)' }}>
+                  -{formatAmount(data.summary.totalExpense)}
+                </span>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
+
+              {/* Gross Profit */}
+              <div className="flex items-center justify-between py-1.5 px-3">
+                <span className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>Laba Kotor</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: data.summary.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                  {formatAmount(data.summary.labaKotor)}
+                </span>
+              </div>
+
+              {/* Realized Revenue Info */}
+              {data.summary.pendapatanTerealisasi > 0 && (
+                <div className="flex items-center justify-between py-1 px-3">
+                  <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Pendapatan Terealisasi</span>
+                  <span className="text-[10px] font-medium tabular-nums" style={{ color: 'var(--primary)' }}>
+                    {formatAmount(data.summary.pendapatanTerealisasi)}
+                  </span>
+                </div>
+              )}
+              {data.summary.pendapatanBelumTerealisasi > 0 && (
+                <div className="flex items-center justify-between py-1 px-3">
+                  <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Belum Terealisasi (Piutang)</span>
+                  <span className="text-[10px] font-medium tabular-nums" style={{ color: 'var(--warning)' }}>
+                    {formatAmount(data.summary.pendapatanBelumTerealisasi)}
+                  </span>
+                </div>
+              )}
+
+              {/* Divider */}
+              <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
+
+              {/* Net Profit */}
+              <div className="flex items-center justify-between py-2.5 px-3 rounded-lg" style={{
+                backgroundColor: data.summary.netIncome >= 0
+                  ? 'color-mix(in srgb, var(--secondary) 6%, transparent)'
+                  : 'color-mix(in srgb, var(--destructive) 6%, transparent)',
+                border: `1px solid ${data.summary.netIncome >= 0
+                  ? 'color-mix(in srgb, var(--secondary) 12%, transparent)'
+                  : 'color-mix(in srgb, var(--destructive) 12%, transparent)'}`,
+              }}>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" style={{ color: data.summary.netIncome >= 0 ? 'var(--secondary)' : 'var(--destructive)' } as React.CSSProperties} />
+                  <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Laba Bersih</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-bold tabular-nums" style={{ color: data.summary.netIncome >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                    {formatAmount(data.summary.netIncome)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Profit Margin Bar */}
+              {data.summary.totalRevenue > 0 && (
+                <div className="mt-2 px-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'var(--muted-foreground)' }}>Profit Margin</span>
+                    <span className="text-xs font-bold tabular-nums" style={{
+                      color: data.summary.netIncome >= 0 ? 'var(--secondary)' : 'var(--destructive)',
+                    }}>
+                      {data.summary.totalRevenue > 0 ? ((data.summary.netIncome / data.summary.totalRevenue) * 100).toFixed(1) : '0.0'}%
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.min(Math.max(data.summary.totalRevenue > 0 ? (data.summary.netIncome / data.summary.totalRevenue) * 100 : 0, 0), 100)}%`,
+                        backgroundColor: data.summary.netIncome >= 0 ? 'var(--secondary)' : 'var(--destructive)',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
