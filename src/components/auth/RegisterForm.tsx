@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Loader2, Ticket, Lock, MessageCircle } from 'lucide-react';
+import { Loader2, Ticket, Lock, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
+import { cn } from '@/lib/utils';
 
 const T = { bg: '#121212', input: '#1E1E1E', primary: '#BB86FC', muted: '#9E9E9E', border: 'rgba(255,255,255,0.08)', text: '#E6E1E5', textSub: '#B3B3B3' };
 
@@ -19,6 +20,8 @@ export function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inviteToken, setInviteToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [registrationMessage, setRegistrationMessage] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
@@ -88,7 +91,28 @@ export function RegisterForm() {
     finally { setIsLoading(false); }
   };
 
-  const inputCls = "h-11 rounded-xl text-sm border-0 focus-visible:ring-1";
+  const inputCls = "h-12 rounded-xl text-sm border-0 focus-visible:ring-1";
+
+  // Password strength calculation
+  const passwordStrength = useMemo(() => {
+    if (!password) return { level: 0, label: '', color: '' };
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+    const hasLetters = hasLower || hasUpper;
+
+    if (password.length < 8) {
+      return { level: 1, label: 'Weak', color: '#CF6679' };
+    }
+    if (hasLetters && hasNumber && hasSpecial) {
+      return { level: 3, label: 'Strong', color: '#03DAC6' };
+    }
+    if (hasLetters && hasNumber) {
+      return { level: 2, label: 'Medium', color: '#FFD54F' };
+    }
+    return { level: 1, label: 'Weak', color: '#CF6679' };
+  }, [password]);
 
   const trialBadge = trialEnabled && !inviteToken ? {
     label: `Free ${trialDurationDays}-day ${trialPlan === 'pro' ? 'Pro' : trialPlan === 'ultimate' ? 'Ultimate' : 'Basic'} trial`,
@@ -137,8 +161,8 @@ export function RegisterForm() {
       </div>
 
       {/* Invite Token Section */}
-      <div className="p-3 rounded-xl" style={{ background: 'rgba(187,134,252,0.06)', border: '1px solid rgba(187,134,252,0.12)' }}>
-        <div className="flex items-center gap-2 mb-2">
+      <div className="p-3.5 rounded-xl" style={{ background: 'rgba(187,134,252,0.06)', border: '1px solid rgba(187,134,252,0.12)' }}>
+        <div className="flex items-center gap-2 mb-2.5">
           <Ticket className="h-3.5 w-3.5 text-[#BB86FC]" />
           <Label className="text-[11px] font-medium text-[#BB86FC]/70">Invite Code (optional)</Label>
         </div>
@@ -180,35 +204,105 @@ export function RegisterForm() {
             style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.password')}</Label>
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.password')}</Label>
+          <div className="relative">
             <Input
-              id="password" type="password" placeholder="••••••••"
+              id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••"
               value={password} onChange={(e) => setPassword(e.target.value)}
               required disabled={isLoading}
-              className={inputCls}
+              className={cn(inputCls, 'pr-10')}
               style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#E6E1E5] transition-colors"
+              tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.confirmPassword')}</Label>
+          {/* Password strength indicator */}
+          {password && (
+            <div className="space-y-1.5 pt-1">
+              <div className="flex gap-1.5">
+                {[1, 2, 3].map((seg) => (
+                  <div
+                    key={seg}
+                    className="h-1 flex-1 rounded-full transition-all duration-300"
+                    style={{
+                      background: seg <= passwordStrength.level
+                        ? passwordStrength.color
+                        : 'rgba(255,255,255,0.06)',
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="text-[10px] font-medium" style={{ color: passwordStrength.color }}>
+                {passwordStrength.label}
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.confirmPassword')}</Label>
+          <div className="relative">
             <Input
-              id="confirmPassword" type="password" placeholder="••••••••"
+              id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••"
               value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
               required disabled={isLoading}
-              className={inputCls}
+              className={cn(inputCls, 'pr-10')}
               style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#E6E1E5] transition-colors"
+              tabIndex={-1}
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
         </div>
-        <Button
-          type="submit" className="w-full h-11 rounded-xl font-semibold text-sm"
-          disabled={isLoading}
-          style={{ background: T.primary, color: '#000' }}
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('auth.register')}
-        </Button>
+        {/* Register Button with smooth loading animation */}
+        <div className="relative overflow-hidden rounded-xl">
+          {isLoading && (
+            <div
+              className="absolute inset-0 animate-shimmer pointer-events-none z-10"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
+                backgroundSize: '200% 100%',
+              }}
+            />
+          )}
+          <Button
+            type="submit"
+            className={cn(
+              'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 relative z-20',
+              isLoading
+                ? 'opacity-90'
+                : 'hover:scale-[1.01] active:scale-[0.99]'
+            )}
+            disabled={isLoading}
+            style={{ background: T.primary, color: '#000' }}
+          >
+            <span className={cn(
+              'transition-all duration-300',
+              isLoading ? 'opacity-0' : 'opacity-100'
+            )}>
+              {t('auth.register')}
+            </span>
+            {isLoading && (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-2 text-[12px]">Creating account...</span>
+              </span>
+            )}
+          </Button>
+        </div>
       </form>
     </div>
   );

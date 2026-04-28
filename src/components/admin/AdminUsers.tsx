@@ -20,9 +20,9 @@ import {
 import {
   Search, MoreVertical, Edit, Trash2, Key, Shield,
   Crown, Sparkles, UserCheck, UserX, Users, ChevronLeft, ChevronRight,
-  Filter, RefreshCw, Eye, Settings, FileDown, UserPlus, CheckSquare,
+  Filter, RefreshCw, Eye, EyeOff, Settings, FileDown, UserPlus, CheckSquare,
   Square, X, UserCircle, Activity, CreditCard, Target, TrendingUp, Check,
-  TrendingDown, ArrowUpRight, Clock, Wallet, Ban, UserCog, BarChart3, Gem,
+  TrendingDown, ArrowUpRight, Clock, Wallet, Ban, UserCog, BarChart3, Gem, Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -82,7 +82,10 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
   const [detailUser, setDetailUser] = useState<UserRecord | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showCreateUser, setShowCreateUser] = useState(false);
-  const [newUser, setNewUser] = useState({ email: '', username: '', password: '', plan: 'basic' });
+  const [newUser, setNewUser] = useState({ email: '', username: '', password: '', plan: 'basic', role: 'user' });
+  const [newUserConfirmPassword, setNewUserConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
   const [bulkAction, setBulkAction] = useState('');
   const [detailStats, setDetailStats] = useState<{
@@ -183,13 +186,29 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
     }
   };
 
+  const getPasswordStrength = (pw: string): { level: number; label: string; color: string } => {
+    if (!pw) return { level: 0, label: '', color: '' };
+    if (pw.length < 8) return { level: 1, label: 'Weak', color: '#CF6679' };
+    const hasNumber = /\d/.test(pw);
+    const hasLetter = /[a-zA-Z]/.test(pw);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(pw);
+    const hasMixed = /[a-z]/.test(pw) && /[A-Z]/.test(pw);
+    if (hasNumber && hasLetter && hasSpecial && hasMixed && pw.length >= 12) return { level: 3, label: 'Strong', color: '#03DAC6' };
+    if ((hasNumber && hasLetter) || (hasMixed && pw.length >= 8)) return { level: 2, label: 'Medium', color: '#FFD700' };
+    return { level: 1, label: 'Weak', color: '#CF6679' };
+  };
+
   const handleCreateUser = async () => {
     if (!newUser.email || !newUser.username || !newUser.password) {
       toast.error('All fields are required');
       return;
     }
-    if (newUser.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (newUser.password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (newUser.password !== newUserConfirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
     setCreatingUser(true);
@@ -201,7 +220,8 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
       if (res.ok) {
         toast.success(`User ${newUser.username} created successfully`);
         setShowCreateUser(false);
-        setNewUser({ email: '', username: '', password: '', plan: 'basic' });
+        setNewUser({ email: '', username: '', password: '', plan: 'basic', role: 'user' });
+        setNewUserConfirmPassword('');
         fetchUsers(1);
       } else {
         const data = await res.json();
@@ -315,7 +335,14 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
   const renderDialogs = () => (
     <>
       {/* Create User Dialog */}
-      <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
+      <Dialog open={showCreateUser} onOpenChange={(open) => {
+        if (!open) {
+          setShowCreateUser(false);
+          setNewUserConfirmPassword('');
+          setShowNewPassword(false);
+          setShowConfirmPassword(false);
+        }
+      }}>
         <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -341,22 +368,77 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] text-white/50">Password</Label>
-              <Input type="password" placeholder="Min 6 characters"
-                value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                className="bg-white/[0.03] border-white/[0.06] text-white/70" />
+              <div className="relative">
+                <Input type={showNewPassword ? 'text' : 'password'} placeholder="Min 8 characters"
+                  value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  className="bg-white/[0.03] border-white/[0.06] text-white/70 pr-10" />
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {/* Password Strength Indicator */}
+              {newUser.password && (
+                <div className="space-y-1.5">
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3].map((seg) => {
+                      const strength = getPasswordStrength(newUser.password);
+                      return (
+                        <div key={seg} className="h-1 flex-1 rounded-full transition-all duration-300"
+                          style={{ background: seg <= strength.level ? strength.color : 'rgba(255,255,255,0.06)' }} />
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px]" style={{ color: getPasswordStrength(newUser.password).color }}>
+                    {getPasswordStrength(newUser.password).label}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-white/50">Assigned Plan</Label>
-              <Select value={newUser.plan} onValueChange={(v) => setNewUser({ ...newUser, plan: v })}>
-                <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
-                  <SelectItem value="basic">Basic</SelectItem>
-                  <SelectItem value="pro">Pro</SelectItem>
-                  <SelectItem value="ultimate">Ultimate</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-[11px] text-white/50">Confirm Password</Label>
+              <div className="relative">
+                <Input type={showConfirmPassword ? 'text' : 'password'} placeholder="Re-enter password"
+                  value={newUserConfirmPassword} onChange={(e) => setNewUserConfirmPassword(e.target.value)}
+                  className={cn(
+                    'bg-white/[0.03] border-white/[0.06] text-white/70 pr-10',
+                    newUserConfirmPassword && newUser.password !== newUserConfirmPassword && 'border-[#CF6679]/50',
+                  )} />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {newUserConfirmPassword && newUser.password !== newUserConfirmPassword && (
+                <p className="text-[10px] text-[#CF6679]">Passwords do not match</p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-[11px] text-white/50">Assigned Plan</Label>
+                <Select value={newUser.plan} onValueChange={(v) => setNewUser({ ...newUser, plan: v })}>
+                  <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                    <SelectItem value="basic">Basic</SelectItem>
+                    <SelectItem value="pro">Pro</SelectItem>
+                    <SelectItem value="ultimate">Ultimate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[11px] text-white/50">Role</Label>
+                <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
+                  <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter className="gap-2">
@@ -364,7 +446,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
               onClick={() => setShowCreateUser(false)}>Cancel</Button>
             <Button className="bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90"
               onClick={handleCreateUser} disabled={creatingUser}>
-              {creatingUser ? 'Creating...' : 'Create User'}
+              {creatingUser ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : 'Create User'}
             </Button>
           </DialogFooter>
         </DialogContent>

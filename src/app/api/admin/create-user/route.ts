@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, username, password, plan, image } = body;
+    const { email, username, password, plan, role, image } = body;
 
     // Validate required fields
     if (!email || !username || !password) {
@@ -61,6 +61,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Validate role if provided (only admin can set roles)
+    const validRoles = ['user', 'admin'];
+    const userRole = validRoles.includes(role) ? role : 'user';
 
     // Validate plan if provided
     const validPlans = ['basic', 'pro', 'ultimate'];
@@ -100,7 +104,7 @@ export async function POST(request: NextRequest) {
         username: username.trim(),
         password: hashedPassword,
         plan: userPlan,
-        role: 'user',
+        role: userRole,
         status: 'active',
         maxCategories,
         maxSavings,

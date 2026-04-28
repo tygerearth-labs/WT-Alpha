@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -1153,358 +1153,188 @@ export default function BusinessSales() {
                 </DialogDescription>
               </DialogHeader>
 
-              <form id="sale-form" onSubmit={handleSave} className="space-y-3 mt-1 overflow-y-auto flex-1 pr-1 scrollbar-thin">
-                {/* Product Quick Select */}
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                    {t('biz.selectProduct')}
-                  </Label>
-                  <Select value={selectedProductId} onValueChange={(v) => handleProductSelect(v)}>
-                    <SelectTrigger className="rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
-                      <SelectValue placeholder={t('biz.selectProduct')} />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
-                      {products
-                        .filter((p) => p.stock > 0)
-                        .map((p) => (
-                          <SelectItem key={p.id} value={p.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
-                            <div className="flex items-center justify-between w-full gap-4">
-                              <span className="truncate">{p.name}</span>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-medium" style={{ color: c.secondary }}>{formatAmount(p.price)}</span>
-                                <span className="text-[10px] rounded-full px-1.5 py-0.5" style={{ color: c.muted, background: c.border }}>
-                                  stok {p.stock}
+              <form id="sale-form" onSubmit={handleSave} className="space-y-5 mt-1 overflow-y-auto flex-1 pr-1 scroll-smooth">
+
+                {/* ═══ Section 1: Detail Penjualan ═══ */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-1">
+                    <Receipt className="h-3.5 w-3.5" style={{ color: c.muted }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Detail Penjualan</span>
+                    <div className="flex-1 h-px" style={{ background: c.border }} />
+                  </div>
+
+                  {/* Description — first field, most important */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                      {t('biz.saleDescription')} <span style={{ color: c.destructive }}>*</span>
+                    </Label>
+                    <Input
+                      value={formData.description}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                      placeholder={t('biz.saleDescription')}
+                      className="h-10 rounded-lg text-sm border"
+                      style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                    />
+                  </div>
+
+                  {/* Amount with Live Preview */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                      {t('biz.saleAmount')} <span style={{ color: c.destructive }}>*</span>
+                    </Label>
+                    <div className="relative">
+                      <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: c.muted }} />
+                      <Input
+                        type="number"
+                        value={formData.amount}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
+                        placeholder="0"
+                        min="0"
+                        className="pl-10 pr-4 h-11 rounded-lg text-base font-semibold tabular-nums border"
+                        style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                      />
+                    </div>
+                    {formData.amount && parseFloat(formData.amount) > 0 && (
+                      <div
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                        style={{ background: alpha(c.secondary, 5), borderColor: alpha(c.secondary, 15) }}
+                      >
+                        <CircleDollarSign className="h-3.5 w-3.5" style={{ color: c.secondary }} />
+                        <span className="text-xs font-semibold tabular-nums" style={{ color: c.secondary }}>
+                          {formatAmount(parseFloat(formData.amount))}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Product Quick Select + Category — 2-col on desktop */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Product Quick Select */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                        {t('biz.selectProduct')}
+                      </Label>
+                      <Select value={selectedProductId} onValueChange={(v) => handleProductSelect(v)}>
+                        <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                          <SelectValue placeholder={t('biz.selectProduct')} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
+                          {products
+                            .filter((p) => p.stock > 0)
+                            .map((p) => (
+                              <SelectItem key={p.id} value={p.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
+                                <div className="flex items-center justify-between w-full gap-4">
+                                  <span className="truncate">{p.name}</span>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-xs font-medium" style={{ color: c.secondary }}>{formatAmount(p.price)}</span>
+                                    <span className="text-[10px] rounded-full px-1.5 py-0.5" style={{ color: c.muted, background: c.border }}>
+                                      stok {p.stock}
+                                    </span>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Category Selection */}
+                    {categories.length > 0 && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                          {t('biz.cashCategory')}
+                        </Label>
+                        <Select
+                          value={formData.categoryId}
+                          onValueChange={(v) => setFormData((prev) => ({ ...prev, categoryId: v }))}
+                        >
+                          <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                            <SelectValue placeholder={t('biz.cashCategory')} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
+                            <SelectItem value="" className="text-sm rounded-md" style={{ color: c.muted }}>
+                              Tanpa kategori
+                            </SelectItem>
+                            {categories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
+                                <span className="flex items-center gap-2">
+                                  <Layers className="h-3 w-3" style={{ color: c.warning }} />
+                                  {cat.name}
                                 </span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Product auto-fill hint */}
                   {isProductAutoFill && (
-                    <p className="text-[10px] flex items-center gap-1" style={{ color: c.secondary }}>
-                      <BarChart3 className="h-2.5 w-2.5" />
-                      Harga & deskripsi terisi otomatis dari produk
+                    <p className="text-xs flex items-center gap-1" style={{ color: c.secondary }}>
+                      <BarChart3 className="h-3 w-3" />
+                      Harga &amp; deskripsi terisi otomatis dari produk
                     </p>
                   )}
                 </div>
 
-                {/* Category Selection */}
-                {categories.length > 0 && (
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                      {t('biz.cashCategory')}
-                    </Label>
-                    <Select
-                      value={formData.categoryId}
-                      onValueChange={(v) => setFormData((prev) => ({ ...prev, categoryId: v }))}
-                    >
-                      <SelectTrigger className="rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
-                        <SelectValue placeholder={t('biz.cashCategory')} />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
-                        <SelectItem value="" className="text-sm rounded-md" style={{ color: c.muted }}>
-                          Tanpa kategori
-                        </SelectItem>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
-                            <span className="flex items-center gap-2">
-                              <Layers className="h-3 w-3" style={{ color: c.warning }} />
-                              {cat.name}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {/* ═══ Section 2: Pelanggan & Pembayaran ═══ */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-1">
+                    <Users className="h-3.5 w-3.5" style={{ color: c.muted }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Pelanggan &amp; Pembayaran</span>
+                    <div className="flex-1 h-px" style={{ background: c.border }} />
                   </div>
-                )}
 
-                {/* Description */}
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                    {t('biz.saleDescription')} <span style={{ color: c.destructive }}>*</span>
-                  </Label>
-                  <Input
-                    value={formData.description}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder={t('biz.saleDescription')}
-                    className="rounded-lg text-sm border"
-                    style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                  />
-                </div>
-
-                {/* Amount with Live Preview */}
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                    {t('biz.saleAmount')} <span style={{ color: c.destructive }}>*</span>
-                  </Label>
-                  <div className="relative">
-                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: c.muted }} />
-                    <Input
-                      type="number"
-                      value={formData.amount}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
-                      placeholder="0"
-                      min="0"
-                      className="pl-9 pr-4 rounded-lg text-base font-semibold tabular-nums border"
-                      style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                    />
-                  </div>
-                  {formData.amount && parseFloat(formData.amount) > 0 && (
-                    <div
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg border"
-                      style={{ background: alpha(c.secondary, 5), borderColor: alpha(c.secondary, 15) }}
-                    >
-                      <CircleDollarSign className="h-3.5 w-3.5" style={{ color: c.secondary }} />
-                      <span className="text-xs font-semibold tabular-nums" style={{ color: c.secondary }}>
-                        {formatAmount(parseFloat(formData.amount))}
-                      </span>
+                  {/* Customer + Date — 2-col on desktop */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Customer */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                        {t('biz.saleCustomer')}
+                      </Label>
+                      <Select
+                        value={formData.customerId}
+                        onValueChange={(v) => setFormData((prev) => ({ ...prev, customerId: v }))}
+                      >
+                        <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                          <SelectValue placeholder={t('biz.saleCustomer')} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
+                          {customers.map((cust) => (
+                            <SelectItem key={cust.id} value={cust.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
+                              {cust.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
-                </div>
 
-                {/* Installment Toggle */}
-                <div className="flex items-center justify-between rounded-lg px-3 py-2.5 border" style={{ background: c.card, borderColor: c.border }}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.primary, 15) }}>
-                      <Repeat className="h-3.5 w-3.5" style={{ color: c.primary }} />
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium" style={{ color: c.foreground }}>{t('biz.isInstallment')}</span>
-                      <p className="text-[10px]" style={{ color: c.muted }}>Aktifkan cicilan & investor</p>
+                    {/* Date */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                        {t('biz.saleDate')}
+                      </Label>
+                      <Input
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
+                        className="h-10 rounded-lg text-sm border"
+                        style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                      />
                     </div>
                   </div>
-                  <Switch
-                    checked={formData.isInstallment}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        isInstallment: checked,
-                        downPayment: checked ? prev.downPayment : '',
-                        downPaymentPct: checked ? prev.downPaymentPct : '',
-                        installmentTempo: checked ? prev.installmentTempo : '',
-                        investorSharePct: checked ? prev.investorSharePct : '',
-                      }))
-                    }
-                  />
-                </div>
 
-                {/* Installment Section — Collapsible */}
-                <AnimatePresence>
-                  {formData.isInstallment && (
-                    <motion.div
-                      variants={installmentSectionVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      className="overflow-hidden"
-                    >
-                      <div className="rounded-lg p-3 space-y-3 border" style={{ background: alpha(c.primary, 5), borderColor: alpha(c.primary, 15) }}>
-                        {/* DP Amount & DP Percentage */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                              <ArrowDownToLine className="h-2.5 w-2.5" style={{ color: c.secondary }} />
-                              {t('biz.downPayment')} (Rp)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={formData.downPayment}
-                              onChange={(e) => handleDownPaymentChange(e.target.value)}
-                              placeholder="0"
-                              min="0"
-                              className="rounded-lg text-sm tabular-nums border"
-                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                            />
-                            {formattedDPNominal && (
-                              <motion.div
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -4 }}
-                                className="flex items-center gap-1.5 px-1 mt-1"
-                              >
-                                <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
-                                <span className="text-sm font-semibold tabular-nums text-secondary">
-                                  {formattedDPNominal}
-                                </span>
-                              </motion.div>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                              <Percent className="h-2.5 w-2.5" style={{ color: c.secondary }} />
-                              DP (%)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={formData.downPaymentPct}
-                              onChange={(e) => handleDownPaymentPctChange(e.target.value)}
-                              placeholder="0"
-                              min="0"
-                              max="100"
-                              step="0.1"
-                              className="rounded-lg text-sm tabular-nums border"
-                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Tenor (months) */}
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                            <Repeat className="h-2.5 w-2.5" style={{ color: c.primary }} />
-                            {t('biz.installmentPeriod')}
-                          </Label>
-                          <Input
-                            type="number"
-                            value={formData.installmentTempo}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, installmentTempo: e.target.value }))}
-                            placeholder="0"
-                            min="1"
-                            className="rounded-lg text-sm tabular-nums w-full sm:w-1/2 border"
-                            style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                          />
-                        </div>
-
-                        {/* Tanggal Jatuh Tempo Cicilan */}
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                            <CalendarDays className="h-2.5 w-2.5" style={{ color: c.destructive }} />
-                            Tanggal Jatuh Tempo
-                          </Label>
-                          <Input
-                            type="date"
-                            value={formData.installmentDueDate}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, installmentDueDate: e.target.value }))}
-                            className="rounded-lg text-sm w-full sm:w-1/2 border"
-                            style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                          />
-                          {formData.installmentDueDate && computedTenor > 0 && (
-                            <p className="text-[10px]" style={{ color: c.muted }}>
-                              Cicilan {computedTenor}× mulai{' '}
-                              <span style={{ color: c.destructive }}>{new Date(formData.installmentDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Investor Share */}
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                            <Users className="h-2.5 w-2.5" style={{ color: c.warning }} />
-                            Bagi Investor (%)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={formData.investorSharePct}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, investorSharePct: e.target.value }))}
-                            placeholder="0"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            className="rounded-lg text-sm tabular-nums w-full sm:w-1/2 border"
-                            style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                          />
-                        </div>
-
-                        {/* Live Preview Box */}
-                        {(computedAmount > 0 || computedTenor > 0) && (
-                          <div className="rounded-lg p-2.5 space-y-1.5 border" style={{ background: c.card, borderColor: c.border }}>
-                            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: c.muted }}>
-                              Ringkasan Cicilan
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <div className="flex flex-col">
-                                <span className="text-[9px] uppercase" style={{ color: c.muted }}>{t('biz.remainingAfterDP')}</span>
-                                <span className="text-xs font-bold tabular-nums" style={{ color: c.secondary }}>
-                                  {formatAmount(remaining)}
-                                </span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[9px] uppercase" style={{ color: c.muted }}>{t('biz.installmentAmount')}</span>
-                                <span className="text-xs font-bold tabular-nums" style={{ color: c.primary }}>
-                                  {computedTenor > 0 ? formatAmount(monthlyInstallment) : '—'}
-                                </span>
-                              </div>
-                            </div>
-                            {investorSharePct > 0 && monthlyInstallment > 0 && (
-                              <div className="flex flex-col pt-1 border-t" style={{ borderColor: c.border }}>
-                                <span className="text-[9px] uppercase" style={{ color: c.muted }}>Bagi Investor ({investorSharePct}%)</span>
-                                <span className="text-xs font-bold tabular-nums" style={{ color: c.warning }}>
-                                  {formatAmount(investorShareAmount)} / bulan
-                                </span>
-                              </div>
-                            )}
-                            {/* Progress bar preview */}
-                            {computedAmount > 0 && computedDP > 0 && (
-                              <div className="pt-1">
-                                <div className="h-1 rounded-full overflow-hidden" style={{ background: c.border }}>
-                                  <motion.div
-                                    className="h-full rounded-full"
-                                    style={{ background: c.secondary }}
-                                    initial={{ width: 0 }}
-                                    animate={{
-                                      width: `${Math.min((computedDP / computedAmount) * 100, 100)}%`,
-                                    }}
-                                    transition={{ duration: 0.4, ease: 'easeOut' as const }}
-                                  />
-                                </div>
-                                <p className="text-[9px] mt-0.5 tabular-nums" style={{ color: c.muted }}>
-                                  DP {((computedDP / computedAmount) * 100).toFixed(1)}% dari total
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Customer */}
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                    {t('biz.saleCustomer')}
-                  </Label>
-                  <Select
-                    value={formData.customerId}
-                    onValueChange={(v) => setFormData((prev) => ({ ...prev, customerId: v }))}
-                  >
-                    <SelectTrigger className="rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
-                      <SelectValue placeholder={t('biz.saleCustomer')} />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
-                      {customers.map((cust) => (
-                        <SelectItem key={cust.id} value={cust.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
-                          {cust.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Date & Payment Method */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Payment Method — full width with icon-based options */}
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                      {t('biz.saleDate')}
-                    </Label>
-                    <Input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                      className="rounded-lg text-sm border"
-                      style={{ background: c.card, borderColor: c.border, color: c.foreground }}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                    <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
                       {t('biz.salePaymentMethod')}
                     </Label>
                     <Select
                       value={formData.paymentMethod}
                       onValueChange={(v) => setFormData((prev) => ({ ...prev, paymentMethod: v }))}
                     >
-                      <SelectTrigger className="rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                      <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
@@ -1513,7 +1343,7 @@ export default function BusinessSales() {
                           return (
                             <SelectItem key={m.value} value={m.value} className="text-sm rounded-md" style={{ color: c.foreground }}>
                               <span className="flex items-center gap-2">
-                                <Icon className="h-3 w-3" style={{ color: m.color }} />
+                                <Icon className="h-3.5 w-3.5" style={{ color: m.color }} />
                                 {t(m.labelKey)}
                               </span>
                             </SelectItem>
@@ -1524,16 +1354,237 @@ export default function BusinessSales() {
                   </div>
                 </div>
 
-                {/* Notes */}
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                    {t('biz.customerNotes')}
-                  </Label>
+                {/* ═══ Section 3: Cicilan & Investor ═══ */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-1">
+                    <Repeat className="h-3.5 w-3.5" style={{ color: c.muted }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Cicilan &amp; Investor</span>
+                    <div className="flex-1 h-px" style={{ background: c.border }} />
+                  </div>
+
+                  {/* Installment Toggle — styled as a nice toggle card */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        isInstallment: !prev.isInstallment,
+                        downPayment: !prev.isInstallment ? prev.downPayment : '',
+                        downPaymentPct: !prev.isInstallment ? prev.downPaymentPct : '',
+                        installmentTempo: !prev.isInstallment ? prev.installmentTempo : '',
+                        investorSharePct: !prev.isInstallment ? prev.investorSharePct : '',
+                      }))
+                    }
+                    className="w-full flex items-center justify-between rounded-xl px-4 py-3 border transition-colors duration-200 cursor-pointer"
+                    style={{
+                      background: formData.isInstallment ? alpha(c.primary, 8) : c.card,
+                      borderColor: formData.isInstallment ? alpha(c.primary, 25) : c.border,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: alpha(c.primary, 15) }}>
+                        <Repeat className="h-4 w-4" style={{ color: c.primary }} />
+                      </div>
+                      <div className="text-left">
+                        <span className="text-sm font-medium" style={{ color: c.foreground }}>{t('biz.isInstallment')}</span>
+                        <p className="text-xs mt-0.5" style={{ color: c.muted }}>Aktifkan cicilan &amp; investor</p>
+                      </div>
+                    </div>
+                    <div
+                      className="w-10 h-6 rounded-full flex items-center transition-colors duration-200 shrink-0"
+                      style={{ background: formData.isInstallment ? c.primary : c.border }}
+                    >
+                      <div
+                        className="w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200"
+                        style={{ transform: formData.isInstallment ? 'translateX(20px)' : 'translateX(2px)' }}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Installment Section — Collapsible */}
+                  <AnimatePresence>
+                    {formData.isInstallment && (
+                      <motion.div
+                        variants={installmentSectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        className="overflow-hidden"
+                      >
+                        <div className="rounded-xl p-4 space-y-3 border" style={{ background: alpha(c.primary, 4), borderColor: alpha(c.primary, 12) }}>
+                          {/* DP Amount & DP Percentage */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
+                                <ArrowDownToLine className="h-3 w-3" style={{ color: c.secondary }} />
+                                {t('biz.downPayment')} (Rp)
+                              </Label>
+                              <Input
+                                type="number"
+                                value={formData.downPayment}
+                                onChange={(e) => handleDownPaymentChange(e.target.value)}
+                                placeholder="0"
+                                min="0"
+                                className="h-10 rounded-lg text-sm tabular-nums border"
+                                style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                              />
+                              {formattedDPNominal && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -4 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -4 }}
+                                  className="flex items-center gap-1.5 px-1 mt-1"
+                                >
+                                  <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                                  <span className="text-sm font-semibold tabular-nums text-secondary">
+                                    {formattedDPNominal}
+                                  </span>
+                                </motion.div>
+                              )}
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
+                                <Percent className="h-3 w-3" style={{ color: c.secondary }} />
+                                DP (%)
+                              </Label>
+                              <Input
+                                type="number"
+                                value={formData.downPaymentPct}
+                                onChange={(e) => handleDownPaymentPctChange(e.target.value)}
+                                placeholder="0"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                className="h-10 rounded-lg text-sm tabular-nums border"
+                                style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Tenor (months) */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
+                              <Repeat className="h-3 w-3" style={{ color: c.primary }} />
+                              {t('biz.installmentPeriod')}
+                            </Label>
+                            <Input
+                              type="number"
+                              value={formData.installmentTempo}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, installmentTempo: e.target.value }))}
+                              placeholder="0"
+                              min="1"
+                              className="h-10 rounded-lg text-sm tabular-nums w-full sm:w-1/2 border"
+                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                            />
+                          </div>
+
+                          {/* Tanggal Jatuh Tempo Cicilan */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
+                              <CalendarDays className="h-3 w-3" style={{ color: c.destructive }} />
+                              Tanggal Jatuh Tempo
+                            </Label>
+                            <Input
+                              type="date"
+                              value={formData.installmentDueDate}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, installmentDueDate: e.target.value }))}
+                              className="h-10 rounded-lg text-sm w-full sm:w-1/2 border"
+                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                            />
+                            {formData.installmentDueDate && computedTenor > 0 && (
+                              <p className="text-xs" style={{ color: c.muted }}>
+                                Cicilan {computedTenor}× mulai{' '}
+                                <span style={{ color: c.destructive }}>{new Date(formData.installmentDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Investor Share */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
+                              <Users className="h-3 w-3" style={{ color: c.warning }} />
+                              Bagi Investor (%)
+                            </Label>
+                            <Input
+                              type="number"
+                              value={formData.investorSharePct}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, investorSharePct: e.target.value }))}
+                              placeholder="0"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              className="h-10 rounded-lg text-sm tabular-nums w-full sm:w-1/2 border"
+                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                            />
+                          </div>
+
+                          {/* Live Preview Box */}
+                          {(computedAmount > 0 || computedTenor > 0) && (
+                            <div className="rounded-lg p-3 space-y-2 border" style={{ background: c.card, borderColor: c.border }}>
+                              <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: c.muted }}>
+                                Ringkasan Cicilan
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] uppercase" style={{ color: c.muted }}>{t('biz.remainingAfterDP')}</span>
+                                  <span className="text-sm font-bold tabular-nums" style={{ color: c.secondary }}>
+                                    {formatAmount(remaining)}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] uppercase" style={{ color: c.muted }}>{t('biz.installmentAmount')}</span>
+                                  <span className="text-sm font-bold tabular-nums" style={{ color: c.primary }}>
+                                    {computedTenor > 0 ? formatAmount(monthlyInstallment) : '—'}
+                                  </span>
+                                </div>
+                              </div>
+                              {investorSharePct > 0 && monthlyInstallment > 0 && (
+                                <div className="flex flex-col pt-2 border-t" style={{ borderColor: c.border }}>
+                                  <span className="text-[10px] uppercase" style={{ color: c.muted }}>Bagi Investor ({investorSharePct}%)</span>
+                                  <span className="text-sm font-bold tabular-nums" style={{ color: c.warning }}>
+                                    {formatAmount(investorShareAmount)} / bulan
+                                  </span>
+                                </div>
+                              )}
+                              {/* Progress bar preview */}
+                              {computedAmount > 0 && computedDP > 0 && (
+                                <div className="pt-1">
+                                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: c.border }}>
+                                    <motion.div
+                                      className="h-full rounded-full"
+                                      style={{ background: c.secondary }}
+                                      initial={{ width: 0 }}
+                                      animate={{
+                                        width: `${Math.min((computedDP / computedAmount) * 100, 100)}%`,
+                                      }}
+                                      transition={{ duration: 0.4, ease: 'easeOut' as const }}
+                                    />
+                                  </div>
+                                  <p className="text-xs mt-1 tabular-nums" style={{ color: c.muted }}>
+                                    DP {((computedDP / computedAmount) * 100).toFixed(1)}% dari total
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* ═══ Section 4: Catatan ═══ */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-1">
+                    <Info className="h-3.5 w-3.5" style={{ color: c.muted }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Catatan</span>
+                    <div className="flex-1 h-px" style={{ background: c.border }} />
+                  </div>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder={t('biz.customerNotes')}
-                    className="min-h-[60px] rounded-lg text-sm resize-none border"
+                    className="min-h-[72px] rounded-lg text-sm resize-none border"
                     style={{ background: c.card, borderColor: c.border, color: c.foreground }}
                   />
                 </div>

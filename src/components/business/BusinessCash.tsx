@@ -82,6 +82,7 @@ import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import BusinessBudget from './BusinessBudget';
 
 // ─── Color helpers using CSS variables ───────────────────────────
 const c = {
@@ -437,7 +438,7 @@ export default function BusinessCash() {
   const businessId = activeBusiness?.id;
 
   // ── Main Tab State ──
-  type MainTab = 'arus_kas' | 'investor' | 'piutang';
+  type MainTab = 'arus_kas' | 'investor' | 'piutang' | 'anggaran';
   const [mainTab, setMainTab] = useState<MainTab>('arus_kas');
 
   // ── Arus Kas State ──
@@ -1346,6 +1347,7 @@ export default function BusinessCash() {
     { key: 'arus_kas', label: 'Arus Kas', icon: TrendingUp, color: c.secondary },
     { key: 'investor', label: 'Investor', icon: Users, color: c.primary },
     { key: 'piutang', label: 'Piutang', icon: HandCoins, color: c.warning },
+    { key: 'anggaran', label: 'Anggaran', icon: PiggyBank, color: '#A78BFA' },
   ];
 
   const subTypeConfig = CASH_SUB_TYPES[cashSubTab];
@@ -3266,6 +3268,12 @@ export default function BusinessCash() {
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+        {/* ══════════════════════════════════════════════════════════ */}
+        {mainTab === 'anggaran' && (
+          <div key="anggaran" className="space-y-3">
+            <BusinessBudget />
           </div>
         )}
       </AnimatePresence>
