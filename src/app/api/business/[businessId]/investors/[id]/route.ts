@@ -29,6 +29,9 @@ export async function PUT(
       return NextResponse.json({ error: 'Investor not found' }, { status: 404 });
     }
 
+    const newTotalInvestment = totalInvestment !== undefined ? (parseFloat(totalInvestment) || 0) : undefined;
+    const oldTotalInvestment = existing.totalInvestment;
+
     const investor = await db.businessInvestor.update({
       where: { id },
       data: {
@@ -37,11 +40,28 @@ export async function PUT(
         ...(email !== undefined && { email: email?.trim() || null }),
         ...(address !== undefined && { address: address?.trim() || null }),
         ...(notes !== undefined && { notes: notes?.trim() || null }),
-        ...(totalInvestment !== undefined && { totalInvestment: parseFloat(totalInvestment) || 0 }),
+        ...(newTotalInvestment !== undefined && { totalInvestment: newTotalInvestment }),
         ...(profitSharePct !== undefined && { profitSharePct: parseFloat(profitSharePct) || 0 }),
         ...(status && ['active', 'inactive'].includes(status) && { status }),
       },
     });
+
+    // Sync BusinessCash entry when totalInvestment changes
+    if (newTotalInvestment !== undefined && newTotalInvestment > oldTotalInvestment) {
+      const diff = newTotalInvestment - oldTotalInvestment;
+      await db.businessCash.create({
+        data: {
+          businessId,
+          type: 'investor',
+          amount: diff,
+          description: `Modal tambahan dari ${investor.name}`,
+          date: new Date(),
+          investorId: investor.id,
+          source: 'investor',
+          category: 'modal_tambahan',
+        },
+      });
+    }
 
     return NextResponse.json({ investor });
   } catch (error) {

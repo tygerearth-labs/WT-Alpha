@@ -35,7 +35,7 @@ import {
   Settings, Palette, Upload, CreditCard, FileText, Eye, Save,
   PenLine, Building2, Phone, Mail, Globe,
   Landmark, Hash, User, X, Check, Layout, CheckCircle2,
-  Sparkles, Plus, Pencil, Trash2, Star, Type, Percent, Clock,
+  Sparkles, Plus, Pencil, Trash2, Star, Type, Percent, Clock, Moon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -83,6 +83,7 @@ interface InvoiceSettingsForm {
   accountHolderName: string;
   footerText: string;
   paymentTerms: string;
+  darkMode: boolean;
 }
 
 const DEFAULT_FORM: InvoiceSettingsForm = {
@@ -101,6 +102,7 @@ const DEFAULT_FORM: InvoiceSettingsForm = {
   accountHolderName: '',
   footerText: '',
   paymentTerms: '',
+  darkMode: false,
 };
 
 const TEMPLATE_META: Record<TemplateType, { label: string; desc: string; color: string }> = {
@@ -351,6 +353,7 @@ export default function BusinessInvoiceSettings() {
             logoUrl: data.logoUrl || '', signatureUrl: data.signatureUrl || '', businessName: data.businessName || '', address: data.businessAddress || '',
             phone: data.businessPhone || '', email: data.businessEmail || '', website: data.businessWebsite || '', bankName: data.bankName || '',
             accountNumber: data.bankAccount || '', accountHolderName: data.bankHolder || '', footerText: data.footerText || '', paymentTerms: data.termsText || '',
+            darkMode: data.darkMode ?? false,
           };
           setForm(loaded);
           originalRef.current = loaded;
@@ -386,6 +389,7 @@ export default function BusinessInvoiceSettings() {
           logoUrl: form.logoUrl, signatureUrl: form.signatureUrl, businessName: form.businessName, businessAddress: form.address,
           businessPhone: form.phone, businessEmail: form.email, businessWebsite: form.website, bankName: form.bankName,
           bankAccount: form.accountNumber, bankHolder: form.accountHolderName, footerText: form.footerText, termsText: form.paymentTerms,
+          darkMode: form.darkMode,
         }),
       });
       if (!res.ok) throw new Error();
@@ -536,6 +540,23 @@ export default function BusinessInvoiceSettings() {
                             style={fontSize === size ? { backgroundColor: alpha(c.primary, 15), color: c.primary } : {}}
                           >{size === 'small' ? 'Kecil' : size === 'medium' ? 'Sedang' : 'Besar'}</button>
                         ))}
+                      </div>
+                    </div>
+                    {/* Dark Mode PDF */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5"><Moon className="h-3 w-3" />Tema Gelap PDF</Label>
+                      <div className="flex items-center justify-between p-2.5 rounded-lg" style={{ backgroundColor: alpha(c.foreground, 4) }}>
+                        <div>
+                          <p className="text-[10px] font-medium text-foreground">Background Gelap</p>
+                          <p className="text-[9px] text-muted-foreground">Invoice yang diunduh akan menggunakan tema gelap</p>
+                        </div>
+                        <Switch
+                          checked={form.darkMode}
+                          onCheckedChange={(checked) => {
+                            setForm((prev) => ({ ...prev, darkMode: checked }));
+                            setHasChanges(true);
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

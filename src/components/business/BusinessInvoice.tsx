@@ -49,7 +49,7 @@ import {
   PlusCircle, MinusCircle, Eye, Receipt,
   Clock, CheckCircle2, AlertTriangle, TrendingUp,
   Landmark, Star, Info, Building2, Search,
-  Send, CalendarDays, ChevronRight, Filter, CircleDollarSign,
+  Send, CalendarDays, ChevronRight, Filter, CircleDollarSign, MessageCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -98,7 +98,7 @@ interface Invoice {
   total: number;
   status: string;
   notes?: string;
-  customer?: { id: string; name: string } | null;
+  customer?: { id: string; name: string; phone?: string | null; email?: string | null } | null;
   customerId?: string | null;
 }
 
@@ -383,6 +383,33 @@ export default function BusinessInvoice() {
     }
   };
 
+  /* ── WhatsApp Reminder ─────────────────────────────────────── */
+  const handleWhatsAppReminder = useCallback((inv: Invoice) => {
+    const rawPhone = inv.customer?.phone;
+    if (!rawPhone) {
+      toast.error('Nomor telepon pelanggan tidak tersedia');
+      return;
+    }
+    // Format phone: remove non-digits, prefix 62 for Indonesian numbers
+    let digits = rawPhone.replace(/[^0-9]/g, '');
+    if (digits.startsWith('0')) digits = '62' + digits.slice(1);
+    if (!digits.startsWith('62')) digits = '62' + digits;
+
+    const dueDateStr = inv.dueDate
+      ? new Date(inv.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+      : 'belum ditentukan';
+    const message = `Halo ${inv.customer?.name || 'Pelanggan'}, berikut reminder invoice Anda:\n\n📋 No. Invoice: ${inv.invoiceNumber}\n💰 Total: ${formatAmount(inv.total)}\n📅 Jatuh Tempo: ${dueDateStr}\n\nMohon untuk segera melakukan pembayaran. Terima kasih! 🙏`;
+
+    const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [formatAmount]);
+
   /* ── Derived Data ─────────────────────────────────────────────── */
   const periodInvoices = useMemo(() => {
     if (periodFilter === 'year') return invoices;
@@ -654,6 +681,14 @@ export default function BusinessInvoice() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  className="h-7 w-7 p-0 rounded-md text-green-500"
+                                  onClick={(e) => { e.stopPropagation(); handleWhatsAppReminder(inv); }}
+                                >
+                                  <MessageCircle className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   className="h-7 w-7 p-0 rounded-md text-muted-foreground"
                                   onClick={(e) => { e.stopPropagation(); handleDownloadPDF(inv.id); }}
                                   disabled={downloading === inv.id}
@@ -736,6 +771,14 @@ export default function BusinessInvoice() {
                                 </TableCell>
                                 <TableCell className="py-2.5 text-right">
                                   <div className="flex items-center justify-end gap-0.5 opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 rounded-md hover:bg-white/10 text-green-500"
+                                      onClick={(e) => { e.stopPropagation(); handleWhatsAppReminder(inv); }}
+                                    >
+                                      <MessageCircle className="h-3 w-3" />
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -947,7 +990,11 @@ export default function BusinessInvoice() {
                     </div>
                   )}
                 </div>
-                <div className="px-5 pb-4 pt-2 flex justify-end border-t border-border">
+                <div className="px-5 pb-4 pt-2 flex justify-end gap-2 border-t border-border">
+                  <Button variant="outline" className="rounded-lg text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => handleWhatsAppReminder(inv)}>
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Kirim Reminder
+                  </Button>
                   <Button variant="outline" className="rounded-lg" style={{ borderColor: `${sColor}30`, color: sColor }} onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
                     {downloading === inv.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     {t('biz.downloadPDF')}

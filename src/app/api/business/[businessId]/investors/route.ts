@@ -36,9 +36,17 @@ export async function GET(
     // ── Investor Income History ──────────────────────
     // ══════════════════════════════════════════════════
 
-    // 1. Investor cash entries (modal masuk)
+    // 1. Investor cash entries (modal masuk) — exclude investor_pendapatan (those are sales income)
     const investorCashEntries = await db.businessCash.findMany({
-      where: { businessId, type: 'investor' },
+      where: {
+        businessId,
+        type: 'investor',
+        OR: [
+          { category: null },
+          { category: 'modal' },
+          { category: 'modal_tambahan' },
+        ],
+      },
       orderBy: { date: 'desc' },
       include: {
         investor: { select: { id: true, name: true } },
@@ -237,6 +245,8 @@ export async function POST(
       return NextResponse.json({ error: 'Investor name is required' }, { status: 400 });
     }
 
+    const investmentAmount = parseFloat(totalInvestment) || 0;
+
     const investor = await db.businessInvestor.create({
       data: {
         businessId,
@@ -245,10 +255,26 @@ export async function POST(
         email: email?.trim() || null,
         address: address?.trim() || null,
         notes: notes?.trim() || null,
-        totalInvestment: parseFloat(totalInvestment) || 0,
+        totalInvestment: investmentAmount,
         profitSharePct: parseFloat(profitSharePct) || 0,
       },
     });
+
+    // Also create cash entry for investor modal awal
+    if (investmentAmount > 0) {
+      await db.businessCash.create({
+        data: {
+          businessId,
+          type: 'investor',
+          amount: investmentAmount,
+          description: `Modal awal dari ${name.trim()}`,
+          date: new Date(),
+          investorId: investor.id,
+          source: 'investor',
+          category: 'modal',
+        },
+      });
+    }
 
     return NextResponse.json({ investor }, { status: 201 });
   } catch (error) {

@@ -702,7 +702,6 @@ export default function BusinessCash() {
       }
       const data = await res.json();
       if (data.message) {
-        // Use <a> click trick for reliable mobile + desktop redirect
         const a = document.createElement('a');
         a.href = data.message;
         a.target = '_blank';
@@ -1214,7 +1213,8 @@ export default function BusinessCash() {
       if (!res.ok) throw new Error();
       toast.success(editingInvestor ? 'Investor berhasil diperbarui' : 'Investor berhasil ditambahkan');
       setInvestorDialogOpen(false);
-      fetchInvestors();
+      await fetchInvestors();
+      fetchAllCashData();
     } catch {
       toast.error(t('common.error'));
     } finally {
@@ -1270,6 +1270,57 @@ export default function BusinessCash() {
 
   // ── Transaction Detail Dialog ──
   const [transactionDetail, setTransactionDetail] = useState<CashEntry | null>(null);
+
+  // ── WhatsApp Report Helper ──
+  const getInvestorPhone = (item: InvestorHistoryItem | CashEntry): string => {
+    if (item.investorId) {
+      const inv = investors.find((i) => i.id === item.investorId);
+      return inv?.phone || '';
+    }
+    return '';
+  };
+
+  const sendInvestorReport = (item: InvestorHistoryItem | CashEntry, reportType: 'modal_masuk' | 'pemasukan' | 'pengeluaran') => {
+    const phone = getInvestorPhone(item);
+    if (!phone) {
+      toast.error('Nomor telepon investor tidak tersedia');
+      return;
+    }
+    // Format phone: remove non-digits, prefix 62
+    let formattedPhone = phone.replace(/\\D/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
+    if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
+
+    const invName = item.investorId
+      ? (investors.find((i) => i.id === item.investorId)?.name || 'Investor')
+      : ('investorName' in item ? (item as InvestorHistoryItem).investorName || 'Investor' : 'Investor');
+
+    const amountStr = formatAmount(item.amount);
+    const dateStr = formatDate(item.date);
+
+    let body = '';
+    if (reportType === 'modal_masuk') {
+      body = `*INVESTOR REPORT* 📊\n\nHalo ${invName},\n\nBerikut laporan transaksi terbaru:\n\n📋 *Modal Masuk*: ${item.description}\n💰 Nominal: ${amountStr}\n📅 Tanggal: ${dateStr}\n\nTerima kasih atas modal masuk sebesar ${amountStr} dari ${invName}.\n\nTerima kasih atas kepercayaan Anda! 🙏`;
+    } else if (reportType === 'pemasukan') {
+      const historyItem = item as InvestorHistoryItem;
+      const typeLabel = historyItem.type === 'dp_penjualan' ? 'DP Penjualan'
+        : historyItem.type === 'penjualan_lunas' ? 'Penjualan Lunas'
+        : historyItem.type === 'cicilan_diterima' ? 'Cicilan Diterima' : 'Pemasukan';
+      body = `*INVESTOR REPORT* 📊\n\nHalo ${invName},\n\nBerikut laporan pemasukan bagian investor:\n\n📋 ${typeLabel}: ${item.description}\n💰 Bagian Anda: ${amountStr}\n📅 Tanggal: ${dateStr}\n${historyItem.customerName ? `👤 Pelanggan: ${historyItem.customerName}\n` : ''}\nTerima kasih atas kepercayaan Anda! 🙏`;
+    } else {
+      const cashItem = item as CashEntry;
+      body = `*INVESTOR REPORT* 📊\n\nHalo ${invName},\n\nBerikut laporan penggunaan dana investor:\n\n📋 Pengeluaran: ${item.description}\n💰 Nominal: -${amountStr}\n📅 Tanggal: ${dateStr}\n${cashItem.category ? `📂 Kategori: ${cashItem.category}\n` : ''}\nTerima kasih atas kepercayaan Anda! 🙏`;
+    }
+
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(body)}`;
+    const a = document.createElement('a');
+    a.href = waUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // ══════════════════════════════════════════════════════════════════
   // ── No Business Guard ─────────────────────────────────────────────
@@ -2454,6 +2505,16 @@ export default function BusinessCash() {
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                                           <span className="font-mono">{formatDate(item.date)}</span>
+                                          {item.investorId && (
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); sendInvestorReport(item, 'modal_masuk'); }}
+                                              className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 hover:bg-white/[0.06] transition-colors"
+                                              style={{ color: '#25D366' }}
+                                              title="Kirim laporan via WhatsApp"
+                                            >
+                                              <MessageCircle className="h-3 w-3" />
+                                            </button>
+                                          )}
                                         </div>
                                       </motion.div>
                                     ))}
@@ -2468,6 +2529,7 @@ export default function BusinessCash() {
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Investor</TableHead>
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Keterangan</TableHead>
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">Jumlah</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[40px]"></TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -2490,6 +2552,18 @@ export default function BusinessCash() {
                                             <TableCell className="text-xs py-2 font-medium text-foreground">{item.investorName || '—'}</TableCell>
                                             <TableCell className="text-xs py-2 text-muted-foreground max-w-[200px] truncate">{item.description}</TableCell>
                                             <TableCell className="text-xs text-right font-semibold py-2 tabular-nums text-primary">+{formatAmount(item.amount)}</TableCell>
+                                            <TableCell className="py-2 text-center">
+                                              {item.investorId && (
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); sendInvestorReport(item, 'modal_masuk'); }}
+                                                  className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 hover:bg-white/[0.06] transition-colors mx-auto"
+                                                  style={{ color: '#25D366' }}
+                                                  title="Kirim laporan via WhatsApp"
+                                                >
+                                                  <MessageCircle className="h-3 w-3" />
+                                                </button>
+                                              )}
+                                            </TableCell>
                                           </motion.tr>
                                         ))}
                                       </AnimatePresence>
@@ -2567,6 +2641,16 @@ export default function BusinessCash() {
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                                           <span className="font-mono">{formatDate(item.date)}</span>
+                                          {item.investorId && (
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); sendInvestorReport(item, 'pengeluaran'); }}
+                                              className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 hover:bg-white/[0.06] transition-colors"
+                                              style={{ color: '#25D366' }}
+                                              title="Kirim laporan via WhatsApp"
+                                            >
+                                              <MessageCircle className="h-3 w-3" />
+                                            </button>
+                                          )}
                                         </div>
                                       </motion.div>
                                     ))}
@@ -2582,6 +2666,7 @@ export default function BusinessCash() {
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[90px]">Sumber</TableHead>
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kategori</TableHead>
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">Jumlah</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[40px]"></TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -2613,6 +2698,18 @@ export default function BusinessCash() {
                                             </TableCell>
                                             <TableCell className="text-xs py-2 text-muted-foreground">{item.category || '—'}</TableCell>
                                             <TableCell className="text-xs text-right font-bold py-2 tabular-nums text-destructive">-{formatAmount(item.amount)}</TableCell>
+                                            <TableCell className="py-2 text-center">
+                                              {item.investorId && (
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); sendInvestorReport(item, 'pengeluaran'); }}
+                                                  className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 hover:bg-white/[0.06] transition-colors mx-auto"
+                                                  style={{ color: '#25D366' }}
+                                                  title="Kirim laporan via WhatsApp"
+                                                >
+                                                  <MessageCircle className="h-3 w-3" />
+                                                </button>
+                                              )}
+                                            </TableCell>
                                           </motion.tr>
                                         ))}
                                       </AnimatePresence>
@@ -2691,6 +2788,16 @@ export default function BusinessCash() {
                                           </div>
                                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                                             <span className="font-mono">{formatDate(item.date)}</span>
+                                            {item.investorId && (
+                                              <button
+                                                onClick={(e) => { e.stopPropagation(); sendInvestorReport(item, 'pemasukan'); }}
+                                                className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 hover:bg-white/[0.06] transition-colors"
+                                                style={{ color: '#25D366' }}
+                                                title="Kirim laporan via WhatsApp"
+                                              >
+                                                <MessageCircle className="h-3 w-3" />
+                                              </button>
+                                            )}
                                           </div>
                                         </motion.div>
                                       );
@@ -2707,6 +2814,7 @@ export default function BusinessCash() {
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deskripsi</TableHead>
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pelanggan</TableHead>
                                         <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right w-[120px]">Bagian Investor</TableHead>
+                                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-[40px]"></TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -2747,6 +2855,18 @@ export default function BusinessCash() {
                                               </TableCell>
                                               <TableCell className="text-xs text-right font-semibold py-2 tabular-nums" style={{ color: typeConfig.color }}>
                                                 +{formatAmount(item.amount)}
+                                              </TableCell>
+                                              <TableCell className="py-2 text-center">
+                                                {item.investorId && (
+                                                  <button
+                                                    onClick={(e) => { e.stopPropagation(); sendInvestorReport(item, 'pemasukan'); }}
+                                                    className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 hover:bg-white/[0.06] transition-colors mx-auto"
+                                                    style={{ color: '#25D366' }}
+                                                    title="Kirim laporan via WhatsApp"
+                                                  >
+                                                    <MessageCircle className="h-3 w-3" />
+                                                  </button>
+                                                )}
                                               </TableCell>
                                             </motion.tr>
                                           );
@@ -3555,7 +3675,7 @@ export default function BusinessCash() {
               </Button>
               <Button
                 type="submit"
-                disabled={investorSaving || !investorForm.name}
+                disabled={investorSaving || !investorForm.name || !investorForm.totalInvestment || parseFloat(investorForm.totalInvestment) <= 0}
                 className="rounded-lg disabled:opacity-40 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {investorSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

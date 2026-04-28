@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays, Phone, Mail, MapPin, ShoppingBag, Receipt, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays, Phone, Mail, MapPin, ShoppingBag, Receipt, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -82,6 +82,17 @@ interface CustomerSale {
   customer?: { id: string; name: string } | null;
 }
 
+interface CustomerInvoice {
+  id: string;
+  invoiceNumber: string;
+  date: string;
+  dueDate?: string | null;
+  total: number;
+  status: string;
+  customerId?: string | null;
+  customer?: { id: string; name: string } | null;
+}
+
 function getCustomerBadge(count: number): { label: string; style: React.CSSProperties } {
   if (count === 0) return { label: 'Baru', style: { backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 15%, transparent)' } };
   if (count <= 3) return { label: 'Aktif', style: { backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)', color: 'var(--primary)', border: '1px solid color-mix(in srgb, var(--primary) 15%, transparent)' } };
@@ -110,6 +121,10 @@ export default function BusinessCustomers() {
   });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [detailCustomer, setDetailCustomer] = useState<Customer | null>(null);
+  const [detailSales, setDetailSales] = useState<CustomerSale[]>([]);
+  const [detailInvoices, setDetailInvoices] = useState<CustomerInvoice[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const businessId = activeBusiness?.id;
 
@@ -169,6 +184,39 @@ export default function BusinessCustomers() {
       setCustomerPiutang(piutangMap);
     }).catch(() => {});
   }, [businessId]);
+
+  // Fetch sales & invoices for customer detail dialog
+  useEffect(() => {
+    if (!detailCustomer || !businessId) {
+      setDetailSales([]);
+      setDetailInvoices([]);
+      return;
+    }
+    setDetailLoading(true);
+    Promise.all([
+      fetch(`/api/business/${businessId}/sales?customerId=${detailCustomer.id}&pageSize=50`).then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      }),
+      fetch(`/api/business/${businessId}/invoices?pageSize=200`).then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      }),
+    ])
+      .then(([salesData, invoicesData]) => {
+        setDetailSales(salesData?.sales || []);
+        const allInvoices: CustomerInvoice[] = invoicesData?.invoices || [];
+        const customerInvoices = allInvoices.filter(
+          (inv) => inv.customerId === detailCustomer.id || inv.customer?.id === detailCustomer.id
+        );
+        setDetailInvoices(customerInvoices);
+      })
+      .catch(() => {
+        setDetailSales([]);
+        setDetailInvoices([]);
+      })
+      .finally(() => setDetailLoading(false));
+  }, [detailCustomer, businessId]);
 
   useEffect(() => {
     if (businessId) {
@@ -422,7 +470,8 @@ export default function BusinessCustomers() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ delay: index * 0.03, duration: 0.2 }}
-                        className="p-3 border-b border-border"
+                        className="p-3 border-b border-border cursor-pointer"
+                        onClick={() => setDetailCustomer(customer)}
                       >
                         <div className="flex items-start gap-2.5">
                           <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 bg-primary/12 text-primary">
@@ -538,7 +587,8 @@ export default function BusinessCustomers() {
                       return (
                         <TableRow
                           key={customer.id}
-                          className="group transition-colors duration-150 cursor-default"
+                          className="group transition-colors duration-150 cursor-pointer"
+                          onClick={() => setDetailCustomer(customer)}
                           style={{
                             background: isAlt ? 'rgba(255,255,255,0.015)' : 'transparent',
                             borderBottom: '1px solid var(--border)',
@@ -628,6 +678,292 @@ export default function BusinessCustomers() {
           )}
         </CardContent>
       </Card>
+
+      {/* Customer Detail Dialog */}
+      <Dialog open={!!detailCustomer} onOpenChange={(open) => { if (!open) setDetailCustomer(null); }}>
+        <DialogContent className="rounded-2xl w-[95vw] sm:max-w-[560px] bg-[#1a1a1a] border-white/[0.08] max-h-[85vh] overflow-y-auto">
+          {detailCustomer && (() => {
+            const spending = customerSpending[detailCustomer.id];
+            const piutangBalance = customerPiutang[detailCustomer.name] || 0;
+            const statusBadge = getCustomerStatus(detailCustomer);
+            const outstandingSales = detailSales.filter((s) => {
+              const method = (s.paymentMethod || '').toLowerCase();
+              return method === 'cicilan' || method === 'dp' || method === 'hutang' || method === 'pending';
+            });
+            const outstandingBalance = outstandingSales.reduce((sum, s) => sum + s.amount, 0);
+            const unpaidInvoices = detailInvoices.filter(
+              (inv) => inv.status !== 'paid' && inv.status !== 'cancelled'
+            );
+            const unpaidInvoiceTotal = unpaidInvoices.reduce((sum, inv) => sum + inv.total, 0);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/12">
+                      <span className="text-sm font-bold text-primary">{detailCustomer.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{detailCustomer.name}</span>
+                        <Badge variant="outline" className="text-[8px] font-semibold px-1.5 py-0 h-4 rounded-full" style={statusBadge.style}>
+                          {statusBadge.label}
+                        </Badge>
+                      </div>
+                    </div>
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Detail pelanggan dan riwayat transaksi
+                  </DialogDescription>
+                </DialogHeader>
+
+                <Separator className="bg-white/[0.06]" />
+
+                {/* Contact Info */}
+                <div className="space-y-1.5">
+                  {detailCustomer.phone && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5 shrink-0" style={{ color: c.muted }} />
+                      <span>{detailCustomer.phone}</span>
+                    </div>
+                  )}
+                  {detailCustomer.email && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5 shrink-0" style={{ color: c.muted }} />
+                      <span className="truncate">{detailCustomer.email}</span>
+                    </div>
+                  )}
+                  {detailCustomer.address && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: c.muted }} />
+                      <span className="truncate">{detailCustomer.address}</span>
+                    </div>
+                  )}
+                  {!detailCustomer.phone && !detailCustomer.email && !detailCustomer.address && (
+                    <p className="text-[11px] text-muted-foreground italic">Belum ada info kontak</p>
+                  )}
+                </div>
+
+                {/* Stats Row */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: alpha(c.secondary, 6) }}>
+                    <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Total Belanja</p>
+                    <p className="text-xs font-bold tabular-nums" style={{ color: c.secondary }}>
+                      {spending?.total ? formatAmount(spending.total) : '-'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: alpha(c.primary, 6) }}>
+                    <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Transaksi</p>
+                    <p className="text-xs font-bold tabular-nums" style={{ color: c.primary }}>
+                      {spending?.txCount || 0}x
+                    </p>
+                  </div>
+                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: alpha(c.warning, 6) }}>
+                    <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Terakhir</p>
+                    <p className="text-[11px] font-bold" style={{ color: c.warning }}>
+                      {spending?.lastDate
+                        ? new Date(spending.lastDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+                        : '-'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Outstanding Balance */}
+                {(outstandingBalance > 0 || piutangBalance > 0 || unpaidInvoiceTotal > 0) && (
+                  <div className="rounded-lg p-3 space-y-2" style={{ backgroundColor: alpha(c.destructive, 5), border: `1px solid ${alpha(c.destructive, 12)}` }}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.destructive }}>Sisa Tagihan</p>
+                    {outstandingBalance > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Belum lunas (cicilan/pending)</span>
+                        <span className="text-xs font-bold tabular-nums" style={{ color: c.destructive }}>{formatAmount(outstandingBalance)}</span>
+                      </div>
+                    )}
+                    {unpaidInvoiceTotal > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Tagihan Invoice ({unpaidInvoices.length})</span>
+                        <span className="text-xs font-bold tabular-nums" style={{ color: c.destructive }}>{formatAmount(unpaidInvoiceTotal)}</span>
+                      </div>
+                    )}
+                    {piutangBalance > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Piutang (hutang)</span>
+                        <span className="text-xs font-bold tabular-nums" style={{ color: c.destructive }}>{formatAmount(piutangBalance)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-1.5" style={{ borderTop: `1px solid ${alpha(c.destructive, 10)}` }}>
+                      <span className="text-xs font-semibold" style={{ color: c.destructive }}>Total Sisa</span>
+                      <span className="text-sm font-bold tabular-nums" style={{ color: c.destructive }}>{formatAmount(outstandingBalance + unpaidInvoiceTotal + piutangBalance)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transaction History */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Riwayat Transaksi</p>
+                    <span className="text-[10px]" style={{ color: c.muted }}>{detailSales.length} transaksi</span>
+                  </div>
+                  {detailLoading ? (
+                    <div className="space-y-2">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <Skeleton key={i} className="h-10 rounded-lg bg-white/[0.04]" />
+                      ))}
+                    </div>
+                  ) : detailSales.length === 0 ? (
+                    <div className="py-4 text-center">
+                      <p className="text-[11px]" style={{ color: c.muted }}>Belum ada transaksi untuk pelanggan ini</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                      {detailSales.map((sale) => {
+                        const method = (sale.paymentMethod || '').toLowerCase();
+                        let statusLabel = 'Lunas';
+                        let statusColor = c.secondary;
+                        if (method === 'cicilan') { statusLabel = 'Cicilan'; statusColor = c.warning; }
+                        else if (method === 'pending' || method === 'hutang') { statusLabel = 'Pending'; statusColor = c.muted; }
+                        return (
+                          <div key={sale.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(statusColor, 8) }}>
+                              <FileText className="h-3.5 w-3.5" style={{ color: statusColor }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate text-foreground">{sale.description || 'Penjualan'}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] font-mono" style={{ color: c.muted }}>
+                                  {new Date(sale.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[8px] font-semibold px-1.5 py-0 h-3.5 rounded-full border-0"
+                                  style={{ backgroundColor: alpha(statusColor, 10), color: statusColor }}
+                                >
+                                  {statusLabel}
+                                </Badge>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold tabular-nums shrink-0" style={{ color: statusColor }}>
+                              {formatAmount(sale.amount)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Invoice History */}
+                {detailInvoices.length > 0 && (
+                  <div>
+                    <Separator className="bg-white/[0.06] mb-3" />
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Riwayat Invoice</p>
+                      <span className="text-[10px]" style={{ color: c.muted }}>{detailInvoices.length} invoice</span>
+                    </div>
+                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                      {detailInvoices.map((inv) => {
+                        let invStatusLabel: string;
+                        let invStatusColor: string;
+                        switch (inv.status) {
+                          case 'paid':
+                            invStatusLabel = 'Lunas';
+                            invStatusColor = c.secondary;
+                            break;
+                          case 'overdue':
+                            invStatusLabel = 'Jatuh Tempo';
+                            invStatusColor = c.destructive;
+                            break;
+                          case 'cancelled':
+                            invStatusLabel = 'Batal';
+                            invStatusColor = c.muted;
+                            break;
+                          default:
+                            invStatusLabel = 'Pending';
+                            invStatusColor = c.warning;
+                        }
+                        return (
+                          <div key={inv.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(invStatusColor, 8) }}>
+                              <Receipt className="h-3.5 w-3.5" style={{ color: invStatusColor }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate text-foreground">{inv.invoiceNumber}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] font-mono" style={{ color: c.muted }}>
+                                  {new Date(inv.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[8px] font-semibold px-1.5 py-0 h-3.5 rounded-full border-0"
+                                  style={{ backgroundColor: alpha(invStatusColor, 10), color: invStatusColor }}
+                                >
+                                  {invStatusLabel}
+                                </Badge>
+                                {inv.dueDate && (
+                                  <span className="text-[9px] flex items-center gap-0.5" style={{ color: c.muted }}>
+                                    <CalendarDays className="h-2 w-2" />
+                                    {new Date(inv.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold tabular-nums shrink-0" style={{ color: invStatusColor }}>
+                              {formatAmount(inv.total)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-1">
+                  {detailCustomer.phone && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        let phone = detailCustomer.phone!.replace(/\D/g, '');
+                        if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+                        if (!phone.startsWith('62')) phone = '62' + phone;
+                        const waUrl = `https://wa.me/${phone}`;
+                        const a = document.createElement('a');
+                        a.href = waUrl;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      }}
+                      className="flex-1 h-9 rounded-lg text-xs"
+                      style={{ borderColor: 'rgba(37,211,102,0.3)', color: '#25D366' }}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                      WhatsApp
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => { openEditDialog(detailCustomer); setDetailCustomer(null); }}
+                    className="flex-1 h-9 rounded-lg text-xs"
+                    style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
+                  >
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => { setDeleteId(detailCustomer.id); setDetailCustomer(null); }}
+                    className="flex-1 h-9 rounded-lg text-xs"
+                    style={{ borderColor: alpha(c.destructive, 20), color: c.destructive }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Hapus
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

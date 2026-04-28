@@ -26,6 +26,23 @@ function hexToRgb(hex: string) {
     : { r: 30, g: 41, b: 59 };
 }
 
+/** Returns white [255,255,255] or dark [30,41,59] text depending on background luminance. */
+function getContrastTextColor(hex: string): [number, number, number] {
+  const { r, g, b } = hexToRgb(hex);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? [30, 41, 59] : [255, 255, 255];
+}
+
+/** Returns status-appropriate text color that is readable on the given background hex. */
+function getStatusBadgeTextColor(status: string, bgHex: string): [number, number, number] {
+  const { r, g, b } = hexToRgb(bgHex);
+  const isDarkBg = (0.299 * r + 0.587 * g + 0.114 * b) / 255 <= 0.5;
+  if (status === 'paid') return isDarkBg ? [134, 239, 172] : [22, 101, 52];
+  if (status === 'overdue') return isDarkBg ? [252, 165, 165] : [185, 28, 28];
+  if (status === 'cancelled') return isDarkBg ? [200, 200, 200] : [100, 100, 100];
+  return isDarkBg ? [253, 224, 71] : [146, 64, 14];
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ businessId: string; id: string }> }
@@ -59,8 +76,9 @@ export async function GET(
     // Extract settings with defaults
     const settings = {
       template: invoiceSettings?.template || 'modern',
-      primaryColor: invoiceSettings?.primaryColor || '#1E293B',
-      secondaryColor: invoiceSettings?.secondaryColor || '#BB86FC',
+      primaryColor: invoiceSettings?.primaryColor || '#BB86FC',
+      secondaryColor: invoiceSettings?.secondaryColor || '#03DAC6',
+      darkMode: invoiceSettings?.darkMode ?? true,
       logoUrl: invoiceSettings?.logoUrl || null,
       signatureUrl: invoiceSettings?.signatureUrl || null,
       businessName: invoiceSettings?.businessName || null,
@@ -85,6 +103,7 @@ export async function GET(
     // Colors
     const primary = hexToRgb(settings.primaryColor);
     const secondary = hexToRgb(settings.secondaryColor);
+    const headerTextColor = getContrastTextColor(settings.primaryColor);
 
     // Dynamically import jspdf + autotable (server-side)
     // jspdf-autotable v5: use standalone autoTable(doc, options) function
@@ -93,6 +112,35 @@ export async function GET(
     const autoTable = (autoTableModule as unknown as { default: (doc: unknown, options: Record<string, unknown>) => void }).default;
 
     const doc = new jsPDF();
+
+    // ── Dark mode color palette ──
+    const isDark = settings.darkMode;
+    const dark: Record<string, [number, number, number]> = {
+      bg: [26, 26, 26],
+      surface: [30, 30, 30],
+      surfaceAlt: [40, 40, 40],
+      text: [229, 229, 229],
+      textMuted: [153, 153, 153],
+      border: [60, 60, 60],
+    };
+
+    // If dark mode, fill all pages with dark background
+    if (isDark) {
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFillColor(...dark.bg);
+        doc.rect(0, 0, 210, 297, 'F');
+      }
+      // Re-set to page 1
+      doc.setPage(1);
+    }
+
+    // Helper: get text color based on theme
+    const txtColor: [number, number, number] = isDark ? dark.text : [0, 0, 0];
+    const mutedColor: [number, number, number] = isDark ? dark.textMuted : [128, 128, 128];
+    const altRowColor: [number, number, number] = isDark ? dark.surfaceAlt : [248, 250, 252];
+    const lineColor: [number, number, number] = isDark ? dark.border : [230, 230, 230];
 
     // Parse invoice items
     let items: Array<{
@@ -173,13 +221,17 @@ export async function GET(
         infoY += 5;
       }
 
-      // Double-line separator
+      // Double-line separator with secondary accent
       infoY += 3;
       doc.setDrawColor(primary.r, primary.g, primary.b);
       doc.setLineWidth(1.0);
       doc.line(14, infoY, 196, infoY);
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
+      doc.setLineWidth(0.5);
+      doc.line(14, infoY + 1.5, 196, infoY + 1.5);
+      doc.setDrawColor(primary.r, primary.g, primary.b);
       doc.setLineWidth(0.3);
-      doc.line(14, infoY + 2, 196, infoY + 2);
+      doc.line(14, infoY + 2.5, 196, infoY + 2.5);
 
       // Invoice title centered
       infoY += 12;
@@ -187,7 +239,7 @@ export async function GET(
       doc.setFont('times', 'bold');
       doc.setTextColor(primary.r, primary.g, primary.b);
       doc.text('INVOICE', 105, infoY, { align: 'center' });
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
 
       // Invoice details centered below title
       infoY += 8;
@@ -232,7 +284,7 @@ export async function GET(
         doc.setTextColor(245, 158, 11);
       }
       doc.text(`Status: ${statusLabel}`, 105, infoY, { align: 'center' });
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
 
       // Customer info
       const customerY = infoY + 10;
@@ -266,13 +318,17 @@ export async function GET(
         doc.text('-', 14, customerY + 6);
       }
 
-      // Double-line before table
+      // Double-line before table with secondary accent
       const tableStartY = customerY + 30;
       doc.setDrawColor(primary.r, primary.g, primary.b);
       doc.setLineWidth(0.5);
       doc.line(14, tableStartY - 4, 196, tableStartY - 4);
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
+      doc.setLineWidth(0.3);
+      doc.line(14, tableStartY - 2.5, 196, tableStartY - 2.5);
+      doc.setDrawColor(primary.r, primary.g, primary.b);
       doc.setLineWidth(0.2);
-      doc.line(14, tableStartY - 2, 196, tableStartY - 2);
+      doc.line(14, tableStartY - 1.5, 196, tableStartY - 1.5);
 
       // Items table
       autoTable(doc, {
@@ -289,15 +345,16 @@ export async function GET(
           fontSize: 9,
           cellPadding: 3,
           font: 'times',
+          textColor: txtColor,
         },
         headStyles: {
           fillColor: [primary.r, primary.g, primary.b],
-          textColor: [255, 255, 255],
+          textColor: headerTextColor,
           fontStyle: 'bold',
           font: 'times',
         },
         alternateRowStyles: {
-          fillColor: [248, 250, 252],
+          fillColor: altRowColor,
         },
         columnStyles: {
           0: { halign: 'center', cellWidth: 15 },
@@ -338,17 +395,22 @@ export async function GET(
         totalsY += 6;
       }
 
-      // Double-line separator
+      // Double-line separator with secondary accent
       doc.setDrawColor(primary.r, primary.g, primary.b);
       doc.setLineWidth(1.0);
       doc.line(totalsX, totalsY, totalsX + 55, totalsY);
-      doc.setLineWidth(0.3);
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
+      doc.setLineWidth(0.5);
       doc.line(totalsX, totalsY + 1.5, totalsX + 55, totalsY + 1.5);
-      totalsY += 7;
+      doc.setDrawColor(primary.r, primary.g, primary.b);
+      doc.setLineWidth(0.3);
+      doc.line(totalsX, totalsY + 2.5, totalsX + 55, totalsY + 2.5);
+      totalsY += 8;
 
-      // Total
+      // Total - primary color
       doc.setFontSize(12);
       doc.setFont('times', 'bold');
+      doc.setTextColor(primary.r, primary.g, primary.b);
       doc.text('TOTAL:', totalsX, totalsY);
       doc.text(formatCurrency(invoice.total), totalsX + 50, totalsY, {
         align: 'right',
@@ -442,10 +504,14 @@ export async function GET(
         doc.text('Hormat kami,', 148, finalFooterY + 5);
       }
 
-      // Double-line at bottom
+      // Double-line at bottom with secondary accent
       doc.setDrawColor(primary.r, primary.g, primary.b);
       doc.setLineWidth(0.5);
       doc.line(14, pageHeight - 25, 196, pageHeight - 25);
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
+      doc.setLineWidth(0.3);
+      doc.line(14, pageHeight - 24, 196, pageHeight - 24);
+      doc.setDrawColor(primary.r, primary.g, primary.b);
       doc.setLineWidth(0.2);
       doc.line(14, pageHeight - 23, 196, pageHeight - 23);
 
@@ -462,7 +528,7 @@ export async function GET(
         pageHeight - 13,
         { align: 'center' }
       );
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
     } else if (settings.template === 'minimal') {
       // ─── MINIMAL TEMPLATE ───
       // Very clean, lots of white space, thin lines, minimal decoration
@@ -502,12 +568,12 @@ export async function GET(
         doc.text(displayWebsite, 14 + logoOffset, infoY);
         infoY += 4;
       }
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
 
-      // Thin line separator
+      // Thin line separator with secondary color accent
       infoY += 4;
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.2);
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
+      doc.setLineWidth(0.3);
       doc.line(14, infoY, 196, infoY);
 
       // Invoice title + details - right aligned, minimal
@@ -552,7 +618,7 @@ export async function GET(
         doc.setTextColor(180, 140, 20);
       }
       doc.text(statusLabel, 196, statusY, { align: 'right' });
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
 
       // Customer info - clean, minimal spacing
       const customerY = infoY + 10;
@@ -602,18 +668,19 @@ export async function GET(
         styles: {
           fontSize: 9,
           cellPadding: 3,
-          lineColor: [230, 230, 230],
+          lineColor: isDark ? dark.border : [230, 230, 230],
           lineWidth: 0.1,
+          textColor: txtColor,
         },
         headStyles: {
-          fillColor: [255, 255, 255],
-          textColor: [80, 80, 80],
+          fillColor: isDark ? dark.surface : [255, 255, 255],
+          textColor: isDark ? dark.text : [80, 80, 80],
           fontStyle: 'bold',
           lineWidth: { bottom: 0.3 },
           lineColor: [80, 80, 80],
         },
         alternateRowStyles: {
-          fillColor: [252, 252, 252],
+          fillColor: altRowColor,
         },
         columnStyles: {
           0: { halign: 'center', cellWidth: 15 },
@@ -657,9 +724,9 @@ export async function GET(
         totalsY += 5;
       }
 
-      // Thin line
-      doc.setDrawColor(180, 180, 180);
-      doc.setLineWidth(0.2);
+      // Accent line with secondary color
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
+      doc.setLineWidth(0.3);
       doc.line(totalsX, totalsY, totalsX + 45, totalsY);
       totalsY += 6;
 
@@ -671,14 +738,14 @@ export async function GET(
       doc.text(formatCurrency(invoice.total), totalsX + 45, totalsY, {
         align: 'right',
       });
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
 
       // Payment info - minimal style, use BusinessBankAccount if available
       let paymentY = totalsY + 15;
       const hasBankAccounts = bankAccounts.length > 0;
       const hasLegacyBanks = settings.bankName || settings.bankAccount;
       if (hasBankAccounts || hasLegacyBanks) {
-        doc.setDrawColor(230, 230, 230);
+        doc.setDrawColor(secondary.r, secondary.g, secondary.b);
         doc.setLineWidth(0.2);
         doc.line(14, paymentY - 4, 196, paymentY - 4);
         doc.setFontSize(9);
@@ -720,7 +787,7 @@ export async function GET(
           }
           paymentY += 22;
         }
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(...txtColor);
       }
 
       // Notes section
@@ -737,7 +804,7 @@ export async function GET(
         doc.setTextColor(100, 100, 100);
         const splitNotes = doc.splitTextToSize(invoice.notes, 170);
         doc.text(splitNotes, 14, notesY + 5);
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(...txtColor);
         paymentY += 5 + splitNotes.length * 4;
       }
 
@@ -755,7 +822,7 @@ export async function GET(
         doc.setTextColor(100, 100, 100);
         const splitTerms = doc.splitTextToSize(settings.termsText, 170);
         doc.text(splitTerms, 14, termsY + 5);
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(...txtColor);
       }
 
       // Signature
@@ -776,12 +843,12 @@ export async function GET(
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100, 100, 100);
         doc.text('Hormat kami,', 152, finalFooterY + 3);
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(...txtColor);
       }
 
-      // Footer - very minimal
-      doc.setDrawColor(220, 220, 220);
-      doc.setLineWidth(0.2);
+      // Footer - minimal with secondary accent
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
+      doc.setLineWidth(0.3);
       doc.line(14, pageHeight - 20, 196, pageHeight - 20);
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
@@ -795,14 +862,23 @@ export async function GET(
         pageHeight - 10,
         { align: 'center' }
       );
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
     } else {
       // ─── MODERN TEMPLATE (DEFAULT) ───
       // Colored header band, modern fonts, accent colors
 
       // Header band background
-      doc.setFillColor(primary.r, primary.g, primary.b);
-      doc.rect(0, 0, 210, 50, 'F');
+      if (isDark) {
+        // Dark mode: subtle dark surface with accent border
+        doc.setFillColor(...dark.surface);
+        doc.rect(0, 0, 210, 50, 'F');
+        doc.setDrawColor(primary.r, primary.g, primary.b);
+        doc.setLineWidth(1.5);
+        doc.line(0, 49.5, 210, 49.5);
+      } else {
+        doc.setFillColor(primary.r, primary.g, primary.b);
+        doc.rect(0, 0, 210, 50, 'F');
+      }
 
       // Logo on header band
       if (settings.logoUrl?.startsWith('data:')) {
@@ -816,7 +892,7 @@ export async function GET(
       // Business name on header band
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(...headerTextColor);
       doc.text(displayName, 14 + logoOffset, 20);
 
       // Business info on header band
@@ -840,7 +916,7 @@ export async function GET(
       // Invoice title on header band (right)
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(...headerTextColor);
       doc.text('INVOICE', 140, 20);
 
       doc.setFontSize(10);
@@ -861,7 +937,7 @@ export async function GET(
       }
 
       // Status badge on header band
-      const statusLabel = {
+      const modernStatusLabel = {
         pending: 'BELUM BAYAR',
         paid: 'LUNAS',
         cancelled: 'DIBATALKAN',
@@ -870,19 +946,14 @@ export async function GET(
 
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      if (invoice.status === 'paid') {
-        doc.setTextColor(134, 239, 172);
-      } else if (invoice.status === 'overdue') {
-        doc.setTextColor(252, 165, 165);
-      } else {
-        doc.setTextColor(253, 224, 71);
-      }
+      const modernStatusColor = getStatusBadgeTextColor(invoice.status, settings.primaryColor);
+      doc.setTextColor(...modernStatusColor);
       doc.text(
-        `Status: ${statusLabel}`,
+        `Status: ${modernStatusLabel}`,
         140,
         invoice.dueDate ? 45 : 39
       );
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
 
       // Accent line under header
       doc.setDrawColor(secondary.r, secondary.g, secondary.b);
@@ -937,14 +1008,15 @@ export async function GET(
         styles: {
           fontSize: 9,
           cellPadding: 3,
+          textColor: txtColor,
         },
         headStyles: {
           fillColor: [primary.r, primary.g, primary.b],
-          textColor: [255, 255, 255],
+          textColor: headerTextColor,
           fontStyle: 'bold',
         },
         alternateRowStyles: {
-          fillColor: [248, 250, 252],
+          fillColor: altRowColor,
         },
         columnStyles: {
           0: { halign: 'center', cellWidth: 15 },
@@ -988,8 +1060,8 @@ export async function GET(
         totalsY += 6;
       }
 
-      // Separator line with primary color
-      doc.setDrawColor(primary.r, primary.g, primary.b);
+      // Separator line with secondary color accent
+      doc.setDrawColor(secondary.r, secondary.g, secondary.b);
       doc.setLineWidth(0.5);
       doc.line(totalsX, totalsY, totalsX + 55, totalsY);
       totalsY += 6;
@@ -1002,7 +1074,7 @@ export async function GET(
       doc.text(formatCurrency(invoice.total), totalsX + 50, totalsY, {
         align: 'right',
       });
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
 
       // Payment info - use BusinessBankAccount if available
       let paymentY = totalsY + 15;
@@ -1108,7 +1180,7 @@ export async function GET(
         14,
         pageHeight - 10
       );
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...txtColor);
     }
 
     // Generate base64

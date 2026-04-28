@@ -156,6 +156,7 @@ const PERIOD_OPTIONS = [
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  all: { label: 'Semua', color: c.foreground },
   lunas: { label: 'Lunas', color: c.secondary },
   cicilan: { label: 'Cicilan', color: c.warning },
   pending: { label: 'Pending', color: c.muted },
