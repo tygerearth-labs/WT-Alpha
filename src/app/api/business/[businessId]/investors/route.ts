@@ -247,34 +247,38 @@ export async function POST(
 
     const investmentAmount = parseFloat(totalInvestment) || 0;
 
-    const investor = await db.businessInvestor.create({
-      data: {
-        businessId,
-        name: name.trim(),
-        phone: phone?.trim() || null,
-        email: email?.trim() || null,
-        address: address?.trim() || null,
-        notes: notes?.trim() || null,
-        totalInvestment: investmentAmount,
-        profitSharePct: parseFloat(profitSharePct) || 0,
-      },
-    });
-
-    // Also create cash entry for investor modal awal
-    if (investmentAmount > 0) {
-      await db.businessCash.create({
+    const investor = await db.$transaction(async (tx) => {
+      const created = await tx.businessInvestor.create({
         data: {
           businessId,
-          type: 'investor',
-          amount: investmentAmount,
-          description: `Modal awal dari ${name.trim()}`,
-          date: new Date(),
-          investorId: investor.id,
-          source: 'investor',
-          category: 'modal',
+          name: name.trim(),
+          phone: phone?.trim() || null,
+          email: email?.trim() || null,
+          address: address?.trim() || null,
+          notes: notes?.trim() || null,
+          totalInvestment: investmentAmount,
+          profitSharePct: parseFloat(profitSharePct) || 0,
         },
       });
-    }
+
+      // Also create cash entry for investor modal awal
+      if (investmentAmount > 0) {
+        await tx.businessCash.create({
+          data: {
+            businessId,
+            type: 'investor',
+            amount: investmentAmount,
+            description: `Modal awal dari ${name.trim()}`,
+            date: new Date(),
+            investorId: created.id,
+            source: 'investor',
+            category: 'modal',
+          },
+        });
+      }
+
+      return created;
+    });
 
     return NextResponse.json({ investor }, { status: 201 });
   } catch (error) {

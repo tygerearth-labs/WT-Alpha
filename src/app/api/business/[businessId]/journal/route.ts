@@ -172,7 +172,7 @@ export async function POST(
             title: isProfit ? 'Trade Profit! 📈' : 'Trade Loss 📉',
             message: `${portfolio.symbol} - ${isProfit ? 'Profit' : 'Loss'} ${formattedPnl} (${pnlPercentage}%).`,
             amount: parseFloat(pnl) || 0,
-            actionUrl: '/dashboard',
+            actionUrl: 'inv-journal',
           },
         });
       } catch (notifError) {

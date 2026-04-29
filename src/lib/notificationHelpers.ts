@@ -54,7 +54,7 @@ export async function notifyTransaction(
         title,
         message,
         amount,
-        actionUrl: '/dashboard',
+        actionUrl: 'dashboard',
       },
     });
   } catch (error) {
@@ -98,7 +98,7 @@ export async function notifySavingsTarget(
         type: 'savings',
         title,
         message,
-        actionUrl: '/dashboard',
+        actionUrl: 'target',
       },
     });
   } catch (error) {
@@ -133,7 +133,7 @@ export async function notifySubscriptionExpiry(
         type: 'subscription',
         title,
         message,
-        actionUrl: '/dashboard',
+        actionUrl: 'dashboard',
       },
     });
   } catch (error) {
@@ -158,7 +158,7 @@ export async function notifyUpgradeOffer(
         type: 'upgrade',
         title,
         message,
-        actionUrl: '/dashboard',
+        actionUrl: 'profile',
       },
     });
   } catch (error) {

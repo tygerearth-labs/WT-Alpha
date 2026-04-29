@@ -83,7 +83,7 @@ export async function PUT(
             title: 'Invoice Dibayar! ✅',
             message: `Invoice ${updated.invoiceNumber} sebesar ${formattedAmount} telah dibayar.`,
             amount: updated.total,
-            actionUrl: '/dashboard',
+            actionUrl: 'biz-invoice',
           },
         });
       } catch (notifError) {

@@ -152,7 +152,7 @@ export async function POST(
           title: 'Invoice Baru',
           message: `Invoice ${invoiceNumber} sebesar ${formattedAmount} telah dibuat.`,
           amount: parseFloat(total) || 0,
-          actionUrl: '/dashboard',
+          actionUrl: 'biz-invoice',
         },
       });
     } catch (notifError) {

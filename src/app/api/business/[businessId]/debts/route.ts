@@ -90,7 +90,7 @@ export async function GET(
             title: `${typeLabel} Jatuh Tempo!`,
             message: `${typeLabel} kepada ${debt.counterpart} sebesar ${formattedAmount} jatuh tempo pada ${new Date(debt.dueDate!).toLocaleDateString('id-ID')}.`,
             amount: debt.remaining,
-            actionUrl: '/dashboard',
+            actionUrl: 'biz-kas',
           },
         });
       } catch (notifError) {
@@ -209,7 +209,7 @@ export async function POST(
               title: `${typeLabel} Jatuh Tempo Segera!`,
               message: `${typeLabel} kepada ${debt.counterpart} sebesar ${formattedAmount} jatuh tempo pada ${debt.dueDate.toLocaleDateString('id-ID')}.`,
               amount: debt.remaining,
-              actionUrl: '/dashboard',
+              actionUrl: 'biz-kas',
             },
           });
         } catch (notifError) {

@@ -370,7 +370,7 @@ export async function POST(
           title: 'Penjualan Baru',
           message: `Penjualan ${formattedAmount} — ${description}`,
           amount: numAmount,
-          actionUrl: '/dashboard',
+          actionUrl: 'biz-penjualan',
         },
       });
     } catch (notifError) {

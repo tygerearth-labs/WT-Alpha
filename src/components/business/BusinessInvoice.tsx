@@ -125,11 +125,11 @@ interface BankAccountInfo {
 }
 
 // ─── Status Config ──────────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; dotColor: string; icon: React.ComponentType<{ className?: string }>; bg: string; color: string }> = {
-  pending: { label: 'biz.invoicePending', dotColor: c.warning, icon: Clock, bg: alpha(c.warning, 10), color: c.warning },
-  paid: { label: 'biz.invoicePaid', dotColor: c.secondary, icon: CheckCircle2, bg: alpha(c.secondary, 10), color: c.secondary },
-  cancelled: { label: 'biz.invoiceCancelled', dotColor: '#666', icon: AlertTriangle, bg: alpha('#666', 8), color: c.muted },
-  overdue: { label: 'biz.invoiceOverdue', dotColor: c.destructive, icon: AlertTriangle, bg: alpha(c.destructive, 10), color: c.destructive },
+const STATUS_CONFIG: Record<string, { label: string; dotColor: string; icon: React.ComponentType<{ className?: string }>; bg: string; color: string; gradient: string; accentBorder: string }> = {
+  pending: { label: 'biz.invoicePending', dotColor: c.warning, icon: Clock, bg: alpha(c.warning, 10), color: c.warning, gradient: `linear-gradient(135deg, ${alpha(c.warning, 20)}, ${alpha(c.warning, 5)})`, accentBorder: c.warning },
+  paid: { label: 'biz.invoicePaid', dotColor: c.secondary, icon: CheckCircle2, bg: alpha(c.secondary, 10), color: c.secondary, gradient: `linear-gradient(135deg, ${alpha(c.secondary, 20)}, ${alpha(c.secondary, 5)})`, accentBorder: c.secondary },
+  cancelled: { label: 'biz.invoiceCancelled', dotColor: '#666', icon: AlertTriangle, bg: alpha('#666', 8), color: c.muted, gradient: `linear-gradient(135deg, ${alpha('#888', 15)}, ${alpha('#888', 3)})`, accentBorder: '#666' },
+  overdue: { label: 'biz.invoiceOverdue', dotColor: c.destructive, icon: AlertTriangle, bg: alpha(c.destructive, 10), color: c.destructive, gradient: `linear-gradient(135deg, ${alpha(c.destructive, 20)}, ${alpha(c.destructive, 5)})`, accentBorder: c.destructive },
 };
 
 type StatusFilter = 'all' | 'pending' | 'paid' | 'overdue' | 'cancelled';
@@ -450,6 +450,8 @@ export default function BusinessInvoice() {
         {/* ═══ Invoice Overview Hero ═══ */}
         <motion.div variants={itemVariants}>
           <Card className="rounded-xl overflow-hidden border border-border bg-card">
+            {/* Gradient accent strip */}
+            <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
             <CardContent className="p-4 sm:p-5">
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
@@ -510,45 +512,45 @@ export default function BusinessInvoice() {
               {/* Stats Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {/* Total Invoices */}
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.primary, 12) }}>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 10)}, ${alpha(c.primary, 2)})` }}>
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.primary, 15) }}>
                     <Receipt className="h-4 w-4" style={{ color: c.primary }} />
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Total Invoice</p>
                     <p className="text-base font-bold tabular-nums text-foreground">{totalInvoices}</p>
                   </div>
-                </div>
+                </motion.div>
                 {/* Total Amount */}
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.secondary, 12) }}>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 10)}, ${alpha(c.secondary, 2)})` }}>
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.secondary, 15) }}>
                     <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] text-muted-foreground">Total Amount</p>
-                    <p className="text-base font-bold tabular-nums truncate text-foreground">{formatAmount(totalAmount)}</p>
+                    <p className="text-base font-bold tabular-nums truncate" style={{ color: c.secondary }}>{formatAmount(totalAmount)}</p>
                   </div>
-                </div>
+                </motion.div>
                 {/* Paid % */}
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.warning, 12) }}>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 10)}, ${alpha(c.warning, 2)})` }}>
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.warning, 15) }}>
                     <CheckCircle2 className="h-4 w-4" style={{ color: c.warning }} />
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Lunas</p>
                     <p className="text-base font-bold tabular-nums text-foreground">{paidPct}%</p>
                   </div>
-                </div>
+                </motion.div>
                 {/* Overdue */}
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 12) : alpha(c.muted, 6) }}>
+                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: overdueCount > 0 ? `linear-gradient(135deg, ${alpha(c.destructive, 10)}, ${alpha(c.destructive, 2)})` : `linear-gradient(135deg, ${alpha(c.muted, 5)}, ${alpha(c.muted, 1)})` }}>
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 15) : alpha(c.muted, 8) }}>
                     <AlertTriangle className="h-4 w-4" style={{ color: overdueCount > 0 ? c.destructive : c.muted }} />
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">Jatuh Tempo</p>
-                    <p className="text-base font-bold tabular-nums text-foreground">{overdueCount}</p>
+                    <p className="text-base font-bold tabular-nums" style={{ color: overdueCount > 0 ? c.destructive : 'var(--foreground)' }}>{overdueCount}</p>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </CardContent>
           </Card>
@@ -566,7 +568,7 @@ export default function BusinessInvoice() {
                 )}
                 style={
                   statusFilter === chip.value
-                    ? { backgroundColor: alpha(chip.color, 15), color: chip.color }
+                    ? { backgroundColor: alpha(chip.color, 15), color: chip.color, boxShadow: `0 0 12px ${alpha(chip.color, 20)}` }
                     : { backgroundColor: alpha(c.foreground, 5), color: c.muted }
                 }
               >
@@ -601,25 +603,44 @@ export default function BusinessInvoice() {
                   ))}
                 </div>
               ) : filteredInvoices.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 px-6">
-                  <div className="h-14 w-14 rounded-xl flex items-center justify-center border border-border mb-3">
-                    <FileText className="h-7 w-7 opacity-20" />
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  className="flex flex-col items-center justify-center py-16 px-6 relative"
+                >
+                  {/* Decorative background glow */}
+                  <div className="absolute w-32 h-32 rounded-full blur-3xl opacity-20" style={{ backgroundColor: alpha(c.primary, 30), top: '20%', left: '50%', transform: 'translateX(-50%)' }} />
+                  {/* Animated pulse ring */}
+                  <div className="relative mb-4">
+                    <div className="absolute inset-0 rounded-2xl animate-ping opacity-10" style={{ backgroundColor: alpha(c.primary, 20) }} />
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.15, duration: 0.4, type: 'spring' }}
+                      className="relative h-16 w-16 rounded-2xl flex items-center justify-center border"
+                      style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.secondary, 10)})`, borderColor: alpha(c.primary, 20) }}
+                    >
+                      <FileText className="h-8 w-8" style={{ color: alpha(c.primary, 60) }} />
+                    </motion.div>
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Belum ada invoice</p>
-                  <p className="text-xs mt-1 text-center max-w-[200px] text-muted-foreground">
+                  <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="text-sm font-semibold text-foreground">Belum ada invoice</motion.p>
+                  <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="text-xs mt-1 text-center max-w-[200px] text-muted-foreground">
                     Buat invoice pertama untuk memulai
-                  </p>
-                  <Button
-                    onClick={openCreateDialog}
-                    size="sm"
-                    variant="outline"
-                    className="mt-4 rounded-lg h-8 border-0"
-                    style={{ backgroundColor: alpha(c.primary, 10), color: c.primary }}
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    {t('biz.addInvoice')}
-                  </Button>
-                </div>
+                  </motion.p>
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+                    <Button
+                      onClick={openCreateDialog}
+                      size="sm"
+                      variant="outline"
+                      className="mt-4 rounded-full h-8 border-0"
+                      style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.secondary, 10)})`, color: c.primary }}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      {t('biz.addInvoice')}
+                    </Button>
+                  </motion.div>
+                </motion.div>
               ) : (
                 <>
                   {/* List summary */}
@@ -645,13 +666,15 @@ export default function BusinessInvoice() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ delay: index * 0.03, duration: 0.25 }}
-                            className="p-3 cursor-pointer"
+                            whileHover={{ x: 2 }}
+                            className="p-3 cursor-pointer transition-colors hover:bg-white/[0.02]"
                             onClick={() => setViewInvoice(inv)}
+                            style={{ borderLeft: `3px solid ${sc.accentBorder}` }}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
-                                  <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sc.dotColor }} />
+                                  <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sc.dotColor, boxShadow: `0 0 6px ${sc.dotColor}` }} />
                                   <p className="text-xs font-semibold truncate text-foreground">{inv.invoiceNumber}</p>
                                 </div>
                                 {inv.customer?.name && (
@@ -659,7 +682,7 @@ export default function BusinessInvoice() {
                                 )}
                               </div>
                               <div className="text-right shrink-0">
-                                <p className="text-xs font-bold tabular-nums text-foreground">{formatAmount(inv.total)}</p>
+                                <p className="text-[15px] font-extrabold tabular-nums tracking-tight" style={{ color: sc.color }}>{formatAmount(inv.total)}</p>
                                 {inv.dueDate && (
                                   <p className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
                                     {new Date(inv.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
@@ -672,7 +695,7 @@ export default function BusinessInvoice() {
                                 variant="outline"
                                 border-0
                                 className="text-[9px] font-medium gap-1 px-2 py-0.5 rounded-full"
-                                style={{ backgroundColor: sc.bg, color: sc.color }}
+                                style={{ background: sc.gradient, color: sc.color, boxShadow: `0 0 8px ${alpha(sc.color, 15)}` }}
                               >
                                 <StatusIcon className="h-2.5 w-2.5" />
                                 {t(sc.label)}
@@ -742,10 +765,11 @@ export default function BusinessInvoice() {
                                 key={inv.id}
                                 className="transition-colors duration-150 group cursor-pointer border-b border-border hover:bg-white/[0.02]"
                                 onClick={() => setViewInvoice(inv)}
+                                style={{ borderLeft: `3px solid ${sc.accentBorder}` }}
                               >
                                 <TableCell className="text-xs py-2.5 font-medium text-foreground">
                                   <div className="flex items-center gap-2">
-                                    <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sc.dotColor }} />
+                                    <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sc.dotColor, boxShadow: `0 0 6px ${sc.dotColor}` }} />
                                     {inv.invoiceNumber}
                                   </div>
                                 </TableCell>
@@ -757,7 +781,7 @@ export default function BusinessInvoice() {
                                     variant="outline"
                                     border-0
                                     className="text-[10px] font-medium gap-1 px-2 py-0.5 rounded-full"
-                                    style={{ backgroundColor: sc.bg, color: sc.color }}
+                                    style={{ background: sc.gradient, color: sc.color, boxShadow: `0 0 8px ${alpha(sc.color, 15)}` }}
                                   >
                                     <StatusIcon className="h-2.5 w-2.5" />
                                     {t(sc.label)}
@@ -766,7 +790,7 @@ export default function BusinessInvoice() {
                                 <TableCell className="text-xs py-2.5 hidden md:table-cell text-muted-foreground tabular-nums">
                                   {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                                 </TableCell>
-                                <TableCell className="text-xs text-right font-semibold py-2.5 tabular-nums text-foreground">
+                                <TableCell className="text-[15px] text-right font-extrabold py-2.5 tabular-nums tracking-tight" style={{ color: sc.color }}>
                                   {formatAmount(inv.total)}
                                 </TableCell>
                                 <TableCell className="py-2.5 text-right">
@@ -822,7 +846,9 @@ export default function BusinessInvoice() {
 
       {/* ═══ View Invoice Dialog ═══ */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto rounded-xl p-0 bg-card border border-border">
+        <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-[#141414] border-white/[0.08]">
+          {/* Gradient accent strip */}
+          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
           {viewInvoice && (() => {
             const tmpl = invoiceSettings?.template || 'modern';
             const pColor = invoiceSettings?.primaryColor || '#1E293B';
@@ -911,7 +937,7 @@ export default function BusinessInvoice() {
 
                 <div className="px-5 py-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" border-0 className="text-[10px] gap-1 px-2 py-0.5 rounded-full" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}>
+                    <Badge variant="outline" border-0 className="text-[10px] gap-1 px-2 py-0.5 rounded-full" style={{ background: statusStyle.gradient, color: statusStyle.color, boxShadow: `0 0 8px ${alpha(statusStyle.color, 15)}` }}>
                       <StatusIcon className="h-2.5 w-2.5" />
                       {t(statusStyle.label)}
                     </Badge>
@@ -1008,7 +1034,9 @@ export default function BusinessInvoice() {
 
       {/* ═══ Create/Edit Dialog ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-xl p-0 bg-card border border-border">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-[#141414] border-white/[0.08]">
+          {/* Gradient accent strip */}
+          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
           <DialogHeader className="p-4 sm:p-5 pb-0">
             <DialogTitle className="text-sm font-bold text-foreground">
               {editingInvoice ? 'Edit Invoice' : 'Buat Invoice Baru'}
@@ -1023,16 +1051,18 @@ export default function BusinessInvoice() {
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Pelanggan</Label>
                 <Select value={formData.customerId} onValueChange={(val) => setFormData({ ...formData, customerId: val })}>
-                  <SelectTrigger className="h-9 text-xs bg-transparent border-border rounded-lg">
+                  <SelectTrigger className="h-9 text-xs border-white/[0.08] rounded-xl bg-white/[0.04] focus:border-white/15 focus:ring-0">
                     <SelectValue placeholder="Pilih pelanggan (opsional)" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
+                  <SelectContent className="bg-[#1a1a1a] border-white/[0.08] rounded-xl">
+                    {customers.map((cust) => (
+                      <SelectItem key={cust.id} value={cust.id} className="text-xs">{cust.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="h-px bg-white/[0.06]" />
 
               {/* Invoice Number + Due Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1041,7 +1071,7 @@ export default function BusinessInvoice() {
                   <Input
                     value={formData.invoiceNumber}
                     onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                    className="h-9 text-xs bg-transparent border-border rounded-lg"
+                    className="h-9 text-xs bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0"
                     required
                   />
                 </div>
@@ -1051,7 +1081,7 @@ export default function BusinessInvoice() {
                     type="date"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className="h-9 text-xs bg-transparent border-border rounded-lg"
+                    className="h-9 text-xs bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0"
                   />
                 </div>
               </div>
@@ -1074,7 +1104,7 @@ export default function BusinessInvoice() {
                             value={item.description}
                             onChange={(e) => updateItem(index, 'description', e.target.value)}
                             placeholder="Deskripsi"
-                            className="h-8 text-[11px] bg-transparent border-border rounded-lg"
+                            className="h-8 text-[11px] bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0"
                           />
                         </div>
                         <div className="col-span-2">
@@ -1083,7 +1113,7 @@ export default function BusinessInvoice() {
                             value={item.qty || ''}
                             onChange={(e) => updateItem(index, 'qty', parseInt(e.target.value) || 0)}
                             placeholder="Qty"
-                            className="h-8 text-[11px] bg-transparent border-border rounded-lg tabular-nums"
+                            className="h-8 text-[11px] bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 tabular-nums"
                             min={1}
                           />
                         </div>
@@ -1093,7 +1123,7 @@ export default function BusinessInvoice() {
                             value={item.price || ''}
                             onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
                             placeholder="Harga"
-                            className="h-8 text-[11px] bg-transparent border-border rounded-lg tabular-nums"
+                            className="h-8 text-[11px] bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 tabular-nums"
                             min={0}
                           />
                           {item.price > 0 && (
@@ -1126,7 +1156,7 @@ export default function BusinessInvoice() {
                     type="number"
                     value={formData.tax}
                     onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
-                    className="h-9 text-xs bg-transparent border-border rounded-lg tabular-nums"
+                    className="h-9 text-xs bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 tabular-nums"
                     min={0}
                     max={100}
                   />
@@ -1137,7 +1167,7 @@ export default function BusinessInvoice() {
                     type="number"
                     value={formData.discount}
                     onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                    className="h-9 text-xs bg-transparent border-border rounded-lg tabular-nums"
+                    className="h-9 text-xs bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 tabular-nums"
                     min={0}
                     max={100}
                   />
@@ -1151,7 +1181,7 @@ export default function BusinessInvoice() {
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Catatan tambahan..."
-                  className="text-xs bg-transparent border-border rounded-lg min-h-[60px] resize-none"
+                  className="text-xs bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 min-h-[60px] resize-none"
                   rows={2}
                 />
               </div>
@@ -1180,15 +1210,16 @@ export default function BusinessInvoice() {
                 </div>
               </div>
             </div>
+            <div className="h-px bg-white/[0.06]" />
             <DialogFooter className="p-4 sm:p-5 pt-0 flex gap-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="rounded-lg text-xs h-9 border-border">
+              <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)} className="rounded-xl text-xs h-9 text-muted-foreground hover:text-foreground">
                 Batal
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !formData.invoiceNumber || formData.items.every((i) => !i.description)}
-                className="rounded-lg text-xs h-9"
-                style={{ backgroundColor: c.primary, color: '#000' }}
+                className="rounded-xl text-xs h-9"
+                style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 80)}, ${alpha(c.primary, 80)})`, color: '#000' }}
               >
                 {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : null}
                 {editingInvoice ? 'Simpan' : 'Buat Invoice'}
@@ -1200,16 +1231,21 @@ export default function BusinessInvoice() {
 
       {/* ═══ Delete Confirmation ═══ */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="rounded-xl bg-card border border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm">Hapus Invoice?</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-muted-foreground">
-              Invoice yang dihapus tidak dapat dikembalikan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="rounded-lg text-xs h-9 border-border">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="rounded-lg text-xs h-9" style={{ backgroundColor: c.destructive, color: '#fff' }}>
+        <AlertDialogContent className="rounded-2xl bg-[#141414] border-white/[0.08] p-0 overflow-hidden">
+          {/* Gradient accent strip */}
+          <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(c.destructive, 50)}, ${alpha(c.warning, 40)})` }} />
+          <div className="p-4 sm:p-5 space-y-3">
+            <AlertDialogHeader className="space-y-1.5">
+              <AlertDialogTitle className="text-sm text-foreground">Hapus Invoice?</AlertDialogTitle>
+              <AlertDialogDescription className="text-xs text-muted-foreground">
+                Invoice yang dihapus tidak dapat dikembalikan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </div>
+          <div className="h-px bg-white/[0.06]" />
+          <AlertDialogFooter className="gap-2 p-4 sm:p-5 pt-3">
+            <AlertDialogCancel className="rounded-xl text-xs h-9 border-white/[0.08] text-muted-foreground hover:text-foreground hover:bg-white/[0.04]">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="rounded-xl text-xs h-9" style={{ backgroundColor: c.destructive, color: '#fff' }}>
               Hapus
             </AlertDialogAction>
           </AlertDialogFooter>

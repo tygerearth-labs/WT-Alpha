@@ -355,17 +355,31 @@ export default function BusinessCustomers() {
     );
   }
 
+  // ─── Animation Variants ─────────────────────────────────────────
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
+  };
+
   return (
     <div className="space-y-3">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
       {/* Info Banner */}
+      <motion.div variants={itemVariants}>
       <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
         <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
         <p className="text-[11px] leading-relaxed text-muted-foreground" >
           Kelola data pelanggan Anda. Data pelanggan terintegrasi dengan penjualan dan invoice.
         </p>
       </div>
+      </motion.div>
 
       {/* Header */}
+      <motion.div variants={itemVariants}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-base font-bold flex items-center gap-2 text-foreground" >
@@ -386,8 +400,10 @@ export default function BusinessCustomers() {
           {t('biz.addCustomer')}
         </Button>
       </div>
+      </motion.div>
 
       {/* Quick Stats Row */}
+      <motion.div variants={itemVariants}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
         {[
           { label: 'Total Pelanggan', value: customers.length, icon: Users, color: 'var(--primary)' },
@@ -397,29 +413,34 @@ export default function BusinessCustomers() {
         ].map((item) => {
           const Icon = item.icon;
           return (
-            <Card key={item.label} className="rounded-xl bg-card border border-border">
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
-                    <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+            <motion.div key={item.label} whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 400 }}>
+              <Card className="rounded-xl border border-border overflow-hidden">
+                <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(item.color, 50)}, ${alpha(item.color, 15)})` }} />
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
+                      <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+                    </div>
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground" >{item.label}</span>
                   </div>
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground" >{item.label}</span>
-                </div>
-                <p className="text-lg font-bold tabular-nums text-foreground" >{item.value}</p>
-              </CardContent>
-            </Card>
+                  <p className="text-lg font-bold tabular-nums text-foreground" >{item.value}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
+      </motion.div>
 
       {/* Search - full width */}
+      <motion.div variants={itemVariants}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('common.search') + '...'}
-          className="pl-9 pr-10 text-sm rounded-lg bg-card border border-border text-foreground"
+          className="pl-10 pr-10 text-sm rounded-full bg-card border border-border text-foreground focus:border-white/15 transition-all"
         />
         {search && (
           <button
@@ -430,9 +451,11 @@ export default function BusinessCustomers() {
           </button>
         )}
       </div>
+      </motion.div>
 
       {/* Mobile Card Grid / Desktop Table */}
-      <Card className="rounded-xl overflow-hidden bg-card border border-border">
+      <motion.div variants={itemVariants}>
+      <Card className="rounded-xl overflow-hidden bg-card border border-border transition-shadow hover:shadow-lg">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-3">
@@ -441,17 +464,36 @@ export default function BusinessCustomers() {
               ))}
             </div>
           ) : filteredCustomers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3 bg-primary/8 border border-primary/15">
-                <Users className="h-7 w-7 text-primary" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="flex flex-col items-center justify-center py-16 px-4 relative"
+            >
+              {/* Decorative background glow */}
+              <div className="absolute w-32 h-32 rounded-full blur-3xl opacity-20" style={{ backgroundColor: alpha(c.primary, 30), top: '20%', left: '50%', transform: 'translateX(-50%)' }} />
+              {/* Animated pulse ring */}
+              <div className="relative mb-4">
+                <div className="absolute inset-0 rounded-2xl animate-ping opacity-10" style={{ backgroundColor: alpha(c.primary, 20) }} />
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.15, duration: 0.4, type: 'spring' }}
+                  className="relative h-16 w-16 rounded-2xl flex items-center justify-center border"
+                  style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.secondary, 10)})`, borderColor: alpha(c.primary, 20) }}
+                >
+                  <Users className="h-8 w-8" style={{ color: alpha(c.primary, 60) }} />
+                </motion.div>
               </div>
-              <p className="text-sm font-medium text-foreground" >Belum ada pelanggan</p>
-              <p className="text-xs mt-1 text-muted-foreground" >Tambahkan pelanggan pertama Anda</p>
-              <Button onClick={openCreateDialog} size="sm" className="mt-4 rounded-lg h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                {t('biz.addCustomer')}
-              </Button>
-            </div>
+              <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="text-sm font-semibold text-foreground" >Belum ada pelanggan</motion.p>
+              <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="text-xs mt-1 text-muted-foreground" >Tambahkan pelanggan pertama Anda</motion.p>
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+                <Button onClick={openCreateDialog} size="sm" className="mt-4 rounded-full h-8 text-xs" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 20)}, ${alpha(c.secondary, 15)})`, color: c.primary }}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  {t('biz.addCustomer')}
+                </Button>
+              </motion.div>
+            </motion.div>
           ) : (
             <>
               {/* Mobile Card Grid */}
@@ -466,15 +508,18 @@ export default function BusinessCustomers() {
                     return (
                       <motion.div
                         key={customer.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ delay: index * 0.03, duration: 0.2 }}
                         className="p-3 border-b border-border cursor-pointer"
                         onClick={() => setDetailCustomer(customer)}
+                        whileHover={{ x: 2 }}
                       >
-                        <div className="flex items-start gap-2.5">
-                          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 bg-primary/12 text-primary">
+                        {/* Gradient accent strip */}
+                        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l" style={{ background: `linear-gradient(180deg, ${alpha(c.primary, 50)}, ${alpha(c.secondary, 30)})` }} />
+                        <div className="flex items-start gap-2.5 pl-1.5">
+                          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 20)}, ${alpha(c.primary, 8)})`, color: c.primary }}>
                             {customer.name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -592,9 +637,12 @@ export default function BusinessCustomers() {
                           style={{
                             background: isAlt ? 'rgba(255,255,255,0.015)' : 'transparent',
                             borderBottom: '1px solid var(--border)',
+                            borderLeft: '3px solid transparent',
                           }}
+                          onMouseEnter={(e) => e.currentTarget.style.borderLeftColor = `linear-gradient(180deg, ${alpha(c.primary, 50)}, ${alpha(c.secondary, 30)})`}
+                          onMouseLeave={(e) => e.currentTarget.style.borderLeftColor = 'transparent'}
                         >
-                          <TableCell className="py-2">
+                          <TableCell className="py-2 pl-2.5">
                             <div className="flex items-center gap-2">
                               <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 bg-primary/12 text-primary">
                                 {customer.name.charAt(0).toUpperCase()}
@@ -615,7 +663,7 @@ export default function BusinessCustomers() {
                             </div>
                           </TableCell>
                           <TableCell className="text-xs py-2">
-                            <span className="font-semibold tabular-nums" style={{ color: spending?.total ? 'var(--secondary)' : 'var(--muted-foreground)' }}>
+                            <span className="font-bold tabular-nums text-[13px]" style={{ color: spending?.total ? 'var(--secondary)' : 'var(--muted-foreground)' }}>
                               {spending?.total ? formatAmount(spending.total) : '-'}
                             </span>
                             {spending?.lastDate && (
@@ -678,10 +726,14 @@ export default function BusinessCustomers() {
           )}
         </CardContent>
       </Card>
+      </motion.div>
+      </motion.div>
 
       {/* Customer Detail Dialog */}
       <Dialog open={!!detailCustomer} onOpenChange={(open) => { if (!open) setDetailCustomer(null); }}>
-        <DialogContent className="rounded-2xl w-[95vw] sm:max-w-[560px] bg-[#1a1a1a] border-white/[0.08] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="rounded-2xl w-[95vw] sm:max-w-[560px] bg-[#141414] border-white/[0.08] max-h-[85vh] overflow-y-auto">
+          {/* Gradient accent strip */}
+          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
           {detailCustomer && (() => {
             const spending = customerSpending[detailCustomer.id];
             const piutangBalance = customerPiutang[detailCustomer.name] || 0;
@@ -743,21 +795,23 @@ export default function BusinessCustomers() {
                   )}
                 </div>
 
+                <Separator className="bg-white/[0.06]" />
+
                 {/* Stats Row */}
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: alpha(c.secondary, 6) }}>
+                  <div className="rounded-xl p-2.5 text-center" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 12)}, ${alpha(c.secondary, 3)})` }}>
                     <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Total Belanja</p>
                     <p className="text-xs font-bold tabular-nums" style={{ color: c.secondary }}>
                       {spending?.total ? formatAmount(spending.total) : '-'}
                     </p>
                   </div>
-                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: alpha(c.primary, 6) }}>
+                  <div className="rounded-xl p-2.5 text-center" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 12)}, ${alpha(c.primary, 3)})` }}>
                     <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Transaksi</p>
                     <p className="text-xs font-bold tabular-nums" style={{ color: c.primary }}>
                       {spending?.txCount || 0}x
                     </p>
                   </div>
-                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: alpha(c.warning, 6) }}>
+                  <div className="rounded-xl p-2.5 text-center" style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 12)}, ${alpha(c.warning, 3)})` }}>
                     <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Terakhir</p>
                     <p className="text-[11px] font-bold" style={{ color: c.warning }}>
                       {spending?.lastDate
@@ -967,11 +1021,13 @@ export default function BusinessCustomers() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-xl w-[95vw] sm:max-w-[460px] bg-card border border-border">
-          <DialogHeader>
+        <DialogContent className="rounded-2xl w-[95vw] sm:max-w-[460px] bg-[#141414] border-white/[0.08] p-0">
+          {/* Gradient accent strip */}
+          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
+          <DialogHeader className="p-4 sm:p-5 pb-0">
             <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground" >
-              <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/12">
-                {editingCustomer ? <Pencil className="h-3.5 w-3.5 text-primary" /> : <UserPlus className="h-3.5 w-3.5 text-primary" />}
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 20)}, ${alpha(c.primary, 8)})` }}>
+                {editingCustomer ? <Pencil className="h-3.5 w-3.5" style={{ color: c.primary }} /> : <UserPlus className="h-3.5 w-3.5" style={{ color: c.primary }} />}
               </div>
               {editingCustomer ? t('common.edit') : t('biz.addCustomer')}
             </DialogTitle>
@@ -980,9 +1036,9 @@ export default function BusinessCustomers() {
             </DialogDescription>
           </DialogHeader>
 
-          <Separator className="bg-border" />
+          <div className="h-px bg-white/[0.06] mx-4" />
 
-          <form onSubmit={handleSave} className="space-y-3">
+          <form onSubmit={handleSave} className="space-y-3 p-4 sm:p-5">
             <div className="space-y-1.5">
               <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >
                 {t('biz.customerName')} <span className="text-destructive" >*</span>
@@ -991,7 +1047,7 @@ export default function BusinessCustomers() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t('biz.customerName')}
-                className="text-sm rounded-lg bg-card border border-border text-foreground"
+                className="text-sm rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
@@ -1003,7 +1059,7 @@ export default function BusinessCustomers() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="email@example.com"
-                  className="text-sm rounded-lg bg-card border border-border text-foreground"
+                  className="text-sm rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1012,7 +1068,7 @@ export default function BusinessCustomers() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+62"
-                  className="text-sm rounded-lg bg-card border border-border text-foreground"
+                  className="text-sm rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                 />
               </div>
             </div>
@@ -1023,7 +1079,7 @@ export default function BusinessCustomers() {
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder={t('biz.customerAddress')}
-                className="text-sm rounded-lg bg-card border border-border text-foreground"
+                className="text-sm rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
@@ -1037,21 +1093,22 @@ export default function BusinessCustomers() {
               />
             </div>
 
+            <div className="h-px bg-white/[0.06]" />
+
             <DialogFooter className="gap-2 pt-1">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setDialogOpen(false)}
-                className="rounded-lg text-xs"
-                style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
+                className="rounded-xl text-xs text-muted-foreground hover:text-foreground"
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !formData.name.trim()}
-                className="rounded-lg text-xs"
-                style={{ backgroundColor: 'var(--primary)', color: '#000' }}
+                className="rounded-xl text-xs"
+                style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 80)}, ${alpha(c.primary, 80)})`, color: '#000' }}
               >
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 {t('common.save')}

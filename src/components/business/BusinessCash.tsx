@@ -353,25 +353,74 @@ function EmptyState({
   actionLabel?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6">
-      <div className="relative mb-4 w-16 h-16 rounded-xl flex items-center justify-center bg-card border border-border">
-        {icon}
-      </div>
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      <p className="text-xs mt-1 text-center max-w-[220px] text-muted-foreground">{description}</p>
-      {onAction && actionLabel && (
-        <Button
-          onClick={onAction}
-          size="sm"
-          variant="outline"
-          className="mt-4 rounded-lg h-8 border-0"
-          style={{ backgroundColor: alpha(accentColor, 8), color: accentColor, borderColor: alpha(accentColor, 20) }}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="flex flex-col items-center justify-center py-14 px-6"
+    >
+      {/* Decorative background glow */}
+      <div className="relative mb-5">
+        <div
+          className="absolute inset-0 rounded-2xl opacity-20 blur-xl"
+          style={{ backgroundColor: accentColor }}
+        />
+        {/* Decorative pulse ring */}
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0.05, 0.15] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -inset-2 rounded-2xl border-2"
+          style={{ borderColor: alpha(accentColor, 15) }}
+        />
+        <div
+          className="relative w-16 h-16 rounded-2xl flex items-center justify-center border backdrop-blur-sm"
+          style={{
+            background: `linear-gradient(135deg, ${alpha(accentColor, 10)}, ${alpha(accentColor, 4)})`,
+            borderColor: alpha(accentColor, 15),
+          }}
         >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          {actionLabel}
-        </Button>
+          <span style={{ color: accentColor }}>{icon}</span>
+        </div>
+      </div>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
+        className="text-sm font-semibold text-foreground"
+      >
+        {title}
+      </motion.p>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.25 }}
+        className="text-xs mt-1.5 text-center max-w-[240px] leading-relaxed text-muted-foreground"
+      >
+        {description}
+      </motion.p>
+      {onAction && actionLabel && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <Button
+            onClick={onAction}
+            size="sm"
+            variant="outline"
+            className="mt-5 rounded-full h-9 px-5 border-0 shadow-sm"
+            style={{
+              background: `linear-gradient(135deg, ${alpha(accentColor, 14)}, ${alpha(accentColor, 6)})`,
+              color: accentColor,
+              borderColor: alpha(accentColor, 25),
+            }}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            {actionLabel}
+          </Button>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -496,7 +545,10 @@ export default function BusinessCash() {
     totalInvestment: 0,
     avgSharePct: 0,
   });
+  const investorTotalRef = useRef(0);
   const [investorLoading, setInvestorLoading] = useState(true);
+  const [investorExpenses, setInvestorExpenses] = useState<CashEntry[]>([]);
+  const [summaryActiveInvestors, setSummaryActiveInvestors] = useState<Array<{ id: string; name: string; totalInvestment: number; profitSharePct: number }>>([]);
   const [investorDialogOpen, setInvestorDialogOpen] = useState(false);
   const [investorSaving, setInvestorSaving] = useState(false);
   const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null);
@@ -581,7 +633,7 @@ export default function BusinessCash() {
         const keluarEntries: CashEntry[] = keluarData?.cashEntries || [];
         const allEntries = [...besarEntries, ...kecilEntries, ...keluarEntries];
         setCashEntries(allEntries);
-        const inc = (besarData?.total || 0) + (kecilData?.total || 0) + investorSummary.totalInvestment;
+        const inc = (besarData?.total || 0) + (kecilData?.total || 0) + investorTotalRef.current;
         const exp = keluarData?.total || 0;
         setIncomeTotal(inc);
         setExpenseTotal(exp);
@@ -607,22 +659,25 @@ export default function BusinessCash() {
         setSalesData([]);
       })
       .finally(() => setCashLoading(false));
-  }, [businessId, cashSubTab, cashPeriod, investorSummary.totalInvestment]);
+  }, [businessId, cashPeriod]);
 
   const fetchInvestors = useCallback(() => {
-    if (!businessId) return;
+    if (!businessId) return Promise.resolve();
     setInvestorLoading(true);
-    Promise.all([
+    return Promise.all([
       fetch(`/api/business/${businessId}/investors`).then((r) => (r.ok ? r.json() : { investors: [], summary: {} })),
       fetch(`/api/business/${businessId}/cash?type=kas_keluar&source=investor&pageSize=100`).then((r) => (r.ok ? r.json() : { cashEntries: [] })),
     ])
       .then(([result, expenseResult]) => {
+        const summary = result?.summary || { activeCount: 0, totalInvestment: 0, avgSharePct: 0 };
+        investorTotalRef.current = summary.totalInvestment;
         setInvestors(result?.investors || []);
-        setInvestorSummary(result?.summary || { activeCount: 0, totalInvestment: 0, avgSharePct: 0 });
+        setInvestorSummary(summary);
         setInvestorHistory(result?.investorHistory || []);
         setInvestorExpenses(expenseResult?.cashEntries || []);
       })
       .catch(() => {
+        investorTotalRef.current = 0;
         setInvestors([]);
         setInvestorSummary({ activeCount: 0, totalInvestment: 0, avgSharePct: 0 });
         setInvestorHistory([]);
@@ -726,15 +781,17 @@ export default function BusinessCash() {
   // Fetch on mount and tab change
   useEffect(() => {
     if (businessId) {
-      fetchAllCashData();
-      fetchInvestors();
+      // Chain fetchInvestors first so investorTotalRef is set before fetchAllCashData
+      fetchInvestors()
+        .catch(() => { /* handled inside fetchInvestors */ })
+        .finally(() => fetchAllCashData());
       fetchDebts();
     } else {
       setCashLoading(false);
       setInvestorLoading(false);
       setPiutangLoading(false);
     }
-  }, [businessId, mainTab]);
+  }, [businessId, mainTab, fetchInvestors, fetchAllCashData, fetchDebts]);
 
   useEffect(() => {
     if (businessId && mainTab === 'arus_kas') {
@@ -1255,8 +1312,7 @@ export default function BusinessCash() {
 
   const activeInvestors = useMemo(() => investors.filter((i) => i.status === 'active'), [investors]);
 
-  // ── Summary API active investors (for Quick Add picker) ──
-  const [summaryActiveInvestors, setSummaryActiveInvestors] = useState<Array<{ id: string; name: string; totalInvestment: number; profitSharePct: number }>>([]);
+  // (summaryActiveInvestors moved up to Investor State section)
 
   // ── Quick Add Nominal Preview ──
   const formattedQuickNominal = useMemo(() => {
@@ -1265,8 +1321,6 @@ export default function BusinessCash() {
     return formatAmount(num);
   }, [quickForm.amount, formatAmount]);
 
-  // ── Investor Expense Data ──
-  const [investorExpenses, setInvestorExpenses] = useState<CashEntry[]>([]);
   const [investorFilter, setInvestorFilter] = useState<'modal_masuk' | 'pengeluaran' | 'pemasukan'>('modal_masuk');
 
   // ── Transaction Detail Dialog ──
@@ -1462,6 +1516,8 @@ export default function BusinessCash() {
             {/* SECTION 1: SALDO OVERVIEW (Accountant Hero)    */}
             {/* ══════════════════════════════════════════════ */}
             <Card className="rounded-xl overflow-hidden border border-border/50">
+              {/* Gradient accent strip at top */}
+              <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${c.secondary}, ${c.warning}, ${c.primary})` }} />
               <CardContent className="p-4 sm:p-5">
                 {/* Header: title + period filter */}
                 <div className="flex items-center justify-between mb-4">
@@ -1469,15 +1525,19 @@ export default function BusinessCash() {
                     <Wallet className="h-4 w-4 text-primary" />
                     <h2 className="text-sm font-bold text-foreground">Saldo Dana</h2>
                   </div>
-                  <div className="flex gap-0.5 rounded-lg p-0.5 bg-white/[0.03] border border-border/30">
+                  <div className="flex gap-0.5 rounded-full p-0.5 bg-white/[0.03] border border-border/30">
                     {PERIOD_OPTIONS.map((opt) => {
                       const isActive = cashPeriod === opt.value;
                       return (
                         <button
                           key={opt.value}
                           onClick={() => setCashPeriod(opt.value)}
-                          className="px-2 py-1 rounded-md text-[10px] font-medium transition-all duration-150"
-                          style={isActive ? { backgroundColor: alpha(c.primary, 12), color: c.primary } : { color: c.muted }}
+                          className="px-2.5 py-1 rounded-full text-[10px] font-medium transition-all duration-200"
+                          style={isActive ? {
+                            background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.primary, 8)})`,
+                            color: c.primary,
+                            boxShadow: `0 1px 4px ${alpha(c.primary, 12)}`,
+                          } : { color: c.muted }}
                         >
                           {opt.label}
                         </button>
@@ -1494,7 +1554,7 @@ export default function BusinessCash() {
                     initial={{ scale: 0.95, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.4, ease: 'easeOut' }}
-                    className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground"
+                    className="text-2xl sm:text-3xl font-extrabold tabular-nums text-foreground"
                   >
                     {formatAmount(animSaldo)}
                   </motion.p>
@@ -1502,23 +1562,41 @@ export default function BusinessCash() {
 
                 {/* Period Flow Row: Pemasukan / Pengeluaran / Arus Bersih */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                  <div className="rounded-lg bg-secondary/5 p-2.5 text-center">
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    transition={{ duration: 0.15 }}
+                    className="rounded-xl p-2.5 text-center border border-secondary/10"
+                    style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 8)}, ${alpha(c.secondary, 2)})` }}
+                  >
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <ArrowUpRight className="h-3 w-3 text-secondary" />
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Masuk</span>
                     </div>
                     <p className="text-[11px] sm:text-xs font-bold tabular-nums text-secondary">{formatAmount(animIncome)}</p>
                     <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
-                  </div>
-                  <div className="rounded-lg bg-destructive/5 p-2.5 text-center">
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    transition={{ duration: 0.15 }}
+                    className="rounded-xl p-2.5 text-center border border-destructive/10"
+                    style={{ background: `linear-gradient(135deg, ${alpha(c.destructive, 8)}, ${alpha(c.destructive, 2)})` }}
+                  >
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <ArrowDownRight className="h-3 w-3 text-destructive" />
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Keluar</span>
                     </div>
                     <p className="text-[11px] sm:text-xs font-bold tabular-nums text-destructive">{formatAmount(animExpense)}</p>
                     <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
-                  </div>
-                  <div className="rounded-lg p-2.5 text-center" style={{ backgroundColor: animNet >= 0 ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)' }}>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    transition={{ duration: 0.15 }}
+                    className="rounded-xl p-2.5 text-center border"
+                    style={{
+                      background: `linear-gradient(135deg, ${animNet >= 0 ? alpha(c.secondary, 8) : alpha(c.destructive, 8)}, ${animNet >= 0 ? alpha(c.secondary, 2) : alpha(c.destructive, 2)})`,
+                      borderColor: animNet >= 0 ? alpha(c.secondary, 10) : alpha(c.destructive, 10),
+                    }}
+                  >
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <CircleDollarSign className={cn("h-3 w-3", animNet >= 0 ? "text-secondary" : "text-destructive")} />
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Bersih</span>
@@ -1527,7 +1605,7 @@ export default function BusinessCash() {
                       {animNet >= 0 ? '+' : '-'}{formatAmount(Math.abs(animNet))}
                     </p>
                     <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* Source Breakdown Chips */}
@@ -1557,7 +1635,7 @@ export default function BusinessCash() {
             <div className="flex flex-col gap-2">
               {/* Filter chips + actions row */}
               <div className="flex items-center gap-2">
-                <div className="flex gap-1 rounded-xl p-1 bg-white/[0.02] border border-border/30">
+                <div className="flex gap-1 rounded-full p-1 bg-white/[0.02] border border-border/30">
                   {([
                     { key: 'all' as const, label: 'Semua', color: c.foreground },
                     { key: 'masuk' as const, label: 'Masuk', color: c.secondary },
@@ -1568,10 +1646,14 @@ export default function BusinessCash() {
                       <button
                         key={f.key}
                         onClick={() => setCashFilter(f.key)}
-                        className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200"
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200"
                         style={
                           isActive
-                            ? { backgroundColor: alpha(f.color, 12), color: f.color, boxShadow: `0 1px 3px ${alpha(f.color, 10)}` }
+                            ? {
+                                background: `linear-gradient(135deg, ${alpha(f.color, 14)}, ${alpha(f.color, 6)})`,
+                                color: f.color,
+                                boxShadow: `0 1px 4px ${alpha(f.color, 10)}`,
+                              }
                             : { color: c.muted }
                         }
                       >
@@ -1674,16 +1756,19 @@ export default function BusinessCash() {
                       <AnimatePresence mode="popLayout">
                         {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
                           const isExpense = entry.type === 'kas_keluar';
+                          const isKasKecil = entry.type === 'kas_kecil';
+                          const isInvestor = entry.source === 'investor';
                           const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
                           const sourceInfo = getEntrySourceLabel(entry);
+                          const borderAccent = isInvestor ? c.primary : isExpense ? c.destructive : isKasKecil ? c.warning : c.secondary;
                           return (
                             <motion.div
                               key={entry.id}
                               custom={index}
                               variants={{
-                                hidden: { opacity: 0, y: -4 },
+                                hidden: { opacity: 0, x: -8 },
                                 show: (i: number) => ({
-                                  opacity: 1, y: 0,
+                                  opacity: 1, x: 0,
                                   transition: { delay: i * 0.02, duration: 0.2 },
                                 }),
                                 exit: { opacity: 0, transition: { duration: 0.15 } },
@@ -1691,7 +1776,9 @@ export default function BusinessCash() {
                               initial="hidden"
                               animate="show"
                               layout
-                              className="rounded-lg p-2.5 border border-border/30 bg-white/[0.01] hover:bg-white/[0.02] transition-colors cursor-pointer"
+                              className="rounded-lg p-2.5 border border-border/30 bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-200 cursor-pointer"
+                              style={{ borderLeftWidth: '3px', borderLeftColor: borderAccent }}
+                              whileHover={{ x: 2 }}
                               onClick={() => setTransactionDetail(entry)}
                             >
                               <div className="flex items-start justify-between gap-2">
@@ -1751,8 +1838,11 @@ export default function BusinessCash() {
                           <AnimatePresence mode="popLayout">
                             {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
                               const isExpense = entry.type === 'kas_keluar';
+                              const isKasKecil = entry.type === 'kas_kecil';
+                              const isInvestor = entry.source === 'investor';
                               const entryColor = CASH_SUB_TYPES[entry.type as CashSubType];
                               const sourceInfo = getEntrySourceLabel(entry);
+                              const borderAccent = isInvestor ? c.primary : isExpense ? c.destructive : isKasKecil ? c.warning : c.secondary;
                               return (
                                 <motion.tr
                                   key={entry.id}
@@ -1768,7 +1858,8 @@ export default function BusinessCash() {
                                   initial="hidden"
                                   animate="show"
                                   layout
-                                  className="border-b border-border/20 transition-colors hover:bg-white/[0.02] cursor-pointer"
+                                  className="border-b border-border/20 transition-all duration-150 hover:bg-white/[0.03] cursor-pointer"
+                                  style={{ borderLeftWidth: '3px', borderLeftColor: borderAccent }}
                                   onClick={() => setTransactionDetail(entry)}
                                 >
                                   <TableCell className="text-xs py-2.5 font-mono text-muted-foreground">{formatDate(entry.date)}</TableCell>
@@ -2345,11 +2436,16 @@ export default function BusinessCash() {
                         layout
                         exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
                       >
-                        <Card className="rounded-xl overflow-hidden transition-colors duration-200 border border-primary/15 hover:border-primary/30">
+                        <Card className="rounded-xl overflow-hidden transition-all duration-200 border border-primary/10 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5">
+                          {/* Gradient header strip */}
+                          <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${c.primary}, ${alpha(c.primary, 30)})` }} />
                           <CardContent className="p-2.5 sm:p-3">
-                            <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+                            <div className="flex items-start justify-between mb-2">
                               <div className="flex items-center gap-2 min-w-0">
-                                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/8 text-primary">
+                                <div
+                                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                                  style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.primary, 5)})`, color: c.primary }}
+                                >
                                   {inv.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
@@ -2357,12 +2453,16 @@ export default function BusinessCash() {
                                   <Badge
                                     variant="outline"
                                     className={cn(
-                                      "text-[9px] font-medium border-0 rounded-full px-1.5 py-0",
+                                      "text-[9px] font-medium border-0 rounded-full px-1.5 py-0 mt-0.5",
                                       inv.status === 'active'
                                         ? "bg-secondary/15 text-secondary"
                                         : "bg-destructive/15 text-destructive"
                                     )}
                                   >
+                                    <span className={cn(
+                                      "h-1.5 w-1.5 rounded-full mr-1 inline-block",
+                                      inv.status === 'active' ? "bg-secondary animate-pulse" : "bg-destructive"
+                                    )} />
                                     {inv.status === 'active' ? 'Aktif' : 'Nonaktif'}
                                   </Badge>
                                 </div>
@@ -2382,14 +2482,20 @@ export default function BusinessCash() {
                                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Modal</span>
                                 <span className="text-sm font-bold tabular-nums text-primary">{formatAmount(inv.totalInvestment)}</span>
                               </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Bagi Hasil</span>
-                                <span className="text-sm font-bold text-warning">{inv.profitSharePct}%</span>
+                              {/* Prominent profit share display */}
+                              <div
+                                className="flex items-center justify-between p-2 rounded-lg border border-warning/10"
+                                style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 6)}, ${alpha(c.warning, 2)})` }}
+                              >
+                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                  <Percent className="h-3 w-3" />Bagi Hasil
+                                </span>
+                                <span className="text-lg font-extrabold text-warning tabular-nums">{inv.profitSharePct}%</span>
                               </div>
                             </div>
 
                             {(inv.phone || inv.email) && (
-                              <div className="border-t border-border mt-2 pt-2 flex items-center gap-3">
+                              <div className="border-t border-border/50 mt-2 pt-2 flex items-center gap-3">
                                 {inv.phone && (
                                   <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                     <Phone className="h-2.5 w-2.5" />
@@ -2405,7 +2511,7 @@ export default function BusinessCash() {
                               </div>
                             )}
 
-                            <p className="text-[10px] mt-1 text-muted-foreground">
+                            <p className="text-[10px] mt-1.5 text-muted-foreground">
                               Bergabung {formatDate(inv.joinDate)}
                             </p>
                           </CardContent>
@@ -2988,7 +3094,7 @@ export default function BusinessCash() {
 
             {/* ── Sub-tabs + Search ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-              <div className="flex gap-1 rounded-lg p-0.5 bg-white/[0.03] border border-border">
+              <div className="flex gap-1 rounded-full p-1 bg-white/[0.02] border border-border/30">
                 {(Object.keys(PIUTANG_STATUS_CONFIG) as PiutangSubTab[]).map((key) => {
                   const cfg = PIUTANG_STATUS_CONFIG[key];
                   const Icon = cfg.icon;
@@ -3002,8 +3108,12 @@ export default function BusinessCash() {
                     <button
                       key={key}
                       onClick={() => setPiutangSubTab(key)}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200"
-                      style={isActive ? { backgroundColor: alpha(cfg.color, 8), color: cfg.color } : { color: c.muted }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200"
+                      style={isActive ? {
+                        background: `linear-gradient(135deg, ${alpha(cfg.color, 14)}, ${alpha(cfg.color, 6)})`,
+                        color: cfg.color,
+                        boxShadow: `0 1px 4px ${alpha(cfg.color, 10)}`,
+                      } : { color: c.muted }}
                     >
                       <Icon className="h-3 w-3" />
                       <span>{cfg.label}</span>
@@ -3282,26 +3392,29 @@ export default function BusinessCash() {
       {/* ── CASH ENTRY DIALOG ──────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={cashDialogOpen} onOpenChange={setCashDialogOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-lg rounded-xl bg-card border border-border">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-              <div
-                className="h-7 w-7 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: alpha(subTypeConfig.color, 8) }}
-              >
-                <span style={{ color: subTypeConfig.color }}>{editingCashEntry ? <Pencil className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}</span>
-              </div>
-              {editingCashEntry ? t('common.edit') : t('biz.addCashEntry')}
-            </DialogTitle>
-            <DialogDescription className="pl-9 text-muted-foreground">
-              {t(CASH_SUB_TYPES[cashForm.type]?.label || 'biz.kasBesar')}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden">
+          {/* Gradient accent strip */}
+          <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${subTypeConfig.color}, ${alpha(subTypeConfig.color, 30)})` }} />
+          <div className="p-5">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-sm font-semibold flex items-center gap-2.5 text-foreground">
+                <div
+                  className="h-8 w-8 rounded-xl flex items-center justify-center"
+                  style={{ background: `linear-gradient(135deg, ${alpha(subTypeConfig.color, 15)}, ${alpha(subTypeConfig.color, 5)})` }}
+                >
+                  <span style={{ color: subTypeConfig.color }}>{editingCashEntry ? <Pencil className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}</span>
+                </div>
+                {editingCashEntry ? t('common.edit') : t('biz.addCashEntry')}
+              </DialogTitle>
+              <DialogDescription className="pl-[42px] text-muted-foreground">
+                {t(CASH_SUB_TYPES[cashForm.type]?.label || 'biz.kasBesar')}
+              </DialogDescription>
+            </DialogHeader>
 
-          <form onSubmit={handleCashSave} className="space-y-3 mt-1">
+          <form onSubmit={handleCashSave} className="space-y-4">
             {/* Type selector */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tipe Kas</Label>
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tipe Kas</Label>
               <Select
                 value={cashForm.type}
                 onValueChange={(v) => {
@@ -3312,10 +3425,10 @@ export default function BusinessCash() {
                   setCashForm({ ...cashForm, type: newType, source: defaultSource, investorId: '' });
                 }}
               >
-                <SelectTrigger className="text-sm h-9 rounded-lg bg-card border border-input text-foreground">
+                <SelectTrigger className="text-sm h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-card border border-border">
+                <SelectContent className="bg-[#1a1a1a] border-white/[0.08] rounded-xl">
                   {(Object.keys(CASH_SUB_TYPES) as CashSubType[]).map((key) => {
                     const cfg = CASH_SUB_TYPES[key];
                     const Icon = cfg.icon;
@@ -3332,11 +3445,14 @@ export default function BusinessCash() {
               </Select>
             </div>
 
+            {/* Divider */}
+            <div className="h-px bg-white/[0.06]" />
+
             {/* Source selector for kas_kecil — Sumber Dana */}
             {cashForm.type === 'kas_kecil' && (
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Sumber Dana</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sumber Dana</Label>
+                <div className="grid grid-cols-2 gap-2">
                   {([
                     { value: 'kas_besar' as const, label: 'Kas Besar', color: c.secondary, saldo: sourceBalances.kasBesarSaldo },
                     { value: 'investor' as const, label: 'Dana Investor', color: c.primary, saldo: sourceBalances.investorSaldo },
@@ -3345,14 +3461,14 @@ export default function BusinessCash() {
                       key={opt.value}
                       type="button"
                       onClick={() => setCashForm({ ...cashForm, source: opt.value, investorId: '' })}
-                      className="py-1.5 px-1 rounded-lg text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
+                      className="py-2.5 px-2 rounded-xl text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
                       style={
                         cashForm.source === opt.value
-                          ? { backgroundColor: alpha(opt.color, 8), color: opt.color, borderColor: alpha(opt.color, 25) }
-                          : { borderColor: c.border, color: c.muted }
+                          ? { backgroundColor: alpha(opt.color, 10), color: opt.color, borderColor: alpha(opt.color, 25), boxShadow: `0 1px 4px ${alpha(opt.color, 10)}` }
+                          : { borderColor: 'rgba(255,255,255,0.06)', color: c.muted, backgroundColor: 'rgba(255,255,255,0.02)' }
                       }
                     >
-                      <span>{opt.label}</span>
+                      <span className="font-semibold">{opt.label}</span>
                       <span className="text-[9px] opacity-70">{formatAmount(opt.saldo)}</span>
                     </button>
                   ))}
@@ -3388,9 +3504,9 @@ export default function BusinessCash() {
 
             {/* Source selector for kas_keluar — Dibayar Dari */}
             {cashForm.type === 'kas_keluar' && (
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Dibayar Dari</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dibayar Dari</Label>
+                <div className="grid grid-cols-3 gap-2">
                   {([
                     { value: 'kas_kecil' as const, label: 'Kas Kecil', color: c.warning, saldo: sourceBalances.kasKecilSaldo },
                     { value: 'kas_besar' as const, label: 'Kas Besar', color: c.secondary, saldo: sourceBalances.kasBesarSaldo },
@@ -3400,14 +3516,14 @@ export default function BusinessCash() {
                       key={opt.value}
                       type="button"
                       onClick={() => setCashForm({ ...cashForm, source: opt.value, investorId: '' })}
-                      className="py-1.5 px-1 rounded-lg text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
+                      className="py-2.5 px-2 rounded-xl text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
                       style={
                         cashForm.source === opt.value
-                          ? { backgroundColor: alpha(opt.color, 8), color: opt.color, borderColor: alpha(opt.color, 25) }
-                          : { borderColor: c.border, color: c.muted }
+                          ? { backgroundColor: alpha(opt.color, 10), color: opt.color, borderColor: alpha(opt.color, 25), boxShadow: `0 1px 4px ${alpha(opt.color, 10)}` }
+                          : { borderColor: 'rgba(255,255,255,0.06)', color: c.muted, backgroundColor: 'rgba(255,255,255,0.02)' }
                       }
                     >
-                      <span>{opt.label}</span>
+                      <span className="font-semibold">{opt.label}</span>
                       <span className="text-[9px] opacity-70">{formatAmount(opt.saldo)}</span>
                     </button>
                   ))}
@@ -3459,20 +3575,20 @@ export default function BusinessCash() {
 
             {/* Description */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('biz.cashDescription')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 value={cashForm.description}
                 onChange={(e) => setCashForm({ ...cashForm, description: e.target.value })}
                 placeholder={t('biz.cashDescription')}
-                className="text-sm rounded-lg bg-card border border-input text-foreground"
+                className="text-sm h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
             {/* Amount with Preview */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('biz.cashAmount')} <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
@@ -3483,16 +3599,15 @@ export default function BusinessCash() {
                   onChange={(e) => setCashForm({ ...cashForm, amount: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="text-sm font-semibold pl-8 pr-3 rounded-lg tabular-nums bg-card border border-input text-foreground"
+                  className="text-sm font-semibold pl-8 pr-3 h-10 rounded-xl tabular-nums bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                 />
               </div>
               <AnimatePresence mode="wait">
                 {formattedCashNominal && (
                   <div
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border-0"
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border-0"
                     style={{
-                      backgroundColor: alpha(CASH_SUB_TYPES[cashForm.type].color, 3),
-                      borderColor: alpha(CASH_SUB_TYPES[cashForm.type].color, 12),
+                      backgroundColor: alpha(CASH_SUB_TYPES[cashForm.type].color, 4),
                       color: CASH_SUB_TYPES[cashForm.type].color,
                     }}
                   >
@@ -3503,29 +3618,32 @@ export default function BusinessCash() {
               </AnimatePresence>
             </div>
 
+            {/* Divider */}
+            <div className="h-px bg-white/[0.06]" />
+
             {/* Date */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('biz.cashDate')}
               </Label>
               <Input
                 type="date"
                 value={cashForm.date}
                 onChange={(e) => setCashForm({ ...cashForm, date: e.target.value })}
-                className="text-sm rounded-lg bg-card border border-input text-foreground"
+                className="text-sm h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
             {/* Category */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('biz.cashCategory')}
               </Label>
               <Select value={cashForm.category} onValueChange={(v) => setCashForm({ ...cashForm, category: v })}>
-                <SelectTrigger className="text-sm h-9 rounded-lg bg-card border border-input text-foreground">
+                <SelectTrigger className="text-sm h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
                   <SelectValue placeholder={t('biz.cashCategory')} />
                 </SelectTrigger>
-                <SelectContent className="bg-card border border-border">
+                <SelectContent className="bg-[#1a1a1a] border-white/[0.08] rounded-xl">
                   {cashCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.name} className="rounded-lg">
                       <span className="flex items-center gap-2">
@@ -3540,42 +3658,44 @@ export default function BusinessCash() {
                 value={cashForm.category}
                 onChange={(e) => setCashForm({ ...cashForm, category: e.target.value })}
                 placeholder="Atau ketik kategori manual..."
-                className="text-xs h-8 rounded-lg bg-card border border-input text-foreground"
+                className="text-xs h-9 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
             {/* Notes */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Catatan
               </Label>
               <Textarea
                 value={cashForm.notes}
                 onChange={(e) => setCashForm({ ...cashForm, notes: e.target.value })}
                 placeholder="Catatan tambahan (opsional)"
-                className="text-xs min-h-[52px] resize-none rounded-lg bg-card border border-input text-foreground"
+                className="text-xs min-h-[52px] resize-none rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-1">
+            <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setCashDialogOpen(false)}
-                className="rounded-lg border-border text-muted-foreground"
+                className="flex-1 h-10 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={cashSaving || !cashForm.description || !cashForm.amount}
-                className="rounded-lg disabled:opacity-40 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                className="flex-1 h-10 rounded-xl text-sm font-medium disabled:opacity-40"
+                style={{ background: `linear-gradient(135deg, ${c.secondary}, ${alpha(c.secondary, 70)})`, color: 'white' }}
               >
                 {cashSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('common.save')}
               </Button>
             </DialogFooter>
           </form>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -3583,52 +3703,64 @@ export default function BusinessCash() {
       {/* ── INVESTOR DIALOG ────────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={investorDialogOpen} onOpenChange={setInvestorDialogOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-lg rounded-xl bg-card border border-border">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-              <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/5">
-                {editingInvestor ? <Pencil className="h-3.5 w-3.5 text-primary" /> : <UserPlus className="h-3.5 w-3.5 text-primary" />}
-              </div>
-              {editingInvestor ? 'Edit Investor' : 'Tambah Investor'}
-            </DialogTitle>
-            <DialogDescription className="pl-9 text-muted-foreground">
-              {editingInvestor ? `Edit data ${editingInvestor.name}` : 'Tambahkan investor baru untuk modal bisnis'}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden">
+          {/* Gradient accent strip */}
+          <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${c.primary}, ${alpha(c.primary, 30)})` }} />
+          <div className="p-5">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-sm font-semibold flex items-center gap-2.5 text-foreground">
+                <div
+                  className="h-8 w-8 rounded-xl flex items-center justify-center"
+                  style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.primary, 5)})` }}
+                >
+                  {editingInvestor ? <Pencil className="h-3.5 w-3.5 text-primary" /> : <UserPlus className="h-3.5 w-3.5 text-primary" />}
+                </div>
+                {editingInvestor ? 'Edit Investor' : 'Tambah Investor'}
+              </DialogTitle>
+              <DialogDescription className="pl-[42px] text-muted-foreground">
+                {editingInvestor ? `Edit data ${editingInvestor.name}` : 'Tambahkan investor baru untuk modal bisnis'}
+              </DialogDescription>
+            </DialogHeader>
 
-          <form onSubmit={handleInvestorSave} className="space-y-3 mt-1">
+          <form onSubmit={handleInvestorSave} className="space-y-4">
             {/* Name */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Nama Investor <span className="text-destructive">*</span>
               </Label>
               <Input
                 value={investorForm.name}
                 onChange={(e) => setInvestorForm({ ...investorForm, name: e.target.value })}
                 placeholder="Nama lengkap investor"
-                className="text-sm rounded-lg bg-card border border-input text-foreground"
+                className="text-sm h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
+            {/* Divider */}
+            <div className="h-px bg-white/[0.06]" />
+
             {/* Phone & Email */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   <Phone className="h-3 w-3 inline mr-1" />Telepon
                 </Label>
-                <Input value={investorForm.phone} onChange={(e) => setInvestorForm({ ...investorForm, phone: e.target.value })} placeholder="08xx" className="text-sm rounded-lg bg-card border border-input text-foreground" />
+                <Input value={investorForm.phone} onChange={(e) => setInvestorForm({ ...investorForm, phone: e.target.value })} placeholder="08xx" className="text-sm h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   <Mail className="h-3 w-3 inline mr-1" />Email
                 </Label>
-                <Input type="email" value={investorForm.email} onChange={(e) => setInvestorForm({ ...investorForm, email: e.target.value })} placeholder="email@contoh.com" className="text-sm rounded-lg bg-card border border-input text-foreground" />
+                <Input type="email" value={investorForm.email} onChange={(e) => setInvestorForm({ ...investorForm, email: e.target.value })} placeholder="email@contoh.com" className="text-sm h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0" />
               </div>
             </div>
 
+            {/* Divider */}
+            <div className="h-px bg-white/[0.06]" />
+
             {/* Investment Amount */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Total Modal (Rp) <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
@@ -3639,14 +3771,14 @@ export default function BusinessCash() {
                   onChange={(e) => setInvestorForm({ ...investorForm, totalInvestment: e.target.value })}
                   placeholder="0"
                   min="0"
-                  className="text-sm font-semibold pl-9 pr-3 rounded-lg tabular-nums bg-card border border-input text-foreground"
+                  className="text-sm font-semibold pl-9 pr-3 h-10 rounded-xl tabular-nums bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                 />
               </div>
               <AnimatePresence mode="wait">
                 {formattedInvestorNominal && (
                   <div
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border-0"
-                    style={{ backgroundColor: alpha(c.primary, 3), borderColor: alpha(c.primary, 8), color: c.primary }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border-0"
+                    style={{ backgroundColor: alpha(c.primary, 4), color: c.primary }}
                   >
                     <CircleDollarSign className="h-3.5 w-3.5" />
                     <span className="text-sm font-semibold tabular-nums">{formattedInvestorNominal}</span>
@@ -3657,7 +3789,7 @@ export default function BusinessCash() {
 
             {/* Profit Share % */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <Percent className="h-3 w-3 inline mr-1" />Bagi Hasil (%)
               </Label>
               <Input
@@ -3668,29 +3800,31 @@ export default function BusinessCash() {
                 min="0"
                 max="100"
                 step="0.1"
-                className="text-sm rounded-lg tabular-nums bg-card border border-input text-foreground"
+                className="text-sm h-10 rounded-xl tabular-nums bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-1">
+            <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setInvestorDialogOpen(false)}
-                className="rounded-lg border-border text-muted-foreground"
+                className="flex-1 h-10 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={investorSaving || !investorForm.name || !investorForm.totalInvestment || parseFloat(investorForm.totalInvestment) <= 0}
-                className="rounded-lg disabled:opacity-40 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="flex-1 h-10 rounded-xl text-sm font-medium disabled:opacity-40"
+                style={{ background: `linear-gradient(135deg, ${c.primary}, ${alpha(c.primary, 70)})`, color: 'white' }}
               >
                 {investorSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('common.save')}
               </Button>
             </DialogFooter>
           </form>
+          </div>
         </DialogContent>
       </Dialog>
 

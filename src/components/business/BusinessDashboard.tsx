@@ -345,6 +345,43 @@ function MiniCashSparkline({ color, value }: { color: string; value: number }) {
   );
 }
 
+/* ── Gradient Helper ── */
+function getGradientCSS(colorFrom: string, colorTo: string, angle: number = 135): string {
+  return `linear-gradient(${angle}deg, ${alpha(colorFrom, 12)}, ${alpha(colorTo, 4)})`;
+}
+
+/* ── Gradient Progress Bar ── */
+function GradientProgressBar({
+  value,
+  max,
+  colorFrom,
+  colorTo,
+  height = 6,
+}: {
+  value: number;
+  max: number;
+  colorFrom: string;
+  colorTo: string;
+  height?: number;
+}) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div
+      className="w-full rounded-full overflow-hidden"
+      style={{ height: `${height}px`, backgroundColor: alpha(colorFrom, 8) }}
+    >
+      <div
+        className="h-full rounded-full transition-all duration-700 ease-out"
+        style={{
+          width: `${Math.max(pct, 2)}%`,
+          background: `linear-gradient(90deg, ${colorFrom}, ${colorTo})`,
+          opacity: 0.85,
+        }}
+      />
+    </div>
+  );
+}
+
 /* ── Empty State Component ── */
 function EmptyState({
   icon: Icon,
@@ -358,15 +395,27 @@ function EmptyState({
   accentColor: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-4">
-      <div
-        className="flex h-12 w-12 items-center justify-center rounded-xl mb-3"
-        style={{ background: alpha(accentColor, 8) }}
+    <div className="flex flex-col items-center justify-center py-10 px-4">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="relative mb-4"
       >
-        <Icon className="h-5 w-5" style={{ color: accentColor, opacity: 0.6 }} />
-      </div>
-      <p className="text-sm font-medium mb-1 text-muted-foreground">{title}</p>
-      <p className="text-[11px] text-center max-w-[200px] text-muted-foreground">{description}</p>
+        <div
+          className="flex h-14 w-14 items-center justify-center rounded-2xl"
+          style={{ background: `linear-gradient(135deg, ${alpha(accentColor, 10)}, ${alpha(accentColor, 4)})`, border: `1px solid ${alpha(accentColor, 12)}` }}
+        >
+          <Icon className="h-6 w-6" style={{ color: accentColor, opacity: 0.7 }} />
+        </div>
+        {/* Decorative pulse ring */}
+        <div
+          className="absolute inset-0 rounded-2xl"
+          style={{ border: `1px solid ${alpha(accentColor, 6)}`, transform: 'scale(1.2)' }}
+        />
+      </motion.div>
+      <p className="text-sm font-semibold mb-1 text-foreground">{title}</p>
+      <p className="text-[11px] text-center max-w-[220px] leading-relaxed text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -599,8 +648,18 @@ export default function BusinessDashboard() {
 
   if (!businessId) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-center text-muted-foreground">{t('biz.registerFirst')}</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="flex h-16 w-16 items-center justify-center rounded-2xl"
+          style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 12)}, ${alpha(c.primary, 4)})`, border: `1px solid ${alpha(c.primary, 12)}` }}
+        >
+          <Wallet className="h-7 w-7" style={{ color: c.primary }} />
+        </motion.div>
+        <p className="text-sm font-semibold text-foreground text-center">{t('biz.registerFirst')}</p>
+        <p className="text-xs text-muted-foreground text-center max-w-[250px]">Daftarkan bisnis Anda untuk mulai memantau keuangan secara real-time.</p>
       </div>
     );
   }
@@ -687,7 +746,14 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1: HERO OVERVIEW CARD (Financial Command Center)
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="border-border overflow-hidden">
+      <Card className="border-border overflow-hidden shadow-sm">
+        {/* Hero gradient accent strip */}
+        <div
+          className="h-0.5 w-full"
+          style={{
+            background: `linear-gradient(90deg, ${c.secondary}, ${alpha('#4CAF50', 50)}, ${alpha(c.warning, 50)}, transparent)`,
+          }}
+        />
         <CardContent className="p-4 sm:p-5">
           {/* Header row: Title + Period selector */}
           <div className="flex items-center justify-between mb-4">
@@ -699,8 +765,8 @@ export default function BusinessDashboard() {
                 <Wallet className="h-4 w-4" style={{ color: c.secondary }} />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-foreground">Ringkasan Keuangan</h2>
-                <p className="text-[10px] text-muted-foreground">
+                <h2 className="text-[15px] font-bold text-foreground leading-tight">Ringkasan Keuangan</h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   {greeting.dateStr}
                 </p>
               </div>
@@ -711,30 +777,42 @@ export default function BusinessDashboard() {
                 <button
                   key={opt.value}
                   onClick={() => setPeriod(opt.value)}
-                  className="relative px-2.5 py-1 text-[10px] font-semibold rounded-md transition-colors duration-200"
+                  className="relative px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all duration-300 ease-out"
                   style={{
                     color: period === opt.value ? c.foreground : c.muted,
-                    backgroundColor: period === opt.value ? alpha(c.foreground, 8) : 'transparent',
+                    backgroundColor: period === opt.value ? alpha(c.foreground, 10) : 'transparent',
+                    transform: period === opt.value ? 'scale(1.02)' : 'scale(1)',
                   }}
                 >
                   {opt.label}
+                  {period === opt.value && (
+                    <motion.div
+                      layoutId="period-indicator"
+                      className="absolute inset-0 rounded-md"
+                      style={{ backgroundColor: alpha(c.foreground, 6), border: `1px solid ${alpha(c.foreground, 10)}` }}
+                      transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+                    />
+                  )}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Large Net Profit/Loss */}
-          <div className="mb-4">
-            <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground mb-1">
+          <div className="mb-5">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
               Laba Bersih {PERIOD_OPTIONS.find(p => p.value === period)?.label}
             </p>
             <div className="flex items-end gap-3">
-              <span
-                className="text-2xl sm:text-3xl font-bold tabular-nums leading-none"
+              <motion.span
+                className="text-3xl sm:text-4xl font-extrabold tabular-nums leading-none"
                 style={{ color: profitColor }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
               >
                 {data.profit >= 0 ? '+' : ''}{formatAmount(animProfit)}
-              </span>
+              </motion.span>
               <div className="flex items-center gap-1.5 mb-1">
                 {data.profit >= 0 ? (
                   <TrendingUp className="h-3.5 w-3.5" style={{ color: c.secondary }} />
@@ -756,30 +834,36 @@ export default function BusinessDashboard() {
 
           {/* Revenue vs Expense row with sparklines */}
           <div className="grid grid-cols-2 gap-3 mb-4">
-            {/* Pendapatan */}
-            <div className="p-3 rounded-xl" style={{ backgroundColor: alpha(c.secondary, 5) }}>
+            {/* Pendapatan — warm emerald gradient */}
+            <div
+              className="p-3 rounded-xl transition-transform duration-200 hover:scale-[1.02]"
+              style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 8)}, ${alpha('#4CAF50', 3)})`, border: `1px solid ${alpha(c.secondary, 8)}` }}
+            >
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.secondary }} />
-                  <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Pendapatan</span>
+                  <div className="h-2 w-2 rounded-full shadow-sm" style={{ backgroundColor: c.secondary, boxShadow: `0 0 6px ${alpha(c.secondary, 40)}` }} />
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pendapatan</span>
                 </div>
                 <MiniCashSparkline color={c.secondary} value={data.totalRevenue} />
               </div>
-              <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.secondary }}>
+              <p className="text-base sm:text-lg font-extrabold tabular-nums" style={{ color: c.secondary }}>
                 {formatAmount(animRevenue)}
               </p>
             </div>
 
-            {/* Pengeluaran */}
-            <div className="p-3 rounded-xl" style={{ backgroundColor: alpha(c.destructive, 5) }}>
+            {/* Pengeluaran — soft coral gradient */}
+            <div
+              className="p-3 rounded-xl transition-transform duration-200 hover:scale-[1.02]"
+              style={{ background: `linear-gradient(135deg, ${alpha(c.destructive, 8)}, ${alpha('#FF8A80', 3)})`, border: `1px solid ${alpha(c.destructive, 8)}` }}
+            >
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.destructive }} />
-                  <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Pengeluaran</span>
+                  <div className="h-2 w-2 rounded-full shadow-sm" style={{ backgroundColor: c.destructive, boxShadow: `0 0 6px ${alpha(c.destructive, 40)}` }} />
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pengeluaran</span>
                 </div>
                 <MiniCashSparkline color={c.destructive} value={data.totalExpense} />
               </div>
-              <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.destructive }}>
+              <p className="text-base sm:text-lg font-extrabold tabular-nums" style={{ color: c.destructive }}>
                 {formatAmount(animExpense)}
               </p>
             </div>
@@ -834,14 +918,22 @@ export default function BusinessDashboard() {
               key={stat.label}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -2, scale: 1.02 }}
               transition={{ duration: 0.3, delay: idx * 0.06 }}
             >
-              <Card className="border-border cursor-default hover:border-foreground/15 transition-all duration-200">
-                <CardContent className="p-3">
+              <Card className="border-border cursor-default overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
+                {/* Gradient header strip */}
+                <div
+                  className="h-1 w-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${stat.color}, ${alpha(stat.color, 30)})`,
+                  }}
+                />
+                <CardContent className="p-3 pt-2.5">
                   <div className="flex items-center gap-2 mb-2">
                     <div
-                      className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0"
-                      style={{ backgroundColor: alpha(stat.color, 8) }}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0 transition-transform duration-200"
+                      style={{ background: getGradientCSS(stat.color, c.card) }}
                     >
                       <Icon className="h-3.5 w-3.5" style={{ color: stat.color }} />
                     </div>
@@ -866,7 +958,7 @@ export default function BusinessDashboard() {
       <Card className="border-border">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+            <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
               <Zap className="h-3.5 w-3.5" style={{ color: c.primary }} />
               Aksi Cepat
@@ -919,7 +1011,7 @@ export default function BusinessDashboard() {
         <Card className="border-border">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: healthScore.color }} />
                 <ShieldCheck className="h-3.5 w-3.5" style={{ color: healthScore.color }} />
                 Kesehatan Finansial
@@ -964,10 +1056,33 @@ export default function BusinessDashboard() {
                   color: financialHealth.collectionRate >= 0.8 ? c.secondary : financialHealth.collectionRate >= 0.5 ? c.warning : c.destructive,
                   status: financialHealth.collectionRate >= 0.8 ? 'Baik' : financialHealth.collectionRate >= 0.5 ? 'Cukup' : 'Rendah',
                 },
-              ].map((metric) => {
+              ].map((metric, metricIdx) => {
                 const MIcon = metric.icon;
+                // Progress bar data
+                let progressValue = 0;
+                let progressMax = 1;
+                let gradientFrom = metric.color;
+                let gradientTo = metric.color;
+                if (metric.label === 'Runway') {
+                  progressValue = financialHealth.runway >= 99 ? 1 : financialHealth.runway;
+                  progressMax = 12;
+                  gradientFrom = metric.color;
+                  gradientTo = c.secondary;
+                } else if (metric.label === 'Cash Ratio') {
+                  progressValue = financialHealth.cashRatio >= 99 ? 1 : financialHealth.cashRatio;
+                  progressMax = 2;
+                  gradientFrom = metric.color;
+                  gradientTo = c.secondary;
+                } else if (metric.label === 'Collection Rate') {
+                  progressValue = financialHealth.collectionRate >= 99 ? 1 : financialHealth.collectionRate;
+                  progressMax = 1;
+                  gradientFrom = c.warning;
+                  gradientTo = metric.color;
+                }
+                const showProgress = metric.label !== 'Burn Rate';
+
                 return (
-                  <div key={metric.label} className="p-2.5 rounded-xl" style={{ backgroundColor: alpha(metric.color, 4) }}>
+                  <div key={metric.label} className="p-2.5 rounded-xl transition-transform duration-200 hover:scale-[1.01]" style={{ backgroundColor: alpha(metric.color, 4) }}>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <MIcon className="h-3 w-3" style={{ color: metric.color }} />
                       <span className="text-[9px] uppercase tracking-wider font-medium text-muted-foreground">{metric.label}</span>
@@ -976,7 +1091,19 @@ export default function BusinessDashboard() {
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="text-[9px] text-muted-foreground">{metric.desc}</span>
                     </div>
-                    <span className="text-[9px] font-semibold px-1.5 py-px rounded-full mt-1 inline-block border-0" style={{ color: metric.color, backgroundColor: alpha(metric.color, 8) }}>
+                    {/* Gradient progress bar */}
+                    {showProgress && (
+                      <div className="mt-2">
+                        <GradientProgressBar
+                          value={progressValue}
+                          max={progressMax}
+                          colorFrom={gradientFrom}
+                          colorTo={gradientTo}
+                          height={4}
+                        />
+                      </div>
+                    )}
+                    <span className="text-[9px] font-semibold px-1.5 py-px rounded-full mt-1.5 inline-block border-0" style={{ color: metric.color, backgroundColor: alpha(metric.color, 8) }}>
                       {metric.status}
                     </span>
                   </div>
@@ -1037,7 +1164,7 @@ export default function BusinessDashboard() {
       <Card className="border-border">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+            <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
               <Activity className="h-3.5 w-3.5" style={{ color: c.primary }} />
               Aktivitas Terbaru
@@ -1096,14 +1223,20 @@ export default function BusinessDashboard() {
                               initial={{ opacity: 0, x: -6 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ duration: 0.2, delay: itemIdx * 0.04 }}
-                              className="flex items-center gap-2.5 sm:gap-3 py-2 sm:py-2.5 px-2.5 -mx-1 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-white/[0.03]"
+                              className="flex items-center gap-2.5 sm:gap-3 py-2 sm:py-2.5 px-2.5 -mx-1 rounded-lg cursor-pointer transition-all duration-150 hover:bg-white/[0.03] hover:translate-x-0.5"
                             >
-                              {/* Icon */}
-                              <div
-                                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg shrink-0"
-                                style={{ backgroundColor: alpha(actColor, 7) }}
-                              >
-                                <ActIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: actColor }} />
+                              {/* Color-coded status dot + Icon */}
+                              <div className="relative shrink-0">
+                                <div
+                                  className="absolute -left-0.5 -top-0.5 h-2 w-2 rounded-full z-10 transition-transform duration-200"
+                                  style={{ backgroundColor: actColor, boxShadow: `0 0 5px ${alpha(actColor, 50)}` }}
+                                />
+                                <div
+                                  className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg"
+                                  style={{ backgroundColor: alpha(actColor, 7) }}
+                                >
+                                  <ActIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: actColor }} />
+                                </div>
                               </div>
 
                               {/* Content */}
@@ -1113,10 +1246,10 @@ export default function BusinessDashboard() {
                                 </p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                   <span
-                                    className="text-[9px] font-medium px-1.5 py-0.5 rounded-full border-0"
+                                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full border-0"
                                     style={{
                                       color: actColor,
-                                      backgroundColor: alpha(actColor, 7),
+                                      backgroundColor: alpha(actColor, 8),
                                     }}
                                   >
                                     {typeLabel}
@@ -1164,7 +1297,7 @@ export default function BusinessDashboard() {
         <Card className="md:col-span-2 border-border">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
                 <AlertTriangle className="h-3.5 w-3.5" style={{ color: c.warning }} />
                 Piutang Jatuh Tempo
@@ -1251,7 +1384,7 @@ export default function BusinessDashboard() {
           {topCustomers.length > 0 && (
             <Card className="border-border">
               <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
                   <Users className="h-3.5 w-3.5" style={{ color: c.warning }} />
                   Top Pelanggan
@@ -1298,10 +1431,10 @@ export default function BusinessDashboard() {
                   { label: 'Menunggak', count: ps.menunggak.count, amount: ps.menunggak.amount, color: c.destructive },
                   { label: 'Lunas', count: ps.selesai.count, amount: ps.selesai.amount, color: c.secondary },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between py-1">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-[10px] font-medium text-muted-foreground">{item.label}</span>
+                  <div key={item.label} className="flex items-center justify-between py-1.5 px-1 rounded-md transition-colors duration-150 hover:bg-white/[0.02]">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color, boxShadow: `0 0 4px ${alpha(item.color, 40)}` }} />
+                      <span className="text-[10px] font-semibold text-muted-foreground">{item.label}</span>
                       <span className="text-[10px] tabular-nums text-muted-foreground">({item.count})</span>
                     </div>
                     <span className="text-[11px] font-bold tabular-nums" style={{ color: item.color }}>
@@ -1310,7 +1443,12 @@ export default function BusinessDashboard() {
                   </div>
                 ))
               ) : (
-                <p className="text-[10px] text-muted-foreground">Belum ada data</p>
+                <EmptyState
+                  icon={HandCoins}
+                  title="Belum Ada Piutang"
+                  description="Data piutang akan muncul setelah transaksi cicilan dicatat."
+                  accentColor={c.primary}
+                />
               )}
             </CardContent>
           </Card>
@@ -1325,7 +1463,7 @@ export default function BusinessDashboard() {
         <Card className="border-border">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
                 <Package className="h-3.5 w-3.5" style={{ color: c.primary }} />
                 Top Produk
@@ -1406,7 +1544,7 @@ export default function BusinessDashboard() {
           <Card className="border-border">
             <CardHeader className="pb-2 pt-4 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#BB86FC' }} />
                   <Users className="h-3.5 w-3.5" style={{ color: '#BB86FC' }} />
                   Dana Investor

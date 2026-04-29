@@ -63,6 +63,8 @@ import BusinessInvoice from '@/components/business/BusinessInvoice';
 import BusinessCustomers from '@/components/business/BusinessCustomers';
 import BusinessAllocation from '@/components/business/BusinessAllocation';
 import BusinessLaporan from '@/components/business/BusinessLaporan';
+import BusinessPnL from '@/components/business/BusinessPnL';
+import BusinessForecast from '@/components/business/BusinessForecast';
 import BusinessInvoiceSettings from '@/components/business/BusinessInvoiceSettings';
 import InvestmentDashboard from '@/components/investment/InvestmentDashboard';
 import InvestmentPortfolio from '@/components/investment/InvestmentPortfolio';
@@ -77,7 +79,7 @@ import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 type PageType =
   | 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile'
   | 'biz-dashboard' | 'biz-kas' | 'biz-penjualan' | 'biz-invoice' | 'biz-customer'
-  | 'biz-allocation' | 'biz-laporan' | 'biz-invoice-settings'
+  | 'biz-allocation' | 'biz-laporan' | 'biz-pnl' | 'biz-forecast' | 'biz-invoice-settings'
   | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal' | 'inv-quant' | 'inv-macro';
 
 interface NavItem {
@@ -140,16 +142,26 @@ export function MainLayout() {
     }, 200);
   }, [currentPage]);
 
-  // Listen for biz-navigate events from child components (e.g., dashboard quick actions)
+  // Listen for biz-navigate and notif-navigate events from child components / notifications
   useEffect(() => {
+    const VALID_PAGES = new Set<string>([
+      'dashboard','kas-masuk','kas-keluar','target','laporan','profile',
+      'biz-dashboard','biz-kas','biz-penjualan','biz-invoice','biz-customer',
+      'biz-allocation','biz-laporan','biz-pnl','biz-forecast','biz-invoice-settings',
+      'inv-dashboard','inv-portfolio','inv-journal','inv-quant','inv-macro',
+    ]);
     const handler = (e: Event) => {
       const { page } = (e as CustomEvent).detail;
-      if (page && page !== currentPage) {
+      if (page && VALID_PAGES.has(page) && page !== currentPage) {
         navigateTo(page as PageType);
       }
     };
     window.addEventListener('biz-navigate', handler);
-    return () => window.removeEventListener('biz-navigate', handler);
+    window.addEventListener('notif-navigate', handler);
+    return () => {
+      window.removeEventListener('biz-navigate', handler);
+      window.removeEventListener('notif-navigate', handler);
+    };
   }, [currentPage, navigateTo]);
 
   // Fetch current month stats for sidebar mini bar
@@ -243,6 +255,8 @@ export function MainLayout() {
     { id: 'biz-customer', label: t('biz.customers'), icon: Users, desc: 'Pelanggan' },
     { id: 'biz-allocation', label: t('biz.autoAllocation'), icon: ArrowLeftRight, desc: 'Alokasi ke Pribadi' },
     { id: 'biz-laporan', label: t('biz.bizLaporan'), icon: BarChart3, desc: 'Laporan' },
+    { id: 'biz-pnl', label: 'Laba Rugi', icon: TrendingUp, desc: 'Laporan Laba Rugi' },
+    { id: 'biz-forecast', label: 'Proyeksi Kas', icon: LineChart, desc: 'Proyeksi Arus Kas' },
     { id: 'biz-invoice-settings', label: t('biz.invoiceSettings'), icon: Palette, desc: 'Template & Branding' },
   ], [t]);
 
@@ -284,6 +298,8 @@ export function MainLayout() {
         // biz-hutang removed — piutang is now in Cashflow tab
         case 'biz-allocation': return <BusinessAllocation />;
         case 'biz-laporan': return <BusinessLaporan />;
+        case 'biz-pnl': return <BusinessPnL />;
+        case 'biz-forecast': return <BusinessForecast />;
         case 'biz-invoice-settings': return <BusinessInvoiceSettings />;
         default: return <BusinessDashboard />;
       }

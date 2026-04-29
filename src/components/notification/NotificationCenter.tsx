@@ -231,7 +231,7 @@ export function NotificationCenter() {
       // If the notification has an actionUrl, navigate to it
       if (notification.actionUrl) {
         setOpen(false);
-        window.location.href = notification.actionUrl;
+        window.dispatchEvent(new CustomEvent('notif-navigate', { detail: { page: notification.actionUrl } }));
         return;
       }
       // Otherwise toggle expand

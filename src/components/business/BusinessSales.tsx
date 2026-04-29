@@ -4,13 +4,13 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
-import { cn } from '@/lib/utils';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
+
 import {
   Select,
   SelectContent,
@@ -133,11 +133,6 @@ const PAYMENT_METHODS = [
   { value: 'qris', labelKey: 'biz.paymentQRIS', icon: QrCode, color: c.warning },
 ];
 
-const paymentIconMap: Record<string, string> = {
-  cash: c.secondary,
-  transfer: c.primary,
-  qris: c.warning,
-};
 
 const STATUS_FILTERS = [
   { value: 'all', label: 'Semua' },
@@ -155,11 +150,18 @@ const PERIOD_OPTIONS = [
   { value: 'year' as const, label: 'Tahun' },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  all: { label: 'Semua', color: c.foreground },
-  lunas: { label: 'Lunas', color: c.secondary },
-  cicilan: { label: 'Cicilan', color: c.warning },
-  pending: { label: 'Pending', color: c.muted },
+const STATUS_CONFIG: Record<string, { label: string; color: string; gradient: string }> = {
+  all: { label: 'Semua', color: c.foreground, gradient: `linear-gradient(135deg, ${alpha(c.foreground, 18)}, ${alpha(c.foreground, 8)})` },
+  lunas: { label: 'Lunas', color: c.secondary, gradient: `linear-gradient(135deg, ${alpha(c.secondary, 18)}, ${alpha(c.secondary, 6)})` },
+  cicilan: { label: 'Cicilan', color: c.warning, gradient: `linear-gradient(135deg, ${alpha(c.warning, 18)}, ${alpha(c.warning, 6)})` },
+  pending: { label: 'Pending', color: c.destructive, gradient: `linear-gradient(135deg, ${alpha(c.destructive, 18)}, ${alpha(c.destructive, 6)})` },
+};
+
+/** Accent border color per status for left-side stripe */
+const statusAccentBorder: Record<string, string> = {
+  lunas: c.secondary,
+  cicilan: c.warning,
+  pending: c.destructive,
 };
 
 // ─── Animated Counter Hook ──────────────────────────────────────
@@ -684,9 +686,11 @@ export default function BusinessSales() {
                 {/* Metric chips row */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Tunai chip */}
-                  <div
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-                    style={{ background: alpha(c.secondary, 6), borderColor: alpha(c.secondary, 12) }}
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border"
+                    style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 10)}, ${alpha(c.secondary, 4)})`, borderColor: alpha(c.secondary, 15) }}
                   >
                     <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.secondary, 15) }}>
                       <Banknote className="h-3 w-3" style={{ color: c.secondary }} />
@@ -698,12 +702,14 @@ export default function BusinessSales() {
                       </p>
                     </div>
                     <span className="text-[9px] tabular-nums" style={{ color: c.muted }}>({tunaiCount})</span>
-                  </div>
+                  </motion.div>
 
                   {/* Cicilan chip */}
-                  <div
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-                    style={{ background: alpha(c.warning, 6), borderColor: alpha(c.warning, 12) }}
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border"
+                    style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 10)}, ${alpha(c.warning, 4)})`, borderColor: alpha(c.warning, 15) }}
                   >
                     <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.warning, 15) }}>
                       <Repeat className="h-3 w-3" style={{ color: c.warning }} />
@@ -715,12 +721,14 @@ export default function BusinessSales() {
                       </p>
                     </div>
                     <span className="text-[9px] tabular-nums" style={{ color: c.muted }}>({cicilanCount})</span>
-                  </div>
+                  </motion.div>
 
                   {/* Average chip */}
-                  <div
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-                    style={{ background: alpha(c.primary, 6), borderColor: alpha(c.primary, 12) }}
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border"
+                    style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 10)}, ${alpha(c.primary, 4)})`, borderColor: alpha(c.primary, 15) }}
                   >
                     <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.primary, 15) }}>
                       <Calculator className="h-3 w-3" style={{ color: c.primary }} />
@@ -731,7 +739,7 @@ export default function BusinessSales() {
                         {formatAmount(animAvg)}
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </CardContent>
             </Card>
@@ -853,7 +861,9 @@ export default function BusinessSales() {
                             exit="exit"
                             layout
                             onClick={() => openEditDialog(sale)}
-                            className="p-3.5 cursor-pointer active:bg-white/[0.02] transition-colors duration-150"
+                            whileHover={{ x: 2 }}
+                            className="p-3.5 cursor-pointer active:bg-white/[0.02] transition-colors duration-150 border-l-[3px]"
+                            style={{ borderLeftColor: statusAccentBorder[status] || alpha(c.border, 40) }}
                           >
                             {/* Row 1: Description + Amount */}
                             <div className="flex items-start justify-between gap-2 mb-2">
@@ -862,9 +872,10 @@ export default function BusinessSales() {
                                   {sale.description}
                                 </p>
                                 {sale.customer?.name && (
-                                  <p className="text-[10px] mt-0.5 truncate" style={{ color: c.muted }}>
+                                  <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] font-medium rounded-full px-2 py-0.5 shrink-0" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 14)}, ${alpha(c.primary, 6)})`, color: c.primary }}>
+                                    <Users className="h-2 w-2" />
                                     {sale.customer.name}
-                                  </p>
+                                  </span>
                                 )}
                               </div>
                               <div className="text-right shrink-0">
@@ -885,16 +896,16 @@ export default function BusinessSales() {
                                 <span className="text-[10px] font-mono shrink-0" style={{ color: c.muted }}>
                                   {new Date(sale.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                                 </span>
-                                {/* Payment method badge */}
+                                {/* Payment method pill badge */}
                                 {sale.paymentMethod && (() => {
                                   const M = PAYMENT_METHODS.find((m) => m.value === sale.paymentMethod);
                                   if (!M) return null;
                                   const Icon = M.icon;
                                   return (
-                                    <Badge variant="outline" className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0 shrink-0" style={{ background: alpha(M.color, 12), color: M.color }}>
-                                      <Icon className="h-2 w-2 mr-0.5" />
+                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-medium rounded-full px-1.5 py-0 shrink-0 border" style={{ background: `linear-gradient(135deg, ${alpha(M.color, 16)}, ${alpha(M.color, 6)})`, color: M.color, borderColor: alpha(M.color, 20) }}>
+                                      <Icon className="h-2 w-2" />
                                       {t(M.labelKey)}
-                                    </Badge>
+                                    </span>
                                   );
                                 })()}
                                 {/* Category badge */}
@@ -912,11 +923,37 @@ export default function BusinessSales() {
                                 )}
                               </div>
 
-                              {/* Status badge */}
-                              <Badge variant="outline" className="text-[9px] font-bold border-0 rounded-full px-2 py-0 shrink-0" style={{ background: alpha(statusCfg.color, 12), color: statusCfg.color }}>
+                              {/* Status gradient pill badge */}
+                              <span className="inline-flex items-center text-[9px] font-bold rounded-full px-2 py-0 shrink-0" style={{ background: statusCfg.gradient, color: statusCfg.color, boxShadow: `0 0 8px ${alpha(statusCfg.color, 10)}` }}>
                                 {isInstallment && hasDP ? `${statusCfg.label} ${Math.round(((sale.realizedAmount ?? sale.downPayment ?? 0) / sale.amount) * 100)}%` : statusCfg.label}
-                              </Badge>
+                              </span>
                             </div>
+
+                            {/* Row 3: Installment progress bar (mobile) */}
+                            {isInstallment && hasDP && (
+                              <div className="mt-2 pt-1.5">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[9px] font-medium" style={{ color: c.warning }}>
+                                    <Repeat className="h-2 w-2 mr-0.5 inline" />
+                                    {Math.round((realized / sale.amount) * 100)}% lunas
+                                  </span>
+                                  {sale.installmentTempo && (
+                                    <span className="text-[8px] tabular-nums" style={{ color: c.muted }}>
+                                      {realized >= sale.amount ? `${sale.installmentTempo}/${sale.installmentTempo} bulan` : `${Math.round((realized / sale.amount) * sale.installmentTempo)}/${sale.installmentTempo} bulan`}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: alpha(c.border, 40) }}>
+                                  <motion.div
+                                    className="h-full rounded-full"
+                                    style={{ background: realized >= sale.amount ? c.secondary : `linear-gradient(to right, ${c.warning}, ${c.primary})` }}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min((realized / sale.amount) * 100, 100)}%` }}
+                                    transition={{ duration: 0.5, ease: 'easeOut' as const }}
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </motion.div>
                         );
                       })}
@@ -975,11 +1012,11 @@ export default function BusinessSales() {
                                 animate="visible"
                                 exit="exit"
                                 layout
-                                className="group cursor-pointer transition-colors duration-150"
+                                className="group cursor-pointer transition-colors duration-150 hover:bg-white/[0.02]"
                                 style={i % 2 === 1 ? { background: alpha(c.border, 30) } : undefined}
                                 onClick={() => openEditDialog(sale)}
                               >
-                                <TableCell className="text-[11px] py-2.5 font-mono" style={{ color: c.muted }}>
+                                <TableCell className="text-[11px] py-2.5 font-mono border-l-[3px]" style={{ color: c.muted, borderLeftColor: statusAccentBorder[status] || alpha(c.border, 40) }}>
                                   {new Date(sale.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </TableCell>
                                 <TableCell className="py-2.5">
@@ -1009,16 +1046,21 @@ export default function BusinessSales() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="py-2.5 hidden md:table-cell">
-                                  <span className="text-xs" style={{ color: c.muted }}>
-                                    {sale.customer?.name || '—'}
-                                  </span>
+                                  {sale.customer?.name ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2 py-0.5" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 14)}, ${alpha(c.primary, 6)})`, color: c.primary }}>
+                                      <Users className="h-2.5 w-2.5" />
+                                      {sale.customer.name}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs" style={{ color: c.muted }}>—</span>
+                                  )}
                                 </TableCell>
                                 {/* Status column */}
                                 <TableCell className="py-2.5">
                                   <div className="flex items-center gap-1 flex-wrap">
-                                    <Badge variant="outline" className="text-[9px] font-bold border-0 rounded-full px-2 py-0" style={{ background: alpha(statusCfg.color, 12), color: statusCfg.color }}>
+                                    <span className="inline-flex items-center text-[9px] font-bold rounded-full px-2 py-0" style={{ background: statusCfg.gradient, color: statusCfg.color, boxShadow: `0 0 8px ${alpha(statusCfg.color, 10)}` }}>
                                       {statusCfg.label}
-                                    </Badge>
+                                    </span>
                                     {isInstallment && hasDP && (
                                       <Badge variant="outline" className="text-[9px] font-medium border-0 rounded-full px-1.5 py-0" style={{ background: alpha(c.secondary, 12), color: c.secondary }}>
                                         DP {dpPercent}%
@@ -1033,19 +1075,26 @@ export default function BusinessSales() {
                                   </div>
                                   {/* Installment progress bar */}
                                   {isInstallment && hasDP && (
-                                    <div className="mt-1 max-w-[120px]">
-                                      <div className="h-1 rounded-full overflow-hidden" style={{ background: c.border }}>
-                                        <div
-                                          className="h-full rounded-full transition-all duration-500"
-                                          style={{
-                                            width: `${Math.min((realized / sale.amount) * 100, 100)}%`,
-                                            background: realized >= sale.amount ? c.secondary : c.warning,
-                                          }}
+                                    <div className="mt-1 max-w-[140px]">
+                                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: alpha(c.border, 40) }}>
+                                        <motion.div
+                                          className="h-full rounded-full"
+                                          style={{ background: realized >= sale.amount ? c.secondary : `linear-gradient(to right, ${c.warning}, ${c.primary})` }}
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${Math.min((realized / sale.amount) * 100, 100)}%` }}
+                                          transition={{ duration: 0.5, ease: 'easeOut' as const }}
                                         />
                                       </div>
-                                      <p className="text-[8px] mt-0.5 tabular-nums" style={{ color: c.muted }}>
-                                        {Math.round((realized / sale.amount) * 100)}% lunas
-                                      </p>
+                                      <div className="flex items-center justify-between mt-0.5">
+                                        <p className="text-[8px] tabular-nums" style={{ color: c.muted }}>
+                                          {Math.round((realized / sale.amount) * 100)}% lunas
+                                        </p>
+                                        {sale.installmentTempo && (
+                                          <p className="text-[8px] tabular-nums" style={{ color: c.muted }}>
+                                            {realized >= sale.amount ? `${sale.installmentTempo}/${sale.installmentTempo} bln` : `${Math.round((realized / sale.amount) * sale.installmentTempo)}/${sale.installmentTempo} bln`}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
                                   )}
                                 </TableCell>
@@ -1132,75 +1181,73 @@ export default function BusinessSales() {
           {/* ═══ ADD/EDIT DIALOG ═══ */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent
-              className="rounded-xl overflow-hidden max-h-[90vh] flex flex-col w-[95vw] sm:max-w-lg border"
-              style={{ background: c.card, borderColor: c.border }}
+              className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col w-[95vw] sm:max-w-lg"
             >
-              {/* Accent line at top */}
-              <div className="h-[2px] shrink-0" style={{ background: `linear-gradient(to right, ${c.secondary}, ${c.primary}, ${c.warning})` }} />
-              <DialogHeader className="pt-1 shrink-0">
-                <DialogTitle className="text-base font-semibold flex items-center gap-2" style={{ color: c.foreground }}>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.primary, 15) }}>
-                    {editingSale ? (
-                      <Pencil className="h-3.5 w-3.5" style={{ color: c.primary }} />
-                    ) : (
-                      <Plus className="h-3.5 w-3.5" style={{ color: c.primary }} />
-                    )}
-                  </div>
-                  {editingSale ? t('common.edit') : t('biz.addSale')}
-                </DialogTitle>
-                <DialogDescription className="pl-9" style={{ color: c.muted }}>
-                  {t('biz.saleDescription')}
-                </DialogDescription>
-              </DialogHeader>
+              {/* Gradient accent strip at top */}
+              <div className="h-[3px] shrink-0" style={{ background: `linear-gradient(to right, ${c.secondary}, ${c.primary}, ${c.warning})` }} />
+              <div className="px-5 pt-4 pb-1 shrink-0">
+                <DialogHeader>
+                  <DialogTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
+                    <div className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                      {editingSale ? (
+                        <Pencil className="h-3.5 w-3.5 text-foreground" />
+                      ) : (
+                        <Plus className="h-3.5 w-3.5 text-foreground" />
+                      )}
+                    </div>
+                    {editingSale ? t('common.edit') : t('biz.addSale')}
+                  </DialogTitle>
+                  <DialogDescription className="pl-9 text-muted-foreground/60">
+                    {t('biz.saleDescription')}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
 
-              <form id="sale-form" onSubmit={handleSave} className="space-y-5 mt-1 overflow-y-auto flex-1 pr-1 scroll-smooth">
+              <form id="sale-form" onSubmit={handleSave} className="space-y-0 overflow-y-auto flex-1 scroll-smooth">
 
                 {/* ═══ Section 1: Detail Penjualan ═══ */}
-                <div className="space-y-3">
+                <div className="space-y-3 px-5 pt-4 pb-3">
                   <div className="flex items-center gap-2 pb-1">
-                    <Receipt className="h-3.5 w-3.5" style={{ color: c.muted }} />
-                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Detail Penjualan</span>
-                    <div className="flex-1 h-px" style={{ background: c.border }} />
+                    <Receipt className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Detail Penjualan</span>
+                    <div className="flex-1 h-px bg-white/[0.06]" />
                   </div>
 
                   {/* Description — first field, most important */}
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                      {t('biz.saleDescription')} <span style={{ color: c.destructive }}>*</span>
+                    <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
+                      {t('biz.saleDescription')} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       value={formData.description}
                       onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                       placeholder={t('biz.saleDescription')}
-                      className="h-10 rounded-lg text-sm border"
-                      style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                      className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                     />
                   </div>
 
                   {/* Amount with Live Preview */}
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
-                      {t('biz.saleAmount')} <span style={{ color: c.destructive }}>*</span>
+                    <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
+                      {t('biz.saleAmount')} <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
-                      <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: c.muted }} />
+                      <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
                       <Input
                         type="number"
                         value={formData.amount}
                         onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
                         placeholder="0"
                         min="0"
-                        className="pl-10 pr-4 h-11 rounded-lg text-base font-semibold tabular-nums border"
-                        style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                        className="pl-10 pr-4 h-11 rounded-xl text-base font-semibold tabular-nums bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                       />
                     </div>
                     {formData.amount && parseFloat(formData.amount) > 0 && (
                       <div
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-                        style={{ background: alpha(c.secondary, 5), borderColor: alpha(c.secondary, 15) }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08]"
                       >
-                        <CircleDollarSign className="h-3.5 w-3.5" style={{ color: c.secondary }} />
-                        <span className="text-xs font-semibold tabular-nums" style={{ color: c.secondary }}>
+                        <CircleDollarSign className="h-3.5 w-3.5 text-secondary" />
+                        <span className="text-xs font-semibold tabular-nums text-secondary">
                           {formatAmount(parseFloat(formData.amount))}
                         </span>
                       </div>
@@ -1211,14 +1258,14 @@ export default function BusinessSales() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Product Quick Select */}
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                      <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                         {t('biz.selectProduct')}
                       </Label>
                       <Select value={selectedProductId} onValueChange={(v) => handleProductSelect(v)}>
-                        <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                        <SelectTrigger className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
                           <SelectValue placeholder={t('biz.selectProduct')} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
+                        <SelectContent className="rounded-lg border bg-[#1a1a1a] border-white/[0.08]">
                           {products
                             .filter((p) => p.stock > 0)
                             .map((p) => (
@@ -1248,10 +1295,10 @@ export default function BusinessSales() {
                           value={formData.categoryId}
                           onValueChange={(v) => setFormData((prev) => ({ ...prev, categoryId: v }))}
                         >
-                          <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                          <SelectTrigger className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
                             <SelectValue placeholder={t('biz.cashCategory')} />
                           </SelectTrigger>
-                          <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
+                          <SelectContent className="rounded-lg border bg-[#1a1a1a] border-white/[0.08]">
                             <SelectItem value="" className="text-sm rounded-md" style={{ color: c.muted }}>
                               Tanpa kategori
                             </SelectItem>
@@ -1271,36 +1318,39 @@ export default function BusinessSales() {
 
                   {/* Product auto-fill hint */}
                   {isProductAutoFill && (
-                    <p className="text-xs flex items-center gap-1" style={{ color: c.secondary }}>
+                    <p className="text-xs flex items-center gap-1 text-secondary">
                       <BarChart3 className="h-3 w-3" />
                       Harga &amp; deskripsi terisi otomatis dari produk
                     </p>
                   )}
                 </div>
 
+                {/* Section divider */}
+                <div className="h-px bg-white/[0.06]" />
+
                 {/* ═══ Section 2: Pelanggan & Pembayaran ═══ */}
-                <div className="space-y-3">
+                <div className="space-y-3 px-5 pb-3">
                   <div className="flex items-center gap-2 pb-1">
-                    <Users className="h-3.5 w-3.5" style={{ color: c.muted }} />
-                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Pelanggan &amp; Pembayaran</span>
-                    <div className="flex-1 h-px" style={{ background: c.border }} />
+                    <Users className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Pelanggan &amp; Pembayaran</span>
+                    <div className="flex-1 h-px bg-white/[0.06]" />
                   </div>
 
                   {/* Customer + Date — 2-col on desktop */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Customer */}
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                      <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                         {t('biz.saleCustomer')}
                       </Label>
                       <Select
                         value={formData.customerId}
                         onValueChange={(v) => setFormData((prev) => ({ ...prev, customerId: v }))}
                       >
-                        <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                        <SelectTrigger className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
                           <SelectValue placeholder={t('biz.saleCustomer')} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
+                        <SelectContent className="rounded-lg border bg-[#1a1a1a] border-white/[0.08]">
                           {customers.map((cust) => (
                             <SelectItem key={cust.id} value={cust.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
                               {cust.name}
@@ -1312,32 +1362,31 @@ export default function BusinessSales() {
 
                     {/* Date */}
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                      <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                         {t('biz.saleDate')}
                       </Label>
                       <Input
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                        className="h-10 rounded-lg text-sm border"
-                        style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                        className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                       />
                     </div>
                   </div>
 
                   {/* Payment Method — full width with icon-based options */}
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium uppercase tracking-wider" style={{ color: c.muted }}>
+                    <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                       {t('biz.salePaymentMethod')}
                     </Label>
                     <Select
                       value={formData.paymentMethod}
                       onValueChange={(v) => setFormData((prev) => ({ ...prev, paymentMethod: v }))}
                     >
-                      <SelectTrigger className="h-10 rounded-lg text-sm border" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                      <SelectTrigger className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-lg border" style={{ background: c.card, borderColor: c.border }}>
+                      <SelectContent className="rounded-lg border bg-[#1a1a1a] border-white/[0.08]">
                         {PAYMENT_METHODS.map((m) => {
                           const Icon = m.icon;
                           return (
@@ -1354,12 +1403,15 @@ export default function BusinessSales() {
                   </div>
                 </div>
 
+                {/* Section divider */}
+                <div className="h-px bg-white/[0.06]" />
+
                 {/* ═══ Section 3: Cicilan & Investor ═══ */}
-                <div className="space-y-3">
+                <div className="space-y-3 px-5 pb-3">
                   <div className="flex items-center gap-2 pb-1">
-                    <Repeat className="h-3.5 w-3.5" style={{ color: c.muted }} />
-                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Cicilan &amp; Investor</span>
-                    <div className="flex-1 h-px" style={{ background: c.border }} />
+                    <Repeat className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Cicilan &amp; Investor</span>
+                    <div className="flex-1 h-px bg-white/[0.06]" />
                   </div>
 
                   {/* Installment Toggle — styled as a nice toggle card */}
@@ -1375,19 +1427,19 @@ export default function BusinessSales() {
                         investorSharePct: !prev.isInstallment ? prev.investorSharePct : '',
                       }))
                     }
-                    className="w-full flex items-center justify-between rounded-xl px-4 py-3 border transition-colors duration-200 cursor-pointer"
+                    className="w-full flex items-center justify-between rounded-xl px-4 py-3 border border-white/[0.08] transition-colors duration-200 cursor-pointer"
                     style={{
-                      background: formData.isInstallment ? alpha(c.primary, 8) : c.card,
-                      borderColor: formData.isInstallment ? alpha(c.primary, 25) : c.border,
+                      background: formData.isInstallment ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                      borderColor: formData.isInstallment ? 'var(--primary)' : 'rgba(255,255,255,0.08)',
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: alpha(c.primary, 15) }}>
-                        <Repeat className="h-4 w-4" style={{ color: c.primary }} />
+                      <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                        <Repeat className="h-4 w-4 text-primary" />
                       </div>
                       <div className="text-left">
-                        <span className="text-sm font-medium" style={{ color: c.foreground }}>{t('biz.isInstallment')}</span>
-                        <p className="text-xs mt-0.5" style={{ color: c.muted }}>Aktifkan cicilan &amp; investor</p>
+                        <span className="text-sm font-medium text-foreground">{t('biz.isInstallment')}</span>
+                        <p className="text-xs mt-0.5 text-muted-foreground/50">Aktifkan cicilan &amp; investor</p>
                       </div>
                     </div>
                     <div
@@ -1411,12 +1463,12 @@ export default function BusinessSales() {
                         exit="exit"
                         className="overflow-hidden"
                       >
-                        <div className="rounded-xl p-4 space-y-3 border" style={{ background: alpha(c.primary, 4), borderColor: alpha(c.primary, 12) }}>
+                        <div className="rounded-xl p-4 space-y-3 bg-white/[0.02] border border-white/[0.08]">
                           {/* DP Amount & DP Percentage */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
-                              <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                                <ArrowDownToLine className="h-3 w-3" style={{ color: c.secondary }} />
+                              <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground/50">
+                                <ArrowDownToLine className="h-3 w-3 text-secondary" />
                                 {t('biz.downPayment')} (Rp)
                               </Label>
                               <Input
@@ -1425,8 +1477,7 @@ export default function BusinessSales() {
                                 onChange={(e) => handleDownPaymentChange(e.target.value)}
                                 placeholder="0"
                                 min="0"
-                                className="h-10 rounded-lg text-sm tabular-nums border"
-                                style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                                className="h-10 rounded-xl text-sm tabular-nums bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                               />
                               {formattedDPNominal && (
                                 <motion.div
@@ -1443,8 +1494,8 @@ export default function BusinessSales() {
                               )}
                             </div>
                             <div className="space-y-1.5">
-                              <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                                <Percent className="h-3 w-3" style={{ color: c.secondary }} />
+                              <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground/50">
+                                <Percent className="h-3 w-3 text-secondary" />
                                 DP (%)
                               </Label>
                               <Input
@@ -1455,16 +1506,15 @@ export default function BusinessSales() {
                                 min="0"
                                 max="100"
                                 step="0.1"
-                                className="h-10 rounded-lg text-sm tabular-nums border"
-                                style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                                className="h-10 rounded-xl text-sm tabular-nums bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                               />
                             </div>
                           </div>
 
                           {/* Tenor (months) */}
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                              <Repeat className="h-3 w-3" style={{ color: c.primary }} />
+                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground/50">
+                              <Repeat className="h-3 w-3 text-primary" />
                               {t('biz.installmentPeriod')}
                             </Label>
                             <Input
@@ -1473,36 +1523,34 @@ export default function BusinessSales() {
                               onChange={(e) => setFormData((prev) => ({ ...prev, installmentTempo: e.target.value }))}
                               placeholder="0"
                               min="1"
-                              className="h-10 rounded-lg text-sm tabular-nums w-full sm:w-1/2 border"
-                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                              className="h-10 rounded-xl text-sm tabular-nums w-full sm:w-1/2 bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                             />
                           </div>
 
                           {/* Tanggal Jatuh Tempo Cicilan */}
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                              <CalendarDays className="h-3 w-3" style={{ color: c.destructive }} />
+                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground/50">
+                              <CalendarDays className="h-3 w-3 text-destructive" />
                               Tanggal Jatuh Tempo
                             </Label>
                             <Input
                               type="date"
                               value={formData.installmentDueDate}
                               onChange={(e) => setFormData((prev) => ({ ...prev, installmentDueDate: e.target.value }))}
-                              className="h-10 rounded-lg text-sm w-full sm:w-1/2 border"
-                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                              className="h-10 rounded-xl text-sm w-full sm:w-1/2 bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                             />
                             {formData.installmentDueDate && computedTenor > 0 && (
-                              <p className="text-xs" style={{ color: c.muted }}>
+                              <p className="text-xs text-muted-foreground/60">
                                 Cicilan {computedTenor}× mulai{' '}
-                                <span style={{ color: c.destructive }}>{new Date(formData.installmentDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <span className="text-destructive">{new Date(formData.installmentDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                               </p>
                             )}
                           </div>
 
                           {/* Investor Share */}
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1" style={{ color: c.muted }}>
-                              <Users className="h-3 w-3" style={{ color: c.warning }} />
+                            <Label className="text-xs font-medium uppercase tracking-wider flex items-center gap-1 text-muted-foreground/50">
+                              <Users className="h-3 w-3 text-warning" />
                               Bagi Investor (%)
                             </Label>
                             <Input
@@ -1513,35 +1561,34 @@ export default function BusinessSales() {
                               min="0"
                               max="100"
                               step="0.1"
-                              className="h-10 rounded-lg text-sm tabular-nums w-full sm:w-1/2 border"
-                              style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                              className="h-10 rounded-xl text-sm tabular-nums w-full sm:w-1/2 bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                             />
                           </div>
 
                           {/* Live Preview Box */}
                           {(computedAmount > 0 || computedTenor > 0) && (
-                            <div className="rounded-lg p-3 space-y-2 border" style={{ background: c.card, borderColor: c.border }}>
-                              <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: c.muted }}>
+                            <div className="rounded-xl p-3 space-y-2 bg-white/[0.03] border border-white/[0.08]">
+                              <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground/50">
                                 Ringkasan Cicilan
                               </p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div className="flex flex-col">
-                                  <span className="text-[10px] uppercase" style={{ color: c.muted }}>{t('biz.remainingAfterDP')}</span>
-                                  <span className="text-sm font-bold tabular-nums" style={{ color: c.secondary }}>
+                                  <span className="text-[10px] uppercase text-muted-foreground/50">{t('biz.remainingAfterDP')}</span>
+                                  <span className="text-sm font-bold tabular-nums text-secondary">
                                     {formatAmount(remaining)}
                                   </span>
                                 </div>
                                 <div className="flex flex-col">
-                                  <span className="text-[10px] uppercase" style={{ color: c.muted }}>{t('biz.installmentAmount')}</span>
-                                  <span className="text-sm font-bold tabular-nums" style={{ color: c.primary }}>
+                                  <span className="text-[10px] uppercase text-muted-foreground/50">{t('biz.installmentAmount')}</span>
+                                  <span className="text-sm font-bold tabular-nums text-primary">
                                     {computedTenor > 0 ? formatAmount(monthlyInstallment) : '—'}
                                   </span>
                                 </div>
                               </div>
                               {investorSharePct > 0 && monthlyInstallment > 0 && (
-                                <div className="flex flex-col pt-2 border-t" style={{ borderColor: c.border }}>
-                                  <span className="text-[10px] uppercase" style={{ color: c.muted }}>Bagi Investor ({investorSharePct}%)</span>
-                                  <span className="text-sm font-bold tabular-nums" style={{ color: c.warning }}>
+                                <div className="flex flex-col pt-2 border-t border-white/[0.06]">
+                                  <span className="text-[10px] uppercase text-muted-foreground/50">Bagi Investor ({investorSharePct}%)</span>
+                                  <span className="text-sm font-bold tabular-nums text-warning">
                                     {formatAmount(investorShareAmount)} / bulan
                                   </span>
                                 </div>
@@ -1549,7 +1596,7 @@ export default function BusinessSales() {
                               {/* Progress bar preview */}
                               {computedAmount > 0 && computedDP > 0 && (
                                 <div className="pt-1">
-                                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: c.border }}>
+                                  <div className="h-1.5 rounded-full overflow-hidden bg-white/[0.06]">
                                     <motion.div
                                       className="h-full rounded-full"
                                       style={{ background: c.secondary }}
@@ -1560,7 +1607,7 @@ export default function BusinessSales() {
                                       transition={{ duration: 0.4, ease: 'easeOut' as const }}
                                     />
                                   </div>
-                                  <p className="text-xs mt-1 tabular-nums" style={{ color: c.muted }}>
+                                  <p className="text-xs mt-1 tabular-nums text-muted-foreground/50">
                                     DP {((computedDP / computedAmount) * 100).toFixed(1)}% dari total
                                   </p>
                                 </div>
@@ -1573,30 +1620,31 @@ export default function BusinessSales() {
                   </AnimatePresence>
                 </div>
 
+                {/* Section divider */}
+                <div className="h-px bg-white/[0.06]" />
+
                 {/* ═══ Section 4: Catatan ═══ */}
-                <div className="space-y-3">
+                <div className="space-y-3 px-5 pb-4">
                   <div className="flex items-center gap-2 pb-1">
-                    <Info className="h-3.5 w-3.5" style={{ color: c.muted }} />
-                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Catatan</span>
-                    <div className="flex-1 h-px" style={{ background: c.border }} />
+                    <Info className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Catatan</span>
+                    <div className="flex-1 h-px bg-white/[0.06]" />
                   </div>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder={t('biz.customerNotes')}
-                    className="min-h-[72px] rounded-lg text-sm resize-none border"
-                    style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                    className="min-h-[72px] rounded-xl text-sm resize-none bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
                   />
                 </div>
               </form>
 
-              <DialogFooter className="gap-2 pt-2 shrink-0 border-t" style={{ borderColor: c.border }}>
+              <DialogFooter className="gap-2 pt-3 pb-4 px-5 shrink-0 border-t border-white/[0.06]">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => setDialogOpen(false)}
-                  className="rounded-lg text-sm border"
-                  style={{ borderColor: c.border, color: c.muted }}
+                  className="rounded-xl text-sm text-muted-foreground hover:bg-white/[0.06]"
                 >
                   {t('common.cancel')}
                 </Button>
@@ -1604,8 +1652,8 @@ export default function BusinessSales() {
                   type="submit"
                   form="sale-form"
                   disabled={saving || !formData.description || !formData.amount}
-                  className="rounded-lg text-sm disabled:opacity-50"
-                  style={{ background: c.primary, color: 'var(--primary-foreground)' }}
+                  className="rounded-xl text-sm disabled:opacity-50"
+                  style={{ background: `linear-gradient(135deg, ${c.secondary}, ${c.primary})`, color: 'var(--primary-foreground)' }}
                 >
                   {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                   {t('common.save')}
