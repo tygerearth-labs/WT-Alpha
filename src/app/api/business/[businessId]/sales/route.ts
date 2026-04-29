@@ -222,14 +222,44 @@ export async function POST(
     const numDP = downPayment ? parseFloat(String(downPayment)) : null;
     const numInstAmount = installmentAmount ? parseFloat(String(installmentAmount)) : null;
 
-    // Auto-generate invoice for installment sales if no invoiceId is provided
+    // Auto-generate invoice for ALL sales if no invoiceId is provided
     let finalInvoiceId = invoiceId;
     const isInstallment = numTempo && numTempo > 0;
-    if (isInstallment && !finalInvoiceId) {
-      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
-      const invoiceDueDate = installmentDueDate
-        ? new Date(installmentDueDate)
-        : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
+    if (!finalInvoiceId) {
+      // Generate invoice number: INV-YYYYMMDD-XXXX
+      const now = new Date();
+      const dateStr = now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0');
+      // Count existing invoices for today to get the sequence number
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayCount = await db.businessInvoice.count({
+        where: {
+          businessId,
+          date: { gte: todayStart },
+        },
+      });
+      const seqNum = String(todayCount + 1).padStart(4, '0');
+      const invoiceNumber = `INV-${dateStr}-${seqNum}`;
+
+      // Determine invoice status and due date
+      let invoiceStatus: string;
+      let invoiceDueDate: Date | null = null;
+      let invoicePaidAmount: number = 0;
+
+      if (!isInstallment) {
+        // Cash/tunai sale — mark as paid immediately
+        invoiceStatus = 'paid';
+        invoicePaidAmount = numAmount;
+      } else {
+        // Installment/cicilan sale — pending
+        invoiceStatus = 'pending';
+        invoiceDueDate = installmentDueDate
+          ? new Date(installmentDueDate)
+          : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
+        // If there's a down payment, track it as paidAmount
+        invoicePaidAmount = numDP || 0;
+      }
 
       const invoiceItems = JSON.stringify([
         { description, qty: 1, price: numAmount, total: numAmount },
@@ -245,7 +275,8 @@ export async function POST(
           tax: 0,
           discount: 0,
           total: numAmount,
-          status: 'pending',
+          paidAmount: invoicePaidAmount,
+          status: invoiceStatus,
           dueDate: invoiceDueDate,
         },
       });

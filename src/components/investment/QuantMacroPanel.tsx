@@ -1899,7 +1899,9 @@ export default function QuantMacroPanel() {
 
       {/* ── Expanded Analysis Dialog (shared between tabs) ─────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent showCloseButton={false} aria-describedby={undefined} className="max-w-7xl w-[calc(100vw-1.5rem)] sm:w-[95vw] max-h-[92vh] bg-[#0D0D0D] border border-white/[0.08] rounded-2xl p-0 gap-0 overflow-hidden">
+        <DialogContent showCloseButton={false} aria-describedby={undefined} className="max-w-7xl w-[calc(100vw-1.5rem)] sm:w-[95vw] max-h-[92vh] bg-[#141414] border-white/[0.08] rounded-2xl p-0 gap-0 overflow-hidden">
+          {/* Gradient accent strip */}
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6)' }} />
           {selectedAsset && (
             <>
               {/* ── Dialog Header ──────────────────────────────────────────────── */}

@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays, Phone, Mail, MapPin, ShoppingBag, Receipt, Clock, MessageCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, FileText, ShoppingCart, Star, UserPlus, Info, CalendarDays, Phone, Mail, MapPin, ShoppingBag, Receipt, Clock, MessageCircle, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -125,6 +125,7 @@ export default function BusinessCustomers() {
   const [detailSales, setDetailSales] = useState<CustomerSale[]>([]);
   const [detailInvoices, setDetailInvoices] = useState<CustomerInvoice[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
 
   const businessId = activeBusiness?.id;
 
@@ -413,12 +414,12 @@ export default function BusinessCustomers() {
         ].map((item) => {
           const Icon = item.icon;
           return (
-            <motion.div key={item.label} whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 400 }}>
-              <Card className="rounded-xl border border-border overflow-hidden">
-                <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(item.color, 50)}, ${alpha(item.color, 15)})` }} />
-                <CardContent className="p-3 sm:p-4">
+            <motion.div key={item.label} whileHover={{ y: -2, scale: 1.02 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+              <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06] overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
+                <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(item.color, 60)}, ${alpha(item.color, 15)})` }} />
+                <CardContent className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${alpha(item.color, 5)}, transparent)` }}>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(item.color, 10) }}>
                       <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
                     </div>
                     <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground" >{item.label}</span>
@@ -440,7 +441,7 @@ export default function BusinessCustomers() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('common.search') + '...'}
-          className="pl-10 pr-10 text-sm rounded-full bg-card border border-border text-foreground focus:border-white/15 transition-all"
+          className="pl-10 pr-10 text-sm rounded-full bg-white/[0.04] border border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0 transition-all"
         />
         {search && (
           <button
@@ -455,7 +456,7 @@ export default function BusinessCustomers() {
 
       {/* Mobile Card Grid / Desktop Table */}
       <motion.div variants={itemVariants}>
-      <Card className="rounded-xl overflow-hidden bg-card border border-border transition-shadow hover:shadow-lg">
+      <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border border-white/[0.06] transition-shadow hover:shadow-lg">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-3">
@@ -968,6 +969,368 @@ export default function BusinessCustomers() {
                     </div>
                   </div>
                 )}
+
+                {/* Download PDF Button */}
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (!detailCustomer || !businessId) return;
+                    setPdfGenerating(true);
+                    try {
+                      // Fetch comprehensive report data from API
+                      const res = await fetch(`/api/business/${businessId}/customers/${detailCustomer.id}/report`);
+                      if (!res.ok) throw new Error('Failed to fetch report data');
+                      const report = await res.json();
+
+                      const { default: jsPDF } = await import('jspdf');
+                      const autoTable = (await import('jspdf-autotable')).default;
+                      const doc = new jsPDF();
+                      const pageW = doc.internal.pageSize.getWidth();
+                      const pageH = doc.internal.pageSize.getHeight();
+                      const margin = 14;
+                      const contentW = pageW - margin * 2;
+                      let y = 15;
+
+                      const fmtRp = (val: number) =>
+                        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+
+                      const fmtDate = (dateStr: string) =>
+                        new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                      const fmtDateLong = (dateStr: string) =>
+                        new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+                      const fmtDateTime = (dateStr: string) =>
+                        new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                      // ── Header ──
+                      doc.setFillColor(30, 30, 30);
+                      doc.rect(0, 0, pageW, 42, 'F');
+                      doc.setTextColor(255, 255, 255);
+                      doc.setFontSize(16);
+                      doc.setFont('helvetica', 'bold');
+                      doc.text('Laporan Pelanggan', margin, 16);
+                      doc.setFontSize(9);
+                      doc.setFont('helvetica', 'normal');
+                      doc.text(report.business.name, margin, 23);
+                      doc.setFontSize(8);
+                      doc.text(`Digenerate: ${fmtDateTime(new Date().toISOString())}`, margin, 31);
+                      doc.text('Powered by FinTrack', margin, 37);
+                      y = 50;
+
+                      // ── Customer Biodata ──
+                      doc.setTextColor(30, 30, 30);
+                      doc.setFontSize(11);
+                      doc.setFont('helvetica', 'bold');
+                      doc.text('Data Pelanggan', margin, y);
+                      y += 2;
+                      doc.setDrawColor(200, 200, 200);
+                      doc.line(margin, y, pageW - margin, y);
+                      y += 7;
+
+                      const bioData: [string, string][] = [
+                        ['Nama', report.customer.name],
+                        ['Telepon', report.customer.phone || '-'],
+                        ['Email', report.customer.email || '-'],
+                        ['Alamat', report.customer.address || '-'],
+                        ['Bergabung', report.customer.createdAt ? fmtDateLong(report.customer.createdAt) : '-'],
+                      ];
+                      doc.setFontSize(9);
+                      bioData.forEach(([label, value]) => {
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(100, 100, 100);
+                        doc.text(`${label}:`, margin, y);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(30, 30, 30);
+                        doc.text(String(value), margin + 30, y);
+                        y += 5;
+                      });
+
+                      y += 4;
+
+                      // ── Sales Summary ──
+                      doc.setFillColor(245, 245, 245);
+                      doc.roundedRect(margin, y, contentW, 28, 2, 2, 'F');
+                      y += 6;
+                      doc.setFontSize(10);
+                      doc.setFont('helvetica', 'bold');
+                      doc.setTextColor(30, 30, 30);
+                      doc.text('Ringkasan Penjualan', margin + 4, y);
+                      y += 6;
+
+                      const { salesSummary } = report;
+                      doc.setFontSize(9);
+                      const summaryItems = [
+                        { label: 'Total Belanja', value: fmtRp(salesSummary.totalAmount), color: [0, 150, 136] as [number, number, number] },
+                        { label: 'Jumlah Transaksi', value: `${salesSummary.totalPurchases}x`, color: [60, 60, 60] as [number, number, number] },
+                        { label: 'Rata-rata Order', value: fmtRp(salesSummary.avgOrderValue), color: [200, 120, 0] as [number, number, number] },
+                      ];
+
+                      const colW = contentW / 3;
+                      summaryItems.forEach((item, idx) => {
+                        const x = margin + 4 + idx * colW;
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(120, 120, 120);
+                        doc.text(item.label, x, y, { maxWidth: colW - 8 });
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(...item.color);
+                        doc.text(item.value, x, y + 5, { maxWidth: colW - 8 });
+                      });
+
+                      y += 22;
+
+                      // ── Piutang Summary ──
+                      if (report.piutangSummary.totalOutstanding > 0) {
+                        doc.setFillColor(255, 243, 243);
+                        doc.roundedRect(margin, y, contentW, 22, 2, 2, 'F');
+                        doc.setFontSize(10);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(200, 50, 50);
+                        doc.text('Piutang Belum Lunas', margin + 4, y + 7);
+                        doc.setFontSize(12);
+                        doc.text(fmtRp(report.piutangSummary.totalOutstanding), margin + 4, y + 15);
+                        doc.setFontSize(8);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(150, 150, 150);
+                        doc.text(`Aktif: ${report.piutangSummary.activeCount} | Lunas: ${report.piutangSummary.paidCount}`, margin + contentW / 2, y + 10);
+                        y += 28;
+                      }
+
+                      y += 4;
+
+                      // ── Sales History Table ──
+                      doc.setTextColor(30, 30, 30);
+                      doc.setFontSize(11);
+                      doc.setFont('helvetica', 'bold');
+                      doc.text('Riwayat Penjualan', margin, y);
+                      y += 2;
+                      doc.setDrawColor(200, 200, 200);
+                      doc.line(margin, y, pageW - margin, y);
+                      y += 3;
+
+                      if (report.sales.length > 0) {
+                        if (y > 240) { doc.addPage(); y = 20; }
+
+                        const salesTableData = report.sales.map((s: { date: string; description: string; paymentMethod: string | null; amount: number }) => [
+                          fmtDate(s.date),
+                          (s.description || '-').substring(0, 35),
+                          (s.paymentMethod || 'Lainnya').charAt(0).toUpperCase() + (s.paymentMethod || '').slice(1),
+                          fmtRp(s.amount),
+                        ]);
+
+                        autoTable(doc, {
+                          startY: y,
+                          head: [['Tanggal', 'Deskripsi', 'Metode', 'Total']],
+                          body: salesTableData,
+                          margin: { left: margin, right: margin },
+                          styles: { fontSize: 8, cellPadding: 2 },
+                          headStyles: {
+                            fillColor: [60, 60, 60],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold',
+                            fontSize: 8,
+                          },
+                          alternateRowStyles: { fillColor: [248, 248, 248] },
+                          columnStyles: {
+                            0: { cellWidth: 22 },
+                            1: { cellWidth: 'auto' },
+                            2: { cellWidth: 20 },
+                            3: { cellWidth: 30, halign: 'right' },
+                          },
+                        });
+
+                        y = (doc as unknown as Record<string, unknown>).lastAutoTable?.finalY as number || y + report.sales.length * 7 + 20;
+                      } else {
+                        doc.setFontSize(9);
+                        doc.setFont('helvetica', 'italic');
+                        doc.setTextColor(150, 150, 150);
+                        doc.text('Belum ada transaksi untuk pelanggan ini.', margin, y + 6);
+                        y += 14;
+                      }
+
+                      // ── Piutang Detail Table ──
+                      const activePiutang = report.piutang.filter((p: { status: string }) => p.status !== 'paid');
+                      if (activePiutang.length > 0) {
+                        y += 8;
+                        if (y > 240) { doc.addPage(); y = 20; }
+
+                        doc.setTextColor(30, 30, 30);
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Daftar Piutang Aktif', margin, y);
+                        y += 2;
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(margin, y, pageW - margin, y);
+                        y += 3;
+
+                        const piutangStatusMap: Record<string, string> = {
+                          active: 'Aktif',
+                          partially_paid: 'Sebagian',
+                          overdue: 'Jatuh Tempo',
+                        };
+
+                        const piutangTableData = activePiutang.map((p: { description: string | null; amount: number; remaining: number; dueDate: string | null; status: string }) => [
+                          (p.description || '-').substring(0, 30),
+                          fmtRp(p.amount),
+                          fmtRp(p.remaining),
+                          p.dueDate ? fmtDate(p.dueDate) : '-',
+                          piutangStatusMap[p.status] || p.status,
+                        ]);
+
+                        autoTable(doc, {
+                          startY: y,
+                          head: [['Deskripsi', 'Jumlah', 'Sisa', 'Jatuh Tempo', 'Status']],
+                          body: piutangTableData,
+                          margin: { left: margin, right: margin },
+                          styles: { fontSize: 8, cellPadding: 2 },
+                          headStyles: {
+                            fillColor: [160, 50, 50],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold',
+                            fontSize: 8,
+                          },
+                          alternateRowStyles: { fillColor: [255, 248, 248] },
+                          columnStyles: {
+                            0: { cellWidth: 'auto' },
+                            1: { cellWidth: 28, halign: 'right' },
+                            2: { cellWidth: 28, halign: 'right' },
+                            3: { cellWidth: 22 },
+                            4: { cellWidth: 18 },
+                          },
+                        });
+
+                        y = (doc as unknown as Record<string, unknown>).lastAutoTable?.finalY as number || y + activePiutang.length * 7 + 20;
+                      }
+
+                      // ── Payment History Table ──
+                      if (report.payments.length > 0) {
+                        y += 8;
+                        if (y > 240) { doc.addPage(); y = 20; }
+
+                        doc.setTextColor(30, 30, 30);
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Riwayat Pembayaran Piutang', margin, y);
+                        y += 2;
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(margin, y, pageW - margin, y);
+                        y += 3;
+
+                        const paymentTableData = report.payments.map((p: { paymentDate: string; amount: number; paymentMethod: string | null; debtDescription: string | null }) => [
+                          fmtDate(p.paymentDate),
+                          fmtRp(p.amount),
+                          (p.paymentMethod || '-').charAt(0).toUpperCase() + (p.paymentMethod || '').slice(1),
+                          (p.debtDescription || '-').substring(0, 35),
+                        ]);
+
+                        autoTable(doc, {
+                          startY: y,
+                          head: [['Tanggal', 'Jumlah', 'Metode', 'Piutang']],
+                          body: paymentTableData,
+                          margin: { left: margin, right: margin },
+                          styles: { fontSize: 8, cellPadding: 2 },
+                          headStyles: {
+                            fillColor: [0, 120, 100],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold',
+                            fontSize: 8,
+                          },
+                          alternateRowStyles: { fillColor: [248, 252, 248] },
+                          columnStyles: {
+                            0: { cellWidth: 22 },
+                            1: { cellWidth: 28, halign: 'right' },
+                            2: { cellWidth: 20 },
+                            3: { cellWidth: 'auto' },
+                          },
+                        });
+
+                        y = (doc as unknown as Record<string, unknown>).lastAutoTable?.finalY as number || y + report.payments.length * 7 + 20;
+                      }
+
+                      // ── Invoice History Table ──
+                      if (report.invoices && report.invoices.length > 0) {
+                        y += 8;
+                        if (y > 240) { doc.addPage(); y = 20; }
+
+                        doc.setTextColor(30, 30, 30);
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Riwayat Invoice', margin, y);
+                        y += 2;
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(margin, y, pageW - margin, y);
+                        y += 3;
+
+                        const invStatusMap: Record<string, string> = {
+                          paid: 'Lunas',
+                          overdue: 'Jatuh Tempo',
+                          cancelled: 'Batal',
+                          pending: 'Pending',
+                        };
+
+                        const invTableData = report.invoices.map((inv: { invoiceNumber: string; date: string; status: string; total: number; paidAmount: number }) => [
+                          inv.invoiceNumber,
+                          fmtDate(inv.date),
+                          invStatusMap[inv.status] || inv.status,
+                          fmtRp(inv.total),
+                          fmtRp(inv.paidAmount),
+                        ]);
+
+                        autoTable(doc, {
+                          startY: y,
+                          head: [['No. Invoice', 'Tanggal', 'Status', 'Total', 'Dibayar']],
+                          body: invTableData,
+                          margin: { left: margin, right: margin },
+                          styles: { fontSize: 8, cellPadding: 2 },
+                          headStyles: {
+                            fillColor: [60, 60, 60],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold',
+                            fontSize: 8,
+                          },
+                          alternateRowStyles: { fillColor: [248, 248, 248] },
+                          columnStyles: {
+                            0: { cellWidth: 36 },
+                            1: { cellWidth: 22 },
+                            2: { cellWidth: 20 },
+                            3: { cellWidth: 28, halign: 'right' },
+                            4: { cellWidth: 28, halign: 'right' },
+                          },
+                        });
+                      }
+
+                      // ── Footer with page numbers ──
+                      const pageCount = doc.getNumberOfPages();
+                      for (let i = 1; i <= pageCount; i++) {
+                        doc.setPage(i);
+                        doc.setFontSize(7);
+                        doc.setTextColor(180, 180, 180);
+                        doc.text(`Halaman ${i} dari ${pageCount}`, pageW / 2, pageH - 8, { align: 'center' });
+                        // Subtle top line on subsequent pages
+                        if (i > 1) {
+                          doc.setDrawColor(220, 220, 220);
+                          doc.line(margin, 12, pageW - margin, 12);
+                          doc.setFontSize(7);
+                          doc.setTextColor(160, 160, 160);
+                          doc.text(`${report.business.name} - Laporan Pelanggan: ${report.customer.name}`, margin, 10);
+                        }
+                      }
+
+                      doc.save(`Laporan_Pelanggan_${detailCustomer.name.replace(/\s+/g, '_')}.pdf`);
+                      toast.success('PDF berhasil diunduh');
+                    } catch {
+                      toast.error('Gagal membuat PDF');
+                    } finally {
+                      setPdfGenerating(false);
+                    }
+                  }}
+                  disabled={pdfGenerating || detailLoading}
+                  className="w-full h-9 rounded-lg text-xs"
+                  style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
+                >
+                  {pdfGenerating ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
+                  Unduh Laporan PDF
+                </Button>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 pt-1">

@@ -24,7 +24,7 @@ import {
   DollarSign, CreditCard, Wallet,
   CalendarDays, BarChart3, Receipt, ArrowUpRight, ArrowDownRight, ArrowRight,
   AlertTriangle, Info, Landmark, PiggyBank, Clock, CircleDollarSign,
-  Building2, ArrowDownUp, Banknote, Timer,
+  Building2, ArrowDownUp, Banknote, Timer, Users, Target, Percent,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -133,6 +133,8 @@ interface ApiResponse {
       dpDiterima?: { total?: number };
       cicilanDiterima?: { total?: number };
     };
+    investorSummary?: Record<string, unknown>;
+    budgetUtilization?: Record<string, unknown>;
   };
 }
 
@@ -221,6 +223,25 @@ interface PiutangAgingBucket {
   color: string;
 }
 
+interface ApiInvestorRow {
+  id: string;
+  name: string;
+  totalInvestment: number;
+  profitSharePct: number;
+  status: string;
+  joinDate: string;
+}
+
+interface ApiBudgetCategoryRow {
+  categoryName: string;
+  budgeted: number;
+  actual: number;
+  remaining: number;
+  utilizationPct: number;
+  isOverBudget: boolean;
+  allocations: Array<{ fundSource: string; amount: number }>;
+}
+
 interface ReportData {
   summary: ReportSummary;
   sales: SalesRow[];
@@ -231,6 +252,21 @@ interface ReportData {
   salesBreakdown?: { tunai?: { jumlahTransaksi?: number; total?: number }; cicilan?: { jumlahTransaksi?: number; totalProduk?: number; totalDPDiterima?: number; totalCicilanDiterima?: number; totalTerealisasi?: number; totalSisa?: number } };
   piutangDetailApi?: ApiResponse['report']['piutangDetail'];
   taxAuditApi?: ApiResponse['report']['taxAudit'];
+  investorSummary?: {
+    totalInvestors: number;
+    activeInvestors: number;
+    totalInvested: number;
+    totalActiveInvested: number;
+    investorIncomeInPeriod: number;
+    investors: ApiInvestorRow[];
+  };
+  budgetUtilization?: {
+    period: number;
+    year: number;
+    totalBudgeted: number;
+    totalActual: number;
+    categories: ApiBudgetCategoryRow[];
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -442,6 +478,8 @@ function normalizeResponse(raw: ApiResponse): ReportData | null {
     salesBreakdown: r.sales?.salesBreakdown,
     piutangDetailApi: r.piutangDetail,
     taxAuditApi: r.taxAudit,
+    investorSummary: r.investorSummary as ReportData['investorSummary'],
+    budgetUtilization: r.budgetUtilization as ReportData['budgetUtilization'],
   };
 }
 
@@ -1250,6 +1288,8 @@ export default function BusinessLaporan() {
             { value: 'expenses', label: t('biz.kasKeluar'), color: 'var(--destructive)' },
             { value: 'invoices', label: t('biz.invoices'), color: 'var(--primary)' },
             { value: 'debts', label: t('biz.hutangPiutang'), color: 'var(--secondary)' },
+            { value: 'investor', label: 'Investor', color: 'var(--primary)' },
+            { value: 'anggaran', label: 'Anggaran', color: 'var(--warning)' },
           ].map((tab) => (
             <TabsTrigger
               key={tab.value}
@@ -2069,6 +2109,245 @@ export default function BusinessLaporan() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  INVESTOR TAB                                                    */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="investor" className="mt-3 space-y-3">
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+              <Skeleton className="h-32 rounded-xl" style={{ background: 'var(--card)' }} />
+            </div>
+          ) : !data || !data.investorSummary ? (
+            <EmptyState icon={Users} color={'var(--primary)'} text="Tidak ada data investor" />
+          ) : (
+            <>
+              {/* Investor Overview Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                {[
+                  { label: 'Total Investor', value: data.investorSummary.totalInvestors, icon: Users, color: 'var(--primary)' },
+                  { label: 'Investor Aktif', value: data.investorSummary.activeInvestors, icon: Building2, color: 'var(--secondary)' },
+                  { label: 'Total Investasi', value: formatAmount(data.investorSummary.totalInvested), icon: Landmark, color: 'var(--primary)' },
+                  { label: 'Pendapatan Investor', value: formatAmount(data.investorSummary.investorIncomeInPeriod), icon: ArrowUpRight, color: 'var(--secondary)' },
+                ].map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div
+                      key={item.label}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05, type: 'spring' as const, stiffness: 300, damping: 24 }}
+                    >
+                      <div className="p-3 rounded-xl" style={{ background: 'var(--card)', border: `1px solid var(--border)` }}>
+                        <div className="h-6 w-6 rounded-lg flex items-center justify-center mb-2" style={{ backgroundColor: `color-mix(in srgb, ${item.color} 8%, transparent)` }}>
+                          <Icon className="h-3 w-3" style={{ color: item.color } as React.CSSProperties} />
+                        </div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>{item.label}</p>
+                        <p className="text-sm font-bold tabular-nums mt-0.5" style={{ color: item.color }}>{item.value}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Investor List */}
+              {data.investorSummary.investors.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, type: 'spring' as const, stiffness: 200, damping: 22 }}
+                >
+                  <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                    <div className="h-[3px]" style={{ background: 'linear-gradient(to right, var(--primary), color-mix(in srgb, var(--primary) 30%, transparent))' }} />
+                    <CardContent className="p-0">
+                      <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                        {data.investorSummary.investors.map((inv) => (
+                          <div key={inv.id} className="p-3 flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{inv.name}</p>
+                              <p className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
+                                Bergabung {inv.joinDate}
+                                {inv.profitSharePct > 0 && <> · Bagi {inv.profitSharePct}%</>}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--primary)' }}>{formatAmount(inv.totalInvestment)}</span>
+                              <Badge variant="outline" className="block text-[8px] mt-0.5 rounded-full px-1.5 py-0 text-center" style={{
+                                backgroundColor: inv.status === 'active' ? 'color-mix(in srgb, var(--secondary) 8%, transparent)' : 'color-mix(in srgb, var(--muted-foreground) 8%, transparent)',
+                                color: inv.status === 'active' ? 'var(--secondary)' : 'var(--muted-foreground)',
+                                border: '1px solid var(--border)',
+                              }}>
+                                {inv.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="hidden sm:block max-h-96 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="hover:bg-transparent" style={{ borderBottom: '1px solid var(--border)' }}>
+                              <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>Nama</TableHead>
+                              <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: 'var(--muted-foreground)' }}>Bergabung</TableHead>
+                              <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>Bagi Profit</TableHead>
+                              <TableHead className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>Status</TableHead>
+                              <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right" style={{ color: 'var(--muted-foreground)' }}>Investasi</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.investorSummary.investors.map((inv, idx) => (
+                              <TableRow key={inv.id} className="transition-colors duration-150" style={{ background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
+                                <TableCell className="text-xs py-2 font-medium">{inv.name}</TableCell>
+                                <TableCell className="text-xs py-2 hidden sm:table-cell">{inv.joinDate}</TableCell>
+                                <TableCell className="text-xs py-2">{inv.profitSharePct > 0 ? `${inv.profitSharePct}%` : '-'}</TableCell>
+                                <TableCell className="py-2">
+                                  <Badge variant="outline" className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{
+                                    backgroundColor: inv.status === 'active' ? 'color-mix(in srgb, var(--secondary) 8%, transparent)' : 'color-mix(in srgb, var(--muted-foreground) 8%, transparent)',
+                                    color: inv.status === 'active' ? 'var(--secondary)' : 'var(--muted-foreground)',
+                                    border: '1px solid var(--border)',
+                                  }}>
+                                    {inv.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-right py-2 font-semibold" style={{ color: 'var(--primary)' }}>{formatAmount(inv.totalInvestment)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/*  ANGGARAN (BUDGET) TAB                                          */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="anggaran" className="mt-3 space-y-3">
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-32 rounded-xl" style={{ background: 'var(--card)' }} />
+              <Skeleton className="h-48 rounded-xl" style={{ background: 'var(--card)' }} />
+            </div>
+          ) : !data || !data.budgetUtilization ? (
+            <EmptyState icon={Target} color={'var(--warning)'} text="Tidak ada anggaran untuk bulan ini" />
+          ) : (
+            <>
+              {/* Budget Overview */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring' as const, stiffness: 200, damping: 22 }}
+              >
+                <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                  <div className="h-[3px]" style={{ background: 'linear-gradient(to right, var(--warning), color-mix(in srgb, var(--warning) 30%, transparent))' }} />
+                  <CardContent className="p-3 sm:p-4">
+                    <SectionHeader icon={Target} color="var(--warning)" title={`Anggaran Bulan Ini`} badge={`${data.budgetUtilization.period}/${data.budgetUtilization.year}`} />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                      <div className="p-3 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 10%, transparent)' }}>
+                        <span className="text-[10px] font-medium uppercase tracking-wider block" style={{ color: 'var(--muted-foreground)' }}>Total Anggaran</span>
+                        <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--warning)' }}>{formatAmount(data.budgetUtilization.totalBudgeted)}</span>
+                      </div>
+                      <div className="p-3 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 10%, transparent)' }}>
+                        <span className="text-[10px] font-medium uppercase tracking-wider block" style={{ color: 'var(--muted-foreground)' }}>Total Aktual</span>
+                        <span className="text-sm font-bold tabular-nums" style={{ color: data.budgetUtilization.totalActual > data.budgetUtilization.totalBudgeted ? 'var(--destructive)' : 'var(--foreground)' }}>{formatAmount(data.budgetUtilization.totalActual)}</span>
+                      </div>
+                      <div className="p-3 rounded-lg col-span-2 sm:col-span-1" style={{ backgroundColor: data.budgetUtilization.totalActual <= data.budgetUtilization.totalBudgeted ? 'color-mix(in srgb, var(--secondary) 4%, transparent)' : 'color-mix(in srgb, var(--destructive) 4%, transparent)', border: `1px solid ${data.budgetUtilization.totalActual <= data.budgetUtilization.totalBudgeted ? 'color-mix(in srgb, var(--secondary) 10%, transparent)' : 'color-mix(in srgb, var(--destructive) 10%, transparent)'}` }}>
+                        <span className="text-[10px] font-medium uppercase tracking-wider block" style={{ color: 'var(--muted-foreground)' }}>Sisa Anggaran</span>
+                        <span className="text-sm font-bold tabular-nums" style={{ color: data.budgetUtilization.totalBudgeted - data.budgetUtilization.totalActual >= 0 ? 'var(--secondary)' : 'var(--destructive)' }}>
+                          {formatAmount(Math.abs(data.budgetUtilization.totalBudgeted - data.budgetUtilization.totalActual))}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Overall utilization bar */}
+                    {data.budgetUtilization.totalBudgeted > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>Pemanfaatan Anggaran</span>
+                          <span className="text-xs font-bold tabular-nums" style={{ color: data.budgetUtilization.totalActual > data.budgetUtilization.totalBudgeted ? 'var(--destructive)' : 'var(--warning)' }}>
+                            {((data.budgetUtilization.totalActual / data.budgetUtilization.totalBudgeted) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${Math.min((data.budgetUtilization.totalActual / data.budgetUtilization.totalBudgeted) * 100, 100)}%`,
+                              backgroundColor: data.budgetUtilization.totalActual > data.budgetUtilization.totalBudgeted ? 'var(--destructive)' : 'var(--warning)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Per-Category Budget Breakdown */}
+              {data.budgetUtilization.categories.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, type: 'spring' as const, stiffness: 200, damping: 22 }}
+                >
+                  <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                    <CardContent className="p-3 sm:p-4">
+                      <SectionHeader icon={Percent} color="var(--primary)" title="Rincian per Kategori" badge={data.budgetUtilization.categories.length} />
+                      <div className="space-y-2.5">
+                        {data.budgetUtilization.categories.map((cat) => (
+                          <div key={cat.categoryName} className="p-2.5 rounded-lg" style={{
+                            border: `1px solid ${cat.isOverBudget ? 'color-mix(in srgb, var(--destructive) 15%, transparent)' : 'var(--border)'}`,
+                            backgroundColor: cat.isOverBudget ? 'color-mix(in srgb, var(--destructive) 3%, transparent)' : 'transparent',
+                          }}>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{cat.categoryName}</span>
+                                {cat.isOverBudget && (
+                                  <Badge className="text-[8px] font-bold rounded px-1 py-0 h-3" style={{ backgroundColor: 'color-mix(in srgb, var(--destructive) 12%, transparent)', color: 'var(--destructive)', border: 'none' }}>
+                                    OVER
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>{cat.utilizationPct.toFixed(0)}%</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Aktual: {formatAmount(cat.actual)}</span>
+                              <span className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>Anggaran: {formatAmount(cat.budgeted)}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{
+                                  width: `${Math.min(cat.utilizationPct, 100)}%`,
+                                  backgroundColor: cat.isOverBudget ? 'var(--destructive)' : cat.utilizationPct > 80 ? 'var(--warning)' : 'var(--secondary)',
+                                }}
+                              />
+                            </div>
+                            {/* Sisa */}
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-[9px]" style={{ color: 'var(--muted-foreground)' }}>Sisa: {formatAmount(cat.remaining)}</span>
+                              {cat.allocations.length > 0 && (
+                                <span className="text-[9px]" style={{ color: 'var(--muted-foreground)' }}>
+                                  {cat.allocations.map((a) => `${a.fundSource}: ${formatAmount(a.amount)}`).join(' · ')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </>
+          )}
         </TabsContent>
       </Tabs>
 

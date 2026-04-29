@@ -36,21 +36,38 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, ArrowDownToLine, History, Wallet, TrendingUp,
-  Percent, DollarSign, Layers, ArrowUpRight, Lightbulb, Info, CircleDollarSign,
+  Percent, DollarSign, Layers, ArrowUpRight, Lightbulb, Info,
+  CircleDollarSign, Building2, PiggyBank, Target, ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// ─── THEME ─────────────────────────────────────────────────────
-const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
-const inputStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' };
-const textMuted: React.CSSProperties = { color: 'var(--muted-foreground)' };
-const textPrimary: React.CSSProperties = { color: 'var(--primary)' };
-const textSecondary: React.CSSProperties = { color: 'var(--secondary)' };
-const textDestructive: React.CSSProperties = { color: 'var(--destructive)' };
-const textWarning: React.CSSProperties = { color: 'var(--warning)' };
+// ─── Color System ─────────────────────────────────────────────────
+const c = {
+  primary: 'var(--primary)',
+  secondary: 'var(--secondary)',
+  destructive: 'var(--destructive)',
+  warning: 'var(--warning)',
+  muted: 'var(--muted-foreground)',
+  border: 'var(--border)',
+  foreground: 'var(--foreground)',
+  card: 'var(--card)',
+};
+const alpha = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 
+// ─── Animation Variants ─────────────────────────────────────────
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
+};
+
+// ─── Types ─────────────────────────────────────────────────────
 interface Sale {
   id: string;
   description: string;
@@ -63,85 +80,138 @@ interface Sale {
   paymentMethod?: string | null;
 }
 
+interface SavingsTarget {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+}
+
 interface Allocation {
   id: string;
   saleId: string | null;
+  targetType: string;
+  targetId: string | null;
   amount: number;
   percentage: number;
   personalNote?: string;
   allocatedAt: string;
   sale?: Sale;
+  savingsTarget?: { name: string; targetAmount: number; currentAmount: number } | null;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Allocation Visual Bar                                               */
-/* ------------------------------------------------------------------ */
+type AllocationMode = 'percentage' | 'nominal';
+type TargetDestination = 'business' | 'personal_cash_in' | 'savings_target';
 
+// ─── Allocation Visual Bar ──────────────────────────────────────
 function AllocationBar({ allocations, totalSales }: { allocations: Allocation[]; totalSales: number }) {
   const totalAllocated = allocations.reduce((s, a) => s + a.amount, 0);
   const pct = totalSales > 0 ? Math.min((totalAllocated / totalSales) * 100, 100) : 0;
 
-  const barSegments = allocations.slice(0, 5).map((a, i) => ({
-    width: a.percentage || 0,
-    color: ['var(--primary)', 'var(--secondary)', 'var(--warning)', 'var(--destructive)', '#FF8A65'][i % 5],
-  }));
+  // Group by targetType
+  const personalAlloc = allocations.filter(a => a.targetType !== 'business').reduce((s, a) => s + a.amount, 0);
+  const businessAlloc = allocations.filter(a => a.targetType === 'business').reduce((s, a) => s + a.amount, 0);
+
+  const personalPct = totalAllocated > 0 ? (personalAlloc / totalAllocated) * 100 : 0;
+  const businessPct = totalAllocated > 0 ? (businessAlloc / totalAllocated) * 100 : 0;
 
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground" >Total Allocated vs Total Sales</span>
-        <span className="font-medium tabular-nums text-muted-foreground" >{pct.toFixed(1)}%</span>
+        <span className="text-muted-foreground">Total Alokasi vs Total Penjualan</span>
+        <span className="font-medium tabular-nums text-muted-foreground">{pct.toFixed(1)}%</span>
       </div>
-      <div className="h-2.5 rounded-full overflow-hidden flex" style={{ backgroundColor: 'var(--border)' }}>
-        {barSegments.map((seg, i) => (
-          <div
-            key={i}
-            className="h-full transition-all duration-700"
-            style={{
-              width: `${seg.width}%`,
-              backgroundColor: seg.color,
-              opacity: 0.8,
-              transitionDelay: `${i * 0.12}s`,
-            }}
-          />
-        ))}
+      <div className="h-3 rounded-full overflow-hidden flex" style={{ backgroundColor: 'var(--border)' }}>
+        <div
+          className="h-full transition-all duration-700"
+          style={{
+            width: `${businessPct}%`,
+            backgroundColor: 'var(--primary)',
+            opacity: 0.8,
+          }}
+        />
+        <div
+          className="h-full transition-all duration-700"
+          style={{
+            width: `${personalPct}%`,
+            backgroundColor: 'var(--secondary)',
+            opacity: 0.8,
+            transitionDelay: '0.12s',
+          }}
+        />
         {pct < 100 && totalSales > 0 && (
           <div className="h-full transition-all duration-500" style={{ width: `${100 - pct}%`, backgroundColor: 'var(--border)' }} />
         )}
       </div>
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground" >
-        <span>{allocations.length} allocations</span>
-        <span>{totalSales > 0 ? `${pct.toFixed(0)}% of sales` : 'No sales data'}</span>
+      <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--primary)' }} />
+          <span>Bisnis: {businessPct.toFixed(0)}%</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--secondary)' }} />
+          <span>Pribadi: {personalPct.toFixed(0)}%</span>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Empty State                                                        */
-/* ------------------------------------------------------------------ */
-
+// ─── Empty State ────────────────────────────────────────────────
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
-      <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3 bg-card border border-border">
-        <ArrowDownToLine className="h-7 w-7" style={{ color: 'color-mix(in srgb, var(--primary) 31%, transparent)' }} />
+      <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3 border border-border" style={{ backgroundColor: alpha(c.primary, 8) }}>
+        <ArrowDownToLine className="h-7 w-7" style={{ color: alpha(c.primary, 40) }} />
       </div>
-      <p className="text-sm font-medium text-muted-foreground" >{'Belum ada alokasi'}</p>
-      <p className="text-xs mt-1 text-muted-foreground" >Buat alokasi pertama untuk memulai</p>
+      <p className="text-sm font-medium text-muted-foreground">Belum ada alokasi</p>
+      <p className="text-xs mt-1 text-muted-foreground">Buat alokasi pertama untuk memulai</p>
     </div>
   );
 }
 
+// ─── Target Badge ───────────────────────────────────────────────
+function TargetBadge({ targetType, savingsTargetName }: { targetType: string; savingsTargetName?: string | null }) {
+  if (targetType === 'personal_cash_in') {
+    return (
+      <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.secondary, 10), color: c.secondary, border: `1px solid ${alpha(c.secondary, 15)}` }}>
+        <Wallet className="h-2.5 w-2.5 mr-0.5" />
+        Kas Pribadi
+      </Badge>
+    );
+  }
+  if (targetType === 'savings_target') {
+    return (
+      <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.warning, 10), color: c.warning, border: `1px solid ${alpha(c.warning, 15)}` }}>
+        <Target className="h-2.5 w-2.5 mr-0.5" />
+        {savingsTargetName || 'Target Tabungan'}
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.primary, 10), color: c.primary, border: `1px solid ${alpha(c.primary, 15)}` }}>
+      <Building2 className="h-2.5 w-2.5 mr-0.5" />
+      Bisnis
+    </Badge>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Main Component
+   ═══════════════════════════════════════════════════════════════ */
 export default function BusinessAllocation() {
   const { t } = useTranslation();
   const { activeBusiness } = useBusinessStore();
   const { formatAmount } = useCurrencyFormat();
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [allocMode, setAllocMode] = useState<AllocationMode>('percentage');
+  const [destination, setDestination] = useState<TargetDestination>('personal_cash_in');
+  const [selectedSavingsTargetId, setSelectedSavingsTargetId] = useState('');
   const [formData, setFormData] = useState({
     saleId: '',
     amount: '',
@@ -158,20 +228,36 @@ export default function BusinessAllocation() {
 
   const businessId = activeBusiness?.id;
 
+  // Compute preview amount
+  const selectedSale = formData.saleId ? sales.find(s => s.id === formData.saleId) : null;
+  const totalSales = sales.reduce((s, sale) => s + sale.amount, 0);
+
+  const previewAmount = useMemo(() => {
+    if (allocMode === 'nominal') {
+      return parseFloat(formData.amount) || 0;
+    }
+    const pct = parseFloat(formData.percentage) || 0;
+    const base = selectedSale ? selectedSale.amount : totalSales;
+    return (base * pct) / 100;
+  }, [allocMode, formData.amount, formData.percentage, selectedSale, totalSales]);
+
   const fetchData = useCallback(() => {
     if (!businessId) return;
     setLoading(true);
     Promise.all([
-      fetch(`/api/business/${businessId}/allocations`).then((r) => (r.ok ? r.json() : [])),
-      fetch(`/api/business/${businessId}/sales`).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/business/${businessId}/allocations`).then(r => (r.ok ? r.json() : [])),
+      fetch(`/api/business/${businessId}/sales`).then(r => (r.ok ? r.json() : [])),
+      fetch(`/api/savings`).then(r => (r.ok ? r.json() : { savingsTargets: [] })),
     ])
-      .then(([allocData, salesData]) => {
+      .then(([allocData, salesData, savingsData]) => {
         setAllocations(allocData?.allocations || []);
         setSales(salesData?.sales || []);
+        setSavingsTargets(savingsData?.savingsTargets || []);
       })
       .catch(() => {
         setAllocations([]);
         setSales([]);
+        setSavingsTargets([]);
       })
       .finally(() => setLoading(false));
   }, [businessId]);
@@ -185,308 +271,354 @@ export default function BusinessAllocation() {
   }, [businessId, fetchData]);
 
   const openCreateDialog = () => {
+    setAllocMode('percentage');
+    setDestination('personal_cash_in');
+    setSelectedSavingsTargetId('');
     setFormData({ saleId: '', amount: '', percentage: '', personalNote: '' });
     setDialogOpen(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!businessId || (!formData.amount && !formData.percentage)) return;
+    if (!businessId) return;
+
+    // Validate
+    if (allocMode === 'nominal' && !formData.amount) {
+      toast.error('Masukkan nominal alokasi');
+      return;
+    }
+    if (allocMode === 'percentage' && !formData.percentage) {
+      toast.error('Masukkan persentase alokasi');
+      return;
+    }
+    if (destination === 'savings_target' && !selectedSavingsTargetId) {
+      toast.error('Pilih target tabungan');
+      return;
+    }
+
     setSaving(true);
     try {
       const body: Record<string, unknown> = {
-        amount: formData.amount ? parseFloat(formData.amount) : 0,
-        percentage: formData.percentage ? parseFloat(formData.percentage) : 0,
+        amount: allocMode === 'nominal' ? parseFloat(formData.amount) : 0,
+        percentage: allocMode === 'percentage' ? parseFloat(formData.percentage) : 0,
         personalNote: formData.personalNote || undefined,
+        targetType: destination,
+        targetId: destination === 'savings_target' ? selectedSavingsTargetId : undefined,
       };
       if (formData.saleId) body.saleId = formData.saleId;
+
       const res = await fetch(`/api/business/${businessId}/allocations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error();
-      toast.success(t('biz.businessCreated'));
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Gagal membuat alokasi');
+      }
+
+      const destLabel = destination === 'personal_cash_in' ? 'Kas Pribadi' : destination === 'savings_target' ? 'Target Tabungan' : 'Bisnis';
+      toast.success(`Berhasil mengalokasikan ${formatAmount(previewAmount)} ke ${destLabel}`);
       setDialogOpen(false);
       fetchData();
-    } catch {
-      toast.error(t('common.error'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSaving(false);
     }
   };
 
   const totalAllocated = allocations.reduce((sum, a) => sum + a.amount, 0);
-  const totalSales = sales.reduce((s, sale) => s + sale.amount, 0);
+  const personalAllocated = allocations.filter(a => a.targetType === 'personal_cash_in').reduce((s, a) => s + a.amount, 0);
+  const savingsAllocated = allocations.filter(a => a.targetType === 'savings_target').reduce((s, a) => s + a.amount, 0);
   const avgPercentage = allocations.length > 0 ? allocations.reduce((s, a) => s + a.percentage, 0) / allocations.length : 0;
-  const latestAlloc = allocations.length > 0 ? allocations[allocations.length - 1] : null;
-
-  // Check if selected sale is installment
-  const selectedSale = formData.saleId ? sales.find((s) => s.id === formData.saleId) : null;
-  const isInstallment = selectedSale && (selectedSale.installmentTempo && selectedSale.installmentTempo > 0);
+  const latestAlloc = allocations.length > 0 ? allocations[0] : null;
 
   if (!businessId) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-center text-muted-foreground" >{t('biz.registerFirst')}</p>
+        <p className="text-center text-muted-foreground">{t('biz.registerFirst')}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      {/* Info Banner */}
-      <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
-        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
-        <p className="text-xs leading-relaxed text-muted-foreground" >
-          Atur pembagian dana dari pendapatan bisnis Anda.
-        </p>
-      </div>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-base font-bold flex items-center gap-2 text-foreground" >
-          <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-primary/12">
-            <ArrowDownToLine className="h-3.5 w-3.5 text-primary" />
-          </div>
-          {t('biz.autoAllocation')}
-        </h2>
-        <Button
-          onClick={openCreateDialog}
-          size="sm"
-          className="rounded-lg h-8 text-xs"
-          style={{ backgroundColor: 'var(--primary)', color: '#000' }}
-        >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          {t('common.add')}
-        </Button>
-      </div>
-
-      {/* Explanation Card */}
-      <div className="flex items-start gap-3 p-3 sm:p-4 rounded-xl" style={{ background: 'color-mix(in srgb, var(--primary) 2%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 12%, transparent)' }}>
-        <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/12">
-          <Lightbulb className="h-4 w-4 text-primary" />
-        </div>
-        <div>
-          <p className="text-xs font-semibold mb-1 text-primary" >Apa itu Alokasi Otomatis?</p>
-          <p className="text-[11px] leading-relaxed text-muted-foreground" >
-            Alokasi otomatis membagikan pendapatan penjualan ke berbagai keperluan bisnis (operasional, investasi, cadangan). Anda bisa menetapkan persentase atau nominal tetap yang otomatis dialokasikan dari setiap penjualan.
-          </p>
-        </div>
-      </div>
-
-      {/* Summary Stat Cards */}
-      {!loading && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-          {[
-            { label: t('biz.totalAllocated'), value: formatAmount(totalAllocated), icon: DollarSign, color: 'var(--primary)' },
-            { label: t('biz.allocationPercent'), value: `${avgPercentage.toFixed(1)}%`, icon: Percent, color: 'var(--secondary)' },
-            { label: 'Total Sales', value: formatAmount(totalSales), icon: TrendingUp, color: 'var(--warning)' },
-            { label: 'Total Allocations', value: allocations.length, icon: Layers, color: 'var(--destructive)' },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <Card key={item.label} className="rounded-xl overflow-hidden bg-card border border-border">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
-                      <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
-                    </div>
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground" >{item.label}</span>
-                  </div>
-                  <p className="text-base font-bold tabular-nums" style={{ color: item.color }}>{item.value}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Visual Allocation Bar */}
-      {!loading && allocations.length > 0 && (
-        <Card className="rounded-xl bg-card border border-border">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-md flex items-center justify-center bg-primary/12">
-                <Wallet className="h-3 w-3 text-primary" />
-              </div>
-              <h3 className="text-xs font-semibold text-foreground" >{t('biz.autoAllocation')}</h3>
-              <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)', color: 'var(--primary)', border: '1px solid color-mix(in srgb, var(--primary) 12%, transparent)' }}>
-                {allocations.length} records
-              </Badge>
+        {/* ═══ Header ═══ */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.primary, 15) }}>
+              <ArrowDownToLine className="h-4 w-4" style={{ color: c.primary }} />
             </div>
-            <AllocationBar allocations={allocations} totalSales={totalSales} />
-            {latestAlloc && (
-              <div className="mt-3 pt-3 flex items-center gap-2.5 border-t border-border">
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 bg-secondary/12">
-                  <ArrowUpRight className="h-3 w-3 text-secondary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-muted-foreground" >Latest Allocation</p>
-                  <p className="text-xs font-medium truncate text-muted-foreground" >{latestAlloc.sale?.description || 'Manual allocation'}</p>
-                </div>
-                <p className="text-xs font-semibold tabular-nums text-primary" >{formatAmount(latestAlloc.amount)}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Config Card */}
-      <Card className="rounded-xl bg-card border border-border">
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="h-6 w-6 rounded-md flex items-center justify-center bg-warning/12">
-              <Percent className="h-3 w-3 text-warning" />
-            </div>
-            <h3 className="text-xs font-semibold text-foreground" >Allocation Config</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
-              <p className="text-[10px] font-medium uppercase tracking-wider mb-1 text-muted-foreground" >{t('biz.allocationPercent')}</p>
-              <p className="text-xl font-bold text-foreground" >
-                {allocations.length > 0 ? `${avgPercentage.toFixed(1)}%` : '-'}
-              </p>
-              <p className="text-[10px] mt-0.5 text-muted-foreground" >Average allocation percentage</p>
-            </div>
-            <div className="rounded-lg p-3" style={{ background: 'color-mix(in srgb, var(--primary) 2%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
-              <p className="text-[10px] font-medium uppercase tracking-wider mb-1 text-muted-foreground" >{t('biz.allocationFixed')}</p>
-              <p className="text-xl font-bold tabular-nums text-primary" >
-                {totalAllocated > 0 ? formatAmount(totalAllocated / Math.max(allocations.length, 1)) : '-'}
-              </p>
-              <p className="text-[10px] mt-0.5 text-muted-foreground" >Average fixed amount</p>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">{t('biz.autoAllocation')}</h2>
+              <p className="text-[10px] text-muted-foreground">Alokasi pendapatan bisnis ke pribadi</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+            <Button
+              onClick={openCreateDialog}
+              size="sm"
+              className="rounded-lg h-8 text-xs"
+              style={{ backgroundColor: c.primary, color: '#000' }}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              {t('common.add')}
+            </Button>
+          </motion.div>
+        </motion.div>
 
-      {/* History Table */}
-      <Card className="rounded-xl overflow-hidden bg-card border border-border">
-        <CardContent className="p-0">
-          <div className="flex items-center gap-2 p-3 sm:p-4 border-b border-border">
-            <div className="h-6 w-6 rounded-md flex items-center justify-center bg-secondary/12">
-              <History className="h-3 w-3 text-secondary" />
-            </div>
-            <h3 className="text-xs font-semibold text-foreground" >{t('laporan.history')}</h3>
-            <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)', color: 'var(--primary)', border: '1px solid color-mix(in srgb, var(--primary) 12%, transparent)' }}>
-              {allocations.length}
-            </Badge>
+        {/* ═══ Info Banner ═══ */}
+        <motion.div variants={itemVariants} className="flex items-start gap-2.5 p-3 sm:p-4 rounded-xl" style={{ background: alpha(c.primary, 4), border: `1px solid ${alpha(c.primary, 10)}` }}>
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.primary, 12) }}>
+            <Lightbulb className="h-4 w-4" style={{ color: c.primary }} />
           </div>
-          {loading ? (
-            <div className="space-y-2 p-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-lg bg-border" />
-              ))}
-            </div>
-          ) : allocations.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <>
-              {/* Mobile Card List */}
-              <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
-                {allocations.map((alloc, idx) => (
-                  <div key={alloc.id} className="p-3 space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate text-foreground">{alloc.sale?.description || '-'}</p>
-                        <p className="text-[10px] text-muted-foreground">{new Date(alloc.allocatedAt).toLocaleDateString()}</p>
+          <div>
+            <p className="text-xs font-semibold mb-0.5" style={{ color: c.primary }}>Apa itu Alokasi Otomatis?</p>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Alokasi otomatis membagikan pendapatan bisnis Anda ke <span className="font-medium text-foreground">Kas Pribadi</span> atau <span className="font-medium text-foreground">Target Tabungan</span>. Anda bisa menetapkan persentase dari penjualan atau nominal tetap.
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ═══ Summary Stats ═══ */}
+        {!loading && (
+          <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: 'Total Dialokasikan', value: formatAmount(totalAllocated), icon: DollarSign, color: c.primary },
+              { label: 'Kas Pribadi', value: formatAmount(personalAllocated), icon: Wallet, color: c.secondary },
+              { label: 'Target Tabungan', value: formatAmount(savingsAllocated), icon: Target, color: c.warning },
+              { label: 'Rata-rata %', value: `${avgPercentage.toFixed(1)}%`, icon: Percent, color: c.destructive },
+            ].map(item => {
+              const Icon = item.icon;
+              return (
+                <Card key={item.label} className="rounded-xl overflow-hidden border border-border">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
+                        <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-semibold tabular-nums text-primary">{formatAmount(alloc.amount)}</p>
-                        {alloc.percentage > 0 && (
-                          <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 12%, transparent)' }}>{alloc.percentage}%</Badge>
-                        )}
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.label}</span>
+                    </div>
+                    <p className="text-base font-bold tabular-nums" style={{ color: item.color }}>{item.value}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </motion.div>
+        )}
+
+        {/* ═══ Visual Allocation Bar ═══ */}
+        {!loading && allocations.length > 0 && (
+          <motion.div variants={itemVariants}>
+            <Card className="rounded-xl border border-border">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.primary, 12) }}>
+                    <Wallet className="h-3 w-3" style={{ color: c.primary }} />
+                  </div>
+                  <h3 className="text-xs font-semibold text-foreground">Visualisasi Alokasi</h3>
+                  <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.primary, 8), color: c.primary, border: `1px solid ${alpha(c.primary, 12)}` }}>
+                    {allocations.length} records
+                  </Badge>
+                </div>
+                <AllocationBar allocations={allocations} totalSales={totalSales} />
+                {latestAlloc && (
+                  <div className="mt-3 pt-3 flex items-center gap-2.5 border-t border-border">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.secondary, 12) }}>
+                      <ArrowUpRight className="h-3 w-3" style={{ color: c.secondary }} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] text-muted-foreground">Alokasi Terakhir</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-medium truncate text-foreground">{latestAlloc.sale?.description || 'Manual allocation'}</p>
+                        <TargetBadge targetType={latestAlloc.targetType} savingsTargetName={latestAlloc.savingsTarget?.name} />
                       </div>
                     </div>
-                    {alloc.personalNote && (
-                      <p className="text-[10px] truncate text-muted-foreground">{alloc.personalNote}</p>
-                    )}
+                    <p className="text-xs font-semibold tabular-nums" style={{ color: c.primary }}>{formatAmount(latestAlloc.amount)}</p>
                   </div>
-                ))}
-              </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-              {/* Desktop Table */}
-              <div className="hidden sm:block max-h-96 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-b border-border">
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" >{t('biz.cashDate')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" >{t('biz.saleDescription')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right text-muted-foreground" >{t('biz.debtAmount')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right text-muted-foreground" >{t('biz.allocationPercent')}</TableHead>
-                    <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden sm:table-cell text-muted-foreground" >{t('biz.customerNotes')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allocations.map((alloc, idx) => (
-                    <TableRow
-                      key={alloc.id}
-                      className="transition-colors duration-150"
-                      style={{
-                        background: idx % 2 === 1 ? 'rgba(255,255,255,0.015)' : 'transparent',
-                        borderBottom: '1px solid var(--border)',
-                      }}
-                    >
-                      <TableCell className="text-xs py-2.5 tabular-nums text-muted-foreground" >
-                        {new Date(alloc.allocatedAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--primary)' }} />
-                          <span className="text-xs font-medium max-w-[180px] truncate text-foreground" >
-                            {alloc.sale?.description || '-'}
-                          </span>
+        {/* ═══ Available Savings Targets ═══ */}
+        {!loading && savingsTargets.length > 0 && (
+          <motion.div variants={itemVariants}>
+            <Card className="rounded-xl border border-border">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.warning, 12) }}>
+                    <PiggyBank className="h-3 w-3" style={{ color: c.warning }} />
+                  </div>
+                  <h3 className="text-xs font-semibold text-foreground">Target Tabungan Tersedia</h3>
+                  <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.warning, 8), color: c.warning, border: `1px solid ${alpha(c.warning, 12)}` }}>
+                    {savingsTargets.length}
+                  </Badge>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {savingsTargets.map(target => {
+                    const pct = target.targetAmount > 0 ? Math.min((target.currentAmount / target.targetAmount) * 100, 100) : 0;
+                    return (
+                      <div key={target.id} className="flex items-center gap-3 p-2.5 rounded-lg" style={{ background: alpha(c.foreground, 2), border: '1px solid var(--border)' }}>
+                        <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.warning, 12) }}>
+                          <Target className="h-3.5 w-3.5" style={{ color: c.warning }} />
                         </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-right font-semibold py-2.5 tabular-nums text-primary" >
-                        {formatAmount(alloc.amount)}
-                      </TableCell>
-                      <TableCell className="py-2.5 text-right">
-                        {alloc.percentage > 0 ? (
-                          <Badge className="text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)', color: 'var(--secondary)', border: '1px solid color-mix(in srgb, var(--secondary) 12%, transparent)' }}>
-                            {alloc.percentage}%
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground" >-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs py-2.5 max-w-[150px] truncate hidden sm:table-cell text-muted-foreground" >
-                        {alloc.personalNote || '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate text-foreground">{target.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatAmount(target.currentAmount)} / {formatAmount(target.targetAmount)}
+                          </p>
+                          <div className="mt-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: c.warning, opacity: 0.7 }} />
+                          </div>
+                        </div>
+                        <p className="text-xs font-bold tabular-nums shrink-0" style={{ color: c.warning }}>{pct.toFixed(0)}%</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-      {/* Add Allocation Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-xl w-[95vw] sm:max-w-[460px] bg-card border border-border">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground" >
-              <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-secondary/12">
-                <ArrowDownToLine className="h-3.5 w-3.5 text-secondary" />
+        {/* ═══ History Table ═══ */}
+        <motion.div variants={itemVariants}>
+          <Card className="rounded-xl overflow-hidden border border-border">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 p-3 sm:p-4 border-b border-border">
+                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}>
+                  <History className="h-3 w-3" style={{ color: c.secondary }} />
+                </div>
+                <h3 className="text-xs font-semibold text-foreground">{t('laporan.history')}</h3>
+                <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0" style={{ backgroundColor: alpha(c.primary, 8), color: c.primary, border: `1px solid ${alpha(c.primary, 12)}` }}>
+                  {allocations.length}
+                </Badge>
               </div>
-              {t('biz.autoAllocation')}
+              {loading ? (
+                <div className="space-y-2 p-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-lg" style={{ backgroundColor: alpha(c.foreground, 4) }} />
+                  ))}
+                </div>
+              ) : allocations.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <>
+                  {/* Mobile Card List */}
+                  <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
+                    {allocations.map(alloc => (
+                      <div key={alloc.id} className="p-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-medium truncate text-foreground">{alloc.sale?.description || 'Manual allocation'}</p>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">{new Date(alloc.allocatedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs font-semibold tabular-nums" style={{ color: c.primary }}>{formatAmount(alloc.amount)}</p>
+                            {alloc.percentage > 0 && (
+                              <span className="text-[10px] tabular-nums" style={{ color: c.secondary }}>{alloc.percentage}%</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <TargetBadge targetType={alloc.targetType} savingsTargetName={alloc.savingsTarget?.name} />
+                          {alloc.personalNote && (
+                            <p className="text-[10px] truncate text-muted-foreground flex-1">— {alloc.personalNote}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block max-h-96 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent border-b border-border">
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tanggal</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sumber</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tujuan</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right text-muted-foreground">Nominal</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-right text-muted-foreground">Persentase</TableHead>
+                          <TableHead className="text-[10px] font-semibold uppercase tracking-wider hidden lg:table-cell text-muted-foreground">Catatan</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allocations.map((alloc, idx) => (
+                          <TableRow
+                            key={alloc.id}
+                            className="transition-colors duration-150"
+                            style={{
+                              background: idx % 2 === 1 ? alpha(c.foreground, 2) : 'transparent',
+                              borderBottom: '1px solid var(--border)',
+                            }}
+                          >
+                            <TableCell className="text-xs py-2.5 tabular-nums text-muted-foreground">
+                              {new Date(alloc.allocatedAt).toLocaleDateString('id-ID')}
+                            </TableCell>
+                            <TableCell className="py-2.5">
+                              <span className="text-xs text-foreground">{alloc.sale?.description || 'Manual'}</span>
+                            </TableCell>
+                            <TableCell className="py-2.5">
+                              <TargetBadge targetType={alloc.targetType} savingsTargetName={alloc.savingsTarget?.name} />
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-semibold py-2.5 tabular-nums" style={{ color: c.primary }}>
+                              {formatAmount(alloc.amount)}
+                            </TableCell>
+                            <TableCell className="py-2.5 text-right">
+                              {alloc.percentage > 0 ? (
+                                <span className="text-xs tabular-nums" style={{ color: c.secondary }}>{alloc.percentage}%</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs py-2.5 max-w-[150px] truncate hidden lg:table-cell text-muted-foreground">
+                              {alloc.personalNote || '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* ═══ Add Allocation Dialog ═══ */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="rounded-xl w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto border border-border">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}>
+                <ArrowDownToLine className="h-3.5 w-3.5" style={{ color: c.secondary }} />
+              </div>
+              Buat Alokasi Baru
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground" >
-              {t('biz.allocatedFrom')}
+            <DialogDescription className="text-xs text-muted-foreground">
+              Alokasikan pendapatan bisnis ke kas pribadi atau target tabungan
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-3 mt-1">
+          <form onSubmit={handleSave} className="space-y-4 mt-1">
+            {/* Source Sale */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.saleDescription')}</Label>
-              <Select value={formData.saleId} onValueChange={(v) => setFormData({ ...formData, saleId: v })}>
-                <SelectTrigger className="text-sm rounded-lg bg-card border border-border text-foreground">
-                  <SelectValue placeholder={t('biz.saleDescription')} />
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Sumber Penjualan</Label>
+              <Select value={formData.saleId} onValueChange={v => setFormData({ ...formData, saleId: v })}>
+                <SelectTrigger className="text-sm rounded-lg border border-border text-foreground">
+                  <SelectValue placeholder="Pilih penjualan (opsional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sales.map((s) => (
+                  {sales.map(s => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.description} — {formatAmount(s.amount)}
                     </SelectItem>
@@ -495,73 +627,206 @@ export default function BusinessAllocation() {
               </Select>
             </div>
 
-            {/* Installment split note */}
-            {isInstallment && selectedSale && (
-              <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: 'color-mix(in srgb, var(--warning) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 12%, transparent)' }}>
-                <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5 text-warning" />
-                <div className="text-[10px] leading-relaxed text-muted-foreground" >
-                  <p className="font-medium mb-1 text-warning" >Penjualan Cicilan</p>
-                  <p>Alokasi dari cicilan akan dibagi: DP saat penjualan, sisanya per tempo cicilan.</p>
-                  {selectedSale.downPayment != null && (
-                    <div className="mt-1.5 space-y-0.5">
-                      <p className="text-foreground" >• DP: {formatAmount(selectedSale.downPayment)}</p>
-                      {selectedSale.installmentAmount && selectedSale.installmentTempo && (
-                        <p className="text-foreground" >• Cicilan: {formatAmount(selectedSale.installmentAmount)} × {selectedSale.installmentTempo} tempo</p>
-                      )}
-                    </div>
+            {/* Allocation Mode Toggle */}
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Mode Alokasi</Label>
+              <div className="flex items-center gap-1 p-0.5 rounded-lg w-fit" style={{ backgroundColor: alpha(c.foreground, 4) }}>
+                <button
+                  type="button"
+                  onClick={() => setAllocMode('percentage')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-md transition-all',
+                    allocMode === 'percentage' ? 'shadow-sm' : 'text-muted-foreground'
                   )}
-                </div>
+                  style={allocMode === 'percentage' ? { backgroundColor: alpha(c.primary, 15), color: c.primary } : {}}
+                >
+                  <Percent className="h-3 w-3" />
+                  Persentase
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllocMode('nominal')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-md transition-all',
+                    allocMode === 'nominal' ? 'shadow-sm' : 'text-muted-foreground'
+                  )}
+                  style={allocMode === 'nominal' ? { backgroundColor: alpha(c.primary, 15), color: c.primary } : {}}
+                >
+                  <DollarSign className="h-3 w-3" />
+                  Nominal
+                </button>
               </div>
-            )}
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Value Input */}
+            {allocMode === 'percentage' ? (
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.allocationPercent')}</Label>
+                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Persentase (%)</Label>
                 <Input
                   type="number"
                   value={formData.percentage}
-                  onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
-                  placeholder="0"
+                  onChange={e => setFormData({ ...formData, percentage: e.target.value })}
+                  placeholder="10"
                   min="0"
                   max="100"
-                  className="text-sm rounded-lg tabular-nums bg-card border border-border text-foreground"
+                  className="text-sm rounded-lg tabular-nums border border-border text-foreground"
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.allocationFixed')}</Label>
-                <Input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  className="text-sm rounded-lg tabular-nums bg-card border border-border text-foreground"
-                />
-                {formattedAllocNominal && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="flex items-center gap-1.5 px-1 mt-1"
-                  >
+                {previewAmount > 0 && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1.5 px-1 mt-1">
                     <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="text-sm font-semibold tabular-nums text-primary">
-                      {formattedAllocNominal}
+                    <span className="text-sm font-semibold tabular-nums" style={{ color: c.primary }}>{formatAmount(previewAmount)}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      dari {selectedSale ? selectedSale.description : 'total penjualan'} ({formatAmount(selectedSale ? selectedSale.amount : totalSales)})
                     </span>
                   </motion.div>
                 )}
               </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Nominal (Rp)</Label>
+                <Input
+                  type="number"
+                  value={formData.amount}
+                  onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                  placeholder="500000"
+                  min="0"
+                  className="text-sm rounded-lg tabular-nums border border-border text-foreground"
+                />
+                {formattedAllocNominal && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1.5 px-1 mt-1">
+                    <CircleDollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-semibold tabular-nums" style={{ color: c.primary }}>{formattedAllocNominal}</span>
+                  </motion.div>
+                )}
+              </div>
+            )}
+
+            {/* Destination */}
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tujuan Alokasi</Label>
+              <div className="grid grid-cols-1 gap-2">
+                {/* Personal Cash In */}
+                <button
+                  type="button"
+                  onClick={() => setDestination('personal_cash_in')}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
+                    destination === 'personal_cash_in'
+                      ? 'border-0'
+                      : 'border-border'
+                  )}
+                  style={destination === 'personal_cash_in' ? { backgroundColor: alpha(c.secondary, 10), border: `1px solid ${alpha(c.secondary, 20)}` } : { backgroundColor: alpha(c.foreground, 2) }}
+                >
+                  <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: destination === 'personal_cash_in' ? alpha(c.secondary, 18) : alpha(c.foreground, 4) }}>
+                    <Wallet className="h-4 w-4" style={{ color: c.secondary }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn('text-xs font-semibold', destination === 'personal_cash_in' ? 'text-foreground' : 'text-muted-foreground')}>Kas Pribadi</p>
+                    <p className="text-[10px] text-muted-foreground">Masuk ke pemasukan pribadi sebagai kas masuk</p>
+                  </div>
+                  {destination === 'personal_cash_in' && (
+                    <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ backgroundColor: c.secondary }}>
+                      <ArrowRight className="h-3 w-3 text-black" />
+                    </div>
+                  )}
+                </button>
+
+                {/* Savings Target */}
+                <button
+                  type="button"
+                  onClick={() => setDestination('savings_target')}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
+                    destination === 'savings_target'
+                      ? 'border-0'
+                      : 'border-border'
+                  )}
+                  style={destination === 'savings_target' ? { backgroundColor: alpha(c.warning, 10), border: `1px solid ${alpha(c.warning, 20)}` } : { backgroundColor: alpha(c.foreground, 2) }}
+                >
+                  <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: destination === 'savings_target' ? alpha(c.warning, 18) : alpha(c.foreground, 4) }}>
+                    <Target className="h-4 w-4" style={{ color: c.warning }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn('text-xs font-semibold', destination === 'savings_target' ? 'text-foreground' : 'text-muted-foreground')}>Target Tabungan</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {savingsTargets.length > 0
+                        ? `${savingsTargets.length} target tersedia`
+                        : 'Belum ada target tabungan'}
+                    </p>
+                  </div>
+                  {destination === 'savings_target' && (
+                    <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ backgroundColor: c.warning }}>
+                      <ArrowRight className="h-3 w-3 text-black" />
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* Savings Target Selector */}
+              {destination === 'savings_target' && savingsTargets.length > 0 && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2">
+                  <Select value={selectedSavingsTargetId} onValueChange={v => setSelectedSavingsTargetId(v)}>
+                    <SelectTrigger className="text-sm rounded-lg border border-border text-foreground">
+                      <SelectValue placeholder="Pilih target tabungan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {savingsTargets.map(target => {
+                        const pct = target.targetAmount > 0 ? Math.round((target.currentAmount / target.targetAmount) * 100) : 0;
+                        return (
+                          <SelectItem key={target.id} value={target.id}>
+                            {target.name} — {formatAmount(target.currentAmount)} / {formatAmount(target.targetAmount)} ({pct}%)
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </motion.div>
+              )}
+
+              {destination === 'savings_target' && savingsTargets.length === 0 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 flex items-start gap-2 p-2.5 rounded-lg" style={{ background: alpha(c.destructive, 4), border: `1px solid ${alpha(c.destructive, 10)}` }}>
+                  <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: c.destructive }} />
+                  <p className="text-[10px] leading-relaxed text-muted-foreground">
+                    Belum ada target tabungan. Buat target tabungan terlebih dahulu di menu Keuangan Pribadi.
+                  </p>
+                </motion.div>
+              )}
             </div>
 
+            {/* Note */}
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.customerNotes')}</Label>
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Catatan</Label>
               <Textarea
                 value={formData.personalNote}
-                onChange={(e) => setFormData({ ...formData, personalNote: e.target.value })}
-                placeholder={t('biz.customerNotes')}
-                className="text-sm rounded-lg resize-none min-h-[60px] bg-card border border-border text-foreground"
+                onChange={e => setFormData({ ...formData, personalNote: e.target.value })}
+                placeholder="Contoh: Gaji bulan ini dari bisnis"
+                className="text-sm rounded-lg resize-none min-h-[60px] border border-border text-foreground"
               />
             </div>
+
+            {/* Preview Summary */}
+            {previewAmount > 0 && (
+              <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-3 space-y-2" style={{ background: alpha(c.primary, 4), border: `1px solid ${alpha(c.primary, 10)}` }}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Alokasi</span>
+                  <span className="font-bold tabular-nums" style={{ color: c.primary }}>{formatAmount(previewAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Tujuan</span>
+                  <span className="font-medium text-foreground">
+                    {destination === 'personal_cash_in' ? 'Kas Pribadi' : destination === 'savings_target' ? `Target: ${savingsTargets.find(t => t.id === selectedSavingsTargetId)?.name || '...'}` : 'Bisnis'}
+                  </span>
+                </div>
+                <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+                <div className="flex items-center gap-1.5">
+                  <ArrowRight className="h-3 w-3" style={{ color: c.secondary }} />
+                  <span className="text-[10px] text-muted-foreground">
+                    {destination === 'personal_cash_in' && 'Akan dibuat sebagai transaksi kas masuk pribadi'}
+                    {destination === 'savings_target' && 'Akan menambah saldo target tabungan'}
+                  </span>
+                </div>
+              </motion.div>
+            )}
 
             <DialogFooter className="gap-2 pt-1">
               <Button
@@ -575,9 +840,9 @@ export default function BusinessAllocation() {
               </Button>
               <Button
                 type="submit"
-                disabled={saving || (!formData.amount && !formData.percentage)}
+                disabled={saving || previewAmount <= 0 || (destination === 'savings_target' && !selectedSavingsTargetId)}
                 className="rounded-lg text-xs"
-                style={{ backgroundColor: 'var(--primary)', color: '#000' }}
+                style={{ backgroundColor: c.primary, color: '#000' }}
               >
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 {t('common.save')}

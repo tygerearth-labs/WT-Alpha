@@ -32,6 +32,8 @@ import {
   Info,
   Wallet,
   Layers,
+  Repeat,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -62,6 +64,9 @@ interface ForecastMonth {
   projectedBalance: number;
   isForecast: boolean;
   confidenceRange?: [number, number];
+  salesRevenue: number;
+  installmentIncome: number;
+  investorProfit: number;
 }
 
 interface ForecastCategory {
@@ -70,6 +75,12 @@ interface ForecastCategory {
   count: number;
   percentage: number;
   type: 'income' | 'expense';
+}
+
+interface ForecastMetric {
+  currentMonth: number;
+  avgMonthly: number;
+  trend: number;
 }
 
 interface ForecastData {
@@ -97,6 +108,10 @@ interface ForecastData {
     forecastLower?: number;
     isForecast: boolean;
   }>;
+  salesRevenue: ForecastMetric;
+  installmentIncome: ForecastMetric;
+  investorProfit: ForecastMetric;
+  totalKasValue: number;
 }
 
 // ─── Constants ──────────────────────────────────────────────────
@@ -190,13 +205,16 @@ function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay }}
+      whileHover={{ y: -2, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20, delay }}
     >
-      <Card className="rounded-xl overflow-hidden" style={{ background: c.card, border: `1px solid ${c.border}` }}>
-        <div className="h-1" style={{ background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})` }} />
-        <CardContent className="p-4">
+      <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
+        <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})` }} />
+        <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(iconColor, 6)}, transparent)` }}>
           <div className="flex items-center gap-1.5 mb-2">
-            <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+            <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(iconColor, 10) }}>
+              <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+            </div>
             <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>{label}</span>
           </div>
           <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: iconColor }}>
@@ -331,6 +349,7 @@ export default function BusinessForecast() {
           ))}
         </div>
       ) : data ? (
+        <>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
             icon={Wallet}
@@ -371,13 +390,58 @@ export default function BusinessForecast() {
             delay={0.15}
           />
         </div>
+
+        {/* ── Row 2: Sales / Installment / Investor / Kas ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            icon={TrendingUp}
+            label="Pendapatan Penjualan"
+            value={formatAmount(data.salesRevenue.avgMonthly)}
+            subValue={data.salesRevenue.trend !== 0 ? `Tren ${data.salesRevenue.trend >= 0 ? '+' : ''}${data.salesRevenue.trend.toFixed(1)}%/bln` : undefined}
+            iconColor={c.secondary}
+            gradientFrom={c.secondary}
+            gradientTo={alpha(c.secondary, 40)}
+            delay={0.2}
+          />
+          <StatCard
+            icon={Repeat}
+            label="Pendapatan Cicilan"
+            value={formatAmount(data.installmentIncome.avgMonthly)}
+            subValue={data.installmentIncome.trend !== 0 ? `Tren ${data.installmentIncome.trend >= 0 ? '+' : ''}${data.installmentIncome.trend.toFixed(1)}%/bln` : undefined}
+            iconColor={c.warning}
+            gradientFrom={c.warning}
+            gradientTo={alpha(c.warning, 40)}
+            delay={0.25}
+          />
+          <StatCard
+            icon={Users}
+            label="Profit Investor"
+            value={formatAmount(data.investorProfit.avgMonthly)}
+            subValue={data.investorProfit.trend !== 0 ? `Tren ${data.investorProfit.trend >= 0 ? '+' : ''}${data.investorProfit.trend.toFixed(1)}%/bln` : undefined}
+            iconColor={c.primary}
+            gradientFrom={c.primary}
+            gradientTo={alpha(c.primary, 40)}
+            delay={0.3}
+          />
+          <StatCard
+            icon={Wallet}
+            label="Total Nilai Kas"
+            value={formatAmount(data.totalKasValue)}
+            subValue="Kas Besar + Kecil − Keluar"
+            iconColor={c.foreground}
+            gradientFrom={c.foreground}
+            gradientTo={alpha(c.foreground, 40)}
+            delay={0.35}
+          />
+        </div>
+        </>
       ) : null}
 
       {/* ── Chart: Historical + Forecast ── */}
       {loading ? (
         <Skeleton className="h-72 sm:h-80 rounded-xl" />
       ) : chartData.length > 0 ? (
-        <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -543,7 +607,7 @@ export default function BusinessForecast() {
           ))}
         </div>
       ) : data && data.months.length > 0 ? (
-        <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -572,11 +636,13 @@ export default function BusinessForecast() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: idx * 0.03 }}
-                    className="p-3 rounded-xl transition-colors"
+                    className="p-3 rounded-xl transition-all duration-200 hover:shadow-md"
                     style={{
                       background: m.isForecast ? alpha(c.primary, 4) : alpha(c.muted, 3),
                       border: `1px solid ${m.isForecast ? alpha(c.primary, 10) : alpha(c.border, 0.5)}`,
+                      borderLeft: `3px solid ${isPositive ? c.secondary : c.destructive}`,
                     }}
+                    whileHover={{ y: -1 }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
@@ -616,6 +682,36 @@ export default function BusinessForecast() {
                           {formatAmount(m.projectedBalance)}
                         </span>
                       </div>
+                      {/* Sales / Installment / Investor rows */}
+                      {(m.salesRevenue > 0 || m.installmentIncome > 0 || m.investorProfit > 0) && (
+                        <>
+                          <div className="h-px" style={{ backgroundColor: alpha(c.border, 0.3) }} />
+                          {m.salesRevenue > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px]" style={{ color: alpha(c.secondary, 70) }}>Penjualan</span>
+                              <span className="text-[10px] font-semibold tabular-nums" style={{ color: c.secondary }}>
+                                {formatAmount(m.salesRevenue)}
+                              </span>
+                            </div>
+                          )}
+                          {m.installmentIncome > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px]" style={{ color: alpha(c.warning, 70) }}>Cicilan</span>
+                              <span className="text-[10px] font-semibold tabular-nums" style={{ color: c.warning }}>
+                                {formatAmount(m.installmentIncome)}
+                              </span>
+                            </div>
+                          )}
+                          {m.investorProfit > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px]" style={{ color: alpha(c.primary, 70) }}>Investor</span>
+                              <span className="text-[10px] font-semibold tabular-nums" style={{ color: c.primary }}>
+                                {formatAmount(m.investorProfit)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -635,7 +731,7 @@ export default function BusinessForecast() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Expense Categories */}
           {expenseCategories.length > 0 && (
-            <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+            <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
               <CardContent className="p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -678,7 +774,7 @@ export default function BusinessForecast() {
 
           {/* Income Categories */}
           {incomeCategories.length > 0 && (
-            <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+            <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
               <CardContent className="p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -725,7 +821,7 @@ export default function BusinessForecast() {
       {loading ? (
         <Skeleton className="h-20 rounded-xl" />
       ) : data ? (
-        <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -739,65 +835,87 @@ export default function BusinessForecast() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Income Trend */}
-              <div className="p-3 rounded-lg" style={{ background: alpha(c.secondary, 4), border: `1px solid ${alpha(c.secondary, 8)}` }}>
-                <div className="flex items-center gap-1.5 mb-1">
-                  {data.incomeTrend >= 0 ? (
-                    <ArrowUpRight className="h-3 w-3" style={{ color: c.secondary }} />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3" style={{ color: c.destructive }} />
-                  )}
-                  <span className="text-[10px] font-medium" style={{ color: c.muted }}>Tren Pemasukan</span>
+              <motion.div
+                whileHover={{ y: -2, scale: 1.01 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <div className="p-3 rounded-xl" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 6)}, transparent)`, border: `1px solid ${alpha(c.secondary, 10)}` }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.secondary, 10) }}>
+                      {data.incomeTrend >= 0 ? (
+                        <ArrowUpRight className="h-3 w-3" style={{ color: c.secondary }} />
+                      ) : (
+                        <ArrowDownRight className="h-3 w-3" style={{ color: c.destructive }} />
+                      )}
+                    </div>
+                    <span className="text-[10px] font-medium" style={{ color: c.muted }}>Tren Pemasukan</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums"
+                    style={{ color: data.incomeTrend >= 0 ? c.secondary : c.destructive }}>
+                    {data.incomeTrend >= 0 ? '+' : ''}{data.incomeTrend.toFixed(1)}% / bulan
+                  </p>
+                  <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
+                    {data.incomeTrend >= 0 ? 'Pemasukan cenderung naik' : 'Pemasukan cenderung turun'}
+                  </p>
                 </div>
-                <p className="text-sm font-bold tabular-nums"
-                  style={{ color: data.incomeTrend >= 0 ? c.secondary : c.destructive }}>
-                  {data.incomeTrend >= 0 ? '+' : ''}{data.incomeTrend.toFixed(1)}% / bulan
-                </p>
-                <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
-                  {data.incomeTrend >= 0 ? 'Pemasukan cenderung naik' : 'Pemasukan cenderung turun'}
-                </p>
-              </div>
+              </motion.div>
 
               {/* Expense Trend */}
-              <div className="p-3 rounded-lg" style={{ background: alpha(c.destructive, 4), border: `1px solid ${alpha(c.destructive, 8)}` }}>
-                <div className="flex items-center gap-1.5 mb-1">
-                  {data.expenseTrend <= 0 ? (
-                    <ArrowDownRight className="h-3 w-3" style={{ color: c.secondary }} />
-                  ) : (
-                    <ArrowUpRight className="h-3 w-3" style={{ color: c.destructive }} />
-                  )}
-                  <span className="text-[10px] font-medium" style={{ color: c.muted }}>Tren Pengeluaran</span>
+              <motion.div
+                whileHover={{ y: -2, scale: 1.01 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <div className="p-3 rounded-xl" style={{ background: `linear-gradient(135deg, ${alpha(c.destructive, 6)}, transparent)`, border: `1px solid ${alpha(c.destructive, 10)}` }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.destructive, 10) }}>
+                      {data.expenseTrend <= 0 ? (
+                        <ArrowDownRight className="h-3 w-3" style={{ color: c.secondary }} />
+                      ) : (
+                        <ArrowUpRight className="h-3 w-3" style={{ color: c.destructive }} />
+                      )}
+                    </div>
+                    <span className="text-[10px] font-medium" style={{ color: c.muted }}>Tren Pengeluaran</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums"
+                    style={{ color: data.expenseTrend <= 0 ? c.secondary : c.destructive }}>
+                    {data.expenseTrend >= 0 ? '+' : ''}{data.expenseTrend.toFixed(1)}% / bulan
+                  </p>
+                  <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
+                    {data.expenseTrend <= 0 ? 'Pengeluaran terkendali' : 'Pengeluaran meningkat'}
+                  </p>
                 </div>
-                <p className="text-sm font-bold tabular-nums"
-                  style={{ color: data.expenseTrend <= 0 ? c.secondary : c.destructive }}>
-                  {data.expenseTrend >= 0 ? '+' : ''}{data.expenseTrend.toFixed(1)}% / bulan
-                </p>
-                <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
-                  {data.expenseTrend <= 0 ? 'Pengeluaran terkendali' : 'Pengeluaran meningkat'}
-                </p>
-              </div>
+              </motion.div>
 
               {/* Cash Flow Health */}
-              <div className="p-3 rounded-lg" style={{
-                background: alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 4),
-                border: `1px solid ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 8)}`,
-              }}>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <CircleDollarSign className="h-3 w-3" style={{
-                    color: data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive,
-                  }} />
-                  <span className="text-[10px] font-medium" style={{ color: c.muted }}>Kesehatan Arus Kas</span>
-                </div>
-                <p className="text-sm font-bold tabular-nums" style={{
-                  color: data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive,
+              <motion.div
+                whileHover={{ y: -2, scale: 1.01 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <div className="p-3 rounded-xl" style={{
+                  background: `linear-gradient(135deg, ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 6)}, transparent)`,
+                  border: `1px solid ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 10)}`,
+                  borderLeft: `3px solid ${data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive}`,
                 }}>
-                  {data.avgMonthlyIncome >= data.avgMonthlyExpenses ? 'Positif' : 'Negatif'}
-                </p>
-                <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
-                  {data.avgMonthlyIncome >= data.avgMonthlyExpenses
-                    ? `Rasio arus kas: ${((data.avgMonthlyIncome / Math.max(data.avgMonthlyExpenses, 1)) * 100).toFixed(0)}%`
-                    : 'Pengeluaran melebihi pemasukan'}
-                </p>
-              </div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 10) }}>
+                      <CircleDollarSign className="h-3 w-3" style={{
+                        color: data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive,
+                      }} />
+                    </div>
+                    <span className="text-[10px] font-medium" style={{ color: c.muted }}>Kesehatan Arus Kas</span>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums" style={{
+                    color: data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive,
+                  }}>
+                    {data.avgMonthlyIncome >= data.avgMonthlyExpenses ? 'Positif' : 'Negatif'}
+                  </p>
+                  <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
+                    {data.avgMonthlyIncome >= data.avgMonthlyExpenses
+                      ? `Rasio arus kas: ${((data.avgMonthlyIncome / Math.max(data.avgMonthlyExpenses, 1)) * 100).toFixed(0)}%`
+                      : 'Pengeluaran melebihi pemasukan'}
+                  </p>
+                </div>
+              </motion.div>
             </div>
           </CardContent>
         </Card>

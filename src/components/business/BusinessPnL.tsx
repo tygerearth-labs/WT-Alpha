@@ -199,7 +199,7 @@ function PeriodNavigator({
   const months = MONTH_NAMES.map((name, i) => ({ value: i + 1, label: name }));
 
   return (
-    <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+    <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="flex items-center gap-2 shrink-0">
@@ -577,13 +577,16 @@ export default function BusinessPnL() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            whileHover={{ y: -2, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3 }}
           >
-            <Card className="rounded-xl overflow-hidden" style={{ background: c.card, border: `1px solid ${c.border}` }}>
-              <div className="h-1" style={{ background: `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 40)})` }} />
-              <CardContent className="p-4">
+            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
+              <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 30)})` }} />
+              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 6)}, transparent)` }}>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <TrendingUp className="h-3.5 w-3.5" style={{ color: c.secondary }} />
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.secondary, 10) }}>
+                    <TrendingUp className="h-3.5 w-3.5" style={{ color: c.secondary }} />
+                  </div>
                   <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Total Pendapatan</span>
                 </div>
                 <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.secondary }}>
@@ -600,13 +603,16 @@ export default function BusinessPnL() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.05 }}
+            whileHover={{ y: -2, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3, delay: 0.05 }}
           >
-            <Card className="rounded-xl overflow-hidden" style={{ background: c.card, border: `1px solid ${c.border}` }}>
-              <div className="h-1" style={{ background: `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 40)})` }} />
-              <CardContent className="p-4">
+            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
+              <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 30)})` }} />
+              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(c.destructive, 6)}, transparent)` }}>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <TrendingDown className="h-3.5 w-3.5" style={{ color: c.destructive }} />
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.destructive, 10) }}>
+                    <TrendingDown className="h-3.5 w-3.5" style={{ color: c.destructive }} />
+                  </div>
                   <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Total Pengeluaran</span>
                 </div>
                 <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.destructive }}>
@@ -623,21 +629,23 @@ export default function BusinessPnL() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
+            whileHover={{ y: -2, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3, delay: 0.1 }}
           >
-            <Card className="rounded-xl overflow-hidden"
+            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15"
               style={{
-                background: c.card,
-                border: `1px solid ${isProfit ? alpha(c.secondary, 20) : alpha(c.destructive, 20)}`,
+                borderColor: isProfit ? alpha(c.secondary, 20) : alpha(c.destructive, 20),
               }}>
-              <div className="h-1" style={{
+              <div className="h-[3px]" style={{
                 background: isProfit
-                  ? `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 40)})`
-                  : `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 40)})`,
+                  ? `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 30)})`
+                  : `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 30)})`,
               }} />
-              <CardContent className="p-4">
+              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(isProfit ? c.secondary : c.destructive, 6)}, transparent)` }}>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <DollarSign className="h-3.5 w-3.5" style={{ color: isProfit ? c.secondary : c.destructive }} />
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(isProfit ? c.secondary : c.destructive, 10) }}>
+                    <DollarSign className="h-3.5 w-3.5" style={{ color: isProfit ? c.secondary : c.destructive }} />
+                  </div>
                   <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Laba Bersih</span>
                 </div>
                 <p className="text-base sm:text-lg font-bold tabular-nums"
@@ -655,13 +663,16 @@ export default function BusinessPnL() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.15 }}
+            whileHover={{ y: -2, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3, delay: 0.15 }}
           >
-            <Card className="rounded-xl overflow-hidden" style={{ background: c.card, border: `1px solid ${c.border}` }}>
-              <div className="h-1" style={{ background: `linear-gradient(90deg, ${c.warning}, ${alpha(c.warning, 40)})` }} />
-              <CardContent className="p-4">
+            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
+              <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${c.warning}, ${alpha(c.warning, 30)})` }} />
+              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 6)}, transparent)` }}>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Percent className="h-3.5 w-3.5" style={{ color: c.warning }} />
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.warning, 10) }}>
+                    <Percent className="h-3.5 w-3.5" style={{ color: c.warning }} />
+                  </div>
                   <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Margin Laba</span>
                 </div>
                 <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.warning }}>
@@ -680,7 +691,7 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-64 sm:h-72 rounded-xl" />
       ) : chartData.length > 0 ? (
-        <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -742,7 +753,7 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-48 rounded-xl" />
       ) : (
-        <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -844,7 +855,7 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-48 rounded-xl" />
       ) : (
-        <Card className="rounded-xl" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
@@ -946,12 +957,11 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-36 rounded-xl" />
       ) : data ? (
-        <Card className="rounded-xl overflow-hidden"
+        <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06]"
           style={{
-            background: c.card,
-            border: `1px solid ${isProfit ? alpha(c.secondary, 15) : alpha(c.destructive, 15)}`,
+            borderColor: isProfit ? alpha(c.secondary, 15) : alpha(c.destructive, 15),
           }}>
-          <div className="h-1.5" style={{
+          <div className="h-[3px]" style={{
             background: isProfit
               ? `linear-gradient(90deg, ${c.secondary}, ${c.warning})`
               : `linear-gradient(90deg, ${c.destructive}, ${c.warning})`,

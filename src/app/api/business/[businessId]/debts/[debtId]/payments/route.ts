@@ -178,6 +178,47 @@ export async function POST(
       data: updateData,
     });
 
+    // ─── Update linked sales invoice ───────────────────────────────
+    // Chain: piutang debt → sale (via referenceId) → invoice (via sale.invoiceId)
+    if (debt.referenceId && debt.type === 'piutang') {
+      try {
+        const linkedSale = await db.businessSale.findUnique({
+          where: { id: debt.referenceId },
+          select: { invoiceId: true, downPayment: true },
+        });
+        if (linkedSale && linkedSale.invoiceId) {
+          const existingInvoice = await db.businessInvoice.findUnique({
+            where: { id: linkedSale.invoiceId },
+          });
+          if (existingInvoice && existingInvoice.status !== 'paid') {
+            // Recalculate total paid on this invoice:
+            // paidAmount = sale downPayment + total installment payments on the piutang
+            const saleDP = linkedSale.downPayment || 0;
+            const newPaidAmount = Math.min(saleDP + totalPaid, existingInvoice.total);
+
+            let invoiceStatus: string;
+            if (newPaidAmount >= existingInvoice.total) {
+              invoiceStatus = 'paid';
+            } else if (newPaidAmount > 0) {
+              invoiceStatus = 'pending';
+            } else {
+              invoiceStatus = existingInvoice.status;
+            }
+
+            await db.businessInvoice.update({
+              where: { id: existingInvoice.id },
+              data: {
+                paidAmount: newPaidAmount,
+                status: invoiceStatus,
+              },
+            });
+          }
+        }
+      } catch (invoiceUpdateErr) {
+        console.error('Auto-update invoice from piutang payment error:', invoiceUpdateErr);
+      }
+    }
+
     return NextResponse.json(
       {
         payment,

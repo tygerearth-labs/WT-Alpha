@@ -443,6 +443,110 @@ export async function GET(
       };
     }
 
+    // ── Investor Summary ──
+    if (type === 'full') {
+      const investors = await db.businessInvestor.findMany({
+        where: { businessId },
+        orderBy: { joinDate: 'asc' },
+      });
+
+      const activeInvestors = investors.filter((inv) => inv.status === 'active');
+      const totalInvested = investors.reduce((s, i) => s + i.totalInvestment, 0);
+      const totalActiveInvested = activeInvestors.reduce((s, i) => s + i.totalInvestment, 0);
+
+      // Investor income from cash entries (investor_pendapatan category)
+      const investorCashIncome = await db.businessCash.findMany({
+        where: {
+          businessId,
+          type: 'investor',
+          category: 'investor_pendapatan',
+          ...(dateFilter ? { date: dateFilter } : {}),
+        },
+        select: { amount: true },
+      });
+      const investorIncomeInPeriod = investorCashIncome.reduce((s, c) => s + c.amount, 0);
+
+      report.investorSummary = {
+        totalInvestors: investors.length,
+        activeInvestors: activeInvestors.length,
+        totalInvested,
+        totalActiveInvested,
+        investorIncomeInPeriod,
+        investors: investors.map((inv) => ({
+          id: inv.id,
+          name: inv.name,
+          totalInvestment: inv.totalInvestment,
+          profitSharePct: inv.profitSharePct,
+          status: inv.status,
+          joinDate: new Date(inv.joinDate).toLocaleDateString('id-ID'),
+        })),
+      };
+    }
+
+    // ── Budget Utilization ──
+    if (type === 'full') {
+      const now = new Date();
+      const currentPeriod = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+
+      const budgets = await db.businessBudget.findMany({
+        where: {
+          businessId,
+          isActive: true,
+          period: currentPeriod,
+          year: currentYear,
+        },
+        orderBy: { categoryName: 'asc' },
+        include: {
+          allocations: true,
+        },
+      });
+
+      // Get expenses per category for current month
+      const monthStart = new Date(currentYear, currentPeriod - 1, 1, 0, 0, 0, 0);
+      const monthEnd = new Date(currentYear, currentPeriod, 0, 23, 59, 59, 999);
+
+      const monthlyExpenses = await db.businessCash.findMany({
+        where: {
+          businessId,
+          type: 'kas_keluar',
+          date: { gte: monthStart, lte: monthEnd },
+        },
+        select: { amount: true, category: true },
+      });
+
+      const expenseByCategory = new Map<string, number>();
+      for (const e of monthlyExpenses) {
+        const cat = e.category || 'Lainnya';
+        expenseByCategory.set(cat, (expenseByCategory.get(cat) || 0) + e.amount);
+      }
+
+      const totalBudgeted = budgets.reduce((s, b) => s + b.amount, 0);
+      const totalActual = budgets.reduce((s, b) => s + (expenseByCategory.get(b.categoryName) || 0), 0);
+
+      report.budgetUtilization = {
+        period: currentPeriod,
+        year: currentYear,
+        totalBudgeted,
+        totalActual,
+        categories: budgets.map((b) => {
+          const actual = expenseByCategory.get(b.categoryName) || 0;
+          return {
+            categoryName: b.categoryName,
+            budgeted: b.amount,
+            actual: Math.round(actual),
+            remaining: Math.max(0, b.amount - actual),
+            utilizationPct: b.amount > 0 ? Math.min((actual / b.amount) * 100, 100) : 0,
+            isOverBudget: actual > b.amount,
+            allocations: b.allocations.map((a) => ({
+              fundSource: a.fundSource,
+              amount: a.amount,
+            })),
+          };
+        }),
+      };
+    }
+
     // Overall summary (only for full report)
     if (type === 'full') {
       const salesData = report.sales as { summary?: Record<string, number>; salesBreakdown?: Record<string, Record<string, number>>; data?: Array<Record<string, unknown>> } | undefined;

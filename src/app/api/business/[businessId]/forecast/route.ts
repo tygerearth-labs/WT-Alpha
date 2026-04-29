@@ -14,6 +14,9 @@ interface MonthlyCashData {
   netCashFlow: number;
   incomeByCategory: Map<string, number>;
   expenseByCategory: Map<string, number>;
+  salesRevenue: number;
+  installmentIncome: number;
+  investorProfit: number;
 }
 
 /**
@@ -90,25 +93,67 @@ export async function GET(
     const now = new Date();
     const lookbackDate = new Date(now.getFullYear(), now.getMonth() - lookbackMonths, 1, 0, 0, 0, 0);
 
-    const allEntries = await db.businessCash.findMany({
-      where: {
-        businessId,
-        date: { gte: lookbackDate },
-      },
-      select: {
-        type: true,
-        amount: true,
-        category: true,
-        date: true,
-      },
-      orderBy: { date: 'asc' },
-    });
+    // ── Parallel queries for all data sources ──
+    const [
+      allEntries,
+      allTimeEntries,
+      salesData,
+      installmentPayments,
+      investorProfitEntries,
+    ] = await Promise.all([
+      // Historical cash entries within lookback
+      db.businessCash.findMany({
+        where: {
+          businessId,
+          date: { gte: lookbackDate },
+        },
+        select: {
+          type: true,
+          amount: true,
+          category: true,
+          date: true,
+        },
+        orderBy: { date: 'asc' },
+      }),
+
+      // All-time cash entries for balance calculation
+      db.businessCash.findMany({
+        where: { businessId },
+        select: { type: true, amount: true },
+      }),
+
+      // Sales within lookback period
+      db.businessSale.findMany({
+        where: { businessId, date: { gte: lookbackDate } },
+        select: { amount: true, date: true },
+        orderBy: { date: 'asc' },
+      }),
+
+      // Installment payments received (piutang debt payments)
+      db.businessDebtPayment.findMany({
+        where: {
+          businessId,
+          debt: { type: 'piutang' },
+          paymentDate: { gte: lookbackDate },
+        },
+        select: { amount: true, paymentDate: true },
+        orderBy: { paymentDate: 'asc' },
+      }),
+
+      // Investor profit (cash entries tagged as investor income)
+      db.businessCash.findMany({
+        where: {
+          businessId,
+          type: 'investor',
+          category: 'investor_pendapatan',
+          date: { gte: lookbackDate },
+        },
+        select: { amount: true, date: true },
+        orderBy: { date: 'asc' },
+      }),
+    ]);
 
     // Also compute current total balance (all time)
-    const allTimeEntries = await db.businessCash.findMany({
-      where: { businessId },
-      select: { type: true, amount: true },
-    });
     const allTimeIncome = allTimeEntries
       .filter((e) => e.type === 'kas_besar' || e.type === 'kas_kecil' || e.type === 'investor')
       .reduce((s, e) => s + e.amount, 0);
@@ -117,38 +162,84 @@ export async function GET(
       .reduce((s, e) => s + e.amount, 0);
     const currentBalance = allTimeIncome - allTimeExpenses;
 
-    // ── Group data by month ──
+    // ── Total Kas Value (kas_besar + kas_kecil - kas_keluar, all-time) ──
+    const kasBesarTotal = allTimeEntries
+      .filter((e) => e.type === 'kas_besar')
+      .reduce((s, e) => s + e.amount, 0);
+    const kasKecilTotal = allTimeEntries
+      .filter((e) => e.type === 'kas_kecil')
+      .reduce((s, e) => s + e.amount, 0);
+    const totalKasValue = kasBesarTotal + kasKecilTotal - allTimeExpenses;
+
+    // ── Helper to get/create monthly entry ──
+    function getOrCreateMonth(year: number, month: number): MonthlyCashData {
+      const key = `${year}-${String(month).padStart(2, '0')}`;
+      const existing = monthlyData.get(key);
+      if (existing) return existing;
+      const entry: MonthlyCashData = {
+        year,
+        month,
+        income: 0,
+        expenses: 0,
+        netCashFlow: 0,
+        incomeByCategory: new Map(),
+        expenseByCategory: new Map(),
+        salesRevenue: 0,
+        installmentIncome: 0,
+        investorProfit: 0,
+      };
+      monthlyData.set(key, entry);
+      return entry;
+    }
+
+    // ── Group cash data by month ──
     const monthlyData: Map<string, MonthlyCashData> = new Map();
 
     for (const entry of allEntries) {
       const d = entry.date;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const existing = monthlyData.get(key) || {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        income: 0,
-        expenses: 0,
-        netCashFlow: 0,
-        incomeByCategory: new Map<string, number>(),
-        expenseByCategory: new Map<string, number>(),
-      };
+      const m = getOrCreateMonth(d.getFullYear(), d.getMonth() + 1);
 
       const isIncome = entry.type === 'kas_besar' || entry.type === 'kas_kecil' || entry.type === 'investor';
       const isExpense = entry.type === 'kas_keluar';
 
       if (isIncome) {
-        existing.income += entry.amount;
+        m.income += entry.amount;
         const cat = entry.category || 'Lainnya';
-        existing.incomeByCategory.set(cat, (existing.incomeByCategory.get(cat) || 0) + entry.amount);
+        m.incomeByCategory.set(cat, (m.incomeByCategory.get(cat) || 0) + entry.amount);
       }
       if (isExpense) {
-        existing.expenses += entry.amount;
+        m.expenses += entry.amount;
         const cat = entry.category || 'Lainnya';
-        existing.expenseByCategory.set(cat, (existing.expenseByCategory.get(cat) || 0) + entry.amount);
+        m.expenseByCategory.set(cat, (m.expenseByCategory.get(cat) || 0) + entry.amount);
       }
 
-      existing.netCashFlow = existing.income - existing.expenses;
-      monthlyData.set(key, existing);
+      m.netCashFlow = m.income - m.expenses;
+    }
+
+    // ── Group sales revenue by month ──
+    for (const sale of salesData) {
+      const d = sale.date;
+      const m = getOrCreateMonth(d.getFullYear(), d.getMonth() + 1);
+      m.salesRevenue += sale.amount;
+    }
+
+    // ── Group installment income by month ──
+    for (const payment of installmentPayments) {
+      const d = payment.paymentDate;
+      const m = getOrCreateMonth(d.getFullYear(), d.getMonth() + 1);
+      m.installmentIncome += payment.amount;
+    }
+
+    // ── Group investor profit by month ──
+    for (const profit of investorProfitEntries) {
+      const d = profit.date;
+      const m = getOrCreateMonth(d.getFullYear(), d.getMonth() + 1);
+      m.investorProfit += profit.amount;
+    }
+
+    // Recalculate netCashFlow for all months (in case new data was added)
+    for (const m of monthlyData.values()) {
+      m.netCashFlow = m.income - m.expenses;
     }
 
     // Sort by month
@@ -166,6 +257,9 @@ export async function GET(
         netCashFlow: 0,
         incomeByCategory: new Map(),
         expenseByCategory: new Map(),
+        salesRevenue: 0,
+        installmentIncome: 0,
+        investorProfit: 0,
       });
     }
 
@@ -182,6 +276,9 @@ export async function GET(
         netCashFlow: number;
         projectedBalance: number;
         isForecast: boolean;
+        salesRevenue: number;
+        installmentIncome: number;
+        investorProfit: number;
       }> = [];
 
       for (let i = 1; i <= forecastMonths; i++) {
@@ -195,6 +292,9 @@ export async function GET(
           netCashFlow: 0,
           projectedBalance: currentBalance,
           isForecast: true,
+          salesRevenue: 0,
+          installmentIncome: 0,
+          investorProfit: 0,
         });
       }
 
@@ -212,36 +312,61 @@ export async function GET(
         months: minimalForecastMonths,
         categories: [],
         chartData: [],
+        totalKasValue: Math.round(totalKasValue),
+        salesRevenue: { currentMonth: 0, avgMonthly: 0, trend: 0 },
+        installmentIncome: { currentMonth: 0, avgMonthly: 0, trend: 0 },
+        investorProfit: { currentMonth: 0, avgMonthly: 0, trend: 0 },
       });
     }
 
     // ── Compute weighted averages using seasonal weighting ──
     let weightedIncomeSum = 0;
     let weightedExpenseSum = 0;
+    let weightedSalesSum = 0;
+    let weightedInstallmentSum = 0;
+    let weightedInvestorProfitSum = 0;
     let weightTotal = 0;
 
     const incomeValues: number[] = [];
     const expenseValues: number[] = [];
+    const salesValues: number[] = [];
+    const installmentValues: number[] = [];
+    const investorProfitValues: number[] = [];
 
     for (let i = 0; i < sortedMonthly.length; i++) {
       const m = sortedMonthly[i];
       const w = getSeasonalWeight(i, sortedMonthly.length);
       weightedIncomeSum += m.income * w;
       weightedExpenseSum += m.expenses * w;
+      weightedSalesSum += m.salesRevenue * w;
+      weightedInstallmentSum += m.installmentIncome * w;
+      weightedInvestorProfitSum += m.investorProfit * w;
       weightTotal += w;
       incomeValues.push(m.income);
       expenseValues.push(m.expenses);
+      salesValues.push(m.salesRevenue);
+      installmentValues.push(m.installmentIncome);
+      investorProfitValues.push(m.investorProfit);
     }
 
     const avgMonthlyIncome = weightTotal > 0 ? weightedIncomeSum / weightTotal : 0;
     const avgMonthlyExpenses = weightTotal > 0 ? weightedExpenseSum / weightTotal : 0;
+    const avgMonthlySales = weightTotal > 0 ? weightedSalesSum / weightTotal : 0;
+    const avgMonthlyInstallment = weightTotal > 0 ? weightedInstallmentSum / weightTotal : 0;
+    const avgMonthlyInvestorProfit = weightTotal > 0 ? weightedInvestorProfitSum / weightTotal : 0;
 
     // ── Compute linear trends ──
     const incomeRegression = linearRegression(incomeValues);
     const expenseRegression = linearRegression(expenseValues);
+    const salesRegression = linearRegression(salesValues);
+    const installmentRegression = linearRegression(installmentValues);
+    const investorProfitRegression = linearRegression(investorProfitValues);
 
     const incomeTrend = avgMonthlyIncome > 0 ? (incomeRegression.slope / avgMonthlyIncome) * 100 : 0;
     const expenseTrend = avgMonthlyExpenses > 0 ? (expenseRegression.slope / avgMonthlyExpenses) * 100 : 0;
+    const salesTrend = avgMonthlySales > 0 ? (salesRegression.slope / avgMonthlySales) * 100 : 0;
+    const installmentTrend = avgMonthlyInstallment > 0 ? (installmentRegression.slope / avgMonthlyInstallment) * 100 : 0;
+    const investorProfitTrend = avgMonthlyInvestorProfit > 0 ? (investorProfitRegression.slope / avgMonthlyInvestorProfit) * 100 : 0;
 
     // ── Confidence scoring ──
     const incomeCV = coefficientOfVariation(incomeValues);
@@ -259,6 +384,8 @@ export async function GET(
       actualIncome?: number;
       actualExpenses?: number;
       actualBalance?: number;
+      actualSales?: number;
+      actualInstallment?: number;
       forecastIncome?: number;
       forecastExpenses?: number;
       forecastBalance?: number;
@@ -279,6 +406,8 @@ export async function GET(
         actualIncome: m.income,
         actualExpenses: m.expenses,
         actualBalance: Math.round(runningBalance),
+        actualSales: Math.round(m.salesRevenue),
+        actualInstallment: Math.round(m.installmentIncome),
         isForecast: false,
       });
     }
@@ -301,6 +430,9 @@ export async function GET(
       projectedBalance: number;
       isForecast: boolean;
       confidenceRange?: [number, number];
+      salesRevenue: number;
+      installmentIncome: number;
+      investorProfit: number;
     }> = [];
 
     for (let i = 1; i <= forecastMonths; i++) {
@@ -311,6 +443,9 @@ export async function GET(
       // Apply linear trend with damping
       const trendedIncome = Math.max(0, avgMonthlyIncome + incomeRegression.slope * i * 0.5);
       const trendedExpenses = Math.max(0, avgMonthlyExpenses + expenseRegression.slope * i * 0.3);
+      const trendedSales = Math.max(0, avgMonthlySales + salesRegression.slope * i * 0.4);
+      const trendedInstallment = Math.max(0, avgMonthlyInstallment + installmentRegression.slope * i * 0.4);
+      const trendedInvestorProfit = Math.max(0, avgMonthlyInvestorProfit + investorProfitRegression.slope * i * 0.4);
 
       // Seasonal modulation: use same month from previous year as hint
       let seasonalFactor = 1;
@@ -341,6 +476,9 @@ export async function GET(
         projectedBalance: Math.round(runningBalance),
         isForecast: true,
         confidenceRange: confidence !== 'low' ? [lowerBalance, upperBalance] : undefined,
+        salesRevenue: Math.round(trendedSales),
+        installmentIncome: Math.round(trendedInstallment),
+        investorProfit: Math.round(trendedInvestorProfit),
       });
 
       chartData.push({
@@ -415,8 +553,11 @@ export async function GET(
         income: Math.round(m.income),
         expenses: Math.round(m.expenses),
         netCashFlow: Math.round(m.netCashFlow),
-        projectedBalance: 0, // will be filled below
+        projectedBalance: 0,
         isForecast: false,
+        salesRevenue: Math.round(m.salesRevenue),
+        installmentIncome: Math.round(m.installmentIncome),
+        investorProfit: Math.round(m.investorProfit),
       })),
       ...forecastMonthsData,
     ];
@@ -427,6 +568,14 @@ export async function GET(
       runBal += allMonths[i].netCashFlow;
       allMonths[i].projectedBalance = Math.round(runBal);
     }
+
+    // ── Current month values for new metrics ──
+    const currentMonthData = sortedMonthly.find(
+      (m) => m.year === now.getFullYear() && m.month === now.getMonth() + 1
+    );
+    const currentSalesRevenue = currentMonthData?.salesRevenue ?? 0;
+    const currentInstallmentIncome = currentMonthData?.installmentIncome ?? 0;
+    const currentInvestorProfit = currentMonthData?.investorProfit ?? 0;
 
     return NextResponse.json({
       currentBalance,
@@ -442,6 +591,22 @@ export async function GET(
       months: allMonths,
       categories,
       chartData,
+      totalKasValue: Math.round(totalKasValue),
+      salesRevenue: {
+        currentMonth: Math.round(currentSalesRevenue),
+        avgMonthly: Math.round(avgMonthlySales),
+        trend: Math.round(salesTrend * 10) / 10,
+      },
+      installmentIncome: {
+        currentMonth: Math.round(currentInstallmentIncome),
+        avgMonthly: Math.round(avgMonthlyInstallment),
+        trend: Math.round(installmentTrend * 10) / 10,
+      },
+      investorProfit: {
+        currentMonth: Math.round(currentInvestorProfit),
+        avgMonthly: Math.round(avgMonthlyInvestorProfit),
+        trend: Math.round(investorProfitTrend * 10) / 10,
+      },
     });
   } catch (error) {
     console.error('Forecast GET error:', error);

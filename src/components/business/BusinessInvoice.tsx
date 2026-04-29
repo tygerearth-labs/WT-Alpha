@@ -844,11 +844,11 @@ export default function BusinessInvoice() {
         </motion.div>
       </motion.div>
 
-      {/* ═══ View Invoice Dialog ═══ */}
+      {/* ═══ View Invoice Dialog (Responsive) ═══ */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-[#141414] border-white/[0.08]">
+        <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[92vh] overflow-y-auto rounded-2xl p-0 border border-border">
           {/* Gradient accent strip */}
-          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
+          <div className="h-[3px] rounded-t-2xl shrink-0" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
           {viewInvoice && (() => {
             const tmpl = invoiceSettings?.template || 'modern';
             const pColor = invoiceSettings?.primaryColor || '#1E293B';
@@ -867,43 +867,48 @@ export default function BusinessInvoice() {
 
             return (
               <div className="w-full">
+                {/* ── Template Headers ── */}
                 {tmpl === 'modern' && (
-                  <div className="relative overflow-hidden rounded-t-xl">
-                    <div className="px-5 py-5 flex items-start justify-between" style={{ background: `linear-gradient(135deg, ${pColor}, ${sColor})` }}>
+                  <div className="relative overflow-hidden sm:rounded-t-xl">
+                    <div className="px-4 py-4 sm:px-5 sm:py-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0" style={{ background: `linear-gradient(135deg, ${pColor}, ${sColor})` }}>
                       <div className="flex items-center gap-3">
                         {bizLogo ? (
-                          <img src={bizLogo} alt="" className="h-10 w-10 rounded-lg object-cover bg-black/20" />
+                          <img src={bizLogo} alt="" className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg object-cover bg-black/20" />
                         ) : (
-                          <div className="h-10 w-10 rounded-lg bg-black/20 flex items-center justify-center">
-                            <Building2 className="h-5 w-5 text-muted-foreground/70" />
+                          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-black/20 flex items-center justify-center">
+                            <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground/70" />
                           </div>
                         )}
-                        <div>
-                          <p className="font-bold text-foreground text-sm">{bizName}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-foreground text-sm truncate">{bizName}</p>
                           {(bizAddr || bizPhone || bizEmail) && (
-                            <p className="text-[10px] text-muted-foreground/60 mt-0.5 max-w-[200px] truncate">
+                            <p className="text-[10px] text-muted-foreground/60 mt-0.5 line-clamp-2">
                               {[bizAddr, bizPhone && `Tel: ${bizPhone}`, bizEmail].filter(Boolean).join(' · ')}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-foreground text-base">INVOICE</p>
-                        <p className="text-[11px] text-muted-foreground/80 mt-0.5">{inv.invoiceNumber}</p>
-                        <p className="text-[10px] text-muted-foreground/60">{new Date(inv.date).toLocaleDateString('id-ID')}</p>
-                        {inv.dueDate && (
-                          <p className="text-[10px] text-muted-foreground/60">Jatuh Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID')}</p>
-                        )}
+                      <div className="sm:text-right flex-1 sm:flex-none">
+                        <div className="flex items-center justify-between sm:block">
+                          <p className="font-bold text-foreground text-base">INVOICE</p>
+                          <p className="text-[11px] text-muted-foreground/80 sm:mt-0.5">{inv.invoiceNumber}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 sm:block">
+                          <p className="text-[10px] text-muted-foreground/60">{new Date(inv.date).toLocaleDateString('id-ID')}</p>
+                          {inv.dueDate && (
+                            <p className="text-[10px] text-muted-foreground/60 sm:mt-0">Jatuh Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID')}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="h-1" style={{ backgroundColor: sColor }} />
                   </div>
                 )}
                 {tmpl === 'classic' && (
-                  <div className="rounded-t-xl">
-                    <div className="py-5 text-center" style={{ borderBottom: `2px solid ${pColor}` }}>
-                      {bizLogo && <img src={bizLogo} alt="" className="h-10 w-10 rounded-lg object-cover mx-auto mb-2" />}
-                      <p className="font-bold text-base tracking-wider uppercase" style={{ color: pColor }}>{bizName}</p>
+                  <div className="sm:rounded-t-xl">
+                    <div className="py-4 sm:py-5 text-center" style={{ borderBottom: `2px solid ${pColor}` }}>
+                      {bizLogo && <img src={bizLogo} alt="" className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg object-cover mx-auto mb-2" />}
+                      <p className="font-bold text-sm sm:text-base tracking-wider uppercase" style={{ color: pColor }}>{bizName}</p>
                       {(bizAddr || bizPhone || bizEmail) && (
                         <p className="text-[10px] mt-1 text-muted-foreground">
                           {[bizAddr, bizPhone && `Tel: ${bizPhone}`, bizEmail].filter(Boolean).join(' · ')}
@@ -914,7 +919,7 @@ export default function BusinessInvoice() {
                   </div>
                 )}
                 {tmpl === 'minimal' && (
-                  <div className="px-5 pt-5 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+                  <div className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
                     <div className="flex items-center gap-2.5">
                       {bizLogo ? (
                         <img src={bizLogo} alt="" className="h-7 w-7 rounded object-cover" />
@@ -923,52 +928,80 @@ export default function BusinessInvoice() {
                           <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                         </div>
                       )}
-                      <div>
-                        <p className="font-medium text-sm text-foreground">{bizName}</p>
-                        {bizAddr && <p className="text-[10px] text-muted-foreground">{bizAddr}</p>}
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm text-foreground truncate">{bizName}</p>
+                        {bizAddr && <p className="text-[10px] text-muted-foreground truncate">{bizAddr}</p>}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right flex items-center sm:block justify-between">
                       <p className="font-medium text-xs text-foreground">{inv.invoiceNumber}</p>
                       <p className="text-[10px] text-muted-foreground">{new Date(inv.date).toLocaleDateString('id-ID')}</p>
                     </div>
                   </div>
                 )}
 
-                <div className="px-5 py-4 space-y-4">
+                {/* ── Invoice Body ── */}
+                <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4">
+                  {/* Status + Due Date Row */}
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" border-0 className="text-[10px] gap-1 px-2 py-0.5 rounded-full" style={{ background: statusStyle.gradient, color: statusStyle.color, boxShadow: `0 0 8px ${alpha(statusStyle.color, 15)}` }}>
+                    <Badge variant="outline" border-0 className="text-[10px] gap-1 px-2 py-0.5 rounded-full shrink-0" style={{ background: statusStyle.gradient, color: statusStyle.color, boxShadow: `0 0 8px ${alpha(statusStyle.color, 15)}` }}>
                       <StatusIcon className="h-2.5 w-2.5" />
                       {t(statusStyle.label)}
                     </Badge>
                     {inv.dueDate && tmpl !== 'modern' && (
-                      <span className="text-[10px] text-muted-foreground">Jatuh Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID')}</span>
+                      <span className="text-[10px] text-muted-foreground truncate ml-2">Jatuh Tempo: {new Date(inv.dueDate).toLocaleDateString('id-ID')}</span>
                     )}
                   </div>
-                  <div className="flex justify-between items-start">
+
+                  {/* Customer (Bill To) */}
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                     <div className="flex-1">
                       <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 text-muted-foreground">{tmpl === 'minimal' ? 'Bill To' : 'Kepada:'}</p>
                       <p className="text-xs font-medium text-foreground">{inv.customer?.name || '-'}</p>
+                      {inv.customer?.phone && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{inv.customer.phone}</p>
+                      )}
                     </div>
                   </div>
+
+                  {/* Items Table */}
                   <div className="rounded-lg overflow-hidden border border-border">
-                    <div className="grid grid-cols-12 gap-0 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ backgroundColor: tmpl === 'minimal' ? 'transparent' : `${pColor}20`, color: pColor, borderBottom: '1px solid var(--border)' }}>
+                    {/* Desktop table header */}
+                    <div className="hidden sm:grid sm:grid-cols-12 gap-0 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider" style={{ backgroundColor: tmpl === 'minimal' ? 'transparent' : `${pColor}15`, color: pColor, borderBottom: '1px solid var(--border)' }}>
                       <span className="col-span-5">Item</span>
                       <span className="col-span-2 text-center">Qty</span>
                       <span className="col-span-2 text-right">Harga</span>
                       <span className="col-span-3 text-right">Total</span>
                     </div>
                     {inv.items.map((item, i) => (
-                      <div key={i} className="grid grid-cols-12 gap-0 px-3 py-2 text-[11px]" style={{ borderBottom: i < inv.items.length - 1 ? '1px solid var(--border)' : 'none', backgroundColor: i % 2 === 1 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-                        <span className="col-span-5 truncate text-foreground">{item.description}</span>
-                        <span className="col-span-2 text-center text-muted-foreground tabular-nums">{item.qty}</span>
-                        <span className="col-span-2 text-right text-muted-foreground tabular-nums">{formatAmount(item.price)}</span>
-                        <span className="col-span-3 text-right font-medium text-foreground tabular-nums">{formatAmount(item.qty * item.price)}</span>
+                      <div key={i} className={
+                        tmpl === 'minimal'
+                          ? cn('py-2.5 sm:py-2', i < inv.items.length - 1 ? 'border-b border-border' : '')
+                          : cn(
+                              'grid grid-cols-12 gap-0 px-3 sm:px-4 py-2.5 sm:py-2 text-[11px]',
+                              i < inv.items.length - 1 ? 'border-b border-border' : '',
+                            )
+                      } style={{ backgroundColor: i % 2 === 1 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                        {/* Mobile: compact card layout */}
+                        <div className="sm:hidden flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">{item.description}</p>
+                            <p className="text-[10px] text-muted-foreground tabular-nums">{item.qty} × {formatAmount(item.price)}</p>
+                          </div>
+                          <p className="text-xs font-semibold text-foreground tabular-nums shrink-0">{formatAmount(item.qty * item.price)}</p>
+                        </div>
+                        {/* Desktop: table row */}
+                        <span className="hidden sm:block sm:col-span-5 truncate text-foreground">{item.description}</span>
+                        <span className="hidden sm:block sm:col-span-2 text-center text-muted-foreground tabular-nums">{item.qty}</span>
+                        <span className="hidden sm:block sm:col-span-2 text-right text-muted-foreground tabular-nums">{formatAmount(item.price)}</span>
+                        <span className="hidden sm:block sm:col-span-3 text-right font-medium text-foreground tabular-nums">{formatAmount(item.qty * item.price)}</span>
                       </div>
                     ))}
                   </div>
+
+                  {/* Totals */}
                   <div className="flex justify-end">
-                    <div className="w-52 space-y-1 text-xs">
+                    <div className="w-full sm:w-56 space-y-1 text-xs">
                       <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="tabular-nums">{formatAmount(inv.subtotal)}</span></div>
                       {inv.tax > 0 && <div className="flex justify-between text-muted-foreground"><span>Pajak ({inv.tax}%)</span><span className="tabular-nums">{formatAmount(taxAmt)}</span></div>}
                       {inv.discount > 0 && <div className="flex justify-between" style={{ color: sColor }}><span>Diskon ({inv.discount}%)</span><span className="tabular-nums">-{formatAmount(discAmt)}</span></div>}
@@ -977,12 +1010,16 @@ export default function BusinessInvoice() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Notes */}
                   {inv.notes && (
                     <div className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
                       <p className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-muted-foreground">Catatan</p>
                       <p className="text-[11px] leading-relaxed text-muted-foreground">{inv.notes}</p>
                     </div>
                   )}
+
+                  {/* Bank Accounts */}
                   {bankAccounts.length > 0 && (
                     <div className="rounded-lg p-3" style={{ border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
                       <div className="flex items-center gap-2 mb-2">
@@ -991,7 +1028,7 @@ export default function BusinessInvoice() {
                         </div>
                         <p className="text-[11px] font-semibold text-muted-foreground">Rekening Pembayaran</p>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-2">
                         {bankAccounts.map((acc) => (
                           <div key={acc.id} className="flex items-start gap-2 p-2 rounded-lg" style={{ backgroundColor: acc.isDefault ? `${sColor}08` : 'transparent', border: `1px solid ${acc.isDefault ? `${sColor}30` : 'var(--border)'}` }}>
                             <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: acc.isDefault ? `${sColor}15` : 'rgba(255,255,255,0.04)' }}>
@@ -1010,20 +1047,24 @@ export default function BusinessInvoice() {
                       </div>
                     </div>
                   )}
+
+                  {/* Footer */}
                   {footerText && (
                     <div className="pt-2 border-t border-border">
                       <p className="text-[9px] italic text-center text-muted-foreground">{footerText}</p>
                     </div>
                   )}
                 </div>
-                <div className="px-5 pb-4 pt-2 flex justify-end gap-2 border-t border-border">
-                  <Button variant="outline" className="rounded-lg text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => handleWhatsAppReminder(inv)}>
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Kirim Reminder
-                  </Button>
-                  <Button variant="outline" className="rounded-lg" style={{ borderColor: `${sColor}30`, color: sColor }} onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
+
+                {/* ── Action Buttons ── */}
+                <div className="px-4 pb-4 pt-2 sm:px-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 border-t border-border">
+                  <Button variant="outline" className="rounded-lg text-xs w-full sm:w-auto" style={{ borderColor: `${sColor}30`, color: sColor }} onClick={() => handleDownloadPDF(inv.id)} disabled={downloading === inv.id}>
                     {downloading === inv.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     {t('biz.downloadPDF')}
+                  </Button>
+                  <Button variant="outline" className="rounded-lg text-xs w-full sm:w-auto text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => handleWhatsAppReminder(inv)}>
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Kirim Reminder
                   </Button>
                 </div>
               </div>

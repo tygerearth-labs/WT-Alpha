@@ -57,6 +57,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface JournalEntry {
   id: string;
@@ -377,46 +378,60 @@ export default function TradingJournal() {
     <div className="space-y-4">
       {/* Stats Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <Card className="bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-3">
-            <p className="text-xs text-white/40">{t('inv.totalTrades')}</p>
-            <p className="text-lg font-bold text-white">{stats.totalTrades}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-3">
-            <p className="text-xs text-white/40">{t('inv.winRate')}</p>
-            <p className="text-lg font-bold text-[#BB86FC]">{(stats.winRate ?? 0).toFixed(1)}%</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-3">
-            <p className="text-xs text-white/40">{t('inv.avgPnL')}</p>
-            <p className={cn('text-lg font-bold', pnlColor(stats.avgPnl))}>
-              {/* Stats use mixed portfolio types, keep generic format */}
-              {formatAmount(stats.avgPnl)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-3">
-            <p className="text-xs text-white/40">{t('inv.bestTrade')}</p>
-            <p className="text-lg font-bold text-[#03DAC6]">{formatAmount(stats.best)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-3">
-            <p className="text-xs text-white/40">{t('inv.worstTrade')}</p>
-            <p className="text-lg font-bold text-[#CF6679]">{formatAmount(stats.worst)}</p>
-          </CardContent>
-        </Card>
+        <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+            <CardContent className="p-3">
+              <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.totalTrades')}</p>
+              <p className="text-lg font-bold text-white mt-1">{stats.totalTrades}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+            <CardContent className="p-3">
+              <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.winRate')}</p>
+              <p className="text-lg font-bold text-[#BB86FC] mt-1">{(stats.winRate ?? 0).toFixed(1)}%</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+            <CardContent className="p-3">
+              <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.avgPnL')}</p>
+              <p className={cn('text-lg font-bold mt-1', pnlColor(stats.avgPnl))}>
+                {formatAmount(stats.avgPnl)}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+            <CardContent className="p-3">
+              <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.bestTrade')}</p>
+              <p className="text-lg font-bold text-[#03DAC6] mt-1">{formatAmount(stats.best)}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+            <CardContent className="p-3">
+              <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.worstTrade')}</p>
+              <p className="text-lg font-bold text-[#CF6679] mt-1">{formatAmount(stats.worst)}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       {/* Filters & Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={portfolioFilter} onValueChange={setPortfolioFilter}>
-            <SelectTrigger className="w-[140px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9">
+            <SelectTrigger className="w-[140px] bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white text-xs h-9 transition-colors">
               <SelectValue placeholder="Semua Portofolio" />
             </SelectTrigger>
             <SelectContent>
@@ -429,7 +444,7 @@ export default function TradingJournal() {
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[110px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9">
+            <SelectTrigger className="w-[110px] bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white text-xs h-9 transition-colors">
               <SelectValue placeholder="Tipe" />
             </SelectTrigger>
             <SelectContent>
@@ -442,15 +457,23 @@ export default function TradingJournal() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-[140px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9"
+            className="w-[140px] bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white text-xs h-9 transition-colors"
           />
           <Input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-[140px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9"
+            className="w-[140px] bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white text-xs h-9 transition-colors"
           />
-          <Badge variant="outline" className="border-white/[0.1] text-white/50 text-xs">
+          <Badge
+            variant="outline"
+            className={cn(
+              'border text-xs rounded-full px-3 py-0.5 transition-colors',
+              portfolioFilter !== 'all' || typeFilter !== 'all' || dateFrom || dateTo
+                ? 'border-[#BB86FC]/30 bg-[#BB86FC]/10 text-[#BB86FC]'
+                : 'border-white/[0.08] text-white/50'
+            )}
+          >
             {filtered.length}
           </Badge>
         </div>
@@ -459,7 +482,7 @@ export default function TradingJournal() {
             variant="outline"
             size="sm"
             onClick={exportExcel}
-            className="border-white/[0.1] text-white/70 hover:bg-white/10 h-9 text-xs"
+            className="border-white/[0.08] rounded-xl text-white/50 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/15 h-9 text-xs transition-colors"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />
             Excel
@@ -468,7 +491,7 @@ export default function TradingJournal() {
             variant="outline"
             size="sm"
             onClick={exportPDF}
-            className="border-white/[0.1] text-white/70 hover:bg-white/10 h-9 text-xs"
+            className="border-white/[0.08] rounded-xl text-white/50 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/15 h-9 text-xs transition-colors"
           >
             <FileText className="h-3.5 w-3.5 mr-1" />
             PDF
@@ -476,7 +499,8 @@ export default function TradingJournal() {
           <Button
             onClick={openCreate}
             size="sm"
-            className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB] h-9"
+            className="rounded-xl text-white h-9 text-xs"
+            style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}
           >
             <Plus className="h-4 w-4 mr-1" />
             {t('inv.addJournal')}
@@ -486,6 +510,7 @@ export default function TradingJournal() {
 
       {/* Journal Table */}
       <Card className="bg-[#1A1A2E] border-white/[0.06]">
+        <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-3 p-4">
@@ -494,26 +519,34 @@ export default function TradingJournal() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <BookOpen className="h-10 w-10 text-white/20 mb-3" />
-              <p className="text-white/40 text-sm">{t('inv.noJournalData')}</p>
-              <p className="text-white/25 text-xs">{t('inv.startJournaling')}</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex flex-col items-center justify-center py-16 relative"
+            >
+              <div className="absolute w-32 h-32 rounded-full bg-[#BB86FC]/5 blur-3xl" />
+              <div className="w-16 h-16 rounded-2xl bg-[#BB86FC]/10 border border-[#BB86FC]/20 flex items-center justify-center mb-4">
+                <BookOpen className="h-8 w-8 text-[#BB86FC]/60" />
+              </div>
+              <p className="text-white/40 text-sm font-medium">{t('inv.noJournalData')}</p>
+              <p className="text-white/25 text-xs mt-1">{t('inv.startJournaling')}</p>
+            </motion.div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-white/[0.06] hover:bg-transparent">
-                    <TableHead className="text-white/50 text-xs">Tipe</TableHead>
-                    <TableHead className="text-white/50 text-xs">Symbol</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">H. Masuk</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">H. Keluar</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">Qty</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">PnL</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">PnL %</TableHead>
-                    <TableHead className="text-white/50 text-xs text-right">R:R</TableHead>
-                    <TableHead className="text-white/50 text-xs">Tanggal</TableHead>
-                    <TableHead className="text-white/50 text-xs w-20" />
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40">Tipe</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40">Symbol</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 text-right">H. Masuk</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 text-right">H. Keluar</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 text-right">Qty</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 text-right">PnL</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 text-right">PnL %</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 text-right">R:R</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40">Tanggal</TableHead>
+                    <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 w-20" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -521,63 +554,73 @@ export default function TradingJournal() {
                     const isBuy = item.type === 'buy';
                     const isPositive = item.pnl >= 0;
                     return (
-                      <TableRow key={item.id} className="border-white/[0.04] hover:bg-white/[0.02]">
-                        <TableCell className="py-3">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'text-[10px] border-0 px-2 py-0',
-                              isBuy
-                                ? 'bg-emerald-500/15 text-emerald-400'
-                                : 'bg-rose-500/15 text-rose-400'
-                            )}
-                          >
-                            {isBuy ? t('inv.journalBuy') : t('inv.journalSell')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-white text-xs font-medium py-3">
-                          {getPortfolioSymbol(item.portfolioId)}
-                        </TableCell>
-                        <TableCell className="text-white/70 text-xs text-right py-3">
-                          {formatInvPrice(item.portfolio?.type || 'crypto', item.entryPrice)}
-                        </TableCell>
-                        <TableCell className="text-white/70 text-xs text-right py-3">
-                          {item.exitPrice ? formatInvPrice(item.portfolio?.type || 'crypto', item.exitPrice) : '-'}
-                        </TableCell>
-                        <TableCell className="text-white/70 text-xs text-right py-3">
-                          {item.quantity}
-                        </TableCell>
-                        <TableCell className={cn('text-xs text-right font-medium py-3', pnlColor(item.pnl))}>
-                          {isBuy ? '-' : `${isPositive ? '+' : ''}${formatInvPrice(item.portfolio?.type || 'crypto', item.pnl)}`}
-                        </TableCell>
-                        <TableCell className={cn('text-xs text-right font-medium py-3', isBuy ? 'text-white/50' : pnlColor(item.pnl))}>
-                          {isBuy ? '-' : `${isPositive ? '+' : ''}${(item.pnlPercentage ?? 0).toFixed(2)}%`}
-                        </TableCell>
-                        <TableCell className="text-white/50 text-xs text-right py-3">
-                          {item.riskReward?.toString() || '-'}
-                        </TableCell>
-                        <TableCell className="text-white/50 text-xs py-3">
-                          {new Date(item.date).toLocaleDateString('id-ID')}
-                        </TableCell>
-                        <TableCell className="py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-white/40 hover:text-white hover:bg-white/10"
-                            onClick={() => openEdit(item)}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-white/40 hover:text-[#CF6679] hover:bg-white/10"
-                            onClick={() => setDeleteTarget(item)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        whileHover={{ x: 2 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      >
+                        <TableRow className={cn(
+                          'border-white/[0.04] hover:bg-white/[0.02] transition-colors',
+                          isBuy ? 'border-l-[3px] border-l-[#03DAC6]' : 'border-l-[3px] border-l-[#CF6679]'
+                        )}>
+                          <TableCell className="py-3">
+                            <Badge
+                              className={cn(
+                                'text-[10px] px-2 py-0',
+                                isBuy
+                                  ? 'bg-[#03DAC6]/15 text-[#03DAC6] border border-[#03DAC6]/20'
+                                  : 'bg-[#CF6679]/15 text-[#CF6679] border border-[#CF6679]/20'
+                              )}
+                            >
+                              {isBuy ? t('inv.journalBuy') : t('inv.journalSell')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-white text-xs font-medium py-3">
+                            {getPortfolioSymbol(item.portfolioId)}
+                          </TableCell>
+                          <TableCell className="text-white/70 text-xs text-right py-3">
+                            {formatInvPrice(item.portfolio?.type || 'crypto', item.entryPrice)}
+                          </TableCell>
+                          <TableCell className="text-white/70 text-xs text-right py-3">
+                            {item.exitPrice ? formatInvPrice(item.portfolio?.type || 'crypto', item.exitPrice) : '-'}
+                          </TableCell>
+                          <TableCell className="text-white/70 text-xs text-right py-3">
+                            {item.quantity}
+                          </TableCell>
+                          <TableCell className={cn('text-xs text-right font-medium py-3', pnlColor(item.pnl))}>
+                            {isBuy ? '-' : `${isPositive ? '+' : ''}${formatInvPrice(item.portfolio?.type || 'crypto', item.pnl)}`}
+                          </TableCell>
+                          <TableCell className={cn('text-xs text-right font-medium py-3', isBuy ? 'text-white/50' : pnlColor(item.pnl))}>
+                            {isBuy ? '-' : `${isPositive ? '+' : ''}${(item.pnlPercentage ?? 0).toFixed(2)}%`}
+                          </TableCell>
+                          <TableCell className="text-white/50 text-xs text-right py-3">
+                            {item.riskReward?.toString() || '-'}
+                          </TableCell>
+                          <TableCell className="text-white/50 text-xs py-3">
+                            {new Date(item.date).toLocaleDateString('id-ID')}
+                          </TableCell>
+                          <TableCell className="py-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
+                              onClick={() => openEdit(item)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-white/40 hover:text-[#CF6679] hover:bg-white/[0.06] transition-colors"
+                              onClick={() => setDeleteTarget(item)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      </motion.div>
                     );
                   })}
                 </TableBody>
@@ -589,180 +632,192 @@ export default function TradingJournal() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#1A1A2E] border-white/[0.06] text-white sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              {editing ? t('common.edit') : t('inv.addJournal')}
-            </DialogTitle>
-            <DialogDescription className="text-white/60">
-              {t('inv.tradingJournal')}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden text-white sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+          <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+          <div className="p-5">
+            <DialogHeader>
+              <DialogTitle className="text-white">
+                {editing ? t('common.edit') : t('inv.addJournal')}
+              </DialogTitle>
+              <DialogDescription className="text-white/60">
+                {t('inv.tradingJournal')}
+              </DialogDescription>
+            </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2 col-span-2">
-                <Label className="text-white/80">{t('inv.portfolio')} *</Label>
-                <Select value={form.portfolioId} onValueChange={(v) => setForm({ ...form, portfolioId: v })}>
-                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
-                    <SelectValue placeholder="Pilih portofolio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {portfolios.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.symbol} ({p.type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <form onSubmit={handleSave} className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2 col-span-2">
+                  <Label className="text-white/80">{t('inv.portfolio')} *</Label>
+                  <Select value={form.portfolioId} onValueChange={(v) => setForm({ ...form, portfolioId: v })}>
+                    <SelectTrigger className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white transition-colors">
+                      <SelectValue placeholder="Pilih portofolio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {portfolios.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.symbol} ({p.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.journalType')} *</Label>
+                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                    <SelectTrigger className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white transition-colors">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="buy">{t('inv.journalBuy')}</SelectItem>
+                      <SelectItem value="sell">{t('inv.journalSell')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.journalDate')}</Label>
+                  <Input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm({ ...form, date: e.target.value })}
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white transition-colors"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.journalType')} *</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                  <SelectTrigger className="bg-white/[0.05] border-white/[0.1] text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="buy">{t('inv.journalBuy')}</SelectItem>
-                    <SelectItem value="sell">{t('inv.journalSell')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.journalDate')}</Label>
-                <Input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  className="bg-white/[0.05] border-white/[0.1] text-white"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.entryPrice')} ({getInvCurrencyLabel(getSelectedPortfolioType())}) *</Label>
-                <Input
-                  type="number"
-                  value={form.entryPrice}
-                  onChange={(e) => setForm({ ...form, entryPrice: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.exitPrice')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
-                <Input
-                  type="number"
-                  value={form.exitPrice}
-                  onChange={(e) => setForm({ ...form, exitPrice: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
-              </div>
-            </div>
+              <div className="h-px bg-white/[0.06]" />
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.quantity')} *</Label>
-                <Input
-                  type="number"
-                  value={form.quantity}
-                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.entryPrice')} ({getInvCurrencyLabel(getSelectedPortfolioType())}) *</Label>
+                  <Input
+                    type="number"
+                    value={form.entryPrice}
+                    onChange={(e) => setForm({ ...form, entryPrice: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                    step="any"
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.exitPrice')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
+                  <Input
+                    type="number"
+                    value={form.exitPrice}
+                    onChange={(e) => setForm({ ...form, exitPrice: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                    step="any"
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 transition-colors"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.fees')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
-                <Input
-                  type="number"
-                  value={form.fees}
-                  onChange={(e) => setForm({ ...form, fees: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.riskReward')}</Label>
-                <Input
-                  type="number"
-                  value={form.riskReward}
-                  onChange={(e) => setForm({ ...form, riskReward: e.target.value })}
-                  placeholder="0"
-                  step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
+              <div className="h-px bg-white/[0.06]" />
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.quantity')} *</Label>
+                  <Input
+                    type="number"
+                    value={form.quantity}
+                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                    step="any"
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.fees')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
+                  <Input
+                    type="number"
+                    value={form.fees}
+                    onChange={(e) => setForm({ ...form, fees: e.target.value })}
+                    placeholder="0"
+                    min="0"
+                    step="any"
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.riskReward')}</Label>
+                  <Input
+                    type="number"
+                    value={form.riskReward}
+                    onChange={(e) => setForm({ ...form, riskReward: e.target.value })}
+                    placeholder="0"
+                    step="any"
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="h-px bg-white/[0.06]" />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.pnl')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
+                  <Input
+                    type="number"
+                    value={form.pnl}
+                    onChange={(e) => setForm({ ...form, pnl: e.target.value })}
+                    placeholder="0"
+                    step="any"
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-white/80">{t('inv.pnlPercent')}</Label>
+                  <Input
+                    type="number"
+                    value={form.pnlPercentage}
+                    onChange={(e) => setForm({ ...form, pnlPercentage: e.target.value })}
+                    placeholder="0"
+                    step="any"
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="h-px bg-white/[0.06]" />
+
               <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.pnl')} ({getInvCurrencyLabel(getSelectedPortfolioType())})</Label>
-                <Input
-                  type="number"
-                  value={form.pnl}
-                  onChange={(e) => setForm({ ...form, pnl: e.target.value })}
-                  placeholder="0"
-                  step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
+                <Label className="text-white/80">{t('inv.journalNotes')}</Label>
+                <Textarea
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Catatan..."
+                  className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 text-white placeholder:text-white/30 min-h-[70px] transition-colors"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-white/80">{t('inv.pnlPercent')}</Label>
-                <Input
-                  type="number"
-                  value={form.pnlPercentage}
-                  onChange={(e) => setForm({ ...form, pnlPercentage: e.target.value })}
-                  placeholder="0"
-                  step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30"
-                />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-white/80">{t('inv.journalNotes')}</Label>
-              <Textarea
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Catatan..."
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 min-h-[70px]"
-              />
-            </div>
-
-            <DialogFooter className="gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-                className="border-white/[0.1] text-white hover:bg-white/10"
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving || !form.portfolioId || !form.entryPrice || !form.quantity}
-                className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB]"
-              >
-                {t('common.save')}
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter className="gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                  className="hover:bg-white/[0.06] rounded-xl"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={saving || !form.portfolioId || !form.entryPrice || !form.quantity}
+                  className="rounded-xl text-white"
+                  style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}
+                >
+                  {t('common.save')}
+                </Button>
+              </DialogFooter>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border-white/[0.06] text-white">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription className="text-white/60">
@@ -770,12 +825,13 @@ export default function TradingJournal() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/[0.1] text-white hover:bg-white/10">
+            <AlertDialogCancel className="hover:bg-white/[0.06] rounded-xl">
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-[#CF6679] text-white hover:bg-[#B85A6C]"
+              className="rounded-xl text-white"
+              style={{ background: 'linear-gradient(135deg, #CF6679, #BB86FC)' }}
             >
               {t('common.delete')}
             </AlertDialogAction>

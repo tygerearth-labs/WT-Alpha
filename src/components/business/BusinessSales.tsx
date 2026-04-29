@@ -19,6 +19,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandSeparator,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -72,6 +86,9 @@ import {
   Info,
   ChevronRight,
   ArrowUpDown,
+  UserPlus,
+  X,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -279,6 +296,13 @@ export default function BusinessSales() {
     Array<{ id: string; name: string; price: number; stock: number; sku: string | null }>
   >([]);
   const [selectedProductId, setSelectedProductId] = useState('');
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [productSearchOpen, setProductSearchOpen] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '' });
+  const [savingNewCustomer, setSavingNewCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -399,12 +423,55 @@ export default function BusinessSales() {
     if (product) {
       setFormData((prev) => ({ ...prev, description: product.name, amount: product.price.toString() }));
     }
+    setProductSearchOpen(false);
+    setProductSearchTerm('');
   };
+
+  // ── Inline new customer creation ──
+  const handleCreateNewCustomer = async () => {
+    if (!businessId || !newCustomer.name.trim()) return;
+    setSavingNewCustomer(true);
+    try {
+      const res = await fetch(`/api/business/${businessId}/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCustomer.name.trim(),
+          phone: newCustomer.phone || undefined,
+          email: newCustomer.email || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const created = data.customer;
+      setCustomers((prev) => [...prev, { id: created.id, name: created.name }]);
+      setFormData((prev) => ({ ...prev, customerId: created.id }));
+      setShowNewCustomerForm(false);
+      setNewCustomer({ name: '', phone: '', email: '' });
+      setCustomerSearchOpen(false);
+      toast.success(t('biz.customerCreated'));
+    } catch {
+      toast.error(t('common.error'));
+    } finally {
+      setSavingNewCustomer(false);
+    }
+  };
+
+  // ── Get selected customer name for display ──
+  const selectedCustomerName = formData.customerId
+    ? customers.find((c) => c.id === formData.customerId)?.name || ''
+    : '';
 
   // ── CRUD Operations ──
   const openCreateDialog = () => {
     setEditingSale(null);
     setSelectedProductId('');
+    setCustomerSearchOpen(false);
+    setCustomerSearchTerm('');
+    setProductSearchOpen(false);
+    setProductSearchTerm('');
+    setShowNewCustomerForm(false);
+    setNewCustomer({ name: '', phone: '', email: '' });
     setFormData({
       description: '',
       amount: '',
@@ -563,6 +630,22 @@ export default function BusinessSales() {
   // Selected product info for dialog
   const selectedProduct = products.find((p) => p.id === selectedProductId);
   const isProductAutoFill = selectedProductId && selectedProduct;
+
+  // Filtered products for search
+  const filteredProducts = useMemo(() => {
+    if (!productSearchTerm) return products.filter((p) => p.stock > 0);
+    return products.filter(
+      (p) => p.stock > 0 && p.name.toLowerCase().includes(productSearchTerm.toLowerCase())
+    );
+  }, [products, productSearchTerm]);
+
+  // Filtered customers for search
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearchTerm) return customers;
+    return customers.filter((c) =>
+      c.name.toLowerCase().includes(customerSearchTerm.toLowerCase())
+    );
+  }, [customers, customerSearchTerm]);
 
   // ── Status counts for filter chips ──
   const statusCounts = useMemo(() => {
@@ -1261,28 +1344,81 @@ export default function BusinessSales() {
                       <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                         {t('biz.selectProduct')}
                       </Label>
-                      <Select value={selectedProductId} onValueChange={(v) => handleProductSelect(v)}>
-                        <SelectTrigger className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
-                          <SelectValue placeholder={t('biz.selectProduct')} />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-lg border bg-[#1a1a1a] border-white/[0.08]">
-                          {products
-                            .filter((p) => p.stock > 0)
-                            .map((p) => (
-                              <SelectItem key={p.id} value={p.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
-                                <div className="flex items-center justify-between w-full gap-4">
-                                  <span className="truncate">{p.name}</span>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-xs font-medium" style={{ color: c.secondary }}>{formatAmount(p.price)}</span>
-                                    <span className="text-[10px] rounded-full px-1.5 py-0.5" style={{ color: c.muted, background: c.border }}>
-                                      stok {p.stock}
-                                    </span>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+                        <PopoverTrigger asChild>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: c.muted }} />
+                            <button
+                              type="button"
+                              onClick={() => setProductSearchOpen(true)}
+                              className="flex h-10 w-full items-center justify-between rounded-xl text-sm bg-white/[0.04] border border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0 px-9 text-left cursor-pointer hover:bg-white/[0.06] transition-colors"
+                            >
+                              <span className={selectedProduct ? '' : 'text-muted-foreground'}>
+                                {selectedProduct ? selectedProduct.name : t('biz.selectProduct')}
+                              </span>
+                              {selectedProduct && (
+                                <X
+                                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedProductId('');
+                                    setProductSearchTerm('');
+                                  }}
+                                />
+                              )}
+                            </button>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border bg-[#1a1a1a] border-white/[0.08]" align="start">
+                          <Command shouldFilter={false} className="bg-transparent">
+                            <div className="flex items-center border-b border-white/[0.08] px-3">
+                              <Search className="mr-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                              <input
+                                placeholder={t('biz.selectProduct') + '...'}
+                                value={productSearchTerm}
+                                onChange={(e) => setProductSearchTerm(e.target.value)}
+                                className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground text-foreground"
+                                autoFocus
+                              />
+                            </div>
+                            <CommandList className="max-h-[240px]">
+                              <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
+                                Tidak ada produk ditemukan
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {filteredProducts.map((p) => (
+                                  <CommandItem
+                                    key={p.id}
+                                    value={p.id}
+                                    onSelect={() => handleProductSelect(p.id)}
+                                    className="flex items-center justify-between px-3 py-2.5 rounded-md cursor-pointer text-sm"
+                                    style={{ color: c.foreground }}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <PackageOpen className="h-3.5 w-3.5 shrink-0" style={{ color: c.muted }} />
+                                      <span className="truncate">{p.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                                      <span className="text-xs font-medium" style={{ color: c.secondary }}>{formatAmount(p.price)}</span>
+                                      <span className="text-[10px] rounded-full px-1.5 py-0.5" style={{ color: c.muted, background: alpha(c.border, 60) }}>
+                                        stok {p.stock}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      {/* Selected product chip */}
+                      {selectedProduct && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ background: alpha(c.secondary, 8), color: c.secondary, borderColor: alpha(c.secondary, 15) }}>
+                            {selectedProduct.name} · {formatAmount(selectedProduct.price)}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Category Selection */}
@@ -1343,21 +1479,143 @@ export default function BusinessSales() {
                       <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
                         {t('biz.saleCustomer')}
                       </Label>
-                      <Select
-                        value={formData.customerId}
-                        onValueChange={(v) => setFormData((prev) => ({ ...prev, customerId: v }))}
-                      >
-                        <SelectTrigger className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0">
-                          <SelectValue placeholder={t('biz.saleCustomer')} />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-lg border bg-[#1a1a1a] border-white/[0.08]">
-                          {customers.map((cust) => (
-                            <SelectItem key={cust.id} value={cust.id} className="text-sm rounded-md" style={{ color: c.foreground }}>
-                              {cust.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={customerSearchOpen} onOpenChange={(open) => { setCustomerSearchOpen(open); if (!open) setShowNewCustomerForm(false); }}>
+                        <PopoverTrigger asChild>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: c.muted }} />
+                            <button
+                              type="button"
+                              onClick={() => setCustomerSearchOpen(true)}
+                              className="flex h-10 w-full items-center justify-between rounded-xl text-sm bg-white/[0.04] border border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0 px-9 text-left cursor-pointer hover:bg-white/[0.06] transition-colors"
+                            >
+                              <span className={selectedCustomerName ? '' : 'text-muted-foreground'}>
+                                {selectedCustomerName || t('biz.saleCustomer')}
+                              </span>
+                              {selectedCustomerName && (
+                                <X
+                                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setFormData((prev) => ({ ...prev, customerId: '' }));
+                                    setCustomerSearchTerm('');
+                                  }}
+                                />
+                              )}
+                            </button>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl border bg-[#1a1a1a] border-white/[0.08]" align="start">
+                          {!showNewCustomerForm ? (
+                            <Command shouldFilter={false} className="bg-transparent">
+                              <div className="flex items-center border-b border-white/[0.08] px-3">
+                                <Search className="mr-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                                <input
+                                  placeholder={t('common.search') + ' pelanggan...'}
+                                  value={customerSearchTerm}
+                                  onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                                  className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground text-foreground"
+                                  autoFocus
+                                />
+                              </div>
+                              <CommandList className="max-h-[220px]">
+                                <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
+                                  Tidak ada pelanggan ditemukan
+                                </CommandEmpty>
+                                <CommandGroup>
+                                  {filteredCustomers.map((cust) => (
+                                    <CommandItem
+                                      key={cust.id}
+                                      value={cust.id}
+                                      onSelect={() => {
+                                        setFormData((prev) => ({ ...prev, customerId: cust.id }));
+                                        setCustomerSearchOpen(false);
+                                        setCustomerSearchTerm('');
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-2.5 rounded-md cursor-pointer text-sm"
+                                      style={{ color: c.foreground }}
+                                    >
+                                      <div className="h-6 w-6 rounded-md flex items-center justify-center shrink-0" style={{ background: alpha(c.primary, 12) }}>
+                                        <span className="text-[10px] font-bold" style={{ color: c.primary }}>{cust.name.charAt(0).toUpperCase()}</span>
+                                      </div>
+                                      <span className="truncate">{cust.name}</span>
+                                      {formData.customerId === cust.id && (
+                                        <Check className="h-3.5 w-3.5 ml-auto shrink-0" style={{ color: c.secondary }} />
+                                      )}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                              <CommandSeparator />
+                              <div className="p-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowNewCustomerForm(true)}
+                                  className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors hover:bg-white/[0.06]"
+                                  style={{ color: c.primary }}
+                                >
+                                  <UserPlus className="h-3.5 w-3.5" />
+                                  Tambah Pelanggan Baru
+                                </button>
+                              </div>
+                            </Command>
+                          ) : (
+                            <div className="p-3 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold" style={{ color: c.foreground }}>Pelanggan Baru</span>
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowNewCustomerForm(false); setNewCustomer({ name: '', phone: '', email: '' }); }}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <Input
+                                placeholder="Nama *"
+                                value={newCustomer.name}
+                                onChange={(e) => setNewCustomer((prev) => ({ ...prev, name: e.target.value }))}
+                                className="h-9 rounded-lg text-xs bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
+                                autoFocus
+                              />
+                              <div className="grid grid-cols-2 gap-2">
+                                <Input
+                                  placeholder="Telepon"
+                                  value={newCustomer.phone}
+                                  onChange={(e) => setNewCustomer((prev) => ({ ...prev, phone: e.target.value }))}
+                                  className="h-9 rounded-lg text-xs bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
+                                />
+                                <Input
+                                  placeholder="Email"
+                                  value={newCustomer.email}
+                                  onChange={(e) => setNewCustomer((prev) => ({ ...prev, email: e.target.value }))}
+                                  className="h-9 rounded-lg text-xs bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={savingNewCustomer || !newCustomer.name.trim()}
+                                onClick={handleCreateNewCustomer}
+                                className="w-full h-9 rounded-lg text-xs"
+                                style={{ background: c.primary, color: 'var(--primary-foreground)' }}
+                              >
+                                {savingNewCustomer && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                                <Check className="h-3.5 w-3.5 mr-1" />
+                                Simpan & Pilih
+                              </Button>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                      {/* Selected customer chip */}
+                      {selectedCustomerName && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ background: alpha(c.primary, 8), color: c.primary, borderColor: alpha(c.primary, 15) }}>
+                            <Users className="h-2.5 w-2.5" />
+                            {selectedCustomerName}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Date */}
