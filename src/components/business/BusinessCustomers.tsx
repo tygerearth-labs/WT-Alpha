@@ -1139,7 +1139,7 @@ export default function BusinessCustomers() {
                           },
                         });
 
-                        y = (doc as unknown as Record<string, unknown>).lastAutoTable?.finalY as number || y + report.sales.length * 7 + 20;
+                        y = ((doc as unknown as Record<string, Record<string, number>>).lastAutoTable?.finalY) as number || y + report.sales.length * 7 + 20;
                       } else {
                         doc.setFontSize(9);
                         doc.setFont('helvetica', 'italic');
@@ -1199,7 +1199,7 @@ export default function BusinessCustomers() {
                           },
                         });
 
-                        y = (doc as unknown as Record<string, unknown>).lastAutoTable?.finalY as number || y + activePiutang.length * 7 + 20;
+                        y = ((doc as unknown as Record<string, Record<string, number>>).lastAutoTable?.finalY) as number || y + activePiutang.length * 7 + 20;
                       }
 
                       // ── Payment History Table ──
@@ -1244,7 +1244,7 @@ export default function BusinessCustomers() {
                           },
                         });
 
-                        y = (doc as unknown as Record<string, unknown>).lastAutoTable?.finalY as number || y + report.payments.length * 7 + 20;
+                        y = ((doc as unknown as Record<string, Record<string, number>>).lastAutoTable?.finalY) as number || y + report.payments.length * 7 + 20;
                       }
 
                       // ── Invoice History Table ──
