@@ -30,11 +30,6 @@ export async function GET(
 
     const allocations = await db.businessIncomeAllocation.findMany({
       where: { businessId },
-      include: {
-        sale: {
-          select: { id: true, description: true, amount: true },
-        },
-      },
       orderBy: { allocatedAt: 'desc' },
     });
 
