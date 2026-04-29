@@ -818,6 +818,7 @@ export default function TradingJournal() {
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl text-white">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription className="text-white/60">

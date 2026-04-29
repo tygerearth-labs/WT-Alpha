@@ -461,7 +461,9 @@ export function AdminSubscriptions() {
 
       {/* Assign Subscription Dialog */}
       <Dialog open={showAssign} onOpenChange={setShowAssign}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-[#03DAC6]" />
@@ -518,12 +520,15 @@ export function AdminSubscriptions() {
               {assigning ? 'Assigning...' : 'Assign Subscription'}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Extend Dialog */}
       <Dialog open={!!extendSub} onOpenChange={() => setExtendSub(null)}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90">Extend Subscription</DialogTitle>
             <DialogDescription className="text-white/40">
@@ -559,6 +564,7 @@ export function AdminSubscriptions() {
             <Button className="bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90"
               onClick={handleExtend}>Extend</Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

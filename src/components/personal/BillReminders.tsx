@@ -868,6 +868,7 @@ export function BillReminders() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
       >
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Hapus tagihan?</AlertDialogTitle>
             <AlertDialogDescription className="text-[#9E9E9E]">

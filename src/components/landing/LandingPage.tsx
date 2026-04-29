@@ -117,7 +117,7 @@ function AnimatedCounter({ target, suffix = '', startOnMount = false }: { target
   }, [shouldStart, target]);
 
   return (
-    <span ref={ref} style={{ display: 'inline-block' }}>
+    <span ref={ref} className="inline-block">
       {count}
       {suffix}
     </span>
@@ -178,8 +178,7 @@ function StatsSection({ noTrack, statMoreSavings, statAvgSaving }: { noTrack: st
         ].map((stat) => (
           <div
             key={stat.label}
-            className="min-w-[140px] sm:min-w-0 rounded-2xl p-4 sm:p-6 text-center border shrink-0 sm:shrink transition-all duration-300 sm:hover:scale-[1.02] stats-pattern"
-            style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
+            className="min-w-[140px] sm:min-w-0 rounded-2xl p-4 sm:p-6 text-center border shrink-0 sm:shrink transition-all duration-300 sm:hover:scale-[1.02] stats-pattern bg-[rgba(18,18,18,0.6)] border-[rgba(255,255,255,0.06)]"
           >
             <div className="text-2xl sm:text-4xl font-extrabold mb-1 tracking-tight" style={{ color: stat.color }}>
               {stat.value}
@@ -231,16 +230,16 @@ function FloatingDecorations() {
         }}
       />
       {/* Gradient orbs */}
-      <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-[120px] animate-pulse" style={{ background: '#BB86FC' }} />
+      <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-[120px] animate-pulse bg-[#BB86FC]" />
       <div className="absolute top-1/3 -right-32 h-80 w-80 rounded-full opacity-15 blur-[100px] animate-pulse" style={{ background: '#03DAC6', animationDelay: '1s' }} />
       <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full opacity-10 blur-[80px] animate-pulse" style={{ background: '#CF6679', animationDelay: '2s' }} />
 
       {/* Floating dots / circles */}
-      <div className="absolute top-[15%] left-[10%] h-2 w-2 rounded-full animate-float-1" style={{ background: 'rgba(187,134,252,0.4)' }} />
-      <div className="absolute top-[25%] right-[15%] h-3 w-3 rounded-full animate-float-2" style={{ background: 'rgba(3,218,198,0.3)' }} />
-      <div className="absolute top-[60%] left-[8%] h-1.5 w-1.5 rounded-full animate-float-3" style={{ background: 'rgba(207,102,121,0.35)' }} />
-      <div className="absolute top-[70%] right-[12%] h-2.5 w-2.5 rounded-full animate-float-4" style={{ background: 'rgba(249,168,37,0.3)' }} />
-      <div className="absolute top-[40%] left-[20%] h-1 w-1 rounded-full animate-float-5" style={{ background: 'rgba(187,134,252,0.5)' }} />
+      <div className="absolute top-[15%] left-[10%] h-2 w-2 rounded-full animate-float-1 bg-[rgba(187,134,252,0.4)]" />
+      <div className="absolute top-[25%] right-[15%] h-3 w-3 rounded-full animate-float-2 bg-[rgba(3,218,198,0.3)]" />
+      <div className="absolute top-[60%] left-[8%] h-1.5 w-1.5 rounded-full animate-float-3 bg-[rgba(207,102,121,0.35)]" />
+      <div className="absolute top-[70%] right-[12%] h-2.5 w-2.5 rounded-full animate-float-4 bg-[rgba(249,168,37,0.3)]" />
+      <div className="absolute top-[40%] left-[20%] h-1 w-1 rounded-full animate-float-5 bg-[rgba(187,134,252,0.5)]" />
       <div className="absolute top-[50%] right-[25%] h-1.5 w-1.5 rounded-full animate-float-1" style={{ background: 'rgba(3,218,198,0.4)', animationDelay: '2s' }} />
       <div className="absolute top-[80%] left-[35%] h-2 w-2 rounded-full animate-float-3" style={{ background: 'rgba(207,102,121,0.25)', animationDelay: '1s' }} />
       <div className="absolute top-[20%] left-[70%] h-1 w-1 rounded-full animate-float-2" style={{ background: 'rgba(187,134,252,0.6)', animationDelay: '3s' }} />
@@ -615,8 +614,7 @@ export function LandingPage() {
             <NotificationBell />
             <button
               onClick={() => openAuth()}
-              className="rounded-full px-4 sm:px-5 py-2 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
-              style={{ background: '#BB86FC', color: '#000' }}
+              className="rounded-full px-4 sm:px-5 py-2 text-sm font-semibold transition-all hover:scale-105 active:scale-95 bg-[#BB86FC] text-black"
             >
               {t('auth.login')}
             </button>
@@ -688,7 +686,7 @@ export function LandingPage() {
               {t('landing.heroDesc')}
             </p>
             {lpConfig?.heroSubtitle && (
-              <p className="mx-auto max-w-lg text-[12px] sm:text-base font-medium leading-relaxed mb-2" style={{ color: '#03DAC6' }}>
+              <p className="mx-auto max-w-lg text-[12px] sm:text-base font-medium leading-relaxed mb-2 text-[#03DAC6]">
                 {lpConfig.heroSubtitle}
               </p>
             )}
@@ -723,15 +721,15 @@ export function LandingPage() {
           <FadeUp delay={500}>
             <div className="mt-6 sm:mt-16 flex flex-wrap items-center justify-center gap-4 sm:gap-10 text-xs sm:text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: '#03DAC6' }} />
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#03DAC6]" />
                 <span className="text-[11px] sm:text-sm">{t('landing.encrypted')}</span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: '#BB86FC' }} />
+                <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#BB86FC]" />
                 <span className="text-[11px] sm:text-sm">{t('landing.oneTimePayment')}</span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: '#CF6679' }} />
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#CF6679]" />
                 <span className="text-[11px] sm:text-sm">{t('landing.smartInsights')}</span>
               </div>
             </div>
@@ -746,7 +744,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-4xl">
           <FadeUp>
             <div className="text-center mb-6 sm:mb-16">
-              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3" style={{ color: '#03DAC6' }}>
+              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3 text-[#03DAC6]">
                 {t('landing.storySubtitle')}
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
@@ -842,7 +840,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <FadeUp>
             <div className="text-center mb-6 sm:mb-16">
-              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3" style={{ color: '#03DAC6' }}>
+              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3 text-[#03DAC6]">
                 {t('landing.featureSubtitle')}
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-2 sm:mb-3">
@@ -861,11 +859,7 @@ export function LandingPage() {
             {features.map((feature, i) => (
               <FadeUp key={feature.title} delay={i * 80}>
                 <div
-                  className="feature-card-glow group rounded-2xl p-4 sm:p-6 border"
-                  style={{
-                    background: 'rgba(18,18,18,0.5)',
-                    borderColor: 'rgba(255,255,255,0.06)',
-                  }}
+                  className="feature-card-glow group rounded-2xl p-4 sm:p-6 border bg-[rgba(18,18,18,0.5)] border-[rgba(255,255,255,0.06)]"
                   onMouseEnter={(e) => {
                     const el = e.currentTarget as HTMLElement;
                     el.style.borderColor = `${feature.color}33`;
@@ -905,7 +899,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-4xl">
           <FadeUp>
             <div className="text-center mb-6 sm:mb-16">
-              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3" style={{ color: '#F9A825' }}>
+              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3 text-[#F9A825]">
                 {t('landing.reviewSubtitle')}
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
@@ -921,8 +915,7 @@ export function LandingPage() {
             {testimonials.map((tm, i) => (
               <FadeUp key={tm.name} delay={i * 100}>
                 <div
-                  className="rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:border-[rgba(249,168,37,0.2)]"
-                  style={{ background: 'rgba(18,18,18,0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
+                  className="rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:border-[rgba(249,168,37,0.2)] bg-[rgba(18,18,18,0.6)] border-[rgba(255,255,255,0.06)]"
                 >
                   {/* Stars */}
                   <div className="flex items-center gap-0.5 mb-3">
@@ -956,7 +949,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-4xl">
           <FadeUp>
             <div className="text-center mb-6 sm:mb-6">
-              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3" style={{ color: '#03DAC6' }}>
+              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3 text-[#03DAC6]">
                 {t('landing.pricingSubtitle')}
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-2 sm:mb-3">
@@ -974,12 +967,12 @@ export function LandingPage() {
           <FadeUp delay={50}>
             {/* Registration Closed Notice */}
             {!platformConfig?.registrationOpen ? (
-              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border" style={{ background: 'rgba(207,102,121,0.08)', borderColor: 'rgba(207,102,121,0.2)' }}>
+              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border bg-[rgba(207,102,121,0.08)] border-[rgba(207,102,121,0.2)]">
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <Lock className="h-4 w-4" style={{ color: '#CF6679' }} />
-                  <p className="text-xs font-semibold" style={{ color: '#CF6679' }}>Registration Closed</p>
+                  <Lock className="h-4 w-4 text-[#CF6679]" />
+                  <p className="text-xs font-semibold text-[#CF6679]">Registration Closed</p>
                 </div>
-                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                <p className="text-[11px] text-[#9E9E9E]">
                   {platformConfig?.registrationMessage || 'Registration is currently closed. Please contact the administrator.'}
                 </p>
                 {/* WhatsApp contact when registration is closed */}
@@ -988,8 +981,7 @@ export function LandingPage() {
                     href={`https://wa.me/${platformConfig.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo, saya ingin mendaftar akun Wealth Tracker')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-                    style={{ background: '#25D366', color: '#fff' }}
+                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95 bg-[#25D366] text-white"
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
                     Hubungi via WhatsApp
@@ -998,20 +990,19 @@ export function LandingPage() {
               </div>
             ) : platformConfig?.whatsappNumber ? (
               /* WhatsApp Contact for Registration */
-              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border" style={{ background: 'rgba(37,211,102,0.06)', borderColor: 'rgba(37,211,102,0.15)' }}>
+              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border bg-[rgba(37,211,102,0.06)] border-[rgba(37,211,102,0.15)]">
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <MessageCircle className="h-4 w-4" style={{ color: '#25D366' }} />
-                  <p className="text-xs font-semibold" style={{ color: '#25D366' }}>Daftar via WhatsApp</p>
+                  <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                  <p className="text-xs font-semibold text-[#25D366]">Daftar via WhatsApp</p>
                 </div>
-                <p className="text-[11px] mb-2" style={{ color: '#9E9E9E' }}>
+                <p className="text-[11px] mb-2 text-[#9E9E9E]">
                   Ingin berlangganan plan Basic atau Pro? Hubungi kami via WhatsApp
                 </p>
                 <a
                   href={`https://wa.me/${platformConfig.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo, saya ingin mendaftar akun Wealth Tracker')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-                  style={{ background: '#25D366', color: '#fff' }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95 bg-[#25D366] text-white"
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   Chat WhatsApp
@@ -1019,12 +1010,12 @@ export function LandingPage() {
               </div>
             ) : (
               /* Default registration info when no WhatsApp */
-              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border" style={{ background: 'rgba(187,134,252,0.06)', borderColor: 'rgba(187,134,252,0.15)' }}>
+              <div className="mx-auto max-w-md mb-6 sm:mb-12 rounded-xl p-3 text-center border bg-[rgba(187,134,252,0.06)] border-[rgba(187,134,252,0.15)]">
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <MessageCircle className="h-4 w-4" style={{ color: '#BB86FC' }} />
-                  <p className="text-xs font-semibold" style={{ color: '#BB86FC' }}>{t('landing.adminRegister')}</p>
+                  <MessageCircle className="h-4 w-4 text-[#BB86FC]" />
+                  <p className="text-xs font-semibold text-[#BB86FC]">{t('landing.adminRegister')}</p>
                 </div>
-                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                <p className="text-[11px] text-[#9E9E9E]">
                   {t('landing.adminRegisterDesc')}
                 </p>
               </div>
@@ -1035,9 +1026,9 @@ export function LandingPage() {
           {platformConfig?.trialEnabled && (
             <FadeUp delay={75}>
               <div className="mx-auto max-w-md mb-6 sm:mb-10 text-center">
-                <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 border" style={{ background: 'rgba(3,218,198,0.08)', borderColor: 'rgba(3,218,198,0.2)' }}>
-                  <Zap className="h-4 w-4" style={{ color: '#03DAC6' }} />
-                  <p className="text-xs font-semibold" style={{ color: '#03DAC6' }}>
+                <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 border bg-[rgba(3,218,198,0.08)] border-[rgba(3,218,198,0.2)]">
+                  <Zap className="h-4 w-4 text-[#03DAC6]" />
+                  <p className="text-xs font-semibold text-[#03DAC6]">
                     Free {platformConfig.trialDurationDays}-day trial included with registration!
                   </p>
                 </div>
@@ -1109,7 +1100,7 @@ export function LandingPage() {
                       <span className="text-sm sm:text-base line-through text-white/30">{plan.originalPrice}</span>
                     )}
                     {!plan.period && (
-                      <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(3,218,198,0.12)', color: '#03DAC6' }}>
+                      <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[rgba(3,218,198,0.12)] text-[#03DAC6]">
                         {t('landing.oneTime')}
                       </span>
                     )}
@@ -1147,8 +1138,7 @@ export function LandingPage() {
                       href={`https://wa.me/${platformConfig.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Halo, saya tertarik berlangganan ${plan.name}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      style={{ background: '#25D366', color: '#fff' }}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] bg-[#25D366] text-white"
                     >
                       <MessageCircle className="h-4 w-4" />
                       Chat WhatsApp
@@ -1180,7 +1170,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-2xl">
           <FadeUp>
             <div className="text-center mb-6 sm:mb-16">
-              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3" style={{ color: '#BB86FC' }}>
+              <p className="inline-block text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-2 sm:mb-3 text-[#BB86FC]">
                 {t('landing.faqSubtitle')}
               </p>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
@@ -1228,7 +1218,7 @@ export function LandingPage() {
                           : 'max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease-out',
                       }}
                     >
-                      <div className="px-4 pb-3.5 sm:px-5 sm:pb-4 border-t" style={{ borderColor: 'rgba(187,134,252,0.08)' }}>
+                      <div className="px-4 pb-3.5 sm:px-5 sm:pb-4 border-t border-[rgba(187,134,252,0.08)]">
                         <p className="text-[12px] sm:text-sm text-muted-foreground leading-relaxed pt-3">
                           {faq.a}
                         </p>
@@ -1289,7 +1279,7 @@ export function LandingPage() {
       </section>
 
       {/* ========== FOOTER ========== */}
-      <footer className="mt-auto border-t py-6 sm:py-10 px-4 sm:px-6" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+      <footer className="mt-auto border-t py-6 sm:py-10 px-4 sm:px-6 border-[rgba(255,255,255,0.06)]">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <div className="flex items-center gap-2">
@@ -1319,13 +1309,13 @@ export function LandingPage() {
         setAuthOpen(open);
         if (!open) setAuthMode('login');
       }}>
-        <DialogContent className="rounded-2xl border-0 p-0 max-w-[420px] mx-auto" style={{ background: '#121212' }} showCloseButton={true}>
+        <DialogContent className="rounded-2xl border-0 p-0 max-w-[420px] mx-auto bg-[#121212]" showCloseButton={true}>
           <DialogHeader className="p-6 pb-0">
             <div className="flex items-center gap-2.5 mb-1">
               <Image src="/logo.png" alt="Wealth Tracker" width={32} height={32} className="rounded-lg" />
-              <DialogTitle className="text-lg font-bold" style={{ color: '#E6E1E5' }}>{t('landing.creator')}</DialogTitle>
+              <DialogTitle className="text-lg font-bold text-[#E6E1E5]">{t('landing.creator')}</DialogTitle>
             </div>
-            <DialogDescription className="text-xs" style={{ color: '#9E9E9E' }}>
+            <DialogDescription className="text-xs text-[#9E9E9E]">
               {authMode === 'login' ? t('landing.authDesc') : t('auth.createAccount')}
             </DialogDescription>
           </DialogHeader>
@@ -1337,25 +1327,23 @@ export function LandingPage() {
             )}
             <div className="mt-5 text-center">
               {authMode === 'login' ? (
-                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                <p className="text-[11px] text-[#9E9E9E]">
                   {t('landing.noAccountHint')}{' '}
                   <button
                     type="button"
                     onClick={() => setAuthMode('register')}
-                    className="font-semibold hover:underline"
-                    style={{ color: '#BB86FC' }}
+                    className="font-semibold hover:underline text-[#BB86FC]"
                   >
                     {t('auth.register')}
                   </button>
                 </p>
               ) : (
-                <p className="text-[11px]" style={{ color: '#9E9E9E' }}>
+                <p className="text-[11px] text-[#9E9E9E]">
                   {t('auth.hasAccount')}{' '}
                   <button
                     type="button"
                     onClick={() => setAuthMode('login')}
-                    className="font-semibold hover:underline"
-                    style={{ color: '#BB86FC' }}
+                    className="font-semibold hover:underline text-[#BB86FC]"
                   >
                     {t('auth.login')}
                   </button>

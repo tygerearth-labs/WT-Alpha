@@ -1,14 +1,14 @@
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { logAdminActivity } from '@/lib/adminLogger';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
-export async function GET(request: Request) {
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-  const adminId = auth;
-
+export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth instanceof NextResponse) return auth;
+    const adminId = auth;
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
     const type = searchParams.get('type') || '';
@@ -71,12 +71,12 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-  const adminId = auth;
-
+export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if (auth instanceof NextResponse) return auth;
+    const adminId = auth;
+
     const body = await request.json();
     const { title, message, type = 'info', isActive = true, priority = 0, startsAt, expiresAt } = body;
 

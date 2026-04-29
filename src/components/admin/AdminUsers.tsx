@@ -343,7 +343,9 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
           setShowConfirmPassword(false);
         }
       }}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-[#03DAC6]" />
@@ -449,12 +451,15 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
               {creatingUser ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : 'Create User'}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit User Dialog */}
       <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90">Edit User</DialogTitle>
             <DialogDescription className="text-white/40">
@@ -532,12 +537,15 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
             <Button className="bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90"
               onClick={handleUpdateUser}>Save Changes</Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Reset Password Dialog */}
       <Dialog open={!!resetPwUser} onOpenChange={() => setResetPwUser(null)}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90">Reset Password</DialogTitle>
             <DialogDescription className="text-white/40">
@@ -558,12 +566,15 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
             <Button className="bg-[#FFD700] text-black font-semibold hover:bg-[#FFD700]/90"
               onClick={handleResetPassword}>Reset Password</Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* User Detail Profile Modal */}
       <Dialog open={!!detailUser} onOpenChange={(open) => { if (!open) { setDetailUser(null); setDetailStats(null); } }}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-lg max-h-[90vh]">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="overflow-y-auto max-h-[calc(90vh-3px)] custom-scrollbar p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <Activity className="h-5 w-5 text-[#03DAC6]" />
@@ -815,12 +826,14 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
               </div>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
-
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
-        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.08]">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Delete User</AlertDialogTitle>
             <AlertDialogDescription className="text-white/40">
@@ -834,6 +847,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
               Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </>

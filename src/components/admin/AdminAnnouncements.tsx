@@ -720,7 +720,9 @@ export function AdminAnnouncements() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } }}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <Plus className="h-5 w-5 text-[#03DAC6]" />
@@ -747,12 +749,15 @@ export function AdminAnnouncements() {
               {saving ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={!!editItem} onOpenChange={(open) => { if (!open) { setEditItem(null); resetForm(); } }}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <Pencil className="h-5 w-5 text-[#BB86FC]" />
@@ -779,12 +784,15 @@ export function AdminAnnouncements() {
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
-        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.08]">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Delete Announcement</AlertDialogTitle>
             <AlertDialogDescription className="text-white/40">
@@ -803,12 +811,15 @@ export function AdminAnnouncements() {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Preview Dialog */}
       <Dialog open={!!previewItem} onOpenChange={() => setPreviewItem(null)}>
-        <DialogContent className="bg-[#0A0A0A] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <MonitorPlay className="h-5 w-5 text-[#BB86FC]" />
@@ -886,6 +897,7 @@ export function AdminAnnouncements() {
               </div>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

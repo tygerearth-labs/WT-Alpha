@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 /* ── Skeleton pulse bar ── */
@@ -35,9 +36,9 @@ function SkeletonCircle({ className }: { className?: string }) {
 /* ── Dashboard Skeleton ── */
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
+    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       {/* Hero net worth card */}
-      <div className="rounded-2xl p-5" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="rounded-2xl p-5 bg-[#121212] border border-white/[0.06]">
         <div className="flex items-center justify-between">
           <div className="space-y-2.5 flex-1">
             <SkeletonBar className="h-3 w-24" />
@@ -51,7 +52,7 @@ export function DashboardSkeleton() {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-xl p-3" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div key={i} className="rounded-xl p-3 bg-[#121212] border border-white/[0.06]">
             <SkeletonBar className="h-2.5 w-12 mb-2" />
             <SkeletonBar className="h-5 w-full" />
           </div>
@@ -59,7 +60,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Chart area */}
-      <div className="rounded-2xl p-5" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="rounded-2xl p-5 bg-[#121212] border border-white/[0.06]">
         <SkeletonBar className="h-3 w-32 mb-4" />
         <SkeletonBar className="h-[180px] w-full rounded-xl" />
       </div>
@@ -67,7 +68,7 @@ export function DashboardSkeleton() {
       {/* Cards row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-2xl p-4" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div key={i} className="rounded-2xl p-4 bg-[#121212] border border-white/[0.06]">
             <div className="flex items-center gap-2 mb-3">
               <SkeletonCircle className="h-4 w-4" />
               <SkeletonBar className="h-3 w-20" />
@@ -85,19 +86,15 @@ export function DashboardSkeleton() {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}} />
-    </div>
+    </motion.div>
   );
 }
 
 /* ── Transaction Page Skeleton (KasMasuk / KasKeluar) ── */
 export function TransactionPageSkeleton() {
   return (
-    <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
+    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <SkeletonBar className="h-6 w-32" />
@@ -107,7 +104,7 @@ export function TransactionPageSkeleton() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-xl p-4" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div key={i} className="rounded-xl p-4 bg-[#121212] border border-white/[0.06]">
             <SkeletonBar className="h-2.5 w-16 mb-2" />
             <SkeletonBar className="h-6 w-28" />
           </div>
@@ -115,9 +112,9 @@ export function TransactionPageSkeleton() {
       </div>
 
       {/* Transaction list */}
-      <div className="rounded-2xl" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="rounded-2xl bg-[#121212] border border-white/[0.06]">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 p-3.5" style={{ borderBottom: i < 5 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+          <div key={i} className="flex items-center gap-3 p-3.5 border-b border-white/[0.04] last:border-b-0">
             <SkeletonCircle className="h-9 w-9" />
             <div className="flex-1 min-w-0 space-y-1.5">
               <SkeletonBar className="h-3.5 w-3/4" />
@@ -133,19 +130,15 @@ export function TransactionPageSkeleton() {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}} />
-    </div>
+    </motion.div>
   );
 }
 
 /* ── Laporan (Report) Skeleton ── */
 export function LaporanSkeleton() {
   return (
-    <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
+    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <SkeletonBar className="h-6 w-28" />
@@ -155,7 +148,7 @@ export function LaporanSkeleton() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-xl p-4" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div key={i} className="rounded-xl p-4 bg-[#121212] border border-white/[0.06]">
             <SkeletonBar className="h-2.5 w-20 mb-2" />
             <SkeletonBar className="h-6 w-32" />
           </div>
@@ -163,7 +156,7 @@ export function LaporanSkeleton() {
       </div>
 
       {/* Chart area */}
-      <div className="rounded-2xl p-5" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="rounded-2xl p-5 bg-[#121212] border border-white/[0.06]">
         <SkeletonBar className="h-3 w-28 mb-4" />
         <div className="flex gap-3">
           <SkeletonBar className="h-[200px] flex-1 rounded-xl" />
@@ -172,10 +165,10 @@ export function LaporanSkeleton() {
       </div>
 
       {/* Category breakdown */}
-      <div className="rounded-2xl p-4" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="rounded-2xl p-4 bg-[#121212] border border-white/[0.06]">
         <SkeletonBar className="h-3 w-32 mb-4" />
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 py-2.5" style={{ borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+          <div key={i} className="flex items-center gap-3 py-2.5 border-b border-white/[0.04] last:border-b-0">
             <SkeletonCircle className="h-3 w-3" />
             <SkeletonBar className="h-3 w-24 flex-1" />
             <SkeletonBar className="h-3 w-16" />
@@ -188,19 +181,15 @@ export function LaporanSkeleton() {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}} />
-    </div>
+    </motion.div>
   );
 }
 
 /* ── Target Tabungan Skeleton ── */
 export function TargetSkeleton() {
   return (
-    <div className="space-y-4 animate-[fadeIn_0.3s_ease-out]">
+    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <SkeletonBar className="h-6 w-36" />
@@ -208,7 +197,7 @@ export function TargetSkeleton() {
       </div>
 
       {/* Summary */}
-      <div className="rounded-2xl p-4" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="rounded-2xl p-4 bg-[#121212] border border-white/[0.06]">
         <div className="grid grid-cols-3 gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="text-center">
@@ -221,7 +210,7 @@ export function TargetSkeleton() {
 
       {/* Target cards */}
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-2xl p-4" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div key={i} className="rounded-2xl p-4 bg-[#121212] border border-white/[0.06]">
           <div className="flex items-center gap-3 mb-3">
             <SkeletonCircle className="h-10 w-10" />
             <div className="flex-1 space-y-1.5">
@@ -243,21 +232,17 @@ export function TargetSkeleton() {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}} />
-    </div>
+    </motion.div>
   );
 }
 
 /* ── Profile Settings Skeleton ── */
 export function ProfileSkeleton() {
   return (
-    <div className="space-y-4 max-w-2xl mx-auto animate-[fadeIn_0.3s_ease-out]">
+    <motion.div className="space-y-4 max-w-2xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       {/* Profile header card */}
-      <div className="flex items-center gap-4 p-4 rounded-2xl" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#121212] border border-white/[0.06]">
         <SkeletonCircle className="h-16 w-16" />
         <div className="flex-1 space-y-2">
           <SkeletonBar className="h-4 w-32" />
@@ -270,14 +255,14 @@ export function ProfileSkeleton() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="flex gap-1 p-1 rounded-xl bg-[#121212] border border-white/[0.06]">
         {Array.from({ length: 3 }).map((_, i) => (
           <SkeletonBar key={i} className="h-8 flex-1 rounded-lg" />
         ))}
       </div>
 
       {/* Form skeleton */}
-      <div className="space-y-3.5 p-4 rounded-2xl" style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="space-y-3.5 p-4 rounded-2xl bg-[#121212] border border-white/[0.06]">
         <SkeletonBar className="h-2.5 w-20" />
         <SkeletonBar className="h-10 w-full rounded-xl" />
         <SkeletonBar className="h-10 w-full rounded-xl" />
@@ -290,11 +275,7 @@ export function ProfileSkeleton() {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}} />
-    </div>
+    </motion.div>
   );
 }

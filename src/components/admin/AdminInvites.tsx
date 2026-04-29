@@ -500,7 +500,9 @@ export function AdminInvites() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-[#03DAC6]" />
@@ -595,12 +597,15 @@ export function AdminInvites() {
               {creating ? 'Creating...' : 'Create & Copy Link'}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteInvite} onOpenChange={() => setDeleteInvite(null)}>
-        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.08]">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Revoke Invite</AlertDialogTitle>
             <AlertDialogDescription className="text-white/40">
@@ -614,6 +619,7 @@ export function AdminInvites() {
               Revoke Invite
             </AlertDialogAction>
           </AlertDialogFooter>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </div>

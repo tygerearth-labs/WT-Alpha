@@ -1,17 +1,17 @@
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { logAdminActivity } from '@/lib/adminLogger';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-  const adminId = auth;
-
   try {
+    const auth = await requireAdmin();
+    if (auth instanceof NextResponse) return auth;
+    const adminId = auth;
+
     const { id } = await params;
 
     const existing = await db.announcement.findUnique({ where: { id } });
@@ -61,14 +61,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-  const adminId = auth;
-
   try {
+    const auth = await requireAdmin();
+    if (auth instanceof NextResponse) return auth;
+    const adminId = auth;
+
     const { id } = await params;
 
     const existing = await db.announcement.findUnique({ where: { id } });

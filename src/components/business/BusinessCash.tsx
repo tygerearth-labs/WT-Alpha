@@ -1442,6 +1442,7 @@ export default function BusinessCash() {
       {/* ── Tab Switcher Dialog ── */}
       <Dialog open={tabSwitcherOpen} onOpenChange={setTabSwitcherOpen}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-sm">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <DialogTitle className="sr-only">Pilih Halaman</DialogTitle>
           <DialogDescription className="sr-only">Pilih halaman cashflow yang ingin ditampilkan</DialogDescription>
           <div className="px-5 pt-5 pb-3">
@@ -1946,6 +1947,7 @@ export default function BusinessCash() {
             {/* ══════════════════════════════════════════════ */}
             <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
               <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md">
+                <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
                 <DialogTitle className="sr-only">Tambah Kategori</DialogTitle>
                 <DialogDescription className="sr-only">Tambah kategori pengeluaran baru</DialogDescription>
                 <div className="px-5 pt-5 pb-4">
@@ -4204,6 +4206,7 @@ export default function BusinessCash() {
       {/* ══════════════════════════════════════════════════════════ */}
       <Dialog open={!!transactionDetail} onOpenChange={(open) => { if (!open) setTransactionDetail(null); }}>
         <DialogContent className="bg-[#1a1a1a] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md" aria-label="Detail Transaksi">
+          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <DialogDescription className="sr-only">Detail transaksi kas</DialogDescription>
           {transactionDetail && (
             <motion.div

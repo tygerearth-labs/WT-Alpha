@@ -37,13 +37,13 @@ function markAsRead(id: string) {
 function getTypeIcon(type: string) {
   switch (type) {
     case 'warning':
-      return <AlertTriangle className="h-4 w-4" style={{ color: '#F9A825' }} />;
+      return <AlertTriangle className="h-4 w-4 text-[#F9A825]" />;
     case 'success':
-      return <CheckCircle2 className="h-4 w-4" style={{ color: '#03DAC6' }} />;
+      return <CheckCircle2 className="h-4 w-4 text-[#03DAC6]" />;
     case 'error':
-      return <XCircle className="h-4 w-4" style={{ color: '#CF6679' }} />;
+      return <XCircle className="h-4 w-4 text-[#CF6679]" />;
     default:
-      return <Info className="h-4 w-4" style={{ color: '#BB86FC' }} />;
+      return <Info className="h-4 w-4 text-[#BB86FC]" />;
   }
 }
 
@@ -203,16 +203,15 @@ export function NotificationBell() {
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4" style={{ color: '#BB86FC' }} />
-              <span className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
+              <Bell className="h-4 w-4 text-[#BB86FC]" />
+              <span className="text-sm font-semibold text-[#E6E1E5]">
                 {t('notifications.title') || 'Notifications'}
               </span>
               {unreadCount > 0 && (
                 <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(187,134,252,0.15)', color: '#BB86FC' }}
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#BB86FC]/15 text-[#BB86FC]"
                 >
                   {unreadCount}
                 </span>
@@ -221,8 +220,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-[10px] font-medium px-2 py-1 rounded-lg transition-colors"
-                style={{ color: '#BB86FC', background: 'rgba(187,134,252,0.08)' }}
+                className="text-[10px] font-medium px-2 py-1 rounded-lg transition-colors text-[#BB86FC] bg-[#BB86FC]/8"
               >
                 {t('notifications.markAllRead') || 'Mark all read'}
               </button>
@@ -233,21 +231,20 @@ export function NotificationBell() {
           <div className="max-h-80 overflow-y-auto custom-scrollbar">
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-5 w-5 animate-spin" style={{ color: '#666' }} />
+                <Loader2 className="h-5 w-5 animate-spin text-[#666]" />
               </div>
             ) : announcements.length === 0 ? (
               /* Empty State */
               <div className="flex flex-col items-center justify-center py-10 gap-3">
                 <div
-                  className="grid place-items-center w-12 h-12 rounded-full"
-                  style={{ background: 'rgba(255,255,255,0.04)' }}
+                  className="grid place-items-center w-12 h-12 rounded-full bg-white/4"
                 >
-                  <Bell className="h-5 w-5" style={{ color: '#555' }} />
+                  <Bell className="h-5 w-5 text-[#555]" />
                 </div>
-                <p className="text-xs font-medium" style={{ color: '#666' }}>
+                <p className="text-xs font-medium text-[#666]">
                   {t('notifications.empty') || 'No new notifications'}
                 </p>
-                <p className="text-[10px]" style={{ color: '#444' }}>
+                <p className="text-[10px] text-[#444]">
                   {t('notifications.emptyDesc') || 'You\'re all caught up!'}
                 </p>
               </div>
@@ -259,13 +256,10 @@ export function NotificationBell() {
                     key={announcement.id}
                     onClick={() => handleNotificationClick(announcement)}
                     className={cn(
-                      'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors',
+                      'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-white/4',
                       !isRead && 'bg-white/[0.02]',
                       'hover:bg-white/[0.04]',
                     )}
-                    style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
-                    }}
                   >
                     {/* Icon */}
                     <div
@@ -288,17 +282,16 @@ export function NotificationBell() {
                           {announcement.title}
                         </p>
                         {!isRead && (
-                          <div className="shrink-0 w-2 h-2 rounded-full mt-1.5" style={{ background: '#BB86FC' }} />
+                          <div className="shrink-0 w-2 h-2 rounded-full mt-1.5 bg-[#BB86FC]" />
                         )}
                       </div>
                       <p
-                        className="text-[11px] leading-relaxed mt-0.5 line-clamp-2"
-                        style={{ color: '#777' }}
+                        className="text-[11px] leading-relaxed mt-0.5 line-clamp-2 text-[#777]"
                       >
                         {announcement.message}
                       </p>
                       {announcement.expiresAt && (
-                        <p className="text-[9px] mt-1" style={{ color: '#555' }}>
+                        <p className="text-[9px] mt-1 text-[#555]">
                           {formatTimestamp(announcement.expiresAt)}
                         </p>
                       )}
@@ -312,12 +305,11 @@ export function NotificationBell() {
           {/* Footer */}
           {announcements.length > 0 && (
             <div
-              className="px-4 py-2.5 border-t flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-              style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+              className="px-4 py-2.5 border-t border-white/[0.06] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              <ExternalLink className="h-3 w-3" style={{ color: '#666' }} />
-              <span className="text-[11px] font-medium" style={{ color: '#666' }}>
+              <ExternalLink className="h-3 w-3 text-[#666]" />
+              <span className="text-[11px] font-medium text-[#666]">
                 {t('notifications.close') || 'Close'}
               </span>
             </div>
