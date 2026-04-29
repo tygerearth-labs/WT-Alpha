@@ -139,23 +139,30 @@ function getDueDateColor(dueDate: string | null, remaining: number, debt?: Debt)
 }
 
 const DebtEmptyState = ({ type }: { type: string }) => (
-  <div className="flex flex-col items-center justify-center py-12 px-4">
-    <div
-      className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${type === 'hutang' ? 'bg-destructive/15' : 'bg-secondary/15'}`}
-    >
+  <motion.div 
+    initial={{ opacity: 0, scale: 0.95 }} 
+    animate={{ opacity: 1, scale: 1 }} 
+    transition={{ duration: 0.4 }}
+    className="flex flex-col items-center justify-center py-12 px-4 relative"
+  >
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: type === 'hutang' ? 'var(--destructive)' : 'var(--secondary)' }} />
+    </div>
+    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border relative" 
+      style={{ background: type === 'hutang' ? 'var(--destructive)/10' : 'var(--secondary)/10', borderColor: type === 'hutang' ? 'var(--destructive)/20' : 'var(--secondary)/20' }}>
       {type === 'hutang' ? (
-        <ArrowDownCircle className="h-8 w-8 text-destructive opacity-60" />
+        <ArrowDownCircle className="h-8 w-8" style={{ color: 'var(--destructive)', opacity: 0.7 }} />
       ) : (
-        <ArrowUpCircle className="h-8 w-8" style={{ color: 'var(--secondary)', opacity: 0.6 }} />
+        <ArrowUpCircle className="h-8 w-8" style={{ color: 'var(--secondary)', opacity: 0.7 }} />
       )}
     </div>
-    <p className="text-muted-foreground text-sm font-medium">
+    <p className="text-sm font-medium relative" style={{ color: 'var(--foreground)' }}>
       {type === 'hutang' ? 'Belum ada hutang' : 'Belum ada piutang'}
     </p>
-    <p className="text-muted-foreground opacity-60 text-xs mt-1">
+    <p className="text-xs mt-1 relative" style={{ color: 'var(--muted-foreground)', opacity: 0.6 }}>
       {type === 'hutang' ? 'Kelola hutang Anda di sini' : 'Kelola piutang Anda di sini'}
     </p>
-  </div>
+  </motion.div>
 );
 
 export default function BusinessDebts() {
@@ -459,15 +466,15 @@ export default function BusinessDebts() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <TabsList
-            className="bg-card border border-border rounded-lg"
+            className="bg-card border border-border rounded-full p-1"
           >
             <TabsTrigger
               value="hutang"
               className={cn(
-                'data-[state=active]:shadow-none transition-colors duration-200',
+                'data-[state=active]:shadow-none rounded-full transition-all duration-200',
                 activeTab === 'hutang' ? 'text-white' : 'text-white/60'
               )}
-              style={activeTab === 'hutang' ? { background: 'var(--destructive)' } : undefined}
+              style={activeTab === 'hutang' ? { background: 'linear-gradient(135deg, var(--destructive), rgba(239,68,68,0.8))', boxShadow: '0 0 12px rgba(239,68,68,0.25)' } : undefined}
             >
               <ArrowDownCircle className="h-4 w-4 mr-1" />
               {t('biz.hutang')}
@@ -475,10 +482,10 @@ export default function BusinessDebts() {
             <TabsTrigger
               value="piutang"
               className={cn(
-                'data-[state=active]:shadow-none transition-colors duration-200',
+                'data-[state=active]:shadow-none rounded-full transition-all duration-200',
                 activeTab === 'piutang' ? 'text-white' : 'text-white/60'
               )}
-              style={activeTab === 'piutang' ? { background: 'var(--secondary)', color: 'var(--secondary)' } : undefined}
+              style={activeTab === 'piutang' ? { background: 'linear-gradient(135deg, var(--secondary), rgba(16,185,129,0.8))', boxShadow: '0 0 12px rgba(16,185,129,0.25)' } : undefined}
             >
               <ArrowUpCircle className="h-4 w-4 mr-1" />
               {t('biz.piutang')}
@@ -501,8 +508,10 @@ export default function BusinessDebts() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 mb-2">
           {/* Total Amount */}
+          <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
+            className="rounded-xl p-3 sm:p-4 border border-border"
+            style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, var(--destructive) 10%), color-mix(in srgb, var(--card) 95%, var(--warning) 5%))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
               <DollarSign className="h-4 w-4" style={{ color: accentColor }} />
@@ -516,10 +525,13 @@ export default function BusinessDebts() {
               />
             </div>
           </Card>
+          </motion.div>
 
           {/* Remaining */}
+          <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
+            className="rounded-xl p-3 sm:p-4 border border-border"
+            style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, var(--warning) 10%), var(--card))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
               <Clock className="h-4 w-4" style={{ color: 'var(--warning)' }} />
@@ -537,10 +549,13 @@ export default function BusinessDebts() {
               />
             </div>
           </Card>
+          </motion.div>
 
           {/* Paid */}
+          <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
+            className="rounded-xl p-3 sm:p-4 border border-border"
+            style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, var(--secondary) 10%), var(--card))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
               <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--secondary)' }} />
@@ -558,10 +573,13 @@ export default function BusinessDebts() {
               />
             </div>
           </Card>
+          </motion.div>
 
           {/* Health Score */}
+          <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 bg-card border border-border"
+            className="rounded-xl p-3 sm:p-4 border border-border"
+            style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 88%, var(--primary) 12%), var(--card))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
               {(() => {
@@ -608,6 +626,7 @@ export default function BusinessDebts() {
               </div>
             )}
           </Card>
+          </motion.div>
         </div>
 
         <TabsContent value={activeTab} className="mt-0">
@@ -626,20 +645,24 @@ export default function BusinessDebts() {
               ) : (
                 <>
                   {/* Mobile Card List */}
-                  <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border">
+                  <div className="sm:hidden max-h-[500px] overflow-y-auto">
                     <AnimatePresence>
                       {filtered.map((debt, index) => {
                         const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
                         const paidPercent = debt.amount > 0 ? Math.round(((debt.amount - debt.remaining) / debt.amount) * 100) : 0;
                         const dueDateInfo = getDueDateInfo(debt.dueDate, debt.remaining, debt);
+                        const accentBorder = activeTab === 'hutang'
+                          ? (debt.status === 'paid' ? 'var(--secondary)' : (debt.status === 'overdue' ? 'var(--destructive)' : 'var(--destructive)'))
+                          : (debt.status === 'paid' ? 'var(--secondary)' : (debt.status === 'overdue' ? 'var(--warning)' : 'var(--secondary)'));
                         return (
                           <motion.div
                             key={debt.id}
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="p-3 space-y-2"
+                            className="p-3 pl-4 space-y-2 border-l-[3px] hover:bg-white/[0.02] transition-colors"
+                            style={{ borderLeftColor: accentBorder, borderBottom: '1px solid var(--border)' }}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
@@ -927,11 +950,14 @@ export default function BusinessDebts() {
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="w-[95vw] sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-card border border-border text-foreground"
+          className="w-[95vw] sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
+          style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
         >
+          <div className="h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(to right, var(--primary), var(--secondary), var(--warning))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/15">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--primary) 15%, transparent)' }}>
                 {editingDebt ? <Pencil className="h-4 w-4" style={{ color: 'var(--primary)' }} /> : <Plus className="h-4 w-4" style={{ color: 'var(--primary)' }} />}
               </div>
               {editingDebt ? t('common.edit') : t('biz.addDebt')}
@@ -941,7 +967,7 @@ export default function BusinessDebts() {
             </DialogDescription>
           </DialogHeader>
 
-          <Separator className="bg-border" />
+          <div className="h-px bg-white/[0.06]" />
 
           <form onSubmit={handleSave} className="space-y-3">
             <div className="space-y-2">
@@ -982,8 +1008,7 @@ export default function BusinessDebts() {
                 value={formData.counterpart}
                 onChange={(e) => setFormData({ ...formData, counterpart: e.target.value })}
                 placeholder={t('biz.debtCounterpart')}
-                className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
-                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 placeholder:text-white/30 transition-colors duration-200"
               />
             </div>
 
@@ -995,8 +1020,7 @@ export default function BusinessDebts() {
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="0"
                 min="0"
-                className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
-                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 placeholder:text-white/30 transition-colors duration-200"
               />
               {formattedDebtNominal && (
                 <motion.div
@@ -1015,6 +1039,8 @@ export default function BusinessDebts() {
 
             {/* Installment Toggle */}
             {!editingDebt && (
+              <>
+              <div className="h-px bg-white/[0.06]" />
               <div
                 className="flex items-center justify-between py-2 px-3 rounded-lg"
                 style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}
@@ -1028,9 +1054,13 @@ export default function BusinessDebts() {
                   onCheckedChange={(checked) => setFormData({ ...formData, isInstallment: checked })}
                 />
               </div>
+              </>
             )}
 
             {/* Installment Fields */}
+            {!editingDebt && formData.isInstallment && (
+              <div className="h-px bg-white/[0.06]" />
+            )}
             {!editingDebt && formData.isInstallment && (
               <div
                 className="space-y-3 p-3 rounded-xl overflow-hidden bg-warning/5 border border-warning/15"
@@ -1046,8 +1076,7 @@ export default function BusinessDebts() {
                       onChange={(e) => setFormData({ ...formData, downPayment: e.target.value })}
                       placeholder="0"
                       min="0"
-                      className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
-                      style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 placeholder:text-white/30 text-sm h-9 transition-colors duration-200"
                     />
                     {formattedDPNominal && (
                       <motion.div
@@ -1071,8 +1100,7 @@ export default function BusinessDebts() {
                       onChange={(e) => setFormData({ ...formData, installmentAmount: e.target.value })}
                       placeholder="0"
                       min="0"
-                      className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 focus:ring-1 transition-colors duration-200"
-                      style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 placeholder:text-white/30 text-sm h-9 transition-colors duration-200"
                     />
                     {formattedInstallmentNominal && (
                       <motion.div
@@ -1098,8 +1126,7 @@ export default function BusinessDebts() {
                     onChange={(e) => setFormData({ ...formData, installmentPeriod: e.target.value })}
                     placeholder="12"
                     min="1"
-                    className="bg-white/[0.05] placeholder:text-white/30 text-sm h-9 w-1/2 focus:ring-1 transition-colors duration-200"
-                    style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                    className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 placeholder:text-white/30 text-sm h-9 w-1/2 transition-colors duration-200"
                   />
                 </div>
 
@@ -1161,16 +1188,19 @@ export default function BusinessDebts() {
               </div>
             )}
 
+            <div className="h-px bg-white/[0.06]" />
+
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtDueDate')}</Label>
               <Input
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="bg-white/[0.05] focus:ring-1 transition-colors duration-200"
-                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 transition-colors duration-200"
               />
             </div>
+
+            <div className="h-px bg-white/[0.06]" />
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtDescription')}</Label>
@@ -1178,43 +1208,44 @@ export default function BusinessDebts() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder={t('biz.debtDescription')}
-                className="bg-white/[0.05] placeholder:text-white/30 min-h-[60px] focus:ring-1 resize-none transition-colors duration-200"
-                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 placeholder:text-white/30 min-h-[60px] resize-none transition-colors duration-200"
               />
             </div>
 
             <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setDialogOpen(false)}
-                className="hover:bg-white/5"
-                style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !formData.counterpart || !formData.amount}
-                className="text-black transition-colors duration-200"
-                style={{ background: 'var(--primary)' }}
+                className="rounded-xl text-white transition-colors duration-200"
+                style={{ background: 'linear-gradient(135deg, var(--secondary), var(--primary))' }}
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('common.save')}
               </Button>
             </DialogFooter>
           </form>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Partial Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent
-          className="w-[95vw] sm:max-w-[420px] bg-card border border-border text-foreground"
+          className="w-[95vw] sm:max-w-[420px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
+          style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
         >
+          <div className="h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(to right, var(--secondary), var(--primary))' }} />
+          <div className="p-5">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/15">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--secondary) 15%, transparent)' }}>
                 <CreditCard className="h-4 w-4" style={{ color: 'var(--secondary)' }} />
               </div>
               {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
@@ -1223,6 +1254,8 @@ export default function BusinessDebts() {
               {paymentDebt?.counterpart}
             </DialogDescription>
           </DialogHeader>
+
+          <div className="h-px bg-white/[0.06]" />
 
           {/* Visual Balance Preview */}
           {paymentDebt && (
@@ -1260,7 +1293,7 @@ export default function BusinessDebts() {
                 </div>
               </div>
 
-              <Separator className="bg-border" />
+              <Separator className="h-px bg-white/[0.06]" />
 
               {/* New Balance Preview */}
               {payAmount && parseFloat(payAmount) > 0 && parseFloat(payAmount) <= paymentDebt.remaining && (
@@ -1275,6 +1308,9 @@ export default function BusinessDebts() {
           )}
 
           {/* Installment Info */}
+          {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
+            <div className="h-px bg-white/[0.06]" />
+          )}
           {paymentDebt?.installmentAmount && paymentDebt.installmentAmount > 0 && (
             <div className="p-3 rounded-lg bg-warning/5 border border-warning/15">
               <div className="flex justify-between text-xs">
@@ -1296,6 +1332,8 @@ export default function BusinessDebts() {
             </div>
           )}
 
+          <div className="h-px bg-white/[0.06]" />
+
           <form onSubmit={handlePay} className="space-y-3">
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">{t('biz.debtAmount')} *</Label>
@@ -1306,8 +1344,7 @@ export default function BusinessDebts() {
                 placeholder="0"
                 min="0"
                 max={paymentDebt?.remaining || 0}
-                className="bg-white/[0.05] placeholder:text-white/30 focus:ring-1 transition-colors duration-200"
-                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                className="bg-white/[0.04] border-white/[0.08] rounded-xl focus:border-white/15 focus:ring-0 placeholder:text-white/30 transition-colors duration-200"
               />
               {formattedPayNominal && (
                 <motion.div
@@ -1342,24 +1379,23 @@ export default function BusinessDebts() {
             <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setPaymentDialogOpen(false)}
-                className="hover:bg-white/5"
-                style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={paying || !payAmount || parseFloat(payAmount) <= 0 || parseFloat(payAmount) > (paymentDebt?.remaining || 0)}
-                className="text-black transition-colors duration-200"
-                style={{ background: 'var(--secondary)' }}
+                className="rounded-xl text-white transition-colors duration-200"
+                style={{ background: 'linear-gradient(135deg, var(--secondary), var(--primary))' }}
               >
                 {paying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {paymentDebt?.installmentAmount ? t('biz.payInstallment') : t('biz.payDebt')}
               </Button>
             </DialogFooter>
           </form>
+          </div>
         </DialogContent>
       </Dialog>
 

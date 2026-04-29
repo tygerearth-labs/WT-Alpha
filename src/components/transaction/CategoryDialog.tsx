@@ -94,9 +94,20 @@ export function CategoryDialog({
   const submitLabel = initialData ? t('common.save') : t('common.save');
   const accentColor = type === 'income' ? T.accent : T.destructive;
 
+  const gradientStrip = type === 'income'
+    ? 'linear-gradient(to right, transparent, var(--secondary), var(--primary), transparent)'
+    : 'linear-gradient(to right, transparent, var(--destructive), var(--warning), transparent)';
+
+  const saveButtonGradient = type === 'income'
+    ? 'linear-gradient(135deg, var(--secondary), var(--primary))'
+    : 'linear-gradient(135deg, var(--destructive), var(--warning))';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0D0D0D] border-white/[0.06] sm:max-w-md gap-0 p-0 overflow-y-auto overflow-x-hidden max-h-[90vh]" style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}>
+      <DialogContent className="bg-[#141414] border-white/[0.08] sm:max-w-md rounded-2xl p-0 gap-0 overflow-y-auto overflow-x-hidden max-h-[90vh]" style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}>
+        {/* Gradient accent strip at top */}
+        <div className="h-[3px] w-full" style={{ background: gradientStrip }} />
+
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
             <span className="inline-flex items-center gap-2">
@@ -116,10 +127,13 @@ export function CategoryDialog({
               placeholder={type === 'income' ? t('category.placeholderIncome') : t('category.placeholderExpense')}
               required
               maxLength={50}
-              className="h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg"
+              className="h-10 text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-[#555] focus:border-white/15 focus:ring-0 rounded-xl"
               autoFocus
             />
           </div>
+
+          {/* Section divider */}
+          <div className="h-px bg-white/[0.06]" />
 
           {/* Icon Picker */}
           <div className="space-y-1.5">
@@ -130,6 +144,9 @@ export function CategoryDialog({
               accentColor={accentColor}
             />
           </div>
+
+          {/* Section divider */}
+          <div className="h-px bg-white/[0.06]" />
 
           {/* Color Presets */}
           <div className="space-y-1.5">
@@ -164,10 +181,13 @@ export function CategoryDialog({
                 placeholder="#000000"
                 maxLength={7}
                 required
-                className="h-8 text-xs bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg font-mono"
+                className="h-9 text-xs bg-white/[0.04] border-white/[0.08] text-white placeholder:text-[#555] focus:border-white/15 focus:ring-0 rounded-xl font-mono"
               />
             </div>
           </div>
+
+          {/* Section divider */}
+          <div className="h-px bg-white/[0.06]" />
 
           {/* Submit */}
           <DialogFooter className="pt-1 gap-2">
@@ -175,7 +195,7 @@ export function CategoryDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-lg text-xs"
+              className="flex-1 rounded-xl text-xs hover:bg-white/[0.06]"
               style={{ color: T.muted }}
             >
               {t('common.cancel')}
@@ -183,8 +203,8 @@ export function CategoryDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 rounded-lg text-xs font-semibold border-0"
-              style={{ background: accentColor, color: '#000' }}
+              className="flex-1 rounded-xl text-xs font-semibold border-0 text-white"
+              style={{ background: saveButtonGradient }}
             >
               {isSubmitting && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
               {submitLabel}

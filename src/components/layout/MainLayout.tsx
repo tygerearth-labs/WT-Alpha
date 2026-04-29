@@ -43,6 +43,9 @@ import {
   Gem,
   BookOpen,
   Palette,
+  Target,
+  ArrowDownUp,
+  Package,
   CheckCircle2,
   ChevronDown,
   type LucideIcon,
@@ -65,7 +68,10 @@ import BusinessAllocation from '@/components/business/BusinessAllocation';
 import BusinessLaporan from '@/components/business/BusinessLaporan';
 import BusinessPnL from '@/components/business/BusinessPnL';
 import BusinessForecast from '@/components/business/BusinessForecast';
+import BusinessBudget from '@/components/business/BusinessBudget';
+import BusinessDebts from '@/components/business/BusinessDebts';
 import BusinessInvoiceSettings from '@/components/business/BusinessInvoiceSettings';
+import ProductList from '@/components/business/ProductList';
 import InvestmentDashboard from '@/components/investment/InvestmentDashboard';
 import InvestmentPortfolio from '@/components/investment/InvestmentPortfolio';
 import TradingJournal from '@/components/investment/TradingJournal';
@@ -79,6 +85,8 @@ import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 type PageType =
   | 'dashboard' | 'kas-masuk' | 'kas-keluar' | 'target' | 'laporan' | 'profile'
   | 'biz-dashboard' | 'biz-kas' | 'biz-penjualan' | 'biz-invoice' | 'biz-customer'
+  | 'biz-products'
+  | 'biz-budget' | 'biz-debts'
   | 'biz-allocation' | 'biz-laporan' | 'biz-pnl' | 'biz-forecast' | 'biz-invoice-settings'
   | 'inv-dashboard' | 'inv-portfolio' | 'inv-journal' | 'inv-quant' | 'inv-macro';
 
@@ -147,7 +155,7 @@ export function MainLayout() {
     const VALID_PAGES = new Set<string>([
       'dashboard','kas-masuk','kas-keluar','target','laporan','profile',
       'biz-dashboard','biz-kas','biz-penjualan','biz-invoice','biz-customer',
-      'biz-allocation','biz-laporan','biz-pnl','biz-forecast','biz-invoice-settings',
+      'biz-products','biz-budget','biz-debts','biz-allocation','biz-laporan','biz-pnl','biz-forecast','biz-invoice-settings',
       'inv-dashboard','inv-portfolio','inv-journal','inv-quant','inv-macro',
     ]);
     const handler = (e: Event) => {
@@ -253,7 +261,10 @@ export function MainLayout() {
     { id: 'biz-penjualan', label: t('biz.penjualan'), icon: ShoppingCart, desc: 'Penjualan' },
     { id: 'biz-invoice', label: t('biz.invoice'), icon: Receipt, desc: 'Invoice' },
     { id: 'biz-customer', label: t('biz.customers'), icon: Users, desc: 'Pelanggan' },
+    { id: 'biz-products', label: t('biz.products') || 'Produk', icon: Package, desc: 'Manajemen Produk' },
     { id: 'biz-allocation', label: t('biz.autoAllocation'), icon: ArrowLeftRight, desc: 'Alokasi ke Pribadi' },
+    { id: 'biz-budget', label: t('biz.anggaran') || 'Anggaran', icon: Target, desc: 'Anggaran Pengeluaran' },
+    { id: 'biz-debts', label: t('biz.hutangPiutang') || 'Hutang & Piutang', icon: ArrowDownUp, desc: 'Hutang & Piutang' },
     { id: 'biz-laporan', label: t('biz.bizLaporan'), icon: BarChart3, desc: 'Laporan' },
     { id: 'biz-pnl', label: 'Laba Rugi', icon: TrendingUp, desc: 'Laporan Laba Rugi' },
     { id: 'biz-forecast', label: 'Proyeksi Kas', icon: LineChart, desc: 'Proyeksi Arus Kas' },
@@ -295,8 +306,11 @@ export function MainLayout() {
         case 'biz-penjualan': return <BusinessSales />;
         case 'biz-invoice': return <BusinessInvoice />;
         case 'biz-customer': return <BusinessCustomers />;
+        case 'biz-products': return <ProductList />;
         // biz-hutang removed — piutang is now in Cashflow tab
         case 'biz-allocation': return <BusinessAllocation />;
+        case 'biz-budget': return <BusinessBudget />;
+        case 'biz-debts': return <BusinessDebts />;
         case 'biz-laporan': return <BusinessLaporan />;
         case 'biz-pnl': return <BusinessPnL />;
         case 'biz-forecast': return <BusinessForecast />;

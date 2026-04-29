@@ -14,7 +14,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { TransactionPageSkeleton } from '@/components/shared/PageSkeleton';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { dispatchNotificationEvent } from '@/lib/notificationEvents';
 
 type DateFilter = 'today' | 'week' | 'month' | 'all';
@@ -431,6 +431,8 @@ export function KasKeluar() {
       `}</style>
       {/* ── Hero Strip ── */}
       <div className="relative rounded-2xl">
+        {/* Gradient accent strip at top */}
+        <div className="h-[3px] w-full rounded-t-2xl" style={{ background: 'linear-gradient(to right, transparent, var(--destructive), var(--warning), transparent)' }} />
         {/* Desktop animated gradient border glow */}
         <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
           style={{
@@ -592,10 +594,12 @@ export function KasKeluar() {
             trendUp: false,
           },
         ].map((stat) => (
-          <div
+          <motion.div
             key={stat.label}
-            className="rounded-xl p-3 lg:p-5 lg:py-6 text-center transition-all lg:hover:scale-[1.02] relative overflow-hidden group"
-            style={{ background: T.surface, border: `1px solid ${T.border}` }}
+            className="rounded-xl p-3 lg:p-5 lg:py-6 text-center relative overflow-hidden group"
+            style={{ background: `linear-gradient(135deg, ${stat.color}06, ${stat.color}03)`, border: `1px solid ${T.border}` }}
+            whileHover={{ scale: 1.02, y: -1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
             {/* Desktop gradient border glow on hover */}
             <div className="absolute inset-0 hidden lg:block rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -630,7 +634,7 @@ export function KasKeluar() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -822,7 +826,9 @@ export function KasKeluar() {
                   onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
                   className="text-xs font-semibold px-4 py-1.5 rounded-full shrink-0 transition-all duration-200 hover:scale-105"
                   style={{
-                    background: dateFilter === f.key ? T.accent : 'rgba(255,255,255,0.04)',
+                    background: dateFilter === f.key
+                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
+                      : 'rgba(255,255,255,0.04)',
                     color: dateFilter === f.key ? '#000' : T.muted,
                     boxShadow: dateFilter === f.key ? `0 0 16px ${T.accent}40` : 'none',
                     border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
@@ -837,65 +843,38 @@ export function KasKeluar() {
           <div className="max-h-[700px] overflow-y-auto">
             {/* Enhanced desktop empty state */}
             {transactions.length === 0 ? (
-              <div
-                className="flex flex-col items-center justify-center text-center py-16 relative overflow-hidden rounded-xl"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center text-center py-12 relative rounded-xl"
                 style={{ background: T.surface, border: `1px solid ${T.border}` }}
               >
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ background: `radial-gradient(ellipse at 50% 30%, ${T.accent}06 0%, transparent 60%)` }}
-                />
-                <motion.div
-                  className="relative mb-5"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: 'var(--destructive)' }} />
+                </div>
+                <div className="relative">
                   <div
-                    className="w-20 h-20 rounded-2xl grid place-items-center [&>*]:block leading-none relative"
+                    className="w-20 h-20 rounded-2xl grid place-items-center [&>*]:block leading-none"
                     style={{ background: `${T.accent}08`, border: `2px dashed ${T.accent}20` }}
                   >
                     <CreditCard className="h-9 w-9" style={{ color: T.accent, opacity: 0.35 }} />
-                    {/* Floating decorative dots */}
-                    <div className="absolute -top-2 -right-2 w-3 h-3 rounded-full" style={{ background: `${T.accent}25`, animation: 'fadeSlideUp 2.5s ease-in-out infinite' }} />
-                    <div className="absolute -bottom-1.5 -left-3 w-2 h-2 rounded-full" style={{ background: `${T.primary}25`, animation: 'fadeSlideUp 2.5s ease-in-out 0.7s infinite' }} />
-                    <div className="absolute top-1/2 -right-4 w-1.5 h-1.5 rounded-full" style={{ background: `${T.accent}20`, animation: 'fadeSlideUp 2.5s ease-in-out 1.2s infinite' }} />
                   </div>
-                </motion.div>
-                <motion.p
-                  className="text-base font-semibold mb-1.5"
-                  style={{ color: T.text }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.4 }}
-                >
-                  {t('kas.noData')}
-                </motion.p>
-                <motion.p
-                  className="text-sm max-w-[260px] leading-relaxed"
-                  style={{ color: T.textSub }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25, duration: 0.4 }}
-                >
-                  {t('kas.noDataHint')}
-                </motion.p>
+                </div>
+                <p className="text-base font-semibold mb-1.5 mt-4" style={{ color: T.text }}>{t('kas.noData')}</p>
+                <p className="text-sm max-w-[260px] leading-relaxed" style={{ color: T.textSub }}>{t('kas.noDataHint')}</p>
                 <motion.button
                   onClick={() => setIsAddDialogOpen(true)}
-                  className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+                  className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
                   style={{
-                    background: `${T.accent}15`,
+                    background: `linear-gradient(135deg, ${T.accent}20, ${T.accent}08)`,
                     color: T.accent,
                     border: `1px solid ${T.accent}25`,
                   }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35, duration: 0.4 }}
                 >
                   <Plus className="h-4 w-4" />
                   {t('kas.addExpense')}
                 </motion.button>
-              </div>
+              </motion.div>
             ) : (
               <TransactionList
                 transactions={displayedTransactions}
@@ -1056,8 +1035,11 @@ export function KasKeluar() {
                   onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
                   style={{
-                    background: dateFilter === f.key ? T.accent : 'rgba(255,255,255,0.04)',
+                    background: dateFilter === f.key
+                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
+                      : 'rgba(255,255,255,0.04)',
                     color: dateFilter === f.key ? '#000' : T.muted,
+                    boxShadow: dateFilter === f.key ? `0 0 12px ${T.accent}25` : 'none',
                     border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
@@ -1156,10 +1138,14 @@ export function KasKeluar() {
                 <button
                   key={f.key}
                   onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
-                  className="text-[10px] font-semibold px-2.5 py-1 rounded-lg shrink-0 transition-all"
+                  className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
                   style={{
-                    background: dateFilter === f.key ? T.accent : 'transparent',
+                    background: dateFilter === f.key
+                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
+                      : 'transparent',
                     color: dateFilter === f.key ? '#000' : T.muted,
+                    boxShadow: dateFilter === f.key ? `0 0 12px ${T.accent}25` : 'none',
+                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
                   {f.label}
@@ -1211,7 +1197,7 @@ export function KasKeluar() {
         onSubmit={selectedCategory ? handleEditCategory : handleAddCategory}
       />
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
-        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.06]">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle style={{ color: T.text }}>
               {deleteDialog.type === 'transaction' ? t('kas.deleteExpense') : t('kas.deleteCategory')}

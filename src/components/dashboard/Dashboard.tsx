@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -33,6 +34,10 @@ import { MonthlySummary } from '@/components/dashboard/MonthlySummary';
 import { SavingsOverview } from '@/components/target/SavingsOverview';
 import { FinancialTips } from '@/components/dashboard/FinancialTips';
 import { EnhancedEmptyState } from '@/components/shared/EnhancedEmptyState';
+
+// ── framer-motion helpers ────────────────────────────────────────
+const springHover = { stiffness: 300, damping: 24 };
+const cardHover = { scale: 1.02, y: -2 };
 
 // ── Theme Constants ──────────────────────────────────────────────
 const THEME = {
@@ -465,7 +470,13 @@ function AnalyticsCarousel({
                           <span className="text-[10px] font-semibold shrink-0 tabular-nums ml-auto" style={{ color: cat.color }}>{(pct || 0).toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{ background: cat.color }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.5, stiffness: 300, damping: 24 }}
+                          />
                         </div>
                       </div>
                     );
@@ -505,7 +516,13 @@ function AnalyticsCarousel({
                       <span className="text-[11px] font-bold" style={{ color: THEME.text }}>{item.score}/25</span>
                     </div>
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
-                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(item.score / 25) * 100}%`, background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary})` }} />
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary})` }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(item.score / 25) * 100}%` }}
+                        transition={{ duration: 0.7, stiffness: 300, damping: 24 }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -654,7 +671,13 @@ function AnalyticsCarousel({
                               </span>
                             </div>
                             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: THEME.border }}>
-                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cat.color }} />
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: cat.color }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.5, stiffness: 300, damping: 24 }}
+                              />
                             </div>
                           </div>
                         );
@@ -710,15 +733,17 @@ function AnalyticsCarousel({
                           </span>
                         </div>
                         <div
-                          className="h-1 rounded-full overflow-hidden"
+                          className="h-1.5 rounded-full overflow-hidden"
                           style={{ background: THEME.border }}
                         >
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
+                          <motion.div
+                            className="h-full rounded-full"
                             style={{
-                              width: `${(item.score / 25) * 100}%`,
                               background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary})`,
                             }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(item.score / 25) * 100}%` }}
+                            transition={{ duration: 0.7, stiffness: 300, damping: 24 }}
                           />
                         </div>
                       </div>
@@ -1585,18 +1610,19 @@ export function Dashboard() {
       {/* ═══ Section 2: KPI Strip ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 xl:gap-4">
         {/* Net Worth */}
-        <Card
-          className="group cursor-default transition-all duration-200"
-          style={{
-            background: THEME.surface,
-            border: `1px solid ${THEME.border}`,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = THEME.borderHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = THEME.border)}
+        <motion.div
+          className="rounded-xl overflow-hidden cursor-default relative"
+          style={{ border: `1px solid ${THEME.border}` }}
+          whileHover={cardHover}
+          transition={springHover}
         >
-          <CardContent className="p-3 sm:p-4">
+          {/* Gradient accent strip */}
+          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary})` }} />
+          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.primary}05)` }}>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <Wallet className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+              <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+                <Wallet className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+              </div>
               <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.netWorth')}</span>
             </div>
             <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
@@ -1604,8 +1630,8 @@ export function Dashboard() {
             </p>
             <div className="flex items-center gap-1 mt-1 overflow-hidden">
               <span
-                className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                style={{ background: `${THEME.primary}20`, color: THEME.primary }}
+                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                style={{ background: `linear-gradient(135deg, ${THEME.primary}25, ${THEME.primary}10)`, color: THEME.primary }}
               >
                 {currentStage.name}
               </span>
@@ -1615,23 +1641,23 @@ export function Dashboard() {
                 </span>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
 
         {/* Monthly Income */}
-        <Card
-          className="group cursor-default transition-all duration-200"
-          style={{
-            background: THEME.surface,
-            border: `1px solid ${THEME.border}`,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = THEME.borderHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = THEME.border)}
+        <motion.div
+          className="rounded-xl overflow-hidden cursor-default relative"
+          style={{ border: `1px solid ${THEME.border}` }}
+          whileHover={cardHover}
+          transition={springHover}
         >
-          <CardContent className="p-3 sm:p-4">
+          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.secondary}, ${THEME.secondary}80)` }} />
+          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.secondary}04)` }}>
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
-                <ArrowUpRight className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+                <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}15` }}>
+                  <ArrowUpRight className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+                </div>
                 <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
               </div>
               {mc && getTrendIcon(mc.incomeChange)}
@@ -1644,23 +1670,23 @@ export function Dashboard() {
                 {mc.incomeChange > 0 ? '+' : ''}{(mc.incomeChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
 
         {/* Monthly Expense */}
-        <Card
-          className="group cursor-default transition-all duration-200"
-          style={{
-            background: THEME.surface,
-            border: `1px solid ${THEME.border}`,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = THEME.borderHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = THEME.border)}
+        <motion.div
+          className="rounded-xl overflow-hidden cursor-default relative"
+          style={{ border: `1px solid ${THEME.border}` }}
+          whileHover={cardHover}
+          transition={springHover}
         >
-          <CardContent className="p-3 sm:p-4">
+          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.destructive}, ${THEME.destructive}80)` }} />
+          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.destructive}04)` }}>
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
-                <ArrowDownRight className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
+                <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}15` }}>
+                  <ArrowDownRight className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
+                </div>
                 <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
               </div>
               {mc && getTrendIcon(mc.expenseChange)}
@@ -1673,22 +1699,22 @@ export function Dashboard() {
                 {mc.expenseChange > 0 ? '+' : ''}{(mc.expenseChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
 
         {/* Savings Rate */}
-        <Card
-          className="group cursor-default transition-all duration-200"
-          style={{
-            background: THEME.surface,
-            border: `1px solid ${THEME.border}`,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = THEME.borderHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = THEME.border)}
+        <motion.div
+          className="rounded-xl overflow-hidden cursor-default relative"
+          style={{ border: `1px solid ${THEME.border}` }}
+          whileHover={cardHover}
+          transition={springHover}
         >
-          <CardContent className="p-3 sm:p-4">
+          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.warning}, ${THEME.warning}80)` }} />
+          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.warning}04)` }}>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <Activity className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
+              <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.warning}15` }}>
+                <Activity className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
+              </div>
               <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.savingsRate')}</span>
             </div>
             <div className="flex items-end gap-3">
@@ -1699,11 +1725,12 @@ export function Dashboard() {
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
       </div>
 
       {/* ═══ Section 3: Analytics Carousel ═══ */}
+      <div className="h-px bg-white/[0.06]" />
       <AnalyticsCarousel
         cashFlowData={cashFlowData}
         categoryData={categoryData}
@@ -1715,6 +1742,9 @@ export function Dashboard() {
       />
 
       {/* ═══ Section 3.5: Health Score + Budget + Savings Overview ═══ */}
+      {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
+        <div className="h-px bg-white/[0.06]" />
+      )}
       {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {isSectionVisible('healthScore') && (
@@ -1739,16 +1769,22 @@ export function Dashboard() {
 
       {/* ═══ Section 3.6: Financial Tips ═══ */}
       {isSectionVisible('tips') && (
-        <ProFeatureWrapper feature="tips">
-          <FinancialTips
-            expenseByCategory={data.expenseByCategory}
-            monthlyComparison={data.monthlyComparison}
-            savingsRate={data.savingsRate}
-          />
-        </ProFeatureWrapper>
+        <>
+          <div className="h-px bg-white/[0.06]" />
+          <ProFeatureWrapper feature="tips">
+            <FinancialTips
+              expenseByCategory={data.expenseByCategory}
+              monthlyComparison={data.monthlyComparison}
+              savingsRate={data.savingsRate}
+            />
+          </ProFeatureWrapper>
+        </>
       )}
 
       {/* ═══ Section 3.7: Financial Insights Widgets ═══ */}
+      {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
+        <div className="h-px bg-white/[0.06]" />
+      )}
       {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
           {isSectionVisible('spendingTrend') && (
@@ -1778,35 +1814,52 @@ export function Dashboard() {
 
       {/* ═══ Section 5: Financial Consultant Insights ═══ */}
       {insights.length > 0 && (
+        <>
+        <div className="h-px bg-white/[0.06]" />
         <div className="space-y-2.5">
           <div className="flex items-center gap-2">
             <Brain className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-            <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+            <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: THEME.muted }}>
               {t('dashboard.consultantInsights')}
             </h3>
           </div>
           {/* Mobile: horizontal scroll */}
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 lg:hidden">
             {insights.map((insight) => (
-              <ConsultantCard key={insight.id} insight={insight} />
+              <motion.div
+                key={insight.id}
+                whileHover={{ scale: 1.02, x: 2 }}
+                transition={springHover}
+              >
+                <ConsultantCard insight={insight} />
+              </motion.div>
             ))}
           </div>
           {/* Desktop: 3-column grid - compact cards */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-3 xl:gap-4">
             {insights.map((insight) => (
-              <ConsultantCardCompact key={insight.id} insight={insight} />
+              <motion.div
+                key={insight.id}
+                whileHover={{ scale: 1.02, y: -2 }}
+                transition={springHover}
+              >
+                <ConsultantCardCompact insight={insight} />
+              </motion.div>
             ))}
           </div>
         </div>
+        </>
       )}
 
       {/* ═══ Section 6: Savings Targets Progress ═══ */}
       {data.savingsTargets.length > 0 && (
+        <>
+        <div className="h-px bg-white/[0.06]" />
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
+              <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: THEME.muted }}>
                 {t('dashboard.savingsTargets')}
               </h3>
             </div>
@@ -1832,6 +1885,7 @@ export function Dashboard() {
                 progress >= 80 ? THEME.secondary :
                 progress >= 40 ? THEME.warning :
                 THEME.primary;
+              const progressGradient = `linear-gradient(to right, ${progressColor}, ${progressColor}80)`;
               // Mini ring
               const ringRadius = 20;
               const ringStroke = 3;
@@ -1840,13 +1894,15 @@ export function Dashboard() {
               const ringOffset = ringCirc - (progress / 100) * ringCirc;
 
               return (
-                <div
+                <motion.div
                   key={target.id}
-                  className="shrink-0 w-[200px] sm:w-[220px] rounded-xl p-3.5 transition-all duration-200 relative overflow-hidden"
+                  className="shrink-0 w-[200px] sm:w-[220px] rounded-xl p-3.5 relative overflow-hidden"
                   style={{
                     background: THEME.surface,
                     border: `1px solid ${THEME.border}`,
                   }}
+                  whileHover={{ scale: 1.02, x: 2 }}
+                  transition={springHover}
                 >
                   {/* subtle glow */}
                   <div
@@ -1896,17 +1952,20 @@ export function Dashboard() {
                       </p>
                       {remaining > 0 && (
                         <div className="flex items-center gap-1 pt-0.5">
-                          <div className="h-1 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{ width: `${progress}%`, background: progressColor }}
+                          <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <motion.div
+                              className="h-full rounded-full"
+                              style={{ background: progressGradient }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progress}%` }}
+                              transition={{ duration: 0.8, stiffness: 300, damping: 24 }}
                             />
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -1919,6 +1978,7 @@ export function Dashboard() {
                 progress >= 80 ? THEME.secondary :
                 progress >= 40 ? THEME.warning :
                 THEME.primary;
+              const progressGradient = `linear-gradient(to right, ${THEME.primary}, ${THEME.secondary})`;
               const ringRadius = 22;
               const ringStroke = 3;
               const ringNorm = ringRadius - ringStroke / 2;
@@ -1926,14 +1986,18 @@ export function Dashboard() {
               const ringOffset = ringCirc - (progress / 100) * ringCirc;
 
               return (
-                <div
+                <motion.div
                   key={target.id}
-                  className="rounded-xl p-4 transition-all duration-200 relative overflow-hidden"
+                  className="rounded-xl p-4 relative overflow-hidden"
                   style={{
-                    background: THEME.surface,
+                    background: `linear-gradient(135deg, ${THEME.surface}, ${progressColor}04)`,
                     border: `1px solid ${THEME.border}`,
                   }}
+                  whileHover={cardHover}
+                  transition={springHover}
                 >
+                  {/* Gradient accent strip at top */}
+                  <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${progressColor}, ${progressColor}60)` }} />
                   <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full blur-2xl opacity-10 pointer-events-none" style={{ background: progressColor }} />
                   <div className="relative z-10 flex items-start gap-3">
                     <div className="relative shrink-0">
@@ -1951,14 +2015,20 @@ export function Dashboard() {
                       <p className="text-[10px]" style={{ color: THEME.muted }}>of {formatAmount(target.targetAmount)}</p>
                       {remaining > 0 && (
                         <div className="flex items-center gap-1 pt-0.5">
-                          <div className="h-1 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: progressColor }} />
+                          <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <motion.div
+                              className="h-full rounded-full"
+                              style={{ background: progressGradient }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progress}%` }}
+                              transition={{ duration: 0.8, stiffness: 300, damping: 24 }}
+                            />
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -1968,55 +2038,85 @@ export function Dashboard() {
             </p>
           )}
         </div>
+        </>
       )}
 
       {/* ═══ Section 7: Quick Stats Footer ═══ */}
-      <Card
-        style={{
-          background: THEME.surface,
-          border: `1px solid ${THEME.border}`,
-        }}
+      <div className="h-px bg-white/[0.06]" />
+      <motion.div
+        whileHover={{ scale: 1.005 }}
+        transition={springHover}
       >
-        <CardContent className="p-4 lg:p-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                {t('dashboard.expensePerDay')}
-              </p>
-              <p className="text-sm font-semibold" style={{ color: THEME.text }}>
-                {formatAmount(averages.dailyExpense)}
-              </p>
+        <Card
+          className="overflow-hidden"
+          style={{
+            background: THEME.surface,
+            border: `1px solid ${THEME.border}`,
+          }}
+        >
+          {/* Gradient accent strip at top */}
+          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary}, ${THEME.warning})` }} />
+          <CardContent className="p-4 lg:p-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <motion.div
+                className="text-center rounded-xl p-3"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
+                whileHover={{ scale: 1.03, y: -1 }}
+                transition={springHover}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
+                  {t('dashboard.expensePerDay')}
+                </p>
+                <p className="text-sm font-bold" style={{ color: THEME.text }}>
+                  {formatAmount(averages.dailyExpense)}
+                </p>
+              </motion.div>
+              <motion.div
+                className="text-center rounded-xl p-3"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
+                whileHover={{ scale: 1.03, y: -1 }}
+                transition={springHover}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
+                  {t('dashboard.expensePerWeek')}
+                </p>
+                <p className="text-sm font-bold" style={{ color: THEME.text }}>
+                  {formatAmount(averages.weeklyExpense)}
+                </p>
+              </motion.div>
+              <motion.div
+                className="text-center rounded-xl p-3"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
+                whileHover={{ scale: 1.03, y: -1 }}
+                transition={springHover}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
+                  {t('dashboard.fundResilience')}
+                </p>
+                <p className="text-sm font-bold" style={{ color: forecast.runwayMonths === -1 ? THEME.secondary : THEME.text }}>
+                  {forecast.runwayMonths === -1 ? t('dashboard.safe') : forecast.runwayMonths > 0 ? `${forecast.runwayMonths} ${t('dashboard.monthsUnit')}` : `0 ${t('dashboard.monthsUnit')}`}
+                </p>
+                {forecast.runwayMonths === -1 && (
+                  <p className="text-[9px]" style={{ color: THEME.muted }}>{t('dashboard.surplusThisMonth')}</p>
+                )}
+              </motion.div>
+              <motion.div
+                className="text-center rounded-xl p-3"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
+                whileHover={{ scale: 1.03, y: -1 }}
+                transition={springHover}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
+                  {t('dashboard.avgTransaction')}
+                </p>
+                <p className="text-sm font-bold" style={{ color: THEME.text }}>
+                  {formatAmount(averages.transactionSize)}
+                </p>
+              </motion.div>
             </div>
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                {t('dashboard.expensePerWeek')}
-              </p>
-              <p className="text-sm font-semibold" style={{ color: THEME.text }}>
-                {formatAmount(averages.weeklyExpense)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                {t('dashboard.fundResilience')}
-              </p>
-              <p className="text-sm font-semibold" style={{ color: forecast.runwayMonths === -1 ? THEME.secondary : THEME.text }}>
-                {forecast.runwayMonths === -1 ? t('dashboard.safe') : forecast.runwayMonths > 0 ? `${forecast.runwayMonths} ${t('dashboard.monthsUnit')}` : `0 ${t('dashboard.monthsUnit')}`}
-              </p>
-              {forecast.runwayMonths === -1 && (
-                <p className="text-[9px]" style={{ color: THEME.muted }}>{t('dashboard.surplusThisMonth')}</p>
-              )}
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
-                {t('dashboard.avgTransaction')}
-              </p>
-              <p className="text-sm font-semibold" style={{ color: THEME.text }}>
-                {formatAmount(averages.transactionSize)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const c = {
   primary: 'var(--primary)', secondary: 'var(--secondary)', destructive: 'var(--destructive)',
@@ -38,6 +39,8 @@ const alpha = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct
 
 const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
 const inputStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' };
+
+const springHover = { scale: 1.02, y: -1, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } };
 
 /* ------------------------------------------------------------------ */
 /*  Raw API response types                                              */
@@ -448,12 +451,31 @@ function normalizeResponse(raw: ApiResponse): ReportData | null {
 
 function EmptyState({ icon: Icon, color, text }: { icon: React.ElementType; color: string; text: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16">
-      <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-        <Icon className="h-7 w-7" style={{ color: 'color-mix(in srgb, var(--primary) 31%, transparent)' }} />
+    <motion.div
+      className="flex flex-col items-center justify-center py-16"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring' as const, stiffness: 200, damping: 20 }}
+    >
+      <div className="relative">
+        <motion.div
+          className="absolute inset-0 rounded-xl"
+          style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, filter: 'blur(16px)' }}
+          animate={{ opacity: [0.4, 0.7, 0.4] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <div className="relative h-14 w-14 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 80%, transparent), color-mix(in srgb, var(--card) 60%, transparent))', border: '1px solid var(--border)' }}>
+          <Icon className="h-7 w-7" style={{ color } as React.CSSProperties} />
+        </div>
       </div>
-      <p className="text-sm" >{text}</p>
-    </div>
+      <motion.p
+        className="text-sm mt-4"
+        style={{ color: 'var(--muted-foreground)' }}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >{text}</motion.p>
+    </motion.div>
   );
 }
 
@@ -1055,31 +1077,43 @@ export default function BusinessLaporan() {
         </div>
       ) : data ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
-          {summaryCards.map((card) => {
+          {summaryCards.map((card, idx) => {
             const Icon = card.icon;
             return (
-              <Card key={card.label} className="rounded-xl overflow-hidden" style={cardStyle}>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
-                      <Icon className="h-3.5 w-3.5" style={{ color: card.color }} />
+              <motion.div
+                key={card.label}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05, type: 'spring' as const, stiffness: 300, damping: 24 }}
+                whileHover={springHover}
+              >
+                <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+                  <div
+                    className="h-[3px]"
+                    style={{ background: `linear-gradient(to right, ${card.color}, color-mix(in srgb, ${card.color} 40%, transparent))` }}
+                  />
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
+                        <Icon className="h-3.5 w-3.5" style={{ color: card.color }} />
+                      </div>
+                      <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
+                        {(card.label === 'Laba Bersih' && data.summary.netIncome >= 0) || card.label === 'Total Pendapatan' || card.label === 'Saldo Kas' ? (
+                          <ArrowUpRight className="h-3 w-3" style={{ color: 'var(--secondary)' }} />
+                        ) : card.label === 'Laba Bersih' && data.summary.netIncome < 0 ? (
+                          <ArrowDownRight className="h-3 w-3" style={{ color: 'var(--destructive)' }} />
+                        ) : (
+                          <CircleDollarSign className="h-3 w-3" style={{ color: card.color } as React.CSSProperties} />
+                        )}
+                      </div>
                     </div>
-                    <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
-                      {(card.label === 'Laba Bersih' && data.summary.netIncome >= 0) || card.label === 'Total Pendapatan' || card.label === 'Saldo Kas' ? (
-                        <ArrowUpRight className="h-3 w-3" style={{ color: 'var(--secondary)' }} />
-                      ) : card.label === 'Laba Bersih' && data.summary.netIncome < 0 ? (
-                        <ArrowDownRight className="h-3 w-3" style={{ color: 'var(--destructive)' }} />
-                      ) : (
-                        <CircleDollarSign className="h-3 w-3" style={{ color: card.color } as React.CSSProperties} />
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>{card.label}</p>
-                  <p className="text-base font-bold tabular-nums mt-0.5" style={{ color: card.color }}>
-                    {formatAmount(card.value)}
-                  </p>
-                </CardContent>
-              </Card>
+                    <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>{card.label}</p>
+                    <p className="text-base font-bold tabular-nums mt-0.5" style={{ color: card.color }}>
+                      {formatAmount(card.value)}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             );
           })}
         </div>
@@ -1207,7 +1241,7 @@ export default function BusinessLaporan() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full sm:w-auto rounded-xl p-1 h-auto overflow-x-auto flex-nowrap" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+        <TabsList className="w-full sm:w-auto rounded-full p-1 h-auto overflow-x-auto flex-nowrap" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
           {[
             { value: 'labaRugi', label: 'Laba Rugi', color: 'var(--secondary)' },
             { value: 'arusKas', label: 'Arus Kas', color: 'var(--primary)' },
@@ -1220,9 +1254,9 @@ export default function BusinessLaporan() {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="rounded-lg text-xs px-3 py-1.5 data-[state=active]:shadow-none"
+              className="rounded-full text-xs px-3 py-1.5 data-[state=active]:shadow-none"
               style={activeTab === tab.value
-                ? { color: tab.color, backgroundColor: `${tab.color}15` }
+                ? { color: tab.color, background: `linear-gradient(135deg, color-mix(in srgb, ${tab.color} 20%, transparent), color-mix(in srgb, ${tab.color} 8%, transparent))`, boxShadow: `0 0 12px color-mix(in srgb, ${tab.color} 20%, transparent)` }
                 : { color: 'var(--muted-foreground)' }
               }
             >
@@ -1245,7 +1279,16 @@ export default function BusinessLaporan() {
           ) : (
             <>
               {/* Income Breakdown */}
-              <Card className="rounded-xl" style={cardStyle}>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring' as const, stiffness: 200, damping: 22 }}
+              >
+                <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+                  <div
+                    className="h-[3px]"
+                    style={{ background: 'linear-gradient(to right, var(--secondary), color-mix(in srgb, var(--secondary) 30%, transparent))' }}
+                  />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={TrendingUp} color="var(--secondary)" title="Pendapatan per Sumber" badge={labaRugiDetail.income.filter((i) => i.amount > 0).length} />
                   <div className="space-y-2">
@@ -1280,9 +1323,19 @@ export default function BusinessLaporan() {
                   </div>
                 </CardContent>
               </Card>
+              </motion.div>
 
               {/* Expense Breakdown by Category */}
-              <Card className="rounded-xl" style={cardStyle}>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05, type: 'spring' as const, stiffness: 200, damping: 22 }}
+              >
+              <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+                <div
+                  className="h-[3px]"
+                  style={{ background: 'linear-gradient(to right, var(--destructive), color-mix(in srgb, var(--destructive) 30%, transparent))' }}
+                />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={TrendingDown} color="var(--destructive)" title="Pengeluaran per Kategori" badge={expenseCategories.length} />
                   {expenseCategories.length === 0 ? (
@@ -1326,9 +1379,20 @@ export default function BusinessLaporan() {
                   </div>
                 </CardContent>
               </Card>
+              </motion.div>
 
               {/* Net Profit/Loss Summary */}
-              <Card className="rounded-xl" style={{ background: 'var(--card)', border: `1px solid color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 20%, transparent)` }}>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, type: 'spring' as const, stiffness: 200, damping: 22 }}
+                whileHover={springHover}
+              >
+              <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: `1px solid color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 20%, transparent)` }}>
+                <div
+                  className="h-[3px]"
+                  style={{ background: `linear-gradient(to right, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'}, color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 30%, transparent))` }}
+                />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={DollarSign} color={labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} title="Laba / Rugi Bersih" />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1361,6 +1425,7 @@ export default function BusinessLaporan() {
                   )}
                 </CardContent>
               </Card>
+              </motion.div>
             </>
           )}
         </TabsContent>

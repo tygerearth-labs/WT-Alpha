@@ -114,13 +114,24 @@ export function TransactionForm({
   const accentColor = type === 'income' ? T.accent : T.destructive;
   const placeholderText = type === 'income' ? t('form.placeholderIncome') : t('form.placeholderExpense');
 
+  const gradientStrip = type === 'income'
+    ? 'linear-gradient(to right, transparent, var(--secondary), var(--primary), transparent)'
+    : 'linear-gradient(to right, transparent, var(--destructive), var(--warning), transparent)';
+
+  const saveButtonGradient = type === 'income'
+    ? 'linear-gradient(135deg, var(--secondary), var(--primary))'
+    : 'linear-gradient(135deg, var(--destructive), var(--warning))';
+
   const allocAmount = (formData.targetId && formData.targetId !== 'none' && formData.allocationPercentage && formData.amount)
     ? (parseFloat(formData.amount) * parseFloat(formData.allocationPercentage)) / 100
     : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0D0D0D] border-white/[0.06] sm:max-w-md gap-0 p-0">
+      <DialogContent className="bg-[#141414] border-white/[0.08] sm:max-w-md rounded-2xl p-0 gap-0 overflow-hidden">
+        {/* Gradient accent strip at top */}
+        <div className="h-[3px] w-full" style={{ background: gradientStrip }} />
+
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
             <span className="inline-flex items-center gap-2">
@@ -145,13 +156,16 @@ export function TransactionForm({
               required
               min="0.01"
               step="0.01"
-              className="h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg"
+              className="h-10 text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-[#555] focus:border-white/15 focus:ring-0 rounded-xl"
               autoFocus
             />
             <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>
               {type === 'income' ? t('form.tipIncome') : t('form.tipExpense')}
             </p>
           </div>
+
+          {/* Section divider */}
+          <div className="h-px bg-white/[0.06]" />
 
           {/* Category & Date - Grid */}
           <div className="grid grid-cols-2 gap-3">
@@ -162,10 +176,10 @@ export function TransactionForm({
                 onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                 required
               >
-                <SelectTrigger className="h-9 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg">
+                <SelectTrigger className="h-10 text-xs bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:ring-0 focus:border-white/15">
                   <SelectValue placeholder={t('transaction.select')} />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1E1E1E] border-white/[0.08]">
+                <SelectContent className="bg-[#1a1a1a] border-white/[0.08]">
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id} className="text-white focus:bg-white/[0.08]">
                       <DynamicIcon name={cat.icon} className="h-4 w-4 inline" /> {cat.name}
@@ -184,10 +198,13 @@ export function TransactionForm({
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
-                className="h-9 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg [color-scheme:dark]"
+                className="h-10 text-xs bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:ring-0 focus:border-white/15 [color-scheme:dark]"
               />
             </div>
           </div>
+
+          {/* Section divider */}
+          <div className="h-px bg-white/[0.06]" />
 
           {/* Description */}
           <div className="space-y-1.5">
@@ -197,52 +214,59 @@ export function TransactionForm({
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder={placeholderText}
               rows={2}
-              className="text-xs bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#555] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20 rounded-lg resize-none"
+              className="text-xs bg-white/[0.04] border-white/[0.08] text-white placeholder:text-[#555] focus:border-white/15 focus:ring-0 rounded-xl resize-none"
             />
             <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>{t('form.tipDescription')}</p>
           </div>
 
           {/* Savings target allocation (income only) */}
           {type === 'income' && (
-            <div
-              className="rounded-xl p-3 space-y-3"
-              style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
-            >
-              <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: T.primary }}>
-                {t('transaction.allocateTarget')}
-              </p>
-              <p className="text-[9px]" style={{ color: `${T.primary}80` }}>{t('form.tipAllocation')}</p>
-              <div className="space-y-2">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px]" style={{ color: T.muted }}>{t('nav.target')}</Label>
-                  <Select
-                    value={formData.targetId}
-                    onValueChange={(value) => setFormData({ ...formData, targetId: value })}
-                  >
-                    <SelectTrigger className="h-8 text-xs bg-[#1E1E1E] border-white/[0.08] text-white rounded-lg">
-                      <SelectValue placeholder={t('nav.target')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1E1E1E] border-white/[0.08]">
-                      <SelectItem value="none" className="text-white focus:bg-white/[0.08]">{t('transaction.notAllocated')}</SelectItem>
-                      {savingsTargets.map((target) => (
-                        <SelectItem key={target.id} value={target.id} className="text-white focus:bg-white/[0.08]">
-                          {target.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {formData.targetId && formData.targetId !== 'none' && (
-                  <div className="flex items-center justify-between rounded-lg px-2.5 py-2" style={{ background: '#1E1E1E' }}>
-                    <span className="text-[10px]" style={{ color: T.muted }}>{t('transaction.autoAllocate')}</span>
-                    <span className="text-[11px] font-bold" style={{ color: T.primary }}>
-                      {formData.allocationPercentage || 0}% = {formatAmount(allocAmount)}
-                    </span>
+            <>
+              {/* Section divider */}
+              <div className="h-px bg-white/[0.06]" />
+              <div
+                className="rounded-xl p-3 space-y-3"
+                style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
+              >
+                <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: T.primary }}>
+                  {t('transaction.allocateTarget')}
+                </p>
+                <p className="text-[9px]" style={{ color: `${T.primary}80` }}>{t('form.tipAllocation')}</p>
+                <div className="space-y-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px]" style={{ color: T.muted }}>{t('nav.target')}</Label>
+                    <Select
+                      value={formData.targetId}
+                      onValueChange={(value) => setFormData({ ...formData, targetId: value })}
+                    >
+                      <SelectTrigger className="h-9 text-xs bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:ring-0 focus:border-white/15">
+                        <SelectValue placeholder={t('nav.target')} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-white/[0.08]">
+                        <SelectItem value="none" className="text-white focus:bg-white/[0.08]">{t('transaction.notAllocated')}</SelectItem>
+                        {savingsTargets.map((target) => (
+                          <SelectItem key={target.id} value={target.id} className="text-white focus:bg-white/[0.08]">
+                            {target.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
+                  {formData.targetId && formData.targetId !== 'none' && (
+                    <div className="flex items-center justify-between rounded-lg px-2.5 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                      <span className="text-[10px]" style={{ color: T.muted }}>{t('transaction.autoAllocate')}</span>
+                      <span className="text-[11px] font-bold" style={{ color: T.primary }}>
+                        {formData.allocationPercentage || 0}% = {formatAmount(allocAmount)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
+
+          {/* Section divider */}
+          <div className="h-px bg-white/[0.06]" />
 
           {/* Submit */}
           <DialogFooter className="pt-1 gap-2">
@@ -250,7 +274,7 @@ export function TransactionForm({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-lg text-xs"
+              className="flex-1 rounded-xl text-xs hover:bg-white/[0.06]"
               style={{ color: T.muted }}
             >
               {t('common.cancel')}
@@ -258,8 +282,8 @@ export function TransactionForm({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 rounded-lg text-xs font-semibold border-0"
-              style={{ background: accentColor, color: '#000' }}
+              className="flex-1 rounded-xl text-xs font-semibold border-0 text-white"
+              style={{ background: saveButtonGradient }}
             >
               {isSubmitting && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
               {submitLabel}

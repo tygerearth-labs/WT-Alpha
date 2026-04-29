@@ -702,13 +702,13 @@ export default function BusinessBudget() {
                     </span>
                   </div>
                   <div className="h-2.5 rounded-full overflow-hidden" style={{ background: c.border }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
+                    <motion.div
+                      className="h-full rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((summary.totalSpent / summary.totalBudget) * 100, 100)}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
                       style={{
-                        width: `${Math.min((summary.totalSpent / summary.totalBudget) * 100, 100)}%`,
-                        background: getProgressBgColor(
-                          (summary.totalSpent / summary.totalBudget) * 100
-                        ),
+                        background: `linear-gradient(to right, ${c.secondary}, ${c.primary})`,
                       }}
                     />
                   </div>
@@ -796,7 +796,7 @@ export default function BusinessBudget() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {/* Kas Besar */}
-                <div className="rounded-lg p-2.5 border" style={{ borderColor: c.border }}>
+                <div className="rounded-lg p-2.5 border" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--secondary) 8%, transparent), transparent)', borderColor: c.border }}>
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className="w-2 h-2 rounded-full" style={{ background: c.secondary }} />
                     <span className="text-[10px] font-medium" style={{ color: c.muted }}>Kas Besar</span>
@@ -807,7 +807,7 @@ export default function BusinessBudget() {
                 </div>
 
                 {/* Kas Kecil */}
-                <div className="rounded-lg p-2.5 border" style={{ borderColor: c.border }}>
+                <div className="rounded-lg p-2.5 border" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--warning) 8%, transparent), transparent)', borderColor: c.border }}>
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className="w-2 h-2 rounded-full" style={{ background: c.warning }} />
                     <span className="text-[10px] font-medium" style={{ color: c.muted }}>Kas Kecil</span>
@@ -818,7 +818,7 @@ export default function BusinessBudget() {
                 </div>
 
                 {/* Investor */}
-                <div className="rounded-lg p-2.5 border" style={{ borderColor: c.border }}>
+                <div className="rounded-lg p-2.5 border" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), transparent)', borderColor: c.border }}>
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className="w-2 h-2 rounded-full" style={{ background: c.primary }} />
                     <span className="text-[10px] font-medium" style={{ color: c.muted }}>Investor</span>
@@ -929,7 +929,15 @@ export default function BusinessBudget() {
                         animate="visible"
                         exit="exit"
                         layout
+                        whileHover={{ x: 2 }}
                         className="p-3.5"
+                        style={{
+                          borderLeft: budget.spentPct >= 95
+                            ? '3px solid var(--destructive)'
+                            : budget.spentPct >= 85
+                              ? '3px solid #F97316'
+                              : '3px solid var(--secondary)',
+                        }}
                       >
                         {/* Row 1: Category + Actions */}
                         <div className="flex items-start justify-between gap-2 mb-2">
@@ -1188,6 +1196,11 @@ export default function BusinessBudget() {
                             style={{
                               borderBottom: `1px solid ${c.border}`,
                               background: i % 2 === 1 ? alpha(c.foreground, 1) : 'transparent',
+                              borderLeft: budget.spentPct >= 95
+                                ? '3px solid var(--destructive)'
+                                : budget.spentPct >= 85
+                                  ? '3px solid #F97316'
+                                  : '3px solid var(--secondary)',
                             }}
                           >
                             {/* Category */}
@@ -1405,10 +1418,15 @@ export default function BusinessBudget() {
       {/* ═══ ADD / EDIT BUDGET DIALOG ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="rounded-xl w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
-          style={{ background: c.card, borderColor: c.border }}
+          className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
+          style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
-          <DialogHeader>
+          {/* Gradient accent strip */}
+          <div
+            className="h-[3px]"
+            style={{ background: 'linear-gradient(to right, var(--primary), var(--secondary), var(--warning))' }}
+          />
+          <DialogHeader className="px-5 pt-5">
             <DialogTitle
               className="text-sm font-semibold flex items-center gap-2"
               style={{ color: c.foreground }}
@@ -1436,7 +1454,7 @@ export default function BusinessBudget() {
             }}
           />
 
-          <form onSubmit={handleSave} className="space-y-5 mt-1 scroll-smooth">
+          <form onSubmit={handleSave} className="space-y-5 px-5 pb-5 scroll-smooth">
             {/* ═══ Section 1: Detail Anggaran ═══ */}
             <div>
               <SectionHeader icon={Target} label="Detail Anggaran" />
@@ -1447,7 +1465,7 @@ export default function BusinessBudget() {
                   Kategori Pengeluaran
                 </Label>
                 <Select value={formData.categoryId || formData.categoryName || ''} onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="h-10 rounded-lg text-sm" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                  <SelectTrigger className="h-10 rounded-xl text-sm bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0" style={{ color: c.foreground }}>
                     <SelectValue placeholder="Pilih kategori..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -1471,8 +1489,8 @@ export default function BusinessBudget() {
                     value={formData.categoryName}
                     onChange={(e) => setFormData((prev) => ({ ...prev, categoryName: e.target.value }))}
                     placeholder="Nama kategori..."
-                    className="h-10 rounded-lg text-sm mt-1.5"
-                    style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                    className="h-10 rounded-xl text-sm mt-1.5 bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0"
+                    style={{ color: c.foreground }}
                   />
                 )}
               </div>
@@ -1488,8 +1506,8 @@ export default function BusinessBudget() {
                   onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
                   placeholder="0"
                   min="0"
-                  className="h-10 rounded-lg text-sm tabular-nums"
-                  style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                  className="h-10 rounded-xl text-sm tabular-nums bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0"
+                  style={{ color: c.foreground }}
                 />
                 {formattedAmount && (
                   <motion.div
@@ -1534,7 +1552,7 @@ export default function BusinessBudget() {
               </div>
             </div>
 
-            <Separator style={{ background: c.border }} />
+            <div className="h-px bg-white/[0.06]" />
 
             {/* ═══ Section 2: Alokasi Dana ═══ */}
             <div>
@@ -1574,7 +1592,7 @@ export default function BusinessBudget() {
                         value={alloc.fundSource}
                         onValueChange={(v) => updateAllocation(idx, 'fundSource', v)}
                       >
-                        <SelectTrigger className="h-10 rounded-lg text-xs" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                        <SelectTrigger className="h-10 rounded-xl text-xs bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0" style={{ color: c.foreground }}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1597,7 +1615,7 @@ export default function BusinessBudget() {
                           value={alloc.investorId}
                           onValueChange={(v) => updateAllocation(idx, 'investorId', v)}
                         >
-                          <SelectTrigger className="h-10 rounded-lg text-xs" style={{ background: c.card, borderColor: c.border, color: c.foreground }}>
+                          <SelectTrigger className="h-10 rounded-xl text-xs bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0" style={{ color: c.foreground }}>
                             <SelectValue placeholder="Pilih investor..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1625,8 +1643,8 @@ export default function BusinessBudget() {
                         onChange={(e) => updateAllocation(idx, 'amount', e.target.value)}
                         placeholder="0"
                         min="0"
-                        className="h-10 rounded-lg text-xs tabular-nums"
-                        style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                        className="h-10 rounded-xl text-xs tabular-nums bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0"
+                        style={{ color: c.foreground }}
                       />
                     </div>
 
@@ -1639,8 +1657,8 @@ export default function BusinessBudget() {
                         value={alloc.description}
                         onChange={(e) => updateAllocation(idx, 'description', e.target.value)}
                         placeholder="Catatan alokasi..."
-                        className="h-10 rounded-lg text-xs"
-                        style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                        className="h-10 rounded-xl text-xs bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0"
+                        style={{ color: c.foreground }}
                       />
                     </div>
                   </div>
@@ -1689,7 +1707,7 @@ export default function BusinessBudget() {
               </div>
             </div>
 
-            <Separator style={{ background: c.border }} />
+            <div className="h-px bg-white/[0.06]" />
 
             {/* ═══ Section 3: Catatan ═══ */}
             <div>
@@ -1699,19 +1717,19 @@ export default function BusinessBudget() {
                 value={formData.notes}
                 onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                 placeholder="Catatan tambahan (opsional)..."
-                className="rounded-lg text-sm resize-none min-h-[70px]"
-                style={{ background: c.card, borderColor: c.border, color: c.foreground }}
+                className="rounded-xl text-sm resize-none min-h-[70px] bg-white/[0.04] border-white/[0.08] focus:border-white/15 focus:ring-0"
+                style={{ color: c.foreground }}
               />
             </div>
 
             {/* ═══ Footer ═══ */}
-            <DialogFooter className="gap-2 pt-1">
+            <DialogFooter className="gap-2 pt-1 px-5 pb-5">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => setDialogOpen(false)}
-                className="rounded-lg text-xs h-10"
-                style={{ borderColor: c.border, color: c.foreground }}
+                className="rounded-xl text-xs h-10 hover:bg-white/[0.06]"
+                style={{ color: c.foreground }}
               >
                 {t('common.cancel')}
               </Button>
@@ -1723,8 +1741,8 @@ export default function BusinessBudget() {
                   !formData.amount ||
                   parseFloat(formData.amount) <= 0
                 }
-                className="rounded-lg text-xs h-10"
-                style={{ background: c.primary, color: 'var(--primary-foreground)' }}
+                className="rounded-xl text-xs h-10 text-white"
+                style={{ background: 'linear-gradient(135deg, var(--secondary), var(--primary))' }}
               >
                 {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 {t('common.save')}
@@ -1737,10 +1755,14 @@ export default function BusinessBudget() {
       {/* ═══ DELETE CONFIRMATION ═══ */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent
-          className="rounded-xl w-[95vw] sm:max-w-[400px]"
-          style={{ background: c.card, borderColor: c.border }}
+          className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[400px]"
+          style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
-          <AlertDialogHeader>
+          <div
+            className="h-[3px]"
+            style={{ background: 'linear-gradient(to right, var(--destructive), var(--warning))' }}
+          />
+          <AlertDialogHeader className="p-5 pb-0">
             <AlertDialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: c.foreground }}>
               <AlertTriangle className="h-4 w-4" style={{ color: c.destructive }} />
               Hapus Anggaran
@@ -1749,16 +1771,16 @@ export default function BusinessBudget() {
               Apakah Anda yakin ingin menghapus anggaran ini? Tindakan ini tidak dapat dibatalkan dan semua alokasi dana terkait juga akan dihapus.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
+          <AlertDialogFooter className="gap-2 p-5 pt-3">
             <AlertDialogCancel
-              className="rounded-lg text-xs h-10"
-              style={{ borderColor: c.border, color: c.foreground }}
+              className="rounded-xl text-xs h-10 hover:bg-white/[0.06]"
+              style={{ color: c.foreground }}
             >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="rounded-lg text-xs h-10"
+              className="rounded-xl text-xs h-10"
               style={{ background: c.destructive, color: 'white' }}
             >
               Hapus

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -102,14 +103,16 @@ function QuickDeposit({ targetId }: { targetId: string }) {
   return (
     <div className="flex gap-1.5 flex-wrap">
       {amounts.map(a => (
-        <button
+        <motion.button
           key={a}
           onClick={() => handleDeposit(a)}
-          className="text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95"
-          style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-150"
+          style={{ background: `linear-gradient(135deg, ${T.primary}18, ${T.primary}08)`, color: T.primary, border: `1px solid ${T.primary}25` }}
         >
           +{a}k
-        </button>
+        </motion.button>
       ))}
     </div>
   );
@@ -269,13 +272,19 @@ function TargetCard({
   const monthlyColor = monthlyAch >= 100 ? T.secondary : monthlyAch >= 70 ? T.primary : monthlyAch >= 40 ? T.warning : T.destructive;
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden transition-all duration-200"
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.3 }}
+      className="rounded-2xl overflow-hidden transition-shadow duration-200"
       style={{
         background: T.bg,
         border: `1px solid ${T.border}`,
       }}
     >
+      {/* Gradient accent strip */}
+      <div className="h-[3px]" style={{ background: 'linear-gradient(to right, #BB86FC, #03DAC6, #F9A825)' }} />
       {/* Clickable header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -407,6 +416,7 @@ function TargetCard({
           )}
 
           {/* Actions */}
+          <div className="h-px bg-white/[0.06] my-1" />
           <div className="flex gap-2 pt-1">
             <button
               onClick={() => onEdit(target)}
@@ -425,7 +435,7 @@ function TargetCard({
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -474,58 +484,68 @@ function TargetFormDialog({
     onSubmit(form);
   };
 
-  const inputCls = "h-9 text-sm bg-[#1E1E1E] border-white/[0.08] text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/50 focus:ring-[#BB86FC]/20";
+  const inputCls = "h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/30 focus:ring-0";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[420px] lg:max-w-[520px] bg-[#0D0D0D] border-white/[0.06]" onClick={(e) => e.stopPropagation()}>
-        <DialogHeader>
-          <DialogTitle className="text-white">{isEdit ? t('target.editTitle') : t('target.addTitle')}</DialogTitle>
-          <DialogDescription className="text-[#9E9E9E]">
-            {isEdit ? t('target.editDesc') : t('target.addDesc')}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()}>
-          <div className="space-y-3 py-3">
-            <div className="space-y-1.5">
-              <Label className="text-[11px] text-[#9E9E9E]">{t('target.nameField')}</Label>
-              <Input className={inputCls} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={t('target.noData')} />
-              <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetName')}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+      <DialogContent className="sm:max-w-[420px] lg:max-w-[520px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Gradient accent strip */}
+        <div className="h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(to right, #BB86FC, #03DAC6, #F9A825)' }} />
+        <div className="p-5">
+          <DialogHeader>
+            <DialogTitle className="text-white">{isEdit ? t('target.editTitle') : t('target.addTitle')}</DialogTitle>
+            <DialogDescription className="text-[#9E9E9E]">
+              {isEdit ? t('target.editDesc') : t('target.addDesc')}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-3 pt-3">
               <div className="space-y-1.5">
-                <Label className="text-[11px] text-[#9E9E9E]">{t('target.amountField')}</Label>
-                <Input type="number" className={inputCls} value={form.targetAmount || ''} onChange={e => setForm({ ...form, targetAmount: parseFloat(e.target.value) || 0 })} placeholder="10000000" />
-                <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetAmount')}</p>
+                <Label className="text-[11px] text-[#9E9E9E]">{t('target.nameField')}</Label>
+                <Input className={inputCls} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={t('target.noData')} />
+                <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetName')}</p>
               </div>
+              <div className="h-px bg-white/[0.06] my-1" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-[#9E9E9E]">{t('target.amountField')}</Label>
+                  <Input type="number" className={inputCls} value={form.targetAmount || ''} onChange={e => setForm({ ...form, targetAmount: parseFloat(e.target.value) || 0 })} placeholder="10000000" />
+                  <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetAmount')}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-[#9E9E9E]">{t('target.targetDate')} *</Label>
+                  <Input type="date" className={inputCls} value={form.targetDate} onChange={e => setForm({ ...form, targetDate: e.target.value })} min={format(new Date(), 'yyyy-MM-dd')} />
+                </div>
+              </div>
+              <div className="h-px bg-white/[0.06] my-1" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-[#9E9E9E]">{t('target.initialInvestment')}</Label>
+                  <Input type="number" className={inputCls} value={form.initialInvestment || ''} onChange={e => setForm({ ...form, initialInvestment: parseFloat(e.target.value) || 0 })} placeholder="0" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-[#9E9E9E]">{t('target.contributionMonthly')}</Label>
+                  <Input type="number" className={inputCls} value={form.monthlyContribution || ''} onChange={e => setForm({ ...form, monthlyContribution: parseFloat(e.target.value) || 0 })} placeholder="0" />
+                  <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetMonthly')}</p>
+                </div>
+              </div>
+              <div className="h-px bg-white/[0.06] my-1" />
               <div className="space-y-1.5">
-                <Label className="text-[11px] text-[#9E9E9E]">{t('target.targetDate')} *</Label>
-                <Input type="date" className={inputCls} value={form.targetDate} onChange={e => setForm({ ...form, targetDate: e.target.value })} min={format(new Date(), 'yyyy-MM-dd')} />
+                <Label className="text-[11px] text-[#9E9E9E]">{t('target.allocationAuto')}</Label>
+                <Input type="number" className={inputCls} value={form.allocationPercentage || ''} onChange={e => setForm({ ...form, allocationPercentage: parseFloat(e.target.value) || 0 })} placeholder="0" min="0" max="100" />
+                <p className="text-[9px]" style={{ color: T.muted }}>{t('target.allocationDesc')}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-[#9E9E9E]">{t('target.initialInvestment')}</Label>
-                <Input type="number" className={inputCls} value={form.initialInvestment || ''} onChange={e => setForm({ ...form, initialInvestment: parseFloat(e.target.value) || 0 })} placeholder="0" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-[#9E9E9E]">{t('target.contributionMonthly')}</Label>
-                <Input type="number" className={inputCls} value={form.monthlyContribution || ''} onChange={e => setForm({ ...form, monthlyContribution: parseFloat(e.target.value) || 0 })} placeholder="0" />
-                <p className="text-[9px]" style={{ color: T.muted }}>{t('form.tipTargetMonthly')}</p>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[11px] text-[#9E9E9E]">{t('target.allocationAuto')}</Label>
-              <Input type="number" className={inputCls} value={form.allocationPercentage || ''} onChange={e => setForm({ ...form, allocationPercentage: parseFloat(e.target.value) || 0 })} placeholder="0" min="0" max="100" />
-              <p className="text-[9px]" style={{ color: T.muted }}>{t('target.allocationDesc')}</p>
-            </div>
-          </div>
-          <DialogFooter className="pt-2">
-            <Button type="submit" className="w-full bg-[#BB86FC] text-black hover:bg-[#BB86FC]/90 font-semibold">
-              {isEdit ? t('common.save') : t('target.createTarget')}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="ghost" className="rounded-xl hover:bg-white/[0.06] text-[#9E9E9E]" onClick={() => onOpenChange(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" className="rounded-xl font-semibold text-white" style={{ background: 'linear-gradient(135deg, #03DAC6, #BB86FC)' }}>
+                {isEdit ? t('common.save') : t('target.createTarget')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -596,7 +616,7 @@ export function TargetTabungan() {
       {/* Header + Add Button */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('target.title')}</p>
+          <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: T.text }}>{t('target.title')}</p>
           <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{t('target.targetCount', { count: savingsTargets.length })}</p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -618,17 +638,26 @@ export function TargetTabungan() {
 
       {/* Empty State */}
       {savingsTargets.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div
-            className="w-16 h-16 rounded-2xl grid place-items-center mb-4 [&>*]:block leading-none"
-            style={{ background: `${T.primary}10` }}
-          >
-            <PiggyBank className="h-8 w-8" style={{ color: T.primary }} />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }} 
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="flex flex-col items-center justify-center py-12 text-center relative"
+        >
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: T.primary }} />
           </div>
-          <p className="text-sm font-semibold" style={{ color: T.text }}>{t('target.noData')}</p>
-          <p className="text-xs mt-1" style={{ color: T.muted }}>{t('target.noDataDesc')}</p>
-        </div>
+          <div className="w-16 h-16 rounded-2xl grid place-items-center mb-4 relative border"
+            style={{ background: `${T.primary}10`, borderColor: `${T.primary}20` }}>
+            <PiggyBank className="h-8 w-8 relative" style={{ color: T.primary, opacity: 0.7 }} />
+          </div>
+          <p className="text-sm font-semibold relative" style={{ color: T.text }}>{t('target.noData')}</p>
+          <p className="text-xs mt-1 relative" style={{ color: T.muted }}>{t('target.noDataDesc')}</p>
+        </motion.div>
       )}
+
+      {/* Section divider */}
+      {savingsTargets.length > 0 && <div className="h-px bg-white/[0.06]" />}
 
       {/* Target Cards */}
       <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
@@ -647,7 +676,7 @@ export function TargetTabungan() {
 
       {/* Delete Dialog */}
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
-        <AlertDialogContent className="bg-[#0D0D0D] border-white/[0.06]">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">{t('target.deleteTitle')}?</AlertDialogTitle>
             <AlertDialogDescription className="text-[#9E9E9E]">
@@ -655,8 +684,8 @@ export function TargetTabungan() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1]">{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90">{t('common.delete')}</AlertDialogAction>
+            <AlertDialogCancel className="bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1] rounded-xl">{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90 rounded-xl">{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
