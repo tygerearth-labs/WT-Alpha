@@ -30,8 +30,9 @@ model User {
   allocations   Allocation[]
   inviteTokens  InviteToken[]
   budgets       Budget[]
-  notifications Notification[]
-  businesses    Business[]
+  notifications  Notification[]
+  businesses     Business[]
+  billReminders  BillReminder[]
 }
 
 model Category {
@@ -290,6 +291,7 @@ model BusinessInvoice {
   tax           Float    @default(0)
   discount      Float    @default(0)
   total         Float
+  paidAmount    Float    @default(0)
   status        String   @default("pending") // pending, paid, cancelled, overdue
   notes         String?
   pdfUrl        String?
@@ -418,6 +420,8 @@ model BusinessIncomeAllocation {
   businessId    String
   business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   saleId        String?
+  targetType    String   @default("business")   // "business", "personal_cash_in", "savings_target"
+  targetId      String?                           // savingsTarget id when targetType = "savings_target"
   amount        Float
   percentage    Float
   allocatedAt   DateTime @default(now())
@@ -622,4 +626,28 @@ model BusinessFundAllocation {
 
   @@index([businessId, budgetId])
   @@index([fundSource])
+}
+
+// ============================================
+// PERSONAL FINANCE — BILL REMINDERS
+// ============================================
+
+model BillReminder {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  amount      Float
+  dueDate     DateTime
+  category    String   @default("Lainnya")
+  recurrence  String   @default("one-time") // monthly, weekly, one-time
+  isPaid      Boolean  @default(false)
+  paidAt      DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dueDate])
+  @@index([userId, isPaid])
 }
