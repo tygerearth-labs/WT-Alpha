@@ -124,7 +124,7 @@ export function TransactionForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#141414] border-white/[0.08] sm:max-w-md mx-4 sm:mx-0 rounded-2xl sm:rounded-xl p-0 gap-0 max-h-[calc(100vh-2rem)] sm:max-h-[85vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="bg-[#141414] border-white/[0.08] sm:max-w-md rounded-2xl sm:rounded-xl p-0 gap-0 max-h-[calc(100vh-2rem)] sm:max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
           <DialogTitle className="text-xs sm:text-sm font-semibold" style={{ color: '#E6E1E5' }}>
             <span className="inline-flex items-center gap-2">

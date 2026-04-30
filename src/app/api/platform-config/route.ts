@@ -74,13 +74,21 @@ export async function GET() {
     let parsedLandingStats = null;
     try { parsedLandingStats = config.landingPageStats ? JSON.parse(config.landingPageStats) : null; } catch {}
 
+    // Parse plan features from JSON strings to arrays
+    let parsedBasicFeatures: string[] | null = null;
+    try { parsedBasicFeatures = config.basicPlanFeatures ? JSON.parse(config.basicPlanFeatures) : null; } catch {}
+    let parsedProFeatures: string[] | null = null;
+    try { parsedProFeatures = config.proPlanFeatures ? JSON.parse(config.proPlanFeatures) : null; } catch {}
+    let parsedUltimateFeatures: string[] | null = null;
+    try { parsedUltimateFeatures = config.ultimatePlanFeatures ? JSON.parse(config.ultimatePlanFeatures) : null; } catch {}
+
     return NextResponse.json({
       basicPlanPrice: config.basicPlanPrice || 'Gratis',
       proPlanPrice: config.proPlanPrice || 'Rp 99.000',
       ultimatePlanPrice: config.ultimatePlanPrice || 'Rp 199.000',
-      basicPlanFeatures: config.basicPlanFeatures,
-      proPlanFeatures: config.proPlanFeatures,
-      ultimatePlanFeatures: config.ultimatePlanFeatures,
+      basicPlanFeatures: parsedBasicFeatures,
+      proPlanFeatures: parsedProFeatures,
+      ultimatePlanFeatures: parsedUltimateFeatures,
       basicPlanDiscount: config.basicPlanDiscount || null,
       proPlanDiscount: config.proPlanDiscount || null,
       ultimatePlanDiscount: config.ultimatePlanDiscount || null,

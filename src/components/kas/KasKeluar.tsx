@@ -435,7 +435,7 @@ export function KasKeluar() {
   const displayedTransactions = transactions;
 
   return (
-    <div className="w-full max-w-full px-4 md:px-6 space-y-4 md:space-y-5">
+    <div className="w-full max-w-full px-4 md:px-6 space-y-4 md:space-y-5 overflow-x-hidden">
       <style>{`
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(8px); }

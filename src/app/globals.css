@@ -159,7 +159,47 @@
   .safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  /* Custom scrollbar for dark theme */
+  /* ── Mobile scrollbar: hide horizontal, thin minimal vertical ── */
+  @media screen and (max-width: 768px) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+    }
+    *::-webkit-scrollbar {
+      width: 3px;
+      height: 0;
+      display: block;
+    }
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    html, body {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      width: 3px;
+      height: 0;
+    }
+    html::-webkit-scrollbar-thumb,
+    body::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+    }
+    html::-webkit-scrollbar-thumb:hover,
+    body::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+  }
+  /* Custom scrollbar for dark theme (desktop) */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -1568,7 +1608,6 @@ html {
 }
 @media screen and (max-width: 767px) {
   .biz-dialog-content {
-    margin: 16px;
     border-radius: 1.5rem;
     max-height: calc(100vh - 2rem);
   }
@@ -2279,7 +2318,6 @@ html {
 @media screen and (max-width: 767px) {
   .inv-dialog-content {
     border-radius: 1.5rem;
-    margin: 16px;
     max-height: calc(100vh - 2rem);
   }
 }
@@ -2745,7 +2783,6 @@ html {
 }
 @media screen and (max-width: 767px) {
   .adm-dialog-content {
-    margin: 16px;
     border-radius: 1.5rem;
     max-height: calc(100vh - 2rem);
   }

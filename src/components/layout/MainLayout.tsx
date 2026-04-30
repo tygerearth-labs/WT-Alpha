@@ -780,14 +780,14 @@ export function MainLayout() {
           )}
 
           {/* Page Content */}
-          <main className={cn('flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out scrollbar-hide safe-bottom',
+          <main className={cn('flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto overflow-x-hidden w-full min-w-0 max-w-full transition-all duration-300 ease-in-out scrollbar-hide safe-bottom',
             'pb-[100px] lg:pb-8', sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64')}>
             {isTransitioning && (
               <div className="fixed left-0 right-0 z-50 h-[2px]" style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
                 <div className="h-full animate-pulse" style={{ background: modeColor(mode), boxShadow: `0 0 12px ${modeColor(mode)}66` }} />
               </div>
             )}
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-6xl mx-auto overflow-x-hidden">
               <div key={pageKey} className={cn('transition-opacity duration-300', isTransitioning ? 'opacity-0' : 'opacity-100')}>
                 {renderPage()}
               </div>

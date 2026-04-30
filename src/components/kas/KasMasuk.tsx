@@ -435,10 +435,10 @@ export function KasMasuk() {
   const displayedTransactions = transactions;
 
   return (
-    <div className="w-full max-w-full px-4 md:px-6 space-y-4 md:space-y-5 relative">
+    <div className="w-full max-w-full px-4 md:px-6 space-y-4 md:space-y-5 relative overflow-x-hidden">
       {/* Page-level ambient background */}
-      <div className="absolute -top-48 left-1/3 w-96 h-96 rounded-full opacity-[0.04] blur-[120px] pointer-events-none" style={{ background: T.accent }} />
-      <div className="absolute top-1/2 -right-32 w-80 h-80 rounded-full opacity-[0.03] blur-[100px] pointer-events-none" style={{ background: T.primary }} />
+      <div className="absolute -top-48 left-0 w-96 h-96 rounded-full opacity-[0.04] blur-[120px] pointer-events-none" style={{ background: T.accent }} />
+      <div className="absolute top-1/2 right-0 w-80 h-80 rounded-full opacity-[0.03] blur-[100px] pointer-events-none" style={{ background: T.primary }} />
       <style>{`
         @keyframes heroGlow {
           0%, 100% { opacity: 0.3; }
