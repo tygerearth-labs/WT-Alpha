@@ -121,7 +121,6 @@ export function CategoryDialog({
               required
               maxLength={50}
               className="h-10 text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-[#555] focus:border-white/15 focus:ring-0 rounded-xl"
-              autoFocus
             />
           </div>
 

@@ -114,8 +114,8 @@ export function TransactionList({ transactions, onEdit, onDelete, onAdd, type }:
             <Receipt className="h-7 w-7 lg:h-9 lg:w-9" style={{ color: color, opacity: 0.4 }} />
           )}
         </div>
-        <p className="text-sm font-medium mt-4 mb-1" style={{ color: T.textSub }}>{emptyMessage}</p>
-        <p className="text-xs max-w-[200px]" style={{ color: T.muted }}>{t('kas.noDataHint')}</p>
+        <p className="text-sm font-medium mt-4 mb-1 text-center" style={{ color: T.textSub }}>{emptyMessage}</p>
+        <p className="text-xs max-w-[200px] text-center" style={{ color: T.muted }}>{t('kas.noDataHint')}</p>
         {onAdd && (
           <button
             onClick={onAdd}

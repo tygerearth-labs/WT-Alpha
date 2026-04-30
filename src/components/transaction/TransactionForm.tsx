@@ -150,7 +150,6 @@ export function TransactionForm({
               min="0.01"
               step="0.01"
               className="h-11 text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus-visible:border-white/20 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[var(--mode-glow)] rounded-xl transition-all"
-              autoFocus
             />
             <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>
               {type === 'income' ? t('form.tipIncome') : t('form.tipExpense')}

@@ -1604,7 +1604,6 @@ export default function BusinessSales() {
                                 value={newCustomer.name}
                                 onChange={(e) => setNewCustomer((prev) => ({ ...prev, name: e.target.value }))}
                                 className="h-9 rounded-lg text-xs bg-white/[0.04] border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
-                                autoFocus
                               />
                               <div className="grid grid-cols-2 gap-2">
                                 <Input

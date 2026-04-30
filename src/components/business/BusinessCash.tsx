@@ -2058,7 +2058,6 @@ export default function BusinessCash() {
                         onKeyDown={(e) => e.key === 'Enter' && handleAddCategoryFromDialog()}
                         placeholder="Contoh: Operasional Kendaraan"
                         className="h-8 text-xs rounded-lg bg-white/[0.03] border border-border text-foreground flex-1"
-                        autoFocus
                       />
                     </div>
                   </div>
@@ -2089,7 +2088,7 @@ export default function BusinessCash() {
             {/* ══════════════════════════════════════════════ */}
             <motion.button
               onClick={() => setQuickAddOpen(!quickAddOpen)}
-              className="biz-fab fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-30 h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300"
+              className="biz-fab fixed bottom-[100px] right-4 sm:bottom-6 sm:right-6 z-50 h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300"
               style={{
                 background: `linear-gradient(135deg, ${c.primary}, ${alpha(c.primary, 60)})`,
               }}
@@ -2108,7 +2107,7 @@ export default function BusinessCash() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={() => setQuickAddOpen(false)}
-                    className="fixed inset-0 bg-black/40 z-40 sm:hidden"
+                    className="fixed inset-0 bg-black/40 z-[45] sm:hidden"
                   />
                   <motion.div
                     initial={{ opacity: 0, y: 80 }}
@@ -2268,7 +2267,6 @@ export default function BusinessCash() {
                           onKeyDown={(e) => e.key === 'Enter' && handleQuickAddSave()}
                           placeholder="Deskripsi transaksi..."
                           className="h-10 text-sm rounded-xl bg-white/[0.04] border border-border text-foreground"
-                          autoFocus
                         />
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">Rp</span>
@@ -3143,6 +3141,41 @@ export default function BusinessCash() {
                   ))}
                 </CardContent>
               </Card>
+            </div>
+
+            {/* ── Cashflow Realization ── */}
+            <div className="rounded-xl p-3 sm:p-3 bg-white/[0.02] backdrop-blur-sm border border-white/[0.06]">
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="h-6 w-6 rounded-md flex items-center justify-center bg-primary/8">
+                  <TrendingUp className="h-3 w-3 text-primary" />
+                </div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Realisasi Cashflow</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <p className="text-[9px] font-medium text-muted-foreground mb-0.5">Tercatat</p>
+                  <p className="text-xs font-bold tabular-nums text-foreground">{formatAmount(cashflowRealization.pendapatanTercatat)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] font-medium text-muted-foreground mb-0.5">Diterima</p>
+                  <p className="text-xs font-bold tabular-nums text-secondary">{formatAmount(cashflowRealization.sudahDiterima)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] font-medium text-muted-foreground mb-0.5">Belum</p>
+                  <p className="text-xs font-bold tabular-nums text-destructive">{formatAmount(cashflowRealization.belumDiterima)}</p>
+                </div>
+              </div>
+              <div className="mt-2 biz-progress-track h-1.5 rounded-full overflow-hidden" style={{ '--biz-progress-color': 'var(--secondary)' } as React.CSSProperties}>
+                <div
+                  className="biz-progress-fill h-full rounded-full bg-secondary transition-[width] duration-500 ease-in-out"
+                  style={{ width: `${cashflowRealization.pendapatanTercatat > 0 ? Math.round((cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100) : 0}%` }}
+                />
+              </div>
+              <p className="text-[9px] text-center mt-1 text-muted-foreground tabular-nums">
+                {cashflowRealization.pendapatanTercatat > 0
+                  ? `${Math.round((cashflowRealization.sudahDiterima / cashflowRealization.pendapatanTercatat) * 100)}% terkumpul dari total piutang`
+                  : 'Belum ada data piutang'}
+              </p>
             </div>
 
             {/* ── Sub-tabs + Search ── */}

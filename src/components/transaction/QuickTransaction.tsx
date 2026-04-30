@@ -252,7 +252,6 @@ export function QuickTransaction() {
                         color: THEME.text,
                       }}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-                      autoFocus
                     />
                   </div>
                 </div>
