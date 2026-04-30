@@ -671,6 +671,17 @@ export default function BusinessSales() {
 
   return (
     <div className="space-y-3">
+      {/* Premium gradient keyframes */}
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
       {/* Info Banner */}
       <div className="biz-info-banner flex items-start gap-2 p-2.5 rounded-lg text-[11px] border" style={{ background: alpha(c.primary, 5), borderColor: alpha(c.primary, 15) }}>
         <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: c.primary }} />
@@ -729,9 +740,24 @@ export default function BusinessSales() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            <div className="relative">
+            <div className="relative rounded-2xl overflow-hidden">
               <div className="absolute -inset-3 -z-10 rounded-2xl blur-3xl opacity-[0.05]" style={{ background: c.secondary }} />
-              <Card className="biz-hero-card rounded-xl overflow-hidden border backdrop-blur-xl relative" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
+              {/* Desktop animated gradient border glow */}
+              <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(76,175,80,0.3), rgba(187,134,252,0.2), rgba(76,175,80,0.3))',
+                  filter: 'blur(2px)',
+                  opacity: 0.4,
+                  animation: 'heroGlow 4s ease-in-out infinite',
+                }}
+              />
+              <Card className="biz-hero-card rounded-xl overflow-hidden backdrop-blur-xl relative"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(76,175,80,0.12) 0%, rgba(76,175,80,0.04) 40%, rgba(187,134,252,0.05) 100%)',
+                  border: '1px solid rgba(76,175,80,0.15)',
+                }}>
+              {/* h-px gradient accent line at top */}
+              <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(76,175,80,0.4), rgba(187,134,252,0.3), transparent)' }} />
               <CardContent className="p-4 sm:p-5">
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3 mb-4">

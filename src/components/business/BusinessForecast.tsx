@@ -213,7 +213,11 @@ function StatCard({
         className="absolute -inset-1 rounded-2xl blur-3xl opacity-[0.05] pointer-events-none"
         style={{ background: `radial-gradient(ellipse at 30% 20%, ${gradientFrom}, transparent 70%)` }}
       />
-      <Card className="biz-hero-card relative rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] transition-all duration-300 hover:border-white/[0.14]">
+      {/* Animated gradient border glow */}
+      <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block" style={{ background: 'linear-gradient(135deg, rgba(41,182,246,0.15), rgba(187,134,252,0.10), rgba(41,182,246,0.15))', filter: 'blur(2px)', opacity: 0.4, animation: 'heroGlow 4s ease-in-out infinite' }} />
+      <Card className="biz-hero-card relative rounded-xl overflow-hidden transition-all duration-300 hover:border-white/[0.15]" style={{ background: 'linear-gradient(135deg, rgba(41,182,246,0.12) 0%, rgba(41,182,246,0.04) 40%, rgba(187,134,252,0.05) 100%)', border: '1px solid rgba(41,182,246,0.15)', backdropFilter: 'blur(24px)' }}>
+        {/* h-px accent line at top */}
+        <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(41,182,246,0.25), rgba(187,134,252,0.18), transparent)' }} />
         <CardContent className="p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <div
@@ -304,6 +308,16 @@ export default function BusinessForecast() {
 
   return (
     <div className="relative space-y-3">
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
+      `}</style>
       {/* ── Ambient background orbs ── */}
       <div className="absolute -top-20 -left-20 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${alpha(c.primary, 3)}, transparent 70%)`, filter: 'blur(120px)' }} />
       <div className="absolute top-1/3 -right-20 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${alpha(c.secondary, 3)}, transparent 70%)`, filter: 'blur(120px)' }} />

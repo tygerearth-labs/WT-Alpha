@@ -1416,6 +1416,17 @@ export default function BusinessCash() {
 
   return (
     <div className="relative space-y-3 overflow-hidden">
+      {/* Premium gradient keyframes */}
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
       {/* ── Ambient Background Blobs ── */}
       <div className="biz-ambient-glow biz-ambient-glow-teal pointer-events-none absolute -top-32 -left-32 w-80 h-80 rounded-full opacity-[0.07] blur-[100px]" style={{ background: c.secondary }} />
       <div className="biz-ambient-glow biz-ambient-glow-purple pointer-events-none absolute top-48 -right-20 w-64 h-64 rounded-full opacity-[0.05] blur-[90px]" style={{ background: c.primary }} />
@@ -1521,11 +1532,27 @@ export default function BusinessCash() {
             {/* ══════════════════════════════════════════════ */}
             {/* SECTION 1: SALDO OVERVIEW (Accountant Hero)    */}
             {/* ══════════════════════════════════════════════ */}
-            <Card className="biz-hero-card rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] relative">
+            <div className="relative rounded-2xl overflow-hidden">
+              {/* Desktop animated gradient border glow */}
+              <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(3,218,198,0.3), rgba(187,134,252,0.2), rgba(3,218,198,0.3))',
+                  filter: 'blur(2px)',
+                  opacity: 0.4,
+                  animation: 'heroGlow 4s ease-in-out infinite',
+                }}
+              />
+              <Card className="biz-hero-card rounded-xl overflow-hidden backdrop-blur-xl relative"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(3,218,198,0.10) 0%, rgba(3,218,198,0.03) 40%, rgba(187,134,252,0.05) 100%)',
+                  border: '1px solid rgba(3,218,198,0.12)',
+                }}>
               {/* Ambient glow behind hero */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
                 <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full opacity-[0.08] blur-[80px]" style={{ background: `linear-gradient(135deg, ${c.secondary}, ${c.primary})` }} />
               </div>
+              {/* h-px gradient accent line at top */}
+              <div className="absolute top-0 left-4 right-4 h-px z-20" style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.4), rgba(187,134,252,0.3), transparent)' }} />
               <CardContent className="p-4 sm:p-5 relative z-10">
                 {/* Header: title + period filter */}
                 <div className="flex items-center justify-between mb-4">
@@ -1644,6 +1671,7 @@ export default function BusinessCash() {
                 </div>
               </CardContent>
             </Card>
+            </div>
 
             {/* ══════════════════════════════════════════════ */}
             {/* SECTION 2: FILTER CHIPS + SEARCH + ACTIONS      */}

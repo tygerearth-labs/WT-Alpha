@@ -368,9 +368,20 @@ export default function BusinessCustomers() {
 
   return (
     <div className="space-y-3 relative">
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
+      `}</style>
       {/* Ambient background glow */}
-      <div className="absolute -top-20 -left-20 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--primary) 5%, transparent) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-      <div className="absolute -top-10 -right-20 w-[350px] h-[350px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--warning) 4%, transparent) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div className="absolute -top-32 -left-20 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: 'var(--primary)' }} />
+      <div className="absolute top-60 -right-24 h-[350px] w-[350px] rounded-full opacity-[0.04] blur-[100px] pointer-events-none" style={{ background: 'var(--secondary)' }} />
+      <div className="absolute -bottom-20 left-1/3 h-[300px] w-[300px] rounded-full opacity-[0.04] blur-[100px] pointer-events-none" style={{ background: 'var(--warning)' }} />
 
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
       {/* Info Banner */}
@@ -422,7 +433,11 @@ export default function BusinessCustomers() {
               <div className="relative rounded-xl">
                 {/* Ambient glow behind stat card */}
                 <div className="absolute -inset-1 rounded-xl blur-xl pointer-events-none" style={{ background: alpha(item.color, 5) }} />
-                <Card className="biz-hero-card relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]">
+                {/* Animated gradient border glow */}
+                <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block" style={{ background: 'linear-gradient(135deg, rgba(100,181,247,0.15), rgba(187,134,252,0.10), rgba(100,181,247,0.15))', filter: 'blur(2px)', opacity: 0.4, animation: 'heroGlow 4s ease-in-out infinite' }} />
+                <Card className="biz-hero-card relative rounded-xl overflow-hidden transition-all duration-200 hover:border-white/[0.15]" style={{ background: 'linear-gradient(135deg, rgba(100,181,247,0.12) 0%, rgba(100,181,247,0.04) 40%, rgba(187,134,252,0.05) 100%)', border: '1px solid rgba(100,181,247,0.15)', backdropFilter: 'blur(24px)' }}>
+                  {/* h-px accent line at top */}
+                  <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(100,181,247,0.25), rgba(187,134,252,0.18), transparent)' }} />
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(item.color, 10) }}>

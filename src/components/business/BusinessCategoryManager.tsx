@@ -340,14 +340,17 @@ export default function BusinessCategoryManager() {
 
   return (
     <motion.div
-      className="space-y-5"
+      className="space-y-5 relative"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
+      {/* Ambient glows */}
+      <div className="absolute -top-32 -left-20 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: 'rgba(3,218,198,0.12)' }} />
+      <div className="absolute top-60 -right-24 h-[350px] w-[350px] rounded-full opacity-[0.04] blur-[100px] pointer-events-none" style={{ background: 'rgba(6,214,160,0.15)' }} />
       {/* ── Header Card ── */}
       <motion.div variants={cardPopVariants}>
-        <Card className="biz-content-card bg-card border-border overflow-hidden">
+        <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl overflow-hidden">
           {/* Gradient header strip */}
           <div
             className="h-1 w-full"
@@ -403,7 +406,7 @@ export default function BusinessCategoryManager() {
           }}
         >
           <div
-            className="biz-scroll-mobile bg-card border border-border rounded-2xl p-1.5 relative overflow-x-auto"
+            className="biz-scroll-mobile bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-2xl p-1.5 relative overflow-x-auto"
           >
             {/* Decorative gradient circle */}
             <div
@@ -480,13 +483,13 @@ export default function BusinessCategoryManager() {
                     placeholder={t('common.search') + '...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-10 bg-card border-border text-foreground placeholder:text-muted-foreground/25 text-sm rounded-xl focus:border-foreground/15 focus:ring-1 focus:ring-ring"
+                    className="pl-10 h-10 bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl text-foreground placeholder:text-muted-foreground/25 text-sm rounded-xl focus:border-foreground/15 focus:ring-1 focus:ring-ring"
                   />
                 </div>
               </div>
 
               {/* ── Category List ── */}
-              <Card className="biz-content-card bg-card border-border overflow-hidden">
+              <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl overflow-hidden">
                 <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
                   {loading ? (
                     renderSkeleton()
@@ -814,6 +817,10 @@ export default function BusinessCategoryManager() {
       </AlertDialog>
 
       {/* ── Custom Scrollbar Styles ── */}
+      <style>{`
+        @keyframes heroGlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        @keyframes shimmer { 0% { transform: translateX(-150%); } 100% { transform: translateX(250%); } }
+      `}</style>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;

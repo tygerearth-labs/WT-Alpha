@@ -383,37 +383,65 @@ export default function BusinessAllocation() {
           </div>
         </motion.div>
 
-        {/* ═══ Summary Stats ═══ */}
+        {/* ═══ Summary Stats (Hero Card) ═══ */}
         {!loading && (
-          <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {[
-              { label: 'Total Dialokasikan', value: formatAmount(totalAllocated), icon: DollarSign, color: c.primary },
-              { label: 'Kas Pribadi', value: formatAmount(personalAllocated), icon: Wallet, color: c.secondary },
-              { label: 'Target Tabungan', value: formatAmount(savingsAllocated), icon: Target, color: c.warning },
-              { label: 'Rata-rata %', value: `${avgPercentage.toFixed(1)}%`, icon: Percent, color: c.destructive },
-            ].map(item => {
-              const Icon = item.icon;
-              return (
-                <Card key={item.label} className="rounded-xl overflow-hidden border border-border">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
-                        <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+          <motion.div variants={itemVariants} className="relative rounded-2xl overflow-hidden">
+            {/* Ambient background glows */}
+            <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: '#FFB74D' }} />
+            <div className="absolute -bottom-32 -right-32 w-72 h-72 rounded-full opacity-[0.05] blur-[120px] pointer-events-none" style={{ background: '#BB86FC' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full opacity-[0.04] blur-[80px] pointer-events-none" style={{ background: '#F9A825' }} />
+
+            {/* Desktop animated gradient border glow */}
+            <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,183,77,0.3), rgba(187,134,252,0.2), rgba(255,183,77,0.3))',
+                filter: 'blur(2px)',
+                opacity: 0.4,
+                animation: 'heroGlow 4s ease-in-out infinite',
+              }}
+            />
+
+            <Card className="relative rounded-2xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,183,77,0.12) 0%, rgba(255,183,77,0.04) 40%, rgba(187,134,252,0.05) 100%)',
+                border: '1px solid rgba(255,183,77,0.15)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+              }}>
+              {/* Top accent line */}
+              <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, #FFB74D, #BB86FC, transparent)' }} />
+
+              <CardContent className="p-4 sm:p-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Total Dialokasikan', value: formatAmount(totalAllocated), icon: DollarSign, color: c.primary },
+                    { label: 'Kas Pribadi', value: formatAmount(personalAllocated), icon: Wallet, color: c.secondary },
+                    { label: 'Target Tabungan', value: formatAmount(savingsAllocated), icon: Target, color: c.warning },
+                    { label: 'Rata-rata %', value: `${avgPercentage.toFixed(1)}%`, icon: Percent, color: c.destructive },
+                  ].map(item => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label} className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${item.color}15` }}>
+                            <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+                          </div>
+                          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.label}</span>
+                        </div>
+                        <p className="text-base font-bold tabular-nums" style={{ color: item.color }}>{item.value}</p>
                       </div>
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{item.label}</span>
-                    </div>
-                    <p className="text-base font-bold tabular-nums" style={{ color: item.color }}>{item.value}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
 
         {/* ═══ Visual Allocation Bar ═══ */}
         {!loading && allocations.length > 0 && (
           <motion.div variants={itemVariants}>
-            <Card className="biz-content-card rounded-xl border border-border">
+            <Card className="biz-content-card rounded-xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
               <CardContent className="p-3 sm:p-4">
                 <div className="biz-section-header flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.primary, 12) }}>
@@ -448,7 +476,7 @@ export default function BusinessAllocation() {
         {/* ═══ Available Savings Targets ═══ */}
         {!loading && savingsTargets.length > 0 && (
           <motion.div variants={itemVariants}>
-            <Card className="biz-content-card rounded-xl border border-border">
+            <Card className="biz-content-card rounded-xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
               <CardContent className="p-3 sm:p-4">
                 <div className="biz-section-header flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.warning, 12) }}>
@@ -488,7 +516,7 @@ export default function BusinessAllocation() {
 
         {/* ═══ History Table ═══ */}
         <motion.div variants={itemVariants}>
-          <Card className="biz-content-card rounded-xl overflow-hidden border border-border">
+          <Card className="biz-content-card rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
             <CardContent className="p-0">
               <div className="flex items-center gap-2 p-3 sm:p-4 border-b border-border">
                 <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}>
@@ -851,6 +879,18 @@ export default function BusinessAllocation() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Keyframes for hero glow */}
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
+      `}</style>
     </div>
   );
 }

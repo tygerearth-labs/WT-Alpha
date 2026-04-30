@@ -410,7 +410,10 @@ export default function BusinessInvoiceSettings() {
   }
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-4 pb-8 relative">
+      {/* Ambient glows */}
+      <div className="absolute -top-32 -left-20 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: 'rgba(187,134,252,0.12)' }} />
+      <div className="absolute top-60 -right-24 h-[350px] w-[350px] rounded-full opacity-[0.04] blur-[100px] pointer-events-none" style={{ background: 'rgba(103,58,183,0.15)' }} />
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
         {/* ═══ Header ═══ */}
@@ -475,7 +478,7 @@ export default function BusinessInvoiceSettings() {
             <div className="md:col-span-2 space-y-4">
 
               {/* 1. Template Selection */}
-              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={FileText} title="Template Selection" color={c.primary} />
                   <div className="grid grid-cols-3 gap-2">
@@ -498,7 +501,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 2. Invoice Template Settings */}
-              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Settings} title="Invoice Template Settings" color={c.warning} />
                   <div className="space-y-4">
@@ -564,7 +567,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 3. Business Info */}
-              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Building2} title="Informasi Bisnis" color="#CF6679" />
                   {/* Logo + Signature */}
@@ -627,7 +630,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 4. Color & Branding */}
-              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Palette} title="Warna & Branding" color={c.secondary} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -643,7 +646,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 5. Rekening Pembayaran */}
-              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
@@ -685,7 +688,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 6. Footer & Payment Terms */}
-              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Sparkles} title="Footer & Ketentuan" color="#BB86FC" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -705,7 +708,16 @@ export default function BusinessInvoiceSettings() {
             {/* ========== RIGHT COLUMN — Live Preview ========== */}
             <div className="md:col-span-1">
               <div className="md:sticky md:top-4">
-                <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
+                <div className="relative rounded-2xl">
+                  {/* Desktop gradient border glow */}
+                  <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(187,134,252,0.15), rgba(103,58,183,0.2), rgba(187,134,252,0.15))',
+                      filter: 'blur(2px)', opacity: 0.4,
+                      animation: 'heroGlow 4s ease-in-out infinite',
+                    }}
+                  />
+                <Card className="biz-content-card relative rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(187,134,252,0.06), rgba(103,58,183,0.03))', border: '1px solid rgba(187,134,252,0.12)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}><Eye className="h-3.5 w-3.5" style={{ color: c.secondary }} /></div>
@@ -737,11 +749,17 @@ export default function BusinessInvoiceSettings() {
                     )}
                   </CardContent>
                 </Card>
+                <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(187,134,252,0.3), rgba(103,58,183,0.2), transparent)' }} />
+                </div>
               </div>
             </div>
           </motion.div>
         )}
       </motion.div>
+      <style>{`
+        @keyframes heroGlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        @keyframes shimmer { 0% { transform: translateX(-150%); } 100% { transform: translateX(250%); } }
+      `}</style>
 
       {/* ═══ Bank Account Dialog ═══ */}
       <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>

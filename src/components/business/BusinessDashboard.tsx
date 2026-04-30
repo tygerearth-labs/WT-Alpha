@@ -743,6 +743,17 @@ export default function BusinessDashboard() {
 
   return (
     <div className="relative space-y-4">
+      {/* Premium gradient keyframes */}
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
       {/* ══ Ambient background blobs ══ */}
       <div className="biz-ambient-glow biz-ambient-glow-teal -top-32 -left-20 h-[500px] w-[500px] opacity-[0.07]" />
       <div className="biz-ambient-glow biz-ambient-glow-purple top-60 -right-24 h-[400px] w-[400px] opacity-[0.05]" />
@@ -751,9 +762,24 @@ export default function BusinessDashboard() {
           SECTION 1: HERO OVERVIEW CARD (Financial Command Center)
           ═══════════════════════════════════════════════════════════════ */}
       {/* Ambient glow behind hero */}
-      <div className="relative">
+      <div className="relative rounded-2xl overflow-hidden">
         <div className="pointer-events-none absolute -inset-1 rounded-2xl opacity-30" style={{ background: `radial-gradient(ellipse at 20% 50%, ${alpha(c.secondary, 15)}, transparent 60%), radial-gradient(ellipse at 80% 20%, ${alpha(c.primary, 10)}, transparent 50%)`, filter: 'blur(40px)' }} />
-        <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-none biz-hero-card">
+        {/* Desktop animated gradient border glow */}
+        <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+          style={{
+            background: 'linear-gradient(135deg, rgba(3,218,198,0.3), rgba(187,134,252,0.2), rgba(3,218,198,0.3))',
+            filter: 'blur(2px)',
+            opacity: 0.4,
+            animation: 'heroGlow 4s ease-in-out infinite',
+          }}
+        />
+        <Card className="relative backdrop-blur-xl overflow-hidden shadow-none biz-hero-card"
+          style={{
+            background: 'linear-gradient(135deg, rgba(3,218,198,0.10) 0%, rgba(3,218,198,0.03) 40%, rgba(187,134,252,0.05) 100%)',
+            border: '1px solid rgba(3,218,198,0.12)',
+          }}>
+        {/* h-px gradient accent line at top */}
+        <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.4), rgba(187,134,252,0.3), transparent)' }} />
         <CardContent className="p-4 sm:p-5">
           {/* Header row: Title + Period selector */}
           <div className="flex items-center justify-between mb-4">

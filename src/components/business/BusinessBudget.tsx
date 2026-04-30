@@ -534,7 +534,10 @@ export default function BusinessBudget() {
   // ── RENDER ────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
+      {/* Ambient glows */}
+      <div className="absolute -top-32 -left-20 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: 'rgba(255,183,77,0.12)' }} />
+      <div className="absolute top-60 -right-24 h-[350px] w-[350px] rounded-full opacity-[0.04] blur-[100px] pointer-events-none" style={{ background: 'rgba(251,146,60,0.15)' }} />
       {/* ═══ INFO BANNER ═══ */}
       <div
         className="biz-info-banner flex items-start gap-2 p-2.5 rounded-lg text-[11px] border"
@@ -639,13 +642,17 @@ export default function BusinessBudget() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          <Card className="biz-hero-card rounded-xl overflow-hidden border" style={{ background: c.card, borderColor: c.border }}>
-            <div
-              className="h-px"
+          <div className="relative rounded-2xl">
+            {/* Desktop gradient border glow */}
+            <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
               style={{
-                background: `linear-gradient(to right, transparent, ${c.secondary}, ${c.primary}, transparent)`,
+                background: 'linear-gradient(135deg, rgba(255,183,77,0.15), rgba(251,146,60,0.2), rgba(255,183,77,0.15))',
+                filter: 'blur(2px)', opacity: 0.4,
+                animation: 'heroGlow 4s ease-in-out infinite',
               }}
             />
+          <Card className="biz-hero-card relative rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(255,183,77,0.06), rgba(251,146,60,0.03))', border: '1px solid rgba(255,183,77,0.12)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+            <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,183,77,0.3), rgba(251,146,60,0.2), transparent)' }} />
             <CardContent className="p-4 sm:p-5">
               {/* Header */}
               <div className="flex items-start justify-between gap-3 mb-4">
@@ -776,6 +783,7 @@ export default function BusinessBudget() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </motion.div>
       )}
 
@@ -786,7 +794,7 @@ export default function BusinessBudget() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1 }}
         >
-          <Card className="biz-content-card rounded-xl border" style={{ background: c.card, borderColor: c.border }}>
+          <Card className="biz-content-card rounded-xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
             <CardContent className="p-4">
               <div className="biz-section-header flex items-center gap-2 mb-3">
                 <Wallet className="biz-section-header-icon h-3.5 w-3.5" style={{ color: c.primary }} />
@@ -834,7 +842,7 @@ export default function BusinessBudget() {
       )}
 
       {/* ═══ BUDGET LIST ═══ */}
-      <Card className="biz-content-card rounded-xl overflow-hidden border" style={{ background: c.card, borderColor: c.border }}>
+      <Card className="biz-content-card rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
         <CardContent className="p-0">
           {/* Header with Add Button */}
           <div className="flex items-center justify-between p-3 sm:p-4" style={{ borderBottom: `1px solid ${c.border}` }}>
@@ -1782,6 +1790,10 @@ export default function BusinessBudget() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <style>{`
+        @keyframes heroGlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        @keyframes shimmer { 0% { transform: translateX(-150%); } 100% { transform: translateX(250%); } }
+      `}</style>
     </div>
   );
 }

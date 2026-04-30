@@ -445,6 +445,17 @@ export default function BusinessInvoice() {
 
   return (
     <div className="space-y-4 relative">
+      {/* Premium gradient keyframes */}
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
       {/* ── Ambient Background ── */}
       <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-[0.04] blur-3xl pointer-events-none biz-ambient-glow-primary" style={{ backgroundColor: c.primary }} />
       <div className="absolute top-40 -right-16 w-60 h-60 rounded-full opacity-[0.03] blur-3xl pointer-events-none biz-ambient-glow-secondary" style={{ backgroundColor: c.secondary }} />
@@ -454,8 +465,24 @@ export default function BusinessInvoice() {
 
         {/* ═══ Invoice Overview Hero ═══ */}
         <motion.div variants={itemVariants}>
-          <Card className="biz-hero-card rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl">
-            <CardContent className="p-4 sm:p-5">
+          <div className="relative rounded-2xl overflow-hidden">
+            {/* Desktop animated gradient border glow */}
+            <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+              style={{
+                background: 'linear-gradient(135deg, rgba(187,134,252,0.3), rgba(3,218,198,0.2), rgba(187,134,252,0.3))',
+                filter: 'blur(2px)',
+                opacity: 0.4,
+                animation: 'heroGlow 4s ease-in-out infinite',
+              }}
+            />
+            <Card className="biz-hero-card rounded-xl overflow-hidden backdrop-blur-xl"
+              style={{
+                background: 'linear-gradient(135deg, rgba(187,134,252,0.12) 0%, rgba(187,134,252,0.04) 40%, rgba(3,218,198,0.05) 100%)',
+                border: '1px solid rgba(187,134,252,0.15)',
+              }}>
+            {/* h-px gradient accent line at top */}
+            <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(187,134,252,0.4), rgba(3,218,198,0.3), transparent)' }} />
+              <CardContent className="p-4 sm:p-5">
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
@@ -571,6 +598,7 @@ export default function BusinessInvoice() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </motion.div>
 
         {/* ═══ Status Filter Chips + Search ═══ */}

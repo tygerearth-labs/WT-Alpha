@@ -528,6 +528,16 @@ export default function BusinessPnL() {
 
   return (
     <div className="relative space-y-4 print:space-y-2">
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
+      `}</style>
       {/* ── Ambient Background Effects ── */}
       <div className="pointer-events-none absolute -top-40 -left-40 h-[400px] w-[400px] rounded-full blur-[100px]"
         style={{ backgroundColor: alpha(c.secondary, 3) }} aria-hidden="true" />
@@ -681,8 +691,12 @@ export default function BusinessPnL() {
             <div className="relative">
               <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
                 style={{ backgroundColor: alpha(isProfit ? c.secondary : c.destructive, 15) }} />
-              <Card className="biz-hero-card relative rounded-xl bg-white/[0.03] backdrop-blur-xl border overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]"
-                style={{ borderColor: alpha(isProfit ? c.secondary : c.destructive, 12) }}>
+              {/* Animated gradient border glow */}
+              <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block" style={{ background: 'linear-gradient(135deg, rgba(3,218,198,0.15), rgba(187,134,252,0.10), rgba(3,218,198,0.15))', filter: 'blur(2px)', opacity: 0.4, animation: 'heroGlow 4s ease-in-out infinite' }} />
+              <Card className="biz-hero-card relative rounded-xl overflow-hidden transition-all duration-300 hover:border-white/[0.15]"
+                style={{ background: 'linear-gradient(135deg, rgba(3,218,198,0.10) 0%, rgba(3,218,198,0.03) 40%, rgba(187,134,252,0.05) 100%)', border: '1px solid rgba(3,218,198,0.12)', backdropFilter: 'blur(24px)' }}>
+                {/* h-px accent line at top */}
+                <div className="absolute top-0 left-6 right-6 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.25), rgba(187,134,252,0.18), transparent)' }} />
                 <div className="absolute bottom-0 left-6 right-6 h-px"
                   style={{ background: `linear-gradient(90deg, transparent, ${alpha(isProfit ? c.secondary : c.destructive, 40)}, transparent)` }} />
                 <CardContent className="relative p-4 sm:p-5">

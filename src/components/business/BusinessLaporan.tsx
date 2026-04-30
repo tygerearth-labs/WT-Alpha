@@ -37,7 +37,7 @@ const c = {
 };
 const alpha = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 
-const cardStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)' };
+const cardStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' };
 const inputStyle: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' };
 
 const springHover = { scale: 1.02, y: -1, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } };
@@ -926,8 +926,33 @@ export default function BusinessLaporan() {
       {/* ═══════════════════════════════════════════════════════════════
           P&L HERO CARD — Profit & Loss at-a-Glance (from Cash API)
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="biz-hero-card rounded-xl overflow-hidden" style={{ background: alpha(c.card, 0), border: `1px solid ${alpha(c.border, 0)}` }}>
-        <CardContent className="p-4 sm:p-5">
+      <div className="relative rounded-2xl overflow-hidden">
+        {/* Ambient background glows */}
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: '#BB86FC' }} />
+        <div className="absolute -bottom-32 -right-32 w-72 h-72 rounded-full opacity-[0.05] blur-[120px] pointer-events-none" style={{ background: '#CF6679' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full opacity-[0.04] blur-[80px] pointer-events-none" style={{ background: '#BB86FC' }} />
+
+        {/* Desktop animated gradient border glow */}
+        <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+          style={{
+            background: 'linear-gradient(135deg, rgba(187,134,252,0.3), rgba(207,102,121,0.2), rgba(187,134,252,0.3))',
+            filter: 'blur(2px)',
+            opacity: 0.4,
+            animation: 'heroGlow 4s ease-in-out infinite',
+          }}
+        />
+
+        <Card className="biz-hero-card relative rounded-2xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, rgba(187,134,252,0.12) 0%, rgba(187,134,252,0.04) 40%, rgba(207,102,121,0.05) 100%)',
+            border: '1px solid rgba(187,134,252,0.15)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+          }}>
+          {/* Top accent line */}
+          <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, #BB86FC, #CF6679, transparent)' }} />
+
+          <CardContent className="p-4 sm:p-5">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
@@ -1020,6 +1045,7 @@ export default function BusinessLaporan() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* Info Banner */}
       <div className="flex items-start gap-2.5 p-3 rounded-xl" style={{ background: 'color-mix(in srgb, var(--primary) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--primary) 8%, transparent)' }}>
@@ -1419,7 +1445,7 @@ export default function BusinessLaporan() {
                 transition={{ delay: 0.1, type: 'spring' as const, stiffness: 200, damping: 22 }}
                 whileHover={springHover}
               >
-              <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: `1px solid color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 20%, transparent)` }}>
+              <Card className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 20%, transparent)`, backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
                 <div className="h-px bg-white/[0.06]" />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={DollarSign} color={labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} title="Laba / Rugi Bersih" />
@@ -1578,7 +1604,7 @@ export default function BusinessLaporan() {
           ) : (
             <>
               {/* Piutang Status Summary */}
-              <Card className="rounded-xl" style={{ background: 'var(--card)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' }}>
+              <Card className="rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={AlertTriangle} color="var(--warning)" title="Piutang Outstanding" />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1740,7 +1766,7 @@ export default function BusinessLaporan() {
               </Card>
 
               {/* Full Piutang Detail Table */}
-              <Card className="rounded-xl" style={{ background: 'var(--card)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' }}>
+              <Card className="rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
                 <CardContent className="p-0">
                   <div className="flex items-center gap-2 p-3 sm:p-4" style={{ borderBottom: '1px solid var(--border)' }}>
                     <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--warning) 8%, transparent)' }}>
@@ -2128,7 +2154,7 @@ export default function BusinessLaporan() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05, type: 'spring' as const, stiffness: 300, damping: 24 }}
                     >
-                      <div className="p-3 rounded-xl" style={{ background: 'var(--card)', border: `1px solid var(--border)` }}>
+                      <div className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
                         <div className="h-6 w-6 rounded-lg flex items-center justify-center mb-2" style={{ backgroundColor: `color-mix(in srgb, ${item.color} 8%, transparent)` }}>
                           <Icon className="h-3 w-3" style={{ color: item.color } as React.CSSProperties} />
                         </div>
@@ -2147,7 +2173,7 @@ export default function BusinessLaporan() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, type: 'spring' as const, stiffness: 200, damping: 22 }}
                 >
-                  <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                  <Card className="rounded-xl overflow-hidden" style={cardStyle}>
                     <div className="h-px bg-white/[0.06]" />
                     <CardContent className="p-0">
                       <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
@@ -2232,7 +2258,7 @@ export default function BusinessLaporan() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring' as const, stiffness: 200, damping: 22 }}
               >
-                <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                <Card className="rounded-xl overflow-hidden" style={cardStyle}>
                   <div className="h-px bg-white/[0.06]" />
                   <CardContent className="p-3 sm:p-4">
                     <SectionHeader icon={Target} color="var(--warning)" title={`Anggaran Bulan Ini`} badge={`${data.budgetUtilization.period}/${data.budgetUtilization.year}`} />
@@ -2283,7 +2309,7 @@ export default function BusinessLaporan() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, type: 'spring' as const, stiffness: 200, damping: 22 }}
                 >
-                  <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                  <Card className="rounded-xl overflow-hidden" style={cardStyle}>
                     <CardContent className="p-3 sm:p-4">
                       <SectionHeader icon={Percent} color="var(--primary)" title="Rincian per Kategori" badge={data.budgetUtilization.categories.length} />
                       <div className="space-y-2.5">
@@ -2341,7 +2367,7 @@ export default function BusinessLaporan() {
 
       {/* Tax Audit Summary (kept below tabs as reference section) */}
       {data && taxAudit && (
-        <Card className="rounded-xl" style={{ background: 'var(--card)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)' }}>
+        <Card className="rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid color-mix(in srgb, var(--warning) 15%, transparent)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
           <CardContent className="p-3 sm:p-4">
             <SectionHeader icon={AlertTriangle} color="var(--warning)" title="Detail Audit Pajak" />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -2381,6 +2407,17 @@ export default function BusinessLaporan() {
           </CardContent>
         </Card>
       )}
+
+      <style>{`
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
+      `}</style>
     </div>
   );
 }

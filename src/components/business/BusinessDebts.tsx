@@ -455,7 +455,10 @@ export default function BusinessDebts() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
+      {/* Ambient glows */}
+      <div className="absolute -top-32 -left-20 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: 'rgba(207,102,121,0.12)' }} />
+      <div className="absolute top-60 -right-24 h-[350px] w-[350px] rounded-full opacity-[0.04] blur-[100px] pointer-events-none" style={{ background: 'rgba(239,68,68,0.15)' }} />
       {/* Info Banner */}
       <div className="biz-info-banner flex items-start gap-2 p-2.5 rounded-lg text-[11px] bg-primary/5 border border-primary/15">
         <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />
@@ -466,7 +469,7 @@ export default function BusinessDebts() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <TabsList
-            className="biz-tab-bar bg-card border border-border rounded-full p-1"
+            className="biz-tab-bar bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-full p-1"
           >
             <TabsTrigger
               value="hutang"
@@ -506,7 +509,18 @@ export default function BusinessDebts() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 mb-2">
+        <div className="relative rounded-2xl">
+          {/* Desktop gradient border glow */}
+          <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+            style={{
+              background: 'linear-gradient(135deg, rgba(207,102,121,0.15), rgba(239,68,68,0.2), rgba(207,102,121,0.15))',
+              filter: 'blur(2px)', opacity: 0.4,
+              animation: 'heroGlow 4s ease-in-out infinite',
+            }}
+          />
+          <div className="relative rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(207,102,121,0.06), rgba(239,68,68,0.03))', border: '1px solid rgba(207,102,121,0.12)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+          <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(207,102,121,0.3), rgba(239,68,68,0.2), transparent)' }} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 mb-2 p-1.5">
           {/* Total Amount */}
           <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
@@ -628,10 +642,12 @@ export default function BusinessDebts() {
           </Card>
           </motion.div>
         </div>
+          </div>
+        </div>
 
         <TabsContent value={activeTab} className="mt-0">
           <Card
-            className="biz-content-card rounded-xl overflow-hidden bg-card border border-border"
+            className="biz-content-card rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl"
           >
             <CardContent className="p-0">
               {loading ? (
@@ -1421,6 +1437,10 @@ export default function BusinessDebts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <style>{`
+        @keyframes heroGlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        @keyframes shimmer { 0% { transform: translateX(-150%); } 100% { transform: translateX(250%); } }
+      `}</style>
     </div>
   );
 }
