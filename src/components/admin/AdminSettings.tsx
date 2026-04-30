@@ -849,87 +849,6 @@ export function AdminSettings() {
   /* ═══════════════════════════════════════════════════════════════
      TAB 3: PRICING
      ═══════════════════════════════════════════════════════════════ */
-  const PlanCard = ({
-    planKey,
-    planLabel,
-    icon: PlanIcon,
-    color,
-    price,
-    priceSetter,
-    features,
-    featuresSetter,
-    discount,
-    discountSetter,
-    discountLabel,
-    discountLabelSetter,
-    purchaseUrl,
-    purchaseUrlSetter,
-  }: {
-    planKey: string;
-    planLabel: string;
-    icon: React.ElementType;
-    color: string;
-    price: string;
-    priceSetter: (v: string) => void;
-    features: string;
-    featuresSetter: (v: string) => void;
-    discount: string;
-    discountSetter: (v: string) => void;
-    discountLabel: string;
-    discountLabelSetter: (v: string) => void;
-    purchaseUrl: string;
-    purchaseUrlSetter: (v: string) => void;
-  }) => {
-    const featureList = features.split('\n').filter(Boolean);
-    return (
-      <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 space-y-4 relative overflow-hidden">
-        {/* Gradient accent top */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: `${color}10`, borderColor: `${color}20` }}>
-            <PlanIcon className="h-5 w-5" style={{ color }} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white/85">{planLabel}</h3>
-            <p className="text-[10px] text-white/30 uppercase tracking-wider">Plan</p>
-          </div>
-        </div>
-        {/* Price */}
-        <div className="space-y-2">
-          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Price</Label>
-          <Input value={price} onChange={(e) => priceSetter(e.target.value)} className={cn(inputCls, 'text-center font-semibold text-base')} placeholder="Gratis" />
-        </div>
-        {/* Features */}
-        <div className="space-y-2">
-          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Features</Label>
-          <textarea value={features} onChange={(e) => featuresSetter(e.target.value)} rows={5} className={textareaCls} placeholder="One feature per line" />
-          {featureList.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-              {featureList.map((f, i) => (
-                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ backgroundColor: `${color}08`, color: `${color}C0`, border: `1px solid ${color}15` }}>
-                  {f}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        {/* Discount */}
-        <div className="space-y-2 pt-2 border-t border-white/[0.04]">
-          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Discount</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <Input value={discount} onChange={(e) => discountSetter(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="20%" />
-            <Input value={discountLabel} onChange={(e) => discountLabelSetter(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Label" />
-          </div>
-        </div>
-        {/* Purchase URL */}
-        <div className="space-y-2">
-          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Purchase URL</Label>
-          <Input value={purchaseUrl} onChange={(e) => purchaseUrlSetter(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="https://..." />
-        </div>
-      </div>
-    );
-  };
 
   const TabPricing = () => (
     <div className="space-y-6">
@@ -938,30 +857,125 @@ export function AdminSettings() {
         <CardContent className="pt-0">
           <p className="text-[10px] text-white/25 mb-4">Configure pricing, features, discounts and purchase links for each plan.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <PlanCard
-              planKey="basic" planLabel="Basic" icon={Sparkles} color="#03DAC6"
-              price={basicPlanPrice} priceSetter={setBasicPlanPrice}
-              features={basicPlanFeatures} featuresSetter={setBasicPlanFeatures}
-              discount={basicPlanDiscount} discountSetter={setBasicPlanDiscount}
-              discountLabel={basicPlanDiscountLabel} discountLabelSetter={setBasicPlanDiscountLabel}
-              purchaseUrl={basicPurchaseUrl} purchaseUrlSetter={setBasicPurchaseUrl}
-            />
-            <PlanCard
-              planKey="pro" planLabel="Pro" icon={Crown} color="#FFD700"
-              price={proPlanPrice} priceSetter={setProPlanPrice}
-              features={proPlanFeatures} featuresSetter={setProPlanFeatures}
-              discount={proPlanDiscount} discountSetter={setProPlanDiscount}
-              discountLabel={proPlanDiscountLabel} discountLabelSetter={setProPlanDiscountLabel}
-              purchaseUrl={proPurchaseUrl} purchaseUrlSetter={setProPurchaseUrl}
-            />
-            <PlanCard
-              planKey="ultimate" planLabel="Ultimate" icon={Sparkles} color="#BB86FC"
-              price={ultimatePlanPrice} priceSetter={setUltimatePlanPrice}
-              features={ultimatePlanFeatures} featuresSetter={setUltimatePlanFeatures}
-              discount={ultimatePlanDiscount} discountSetter={setUltimatePlanDiscount}
-              discountLabel={ultimatePlanDiscountLabel} discountLabelSetter={setUltimatePlanDiscountLabel}
-              purchaseUrl={ultimatePurchaseUrl} purchaseUrlSetter={setUltimatePurchaseUrl}
-            />
+            {/* ── Basic Plan ── */}
+            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: '#03DAC610', borderColor: '#03DAC620' }}>
+                  <Sparkles className="h-5 w-5" style={{ color: '#03DAC6' }} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white/85">Basic</h3>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Plan</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Price</Label>
+                <Input value={basicPlanPrice} onChange={(e) => setBasicPlanPrice(e.target.value)} className={cn(inputCls, 'text-center font-semibold text-base')} placeholder="Gratis" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Features</Label>
+                <textarea value={basicPlanFeatures} onChange={(e) => setBasicPlanFeatures(e.target.value)} rows={5} className={textareaCls} placeholder="One feature per line" />
+                {basicPlanFeatures.split('\n').filter(Boolean).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {basicPlanFeatures.split('\n').filter(Boolean).map((f, i) => (
+                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ backgroundColor: '#03DAC608', color: '#03DAC6C0', border: '1px solid #03DAC615' }}>{f}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Discount</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input value={basicPlanDiscount} onChange={(e) => setBasicPlanDiscount(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="20%" />
+                  <Input value={basicPlanDiscountLabel} onChange={(e) => setBasicPlanDiscountLabel(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Label" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Purchase URL</Label>
+                <Input value={basicPurchaseUrl} onChange={(e) => setBasicPurchaseUrl(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="https://..." />
+              </div>
+            </div>
+
+            {/* ── Pro Plan ── */}
+            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: '#FFD70010', borderColor: '#FFD70020' }}>
+                  <Crown className="h-5 w-5" style={{ color: '#FFD700' }} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white/85">Pro</h3>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Plan</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Price</Label>
+                <Input value={proPlanPrice} onChange={(e) => setProPlanPrice(e.target.value)} className={cn(inputCls, 'text-center font-semibold text-base')} placeholder="Gratis" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Features</Label>
+                <textarea value={proPlanFeatures} onChange={(e) => setProPlanFeatures(e.target.value)} rows={5} className={textareaCls} placeholder="One feature per line" />
+                {proPlanFeatures.split('\n').filter(Boolean).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {proPlanFeatures.split('\n').filter(Boolean).map((f, i) => (
+                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ backgroundColor: '#FFD70008', color: '#FFD700C0', border: '1px solid #FFD70015' }}>{f}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Discount</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input value={proPlanDiscount} onChange={(e) => setProPlanDiscount(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="20%" />
+                  <Input value={proPlanDiscountLabel} onChange={(e) => setProPlanDiscountLabel(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Label" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Purchase URL</Label>
+                <Input value={proPurchaseUrl} onChange={(e) => setProPurchaseUrl(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="https://..." />
+              </div>
+            </div>
+
+            {/* ── Ultimate Plan ── */}
+            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: '#BB86FC10', borderColor: '#BB86FC20' }}>
+                  <Sparkles className="h-5 w-5" style={{ color: '#BB86FC' }} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white/85">Ultimate</h3>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Plan</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Price</Label>
+                <Input value={ultimatePlanPrice} onChange={(e) => setUltimatePlanPrice(e.target.value)} className={cn(inputCls, 'text-center font-semibold text-base')} placeholder="Gratis" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Features</Label>
+                <textarea value={ultimatePlanFeatures} onChange={(e) => setUltimatePlanFeatures(e.target.value)} rows={5} className={textareaCls} placeholder="One feature per line" />
+                {ultimatePlanFeatures.split('\n').filter(Boolean).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {ultimatePlanFeatures.split('\n').filter(Boolean).map((f, i) => (
+                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ backgroundColor: '#BB86FC08', color: '#BB86FCC0', border: '1px solid #BB86FC15' }}>{f}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Discount</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input value={ultimatePlanDiscount} onChange={(e) => setUltimatePlanDiscount(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="20%" />
+                  <Input value={ultimatePlanDiscountLabel} onChange={(e) => setUltimatePlanDiscountLabel(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Label" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Purchase URL</Label>
+                <Input value={ultimatePurchaseUrl} onChange={(e) => setUltimatePurchaseUrl(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="https://..." />
+              </div>
+            </div>
           </div>
         </CardContent>
       </GlassCard>
