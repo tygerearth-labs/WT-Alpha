@@ -1405,11 +1405,10 @@ export function AdminSettings() {
         })}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content — NO AnimatePresence here to prevent input focus loss on mobile.
+          Each tab's motion.div handles its own enter animation via key change. */}
       <div className="adm-scroll-mobile flex-1 min-h-0 overflow-y-auto pb-4">
-        <AnimatePresence mode="wait">
-          {tabContent[activeTab]()}
-        </AnimatePresence>
+        {tabContent[activeTab]()}
       </div>
 
       {/* ═══ Floating Save Button ═══ */}

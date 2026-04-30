@@ -1415,7 +1415,7 @@ export default function BusinessCash() {
   const CurrentTabIcon = currentTabInfo.icon;
 
   return (
-    <div className="relative space-y-3 overflow-hidden">
+    <div className="relative space-y-3 overflow-x-hidden overflow-y-auto">
       {/* Premium gradient keyframes */}
       <style>{`
         @keyframes heroGlow {
@@ -1566,7 +1566,7 @@ export default function BusinessCash() {
                         <button
                           key={opt.value}
                           onClick={() => setCashPeriod(opt.value)}
-                          className={cn("biz-period-pill min-h-[32px] sm:min-h-0 px-2.5 sm:px-2.5 rounded-full text-[10px] sm:text-[10px] font-medium transition-all duration-200", isActive && "biz-period-pill-active")}
+                          className={cn("biz-period-pill min-h-[28px] sm:min-h-0 px-2 sm:px-2.5 rounded-full text-[10px] font-medium transition-all duration-200", isActive && "biz-period-pill-active")}
                           style={isActive ? {
                             background: alpha(c.primary, 10),
                             color: c.primary,
@@ -1690,7 +1690,7 @@ export default function BusinessCash() {
                       <button
                         key={f.key}
                         onClick={() => setCashFilter(f.key)}
-                        className={cn("biz-filter-chip biz-tab-item flex-1 flex items-center justify-center gap-1 px-2 sm:px-3 min-h-[36px] sm:min-h-0 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
+                        className={cn("biz-filter-chip biz-tab-item flex-1 flex items-center justify-center gap-1 px-2 sm:px-3 min-h-[30px] sm:min-h-0 py-1.5 rounded-full text-[10px] sm:text-[11px] font-semibold transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
                         style={
                           isActive
                             ? {
@@ -1723,24 +1723,23 @@ export default function BusinessCash() {
               </div>
 
               {/* Search + Add button */}
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="relative flex-1 min-w-0">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     value={cashSearch}
                     onChange={(e) => setCashSearch(e.target.value)}
                     placeholder={t('common.search') + '...'}
-                    className="biz-search-input pl-8 h-10 sm:h-8 text-xs rounded-lg bg-white/[0.03] border border-border/30 text-foreground w-full"
+                    className="biz-search-input pl-8 h-9 sm:h-8 text-xs rounded-lg bg-white/[0.03] border border-border/30 text-foreground w-full"
                   />
                 </div>
                 <Button
                   onClick={openCashCreate}
                   size="sm"
-                  className="biz-action-btn biz-action-btn-primary rounded-lg h-10 sm:h-8 px-4 sm:px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="biz-action-btn biz-action-btn-primary rounded-lg h-9 sm:h-8 px-3 sm:px-3 bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
                 >
-                  <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" />
-                  <span className="hidden sm:inline">{t('biz.addCashEntry')}</span>
-                  <span className="sm:hidden">Tambah</span>
+                  <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                  <span className="hidden sm:inline ml-1">{t('biz.addCashEntry')}</span>
                 </Button>
               </div>
             </div>
@@ -2397,11 +2396,10 @@ export default function BusinessCash() {
               <Button
                 onClick={openInvestorCreate}
                 size="sm"
-                className="biz-action-btn biz-action-btn-primary rounded-lg h-10 sm:h-8 px-4 sm:px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="biz-action-btn biz-action-btn-primary rounded-lg h-9 sm:h-8 px-3 sm:px-3 bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
               >
-                <UserPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" />
-                <span className="sm:hidden">Tambah</span>
-                <span className="hidden sm:inline">Tambah Investor</span>
+                <UserPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                <span className="hidden sm:inline ml-1">Tambah Investor</span>
               </Button>
             </div>
 
@@ -3163,7 +3161,7 @@ export default function BusinessCash() {
                     <button
                       key={key}
                       onClick={() => setPiutangSubTab(key)}
-                      className={cn("biz-filter-chip biz-tab-item flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 min-h-[36px] sm:min-h-0 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
+                      className={cn("biz-filter-chip biz-tab-item flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 min-h-[30px] sm:min-h-0 py-1.5 rounded-full text-[10px] sm:text-[11px] font-medium transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
                       style={isActive ? {
                         background: alpha(cfg.color, 10),
                         color: cfg.color,
@@ -3186,13 +3184,13 @@ export default function BusinessCash() {
                   );
                 })}
               </div>
-              <div className="relative flex-1 sm:max-w-[200px] w-full">
+              <div className="relative flex-1 sm:max-w-[200px] w-full min-w-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   value={piutangSearch}
                   onChange={(e) => setPiutangSearch(e.target.value)}
                   placeholder={t('common.search') + '...'}
-                  className="biz-search-input pl-8 rounded-lg h-10 sm:h-8 text-xs bg-white/[0.03] border border-border text-foreground w-full"
+                  className="biz-search-input pl-8 rounded-lg h-9 sm:h-8 text-xs bg-white/[0.03] border border-border text-foreground w-full"
                 />
               </div>
             </div>
