@@ -973,6 +973,9 @@ export function Dashboard() {
     return { month: String(now.getMonth() + 1), year: String(now.getFullYear()) };
   });
 
+  // Mobile tab navigation state
+  const [mobileTab, setMobileTab] = useState(0);
+
   // Section visibility helper: default to showing all sections if no config
   const isSectionVisible = (key: string): boolean => {
     if (!data?.sectionVisibility) return true;
@@ -1482,22 +1485,22 @@ export function Dashboard() {
   const GreetingIcon = getGreetingIcon();
 
   return (
-    <div className="relative space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full px-4 md:px-6 lg:px-0">
+    <div className="relative space-y-3 sm:space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full overflow-x-hidden px-3 sm:px-4 md:px-6 lg:px-0">
       {/* ═══ Ambient Background ═══ */}
       <div aria-hidden="true" className="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-[0.07] blur-[120px]" style={{ background: 'radial-gradient(circle, #BB86FC, transparent 70%)' }} />
       <div aria-hidden="true" className="pointer-events-none absolute top-1/3 -right-48 w-[600px] h-[600px] rounded-full opacity-[0.05] blur-[140px]" style={{ background: 'radial-gradient(circle, #03DAC6, transparent 70%)' }} />
       <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 left-1/4 w-[400px] h-[400px] rounded-full opacity-[0.04] blur-[100px]" style={{ background: 'radial-gradient(circle, #CF6679, transparent 70%)' }} />
       {/* ═══ Greeting Section ═══ */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
-            <GreetingIcon className="h-5 w-5" style={{ color: THEME.primary }} />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center" style={{ background: `${THEME.primary}15` }}>
+            <GreetingIcon className="h-4.5 w-4.5 sm:h-5 sm:w-5" style={{ color: THEME.primary }} />
           </div>
           <div>
-            <h2 className="text-lg font-bold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFFFFF, #B3B3B3)' }}>
+            <h2 className="text-base sm:text-lg font-bold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFFFFF, #B3B3B3)' }}>
               {getGreeting()}, {user?.username || 'User'}!
             </h2>
-            <p className="text-[12px] mt-0.5" style={{ color: THEME.muted }}>
+            <p className="text-[11px] sm:text-[12px] mt-0.5" style={{ color: THEME.muted }}>
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
@@ -1522,7 +1525,7 @@ export function Dashboard() {
       {/* ═══ Daily Tip Card ═══ */}
       <div className="animate-tip-card-enter">
         <div
-          className="rounded-xl p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
+          className="rounded-xl p-3 sm:p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
           style={{
             borderLeft: `3px solid ${THEME.primary}`,
           }}
@@ -1532,15 +1535,15 @@ export function Dashboard() {
             className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full blur-[40px] opacity-[0.06]"
             style={{ background: THEME.primary }}
           />
-          <div className="relative flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 animate-lightbulb-pulse" style={{ background: `${THEME.primary}15` }}>
-              <Lightbulb className="h-4 w-4" style={{ color: THEME.primary }} />
+          <div className="relative flex items-start gap-2.5 sm:gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 animate-lightbulb-pulse" style={{ background: `${THEME.primary}15` }}>
+              <Lightbulb className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: THEME.primary }} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: THEME.primary }}>{t('dashboard.tipOfTheDay')}</p>
+                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ color: THEME.primary }}>{t('dashboard.tipOfTheDay')}</p>
               </div>
-              <p className="text-[13px] leading-relaxed" style={{ color: THEME.textSecondary }}>{tipOfTheDay}</p>
+              <p className="text-[12px] sm:text-[13px] leading-relaxed" style={{ color: THEME.textSecondary }}>{tipOfTheDay}</p>
             </div>
           </div>
         </div>
@@ -1558,11 +1561,11 @@ export function Dashboard() {
 
       {/* ═══ Section 1: Filter Bar ═══ */}
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold shrink-0 bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>{t('nav.dashboard')}</h2>
+        <h2 className="text-base sm:text-lg font-semibold shrink-0 bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>{t('nav.dashboard')}</h2>
         <div className="flex gap-1.5 shrink-0">
           <Select value={filter.month} onValueChange={(v) => setFilter({ ...filter, month: v })}>
             <SelectTrigger
-              className="w-[100px] h-8 text-xs"
+              className="w-[90px] sm:w-[100px] h-7 sm:h-8 text-[11px] sm:text-xs"
               style={{
                 background: THEME.surface,
                 border: `1px solid ${THEME.border}`,
@@ -1582,7 +1585,7 @@ export function Dashboard() {
           </Select>
           <Select value={filter.year} onValueChange={(v) => setFilter({ ...filter, year: v })}>
             <SelectTrigger
-              className="w-[80px] h-8 text-xs"
+              className="w-[70px] sm:w-[80px] h-7 sm:h-8 text-[11px] sm:text-xs"
               style={{
                 background: THEME.surface,
                 border: `1px solid ${THEME.border}`,
@@ -1602,7 +1605,7 @@ export function Dashboard() {
       </div>
 
       {/* ═══ Section 2: KPI Strip ═══ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Net Worth */}
         <motion.div
           className="rounded-2xl md:rounded-xl backdrop-blur-xl cursor-default relative transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1] active:scale-[0.98]"
@@ -1612,25 +1615,25 @@ export function Dashboard() {
         >
           {/* Per-card colored glow */}
           <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.primary }} />
-          <div className="relative z-10 p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
-                <Wallet className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.primary }} />
+          <div className="relative z-10 p-3 sm:p-4 lg:p-5">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+                <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.primary }} />
               </div>
-              <span className="text-[11px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.netWorth')}</span>
+              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.netWorth')}</span>
             </div>
-            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
+            <p className="text-base sm:text-lg lg:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
               {formatAmount(data.totalSavings)}
             </p>
-            <div className="flex items-center gap-1.5 mt-1.5 overflow-hidden">
+            <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5 overflow-hidden">
               <span
-                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+                className="text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
                 style={{ background: `${THEME.primary}15`, color: THEME.primary }}
               >
                 {currentStage.name}
               </span>
               {nextStage && (
-                <span className="text-[10px] truncate" style={{ color: THEME.muted }}>
+                <span className="text-[9px] sm:text-[10px] truncate" style={{ color: THEME.muted }}>
                   {(progressToNext || 0).toFixed(0)}% {t('dashboard.toNext')} {nextStage.name}
                 </span>
               )}
@@ -1646,21 +1649,21 @@ export function Dashboard() {
           transition={springHover}
         >
           <div className="pointer-events-none absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.secondary }} />
-          <div className="relative z-10 p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}15` }}>
-                  <ArrowUpRight className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.secondary }} />
+          <div className="relative z-10 p-3 sm:p-4 lg:p-5">
+            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}15` }}>
+                  <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.secondary }} />
                 </div>
-                <span className="text-[11px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
+                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
               </div>
               {mc && getTrendIcon(mc.incomeChange)}
             </div>
-            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.secondary }}>
+            <p className="text-base sm:text-lg lg:text-xl font-bold tracking-tight truncate" style={{ color: THEME.secondary }}>
               {formatAmount(mc?.currentMonthIncome ?? data.totalIncome)}
             </p>
             {mc && mc.incomeChange !== 0 && (
-              <p className="text-[11px] sm:text-[11px] mt-1.5 truncate" style={{ color: getTrendColor(mc.incomeChange) }}>
+              <p className="text-[10px] sm:text-[11px] mt-1 sm:mt-1.5 truncate" style={{ color: getTrendColor(mc.incomeChange) }}>
                 {mc.incomeChange > 0 ? '+' : ''}{(mc.incomeChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
@@ -1675,21 +1678,21 @@ export function Dashboard() {
           transition={springHover}
         >
           <div className="pointer-events-none absolute -bottom-12 -right-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.destructive }} />
-          <div className="relative z-10 p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}15` }}>
-                  <ArrowDownRight className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.destructive }} />
+          <div className="relative z-10 p-3 sm:p-4 lg:p-5">
+            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}15` }}>
+                  <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.destructive }} />
                 </div>
-                <span className="text-[11px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
+                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
               </div>
               {mc && getTrendIcon(mc.expenseChange)}
             </div>
-            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.destructive }}>
+            <p className="text-base sm:text-lg lg:text-xl font-bold tracking-tight truncate" style={{ color: THEME.destructive }}>
               {formatAmount(mc?.currentMonthExpense ?? data.totalExpense)}
             </p>
             {mc && mc.expenseChange !== 0 && (
-              <p className="text-[11px] sm:text-[11px] mt-1.5 truncate" style={{ color: getTrendColor(mc.expenseChange, true) }}>
+              <p className="text-[10px] sm:text-[11px] mt-1 sm:mt-1.5 truncate" style={{ color: getTrendColor(mc.expenseChange, true) }}>
                 {mc.expenseChange > 0 ? '+' : ''}{(mc.expenseChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
@@ -1704,17 +1707,17 @@ export function Dashboard() {
           transition={springHover}
         >
           <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.warning }} />
-          <div className="relative z-10 p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.warning}15` }}>
-                <Activity className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.warning }} />
+          <div className="relative z-10 p-3 sm:p-4 lg:p-5">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.warning}15` }}>
+                <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.warning }} />
               </div>
               <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.savingsRate')}</span>
             </div>
             <div className="flex items-end gap-3">
               <SavingsRateGauge rate={data.savingsRate} />
               <div className="pb-1">
-                <p className="text-xs" style={{ color: THEME.muted }}>
+                <p className="text-[10px] sm:text-xs" style={{ color: THEME.muted }}>
                   {t('dashboard.savingsTarget20')}
                 </p>
               </div>
@@ -1723,394 +1726,397 @@ export function Dashboard() {
         </motion.div>
       </div>
 
-      {/* ═══ Section 2.5: Cash Flow Summary ═══ */}
-      <CashFlowSummary
-        totalIncome={data.totalIncome}
-        totalExpense={data.totalExpense}
-        balance={data.balance}
-        savingsRate={data.savingsRate}
-        last7DaysGrowth={data.last7DaysGrowth}
-        momentumIndicator={data.momentumIndicator}
-      />
-
-      {/* ═══ Section 3: Analytics Carousel ═══ */}
-      <div className="h-px bg-white/[0.06]" />
-      <AnalyticsCarousel
-        cashFlowData={cashFlowData}
-        categoryData={categoryData}
-        totalCategoryAmount={totalCategoryAmount}
-        healthScore={healthScore}
-        healthGrade={healthGrade}
-        healthLabel={healthLabel}
-        healthBreakdown={healthBreakdown}
-      />
-
-      {/* ═══ Section 3.5: Health Score + Budget + Savings Overview ═══ */}
-      {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
-        <div className="h-px bg-white/[0.06]" />
-      )}
-      {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          {isSectionVisible('healthScore') && (
-            <ProFeatureWrapper feature="healthScore">
-              <FinancialHealthScore />
-            </ProFeatureWrapper>
-          )}
-          {isSectionVisible('budget') && (
-            <ProFeatureWrapper feature="budget">
-              <BudgetTracker />
-            </ProFeatureWrapper>
-          )}
-          {isSectionVisible('savingsOverview') && (
-            <div className="sm:col-span-2 lg:col-span-1">
-              <ProFeatureWrapper feature="savingsOverview">
-                <SavingsOverview />
-              </ProFeatureWrapper>
-            </div>
-          )}
+      {/* ═══ Mobile Tab Bar ═══ */}
+      <div className="lg:hidden sticky top-0 z-20 -mx-4 px-4 pb-2 pt-1" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.97) 70%, rgba(0,0,0,0) 100%)' }}>
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+          {[
+            { key: 0, label: t('dashboard.tabSummary') },
+            { key: 1, label: t('dashboard.tabAnalytics') },
+            { key: 2, label: t('dashboard.tabTargets') },
+            { key: 3, label: t('dashboard.tabTips') },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setMobileTab(tab.key)}
+              className="shrink-0 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px]"
+              style={{
+                background: mobileTab === tab.key ? `${THEME.primary}15` : 'rgba(255,255,255,0.03)',
+                border: mobileTab === tab.key ? `1px solid ${THEME.primary}30` : '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
+              <span className="text-xs font-semibold whitespace-nowrap" style={{ color: mobileTab === tab.key ? THEME.primary : THEME.textSecondary }}>
+                {tab.label}
+              </span>
+            </button>
+          ))}
         </div>
-      )}
+        {/* Active tab indicator line */}
+        <div className="h-px w-full mt-1" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)' }} />
+      </div>
 
-      {/* ═══ Section 3.6: Financial Tips ═══ */}
-      {isSectionVisible('tips') && (
+      {/* ═══ Tab 0: Ringkasan (Summary) ═══ */}
+      <div className={mobileTab !== 0 ? 'hidden lg:block' : ''}>
+        {/* ═══ Section 2.5: Cash Flow Summary ═══ */}
+        <CashFlowSummary
+          totalIncome={data.totalIncome}
+          totalExpense={data.totalExpense}
+          balance={data.balance}
+          savingsRate={data.savingsRate}
+          last7DaysGrowth={data.last7DaysGrowth}
+          momentumIndicator={data.momentumIndicator}
+        />
+
+        {/* ═══ Quick Stats Footer ═══ */}
+        <div className="h-px bg-white/[0.06] mt-3" />
+        <motion.div
+          whileHover={cardHover}
+          transition={springHover}
+        >
+          <Card className="overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <CardContent className="p-3 sm:p-4 lg:p-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="text-center rounded-xl p-3 sm:p-3 bg-white/[0.02]">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
+                    {t('dashboard.expensePerDay')}
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold" style={{ color: THEME.text }}>
+                    {formatAmount(averages.dailyExpense)}
+                  </p>
+                </div>
+                <div className="text-center rounded-xl p-3 sm:p-3 bg-white/[0.02]">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
+                    {t('dashboard.expensePerWeek')}
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold" style={{ color: THEME.text }}>
+                    {formatAmount(averages.weeklyExpense)}
+                  </p>
+                </div>
+                <div className="text-center rounded-xl p-3 sm:p-3 bg-white/[0.02]">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
+                    {t('dashboard.fundResilience')}
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold" style={{ color: forecast.runwayMonths === -1 ? THEME.secondary : THEME.text }}>
+                    {forecast.runwayMonths === -1 ? t('dashboard.safe') : forecast.runwayMonths > 0 ? `${forecast.runwayMonths} ${t('dashboard.monthsUnit')}` : `0 ${t('dashboard.monthsUnit')}`}
+                  </p>
+                  {forecast.runwayMonths === -1 && (
+                    <p className="text-[8px] sm:text-[9px]" style={{ color: THEME.muted }}>{t('dashboard.surplusThisMonth')}</p>
+                  )}
+                </div>
+                <div className="text-center rounded-xl p-3 sm:p-3 bg-white/[0.02]">
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: THEME.muted }}>
+                    {t('dashboard.avgTransaction')}
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold" style={{ color: THEME.text }}>
+                    {formatAmount(averages.transactionSize)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+      {/* End Tab 0 */}
+
+      {/* ═══ Tab 1: Analisis (Analytics) ═══ */}
+      <div className={mobileTab !== 1 ? 'hidden lg:block' : ''}>
+        {/* ═══ Analytics Carousel ═══ */}
+        <div className="h-px bg-white/[0.06]" />
+        <AnalyticsCarousel
+          cashFlowData={cashFlowData}
+          categoryData={categoryData}
+          totalCategoryAmount={totalCategoryAmount}
+          healthScore={healthScore}
+          healthGrade={healthGrade}
+          healthLabel={healthLabel}
+          healthBreakdown={healthBreakdown}
+        />
+
+        {/* ═══ Health Score + Budget + Savings Overview ═══ */}
+        {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
+          <div className="h-px bg-white/[0.06]" />
+        )}
+        {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {isSectionVisible('healthScore') && (
+              <ProFeatureWrapper feature="healthScore">
+                <FinancialHealthScore />
+              </ProFeatureWrapper>
+            )}
+            {isSectionVisible('budget') && (
+              <ProFeatureWrapper feature="budget">
+                <BudgetTracker />
+              </ProFeatureWrapper>
+            )}
+            {isSectionVisible('savingsOverview') && (
+              <div className="sm:col-span-2 lg:col-span-1">
+                <ProFeatureWrapper feature="savingsOverview">
+                  <SavingsOverview />
+                </ProFeatureWrapper>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Financial Insights Widgets ═══ */}
+        {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
+          <div className="h-px bg-white/[0.06]" />
+        )}
+        {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+            {isSectionVisible('spendingTrend') && (
+              <ProFeatureWrapper feature="spendingTrend">
+                <SpendingTrendChart
+                  transactions={data.transactions}
+                  savingsHistory={data.savingsHistory}
+                />
+              </ProFeatureWrapper>
+            )}
+            {isSectionVisible('topCategories') && (
+              <ProFeatureWrapper feature="topCategories">
+                <TopCategories expenseByCategory={data.expenseByCategory} />
+              </ProFeatureWrapper>
+            )}
+            {isSectionVisible('monthlySummary') && (
+              <ProFeatureWrapper feature="monthlySummary">
+                <MonthlySummary
+                  monthlyComparison={data.monthlyComparison}
+                  savingsRate={data.savingsRate}
+                  monthlyTrends={data.monthlyTrends}
+                />
+              </ProFeatureWrapper>
+            )}
+          </div>
+        )}
+      </div>
+      {/* End Tab 1 */}
+
+      {/* ═══ Tab 2: Target (Savings Targets) ═══ */}
+      <div className={mobileTab !== 2 ? 'hidden lg:block' : ''}>
+        {data.savingsTargets.length > 0 && (
+          <>
+            <div className="h-px bg-white/[0.06]" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+                    <Target className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                  </div>
+                  <h3 className="text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
+                    {t('dashboard.savingsTargets')}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  {targetAnalytics.onTrack > 0 && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: THEME.secondary + '15', color: THEME.secondary }}>
+                      {targetAnalytics.onTrack} {t('dashboard.onTrack')}
+                    </span>
+                  )}
+                  {targetAnalytics.behind > 0 && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: THEME.destructive + '15', color: THEME.destructive }}>
+                      {targetAnalytics.behind} {t('dashboard.behind')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {/* Mobile: horizontal scroll */}
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 lg:hidden">
+                {data.savingsTargets.slice(0, 6).map((target: any) => {
+                  const progress = Math.min((target.currentAmount / target.targetAmount) * 100, 100);
+                  const remaining = Math.max(target.targetAmount - target.currentAmount, 0);
+                  const progressColor =
+                    progress >= 80 ? THEME.secondary :
+                    progress >= 40 ? THEME.warning :
+                    THEME.primary;
+                  const progressGradient = `linear-gradient(to right, ${progressColor}, ${progressColor}80)`;
+                  const ringRadius = 20;
+                  const ringStroke = 3;
+                  const ringNorm = ringRadius - ringStroke / 2;
+                  const ringCirc = ringNorm * 2 * Math.PI;
+                  const ringOffset = ringCirc - (progress / 100) * ringCirc;
+
+                  return (
+                    <motion.div
+                      key={target.id}
+                      className="rounded-2xl p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200 active:scale-[0.98]"
+                      whileHover={cardHover}
+                      transition={springHover}
+                    >
+                      <div className="pointer-events-none absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-[0.06] blur-[30px]" style={{ background: progressColor }} />
+                      <div className="relative z-10 flex items-start gap-3">
+                        <div className="relative shrink-0">
+                          <svg width={ringRadius * 2} height={ringRadius * 2} className="-rotate-90">
+                            <circle stroke="rgba(255,255,255,0.06)" fill="transparent" strokeWidth={ringStroke} r={ringNorm} cx={ringRadius} cy={ringRadius} />
+                            <circle stroke={progressColor} fill="transparent" strokeWidth={ringStroke} strokeLinecap="round" strokeDasharray={ringCirc + ' ' + ringCirc} style={{ strokeDashoffset: ringOffset, transition: 'stroke-dashoffset 0.8s ease-out' }} r={ringNorm} cx={ringRadius} cy={ringRadius} />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[8px] font-bold" style={{ color: progressColor }}>
+                              {(progress || 0).toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <h4 className="text-xs font-semibold truncate" style={{ color: THEME.text }}>
+                            {target.name}
+                          </h4>
+                          <p className="text-[10px]" style={{ color: THEME.muted }}>
+                            {formatAmount(target.currentAmount)}
+                          </p>
+                          <p className="text-[10px]" style={{ color: THEME.muted }}>
+                            of {formatAmount(target.targetAmount)}
+                          </p>
+                          {remaining > 0 && (
+                            <div className="flex items-center gap-1 pt-0.5">
+                              <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: progressGradient }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${progress}%` }}
+                                  transition={{ duration: 0.8, stiffness: 300, damping: 24 }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              {/* Desktop: grid layout */}
+              <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-5">
+                {data.savingsTargets.slice(0, 6).map((target: any) => {
+                  const progress = Math.min((target.currentAmount / target.targetAmount) * 100, 100);
+                  const remaining = Math.max(target.targetAmount - target.currentAmount, 0);
+                  const progressColor =
+                    progress >= 80 ? THEME.secondary :
+                    progress >= 40 ? THEME.warning :
+                    THEME.primary;
+                  const progressGradient = `linear-gradient(to right, ${THEME.primary}, ${THEME.secondary})`;
+                  const ringRadius = 22;
+                  const ringStroke = 3;
+                  const ringNorm = ringRadius - ringStroke / 2;
+                  const ringCirc = ringNorm * 2 * Math.PI;
+                  const ringOffset = ringCirc - (progress / 100) * ringCirc;
+
+                  return (
+                    <motion.div
+                      key={target.id}
+                      className="rounded-xl p-4 relative overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
+                      whileHover={cardHover}
+                      transition={springHover}
+                    >
+                      <div className="pointer-events-none absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-[0.06] blur-[30px]" style={{ background: progressColor }} />
+                      <div className="relative z-10 flex items-start gap-3">
+                        <div className="relative shrink-0">
+                          <svg width={ringRadius * 2} height={ringRadius * 2} className="-rotate-90">
+                            <circle stroke="rgba(255,255,255,0.06)" fill="transparent" strokeWidth={ringStroke} r={ringNorm} cx={ringRadius} cy={ringRadius} />
+                            <circle stroke={progressColor} fill="transparent" strokeWidth={ringStroke} strokeLinecap="round" strokeDasharray={ringCirc + ' ' + ringCirc} style={{ strokeDashoffset: ringOffset, transition: 'stroke-dashoffset 0.8s ease-out' }} r={ringNorm} cx={ringRadius} cy={ringRadius} />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[8px] font-bold" style={{ color: progressColor }}>{(progress || 0).toFixed(0)}%</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <h4 className="text-xs font-semibold truncate" style={{ color: THEME.text }}>{target.name}</h4>
+                          <p className="text-[10px]" style={{ color: THEME.muted }}>{formatAmount(target.currentAmount)}</p>
+                          <p className="text-[10px]" style={{ color: THEME.muted }}>of {formatAmount(target.targetAmount)}</p>
+                          {remaining > 0 && (
+                            <div className="flex items-center gap-1 pt-0.5">
+                              <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: progressGradient }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${progress}%` }}
+                                  transition={{ duration: 0.8, stiffness: 300, damping: 24 }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              {data.savingsTargets.length > 6 && (
+                <p className="text-[10px] text-center" style={{ color: THEME.muted }}>
+                  + {data.savingsTargets.length - 6} more targets
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      {/* End Tab 2 */}
+
+      {/* ═══ Tab 3: Tips & Wawasan (Tips & Insights) ═══ */}
+      <div className={mobileTab !== 3 ? 'hidden lg:block' : ''}>
+        {/* ═══ Financial Tips ═══ */}
+        {isSectionVisible('tips') && (
+          <>
+            <div className="h-px bg-white/[0.06]" />
+            <ProFeatureWrapper feature="tips">
+              <FinancialTips
+                expenseByCategory={data.expenseByCategory}
+                monthlyComparison={data.monthlyComparison}
+                savingsRate={data.savingsRate}
+              />
+            </ProFeatureWrapper>
+          </>
+        )}
+
+        {/* ═══ Spending Insights Widget ═══ */}
         <>
           <div className="h-px bg-white/[0.06]" />
           <ProFeatureWrapper feature="tips">
-            <FinancialTips
-              expenseByCategory={data.expenseByCategory}
-              monthlyComparison={data.monthlyComparison}
-              savingsRate={data.savingsRate}
-            />
+            <SpendingInsights />
           </ProFeatureWrapper>
         </>
-      )}
 
-      {/* ═══ Section 3.6b: Spending Insights Widget ═══ */}
-      <>
-        <div className="h-px bg-white/[0.06]" />
-        <ProFeatureWrapper feature="tips">
-          <SpendingInsights />
-        </ProFeatureWrapper>
-      </>
-
-      {/* ═══ Section 3.7: Financial Insights Widgets ═══ */}
-      {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
-        <div className="h-px bg-white/[0.06]" />
-      )}
-      {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
-          {isSectionVisible('spendingTrend') && (
-            <ProFeatureWrapper feature="spendingTrend">
-              <SpendingTrendChart
-                transactions={data.transactions}
-                savingsHistory={data.savingsHistory}
-              />
-            </ProFeatureWrapper>
-          )}
-          {isSectionVisible('topCategories') && (
-            <ProFeatureWrapper feature="topCategories">
-              <TopCategories expenseByCategory={data.expenseByCategory} />
-            </ProFeatureWrapper>
-          )}
-          {isSectionVisible('monthlySummary') && (
-            <ProFeatureWrapper feature="monthlySummary">
-              <MonthlySummary
-                monthlyComparison={data.monthlyComparison}
-                savingsRate={data.savingsRate}
-                monthlyTrends={data.monthlyTrends}
-              />
-            </ProFeatureWrapper>
-          )}
-        </div>
-      )}
-
-      {/* ═══ Section 5: Financial Consultant Insights ═══ */}
-      {insights.length > 0 && (
-        <>
-        <div className="h-px bg-white/[0.06]" />
-      <div className="space-y-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
-              <Brain className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-            </div>
-            <h3 className="text-[13px] sm:text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
-              {t('dashboard.consultantInsights')}
-            </h3>
-          </div>
-          {/* Mobile: horizontal scroll */}
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 lg:hidden">
-            {insights.map((insight) => (
-              <motion.div
-                key={insight.id}
-                whileHover={cardHover}
-                transition={springHover}
-              >
-                <ConsultantCard insight={insight} />
-              </motion.div>
-            ))}
-          </div>
-          {/* Desktop: 3-column grid - compact cards */}
-          <div className="hidden lg:grid lg:grid-cols-3 gap-3 xl:gap-4">
-            {insights.map((insight) => (
-              <motion.div
-                key={insight.id}
-                whileHover={cardHover}
-                transition={springHover}
-              >
-                <ConsultantCardCompact insight={insight} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-        </>
-      )}
-
-      {/* ═══ Section 6: Savings Targets Progress ═══ */}
-      {data.savingsTargets.length > 0 && (
-        <>
-        <div className="h-px bg-white/[0.06]" />
-      <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
-                <Target className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+        {/* ═══ Financial Consultant Insights ═══ */}
+        {insights.length > 0 && (
+          <>
+            <div className="h-px bg-white/[0.06]" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+                  <Brain className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                </div>
+                <h3 className="text-[13px] sm:text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
+                  {t('dashboard.consultantInsights')}
+                </h3>
               </div>
-              <h3 className="text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
-                {t('dashboard.savingsTargets')}
-              </h3>
+              {/* Mobile: horizontal scroll */}
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 lg:hidden">
+                {insights.map((insight) => (
+                  <motion.div
+                    key={insight.id}
+                    whileHover={cardHover}
+                    transition={springHover}
+                  >
+                    <ConsultantCard insight={insight} />
+                  </motion.div>
+                ))}
+              </div>
+              {/* Desktop: 3-column grid - compact cards */}
+              <div className="hidden lg:grid lg:grid-cols-3 gap-3 xl:gap-4">
+                {insights.map((insight) => (
+                  <motion.div
+                    key={insight.id}
+                    whileHover={cardHover}
+                    transition={springHover}
+                  >
+                    <ConsultantCardCompact insight={insight} />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {targetAnalytics.onTrack > 0 && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: THEME.secondary + '15', color: THEME.secondary }}>
-                  {targetAnalytics.onTrack} {t('dashboard.onTrack')}
-                </span>
-              )}
-              {targetAnalytics.behind > 0 && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: THEME.destructive + '15', color: THEME.destructive }}>
-                  {targetAnalytics.behind} {t('dashboard.behind')}
-                </span>
-              )}
-            </div>
-          </div>
-          {/* Mobile: horizontal scroll */}
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 lg:hidden">
-            {data.savingsTargets.slice(0, 6).map((target: any) => {
-              const progress = Math.min((target.currentAmount / target.targetAmount) * 100, 100);
-              const remaining = Math.max(target.targetAmount - target.currentAmount, 0);
-              const progressColor =
-                progress >= 80 ? THEME.secondary :
-                progress >= 40 ? THEME.warning :
-                THEME.primary;
-              const progressGradient = `linear-gradient(to right, ${progressColor}, ${progressColor}80)`;
-              // Mini ring
-              const ringRadius = 20;
-              const ringStroke = 3;
-              const ringNorm = ringRadius - ringStroke / 2;
-              const ringCirc = ringNorm * 2 * Math.PI;
-              const ringOffset = ringCirc - (progress / 100) * ringCirc;
-
-              return (
-                <motion.div
-                  key={target.id}
-                  className="rounded-2xl p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200 active:scale-[0.98]"
-                  whileHover={cardHover}
-                  transition={springHover}
-                >
-              {/* Per-card glow */}
-                  <div className="pointer-events-none absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-[0.06] blur-[30px]" style={{ background: progressColor }} />
-                  <div className="relative z-10 flex items-start gap-3">
-                    {/* Mini progress ring */}
-                    <div className="relative shrink-0">
-                      <svg width={ringRadius * 2} height={ringRadius * 2} className="-rotate-90">
-                        <circle
-                          stroke="rgba(255,255,255,0.06)"
-                          fill="transparent"
-                          strokeWidth={ringStroke}
-                          r={ringNorm}
-                          cx={ringRadius}
-                          cy={ringRadius}
-                        />
-                        <circle
-                          stroke={progressColor}
-                          fill="transparent"
-                          strokeWidth={ringStroke}
-                          strokeLinecap="round"
-                          strokeDasharray={ringCirc + ' ' + ringCirc}
-                          style={{ strokeDashoffset: ringOffset, transition: 'stroke-dashoffset 0.8s ease-out' }}
-                          r={ringNorm}
-                          cx={ringRadius}
-                          cy={ringRadius}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[8px] font-bold" style={{ color: progressColor }}>
-                          {(progress || 0).toFixed(0)}%
-                        </span>
-                      </div>
-                    </div>
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <h4 className="text-xs font-semibold truncate" style={{ color: THEME.text }}>
-                        {target.name}
-                      </h4>
-                      <p className="text-[10px]" style={{ color: THEME.muted }}>
-                        {formatAmount(target.currentAmount)}
-                      </p>
-                      <p className="text-[10px]" style={{ color: THEME.muted }}>
-                        of {formatAmount(target.targetAmount)}
-                      </p>
-                      {remaining > 0 && (
-                        <div className="flex items-center gap-1 pt-0.5">
-                          <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ background: progressGradient }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progress}%` }}
-                              transition={{ duration: 0.8, stiffness: 300, damping: 24 }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-          {/* Desktop: grid layout */}
-          <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-5">
-            {data.savingsTargets.slice(0, 6).map((target: any) => {
-              const progress = Math.min((target.currentAmount / target.targetAmount) * 100, 100);
-              const remaining = Math.max(target.targetAmount - target.currentAmount, 0);
-              const progressColor =
-                progress >= 80 ? THEME.secondary :
-                progress >= 40 ? THEME.warning :
-                THEME.primary;
-              const progressGradient = `linear-gradient(to right, ${THEME.primary}, ${THEME.secondary})`;
-              const ringRadius = 22;
-              const ringStroke = 3;
-              const ringNorm = ringRadius - ringStroke / 2;
-              const ringCirc = ringNorm * 2 * Math.PI;
-              const ringOffset = ringCirc - (progress / 100) * ringCirc;
-
-              return (
-                <motion.div
-                  key={target.id}
-                  className="rounded-xl p-4 relative overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
-                  whileHover={cardHover}
-                  transition={springHover}
-                >
-                  {/* Per-card colored glow */}
-                  <div className="pointer-events-none absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-[0.06] blur-[30px]" style={{ background: progressColor }} />
-                  <div className="relative z-10 flex items-start gap-3">
-                    <div className="relative shrink-0">
-                      <svg width={ringRadius * 2} height={ringRadius * 2} className="-rotate-90">
-                        <circle stroke="rgba(255,255,255,0.06)" fill="transparent" strokeWidth={ringStroke} r={ringNorm} cx={ringRadius} cy={ringRadius} />
-                        <circle stroke={progressColor} fill="transparent" strokeWidth={ringStroke} strokeLinecap="round" strokeDasharray={ringCirc + ' ' + ringCirc} style={{ strokeDashoffset: ringOffset, transition: 'stroke-dashoffset 0.8s ease-out' }} r={ringNorm} cx={ringRadius} cy={ringRadius} />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[8px] font-bold" style={{ color: progressColor }}>{(progress || 0).toFixed(0)}%</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <h4 className="text-xs font-semibold truncate" style={{ color: THEME.text }}>{target.name}</h4>
-                      <p className="text-[10px]" style={{ color: THEME.muted }}>{formatAmount(target.currentAmount)}</p>
-                      <p className="text-[10px]" style={{ color: THEME.muted }}>of {formatAmount(target.targetAmount)}</p>
-                      {remaining > 0 && (
-                        <div className="flex items-center gap-1 pt-0.5">
-                          <div className="h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ background: progressGradient }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progress}%` }}
-                              transition={{ duration: 0.8, stiffness: 300, damping: 24 }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-          {data.savingsTargets.length > 6 && (
-            <p className="text-[10px] text-center" style={{ color: THEME.muted }}>
-              + {data.savingsTargets.length - 6} more targets
-            </p>
-          )}
-        </div>
-        </>
-      )}
-
-      {/* ═══ Section 7: Quick Stats Footer ═══ */}
-      <div className="h-px bg-white/[0.06]" />
-      <motion.div
-        whileHover={cardHover}
-        transition={springHover}
-      >
-        <Card
-          className="overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06]"
-        >
-          <CardContent className="p-4 sm:p-5 lg:p-5">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <motion.div
-                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
-                whileHover={cardHover}
-                transition={springHover}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
-                  {t('dashboard.expensePerDay')}
-                </p>
-                <p className="text-sm font-bold" style={{ color: THEME.text }}>
-                  {formatAmount(averages.dailyExpense)}
-                </p>
-              </motion.div>
-              <motion.div
-                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
-                whileHover={cardHover}
-                transition={springHover}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
-                  {t('dashboard.expensePerWeek')}
-                </p>
-                <p className="text-sm font-bold" style={{ color: THEME.text }}>
-                  {formatAmount(averages.weeklyExpense)}
-                </p>
-              </motion.div>
-              <motion.div
-                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
-                whileHover={cardHover}
-                transition={springHover}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
-                  {t('dashboard.fundResilience')}
-                </p>
-                <p className="text-sm font-bold" style={{ color: forecast.runwayMonths === -1 ? THEME.secondary : THEME.text }}>
-                  {forecast.runwayMonths === -1 ? t('dashboard.safe') : forecast.runwayMonths > 0 ? `${forecast.runwayMonths} ${t('dashboard.monthsUnit')}` : `0 ${t('dashboard.monthsUnit')}`}
-                </p>
-                {forecast.runwayMonths === -1 && (
-                  <p className="text-[9px]" style={{ color: THEME.muted }}>{t('dashboard.surplusThisMonth')}</p>
-                )}
-              </motion.div>
-              <motion.div
-                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
-                whileHover={cardHover}
-                transition={springHover}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
-                  {t('dashboard.avgTransaction')}
-                </p>
-                <p className="text-sm font-bold" style={{ color: THEME.text }}>
-                  {formatAmount(averages.transactionSize)}
-                </p>
-              </motion.div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          </>
+        )}
+      </div>
+      {/* End Tab 3 */}
     </div>
   );
 }

@@ -527,6 +527,11 @@ export const translations = {
     sameSpending: 'Pengeluaran sama dengan bulan lalu',
     // Spending breakdown empty state
     spendingBreakdownDesc: 'Tambahkan transaksi pengeluaran untuk melihat rincian belanja',
+    // Mobile tab labels
+    tabSummary: 'Ringkasan',
+    tabAnalytics: 'Analisis',
+    tabTargets: 'Target',
+    tabTips: 'Tips',
     // Daily tip
     tipOfTheDay: '💡 Tips Hari Ini',
     // Health Score labels

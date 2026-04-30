@@ -439,6 +439,10 @@ export default function BusinessDashboard() {
   const [tipIndex, setTipIndex] = useState(0);
   const [infoDismissed, setInfoDismissed] = useState(false);
   const [period, setPeriod] = useState<PeriodOption>('month');
+  const [mobileTab, setMobileTab] = useState<'ringkasan' | 'aktivitas' | 'piutang' | 'analisis'>('ringkasan');
+
+  // Mobile tab visibility helper: shows on matching tab, always on md+
+  const tv = (tab: string) => mobileTab === tab ? '' : 'hidden md:block';
 
   const businessId = activeBusiness?.id;
 
@@ -742,7 +746,7 @@ export default function BusinessDashboard() {
   const profitColor = data.profit >= 0 ? c.secondary : c.destructive;
 
   return (
-    <div className="relative space-y-4">
+    <div className="relative space-y-3 sm:space-y-4">
       {/* Premium gradient keyframes */}
       <style>{`
         @keyframes heroGlow {
@@ -758,6 +762,44 @@ export default function BusinessDashboard() {
       <div className="biz-ambient-glow biz-ambient-glow-teal -top-32 -left-20 h-[500px] w-[500px] opacity-[0.07]" />
       <div className="biz-ambient-glow biz-ambient-glow-purple top-60 -right-24 h-[400px] w-[400px] opacity-[0.05]" />
       <div className="biz-ambient-glow biz-ambient-glow-gold bottom-0 left-1/3 h-[350px] w-[350px] opacity-[0.04]" />
+
+      {/* ══ MOBILE TAB NAVIGATION ══ */}
+      <div className="sticky top-0 z-20 md:hidden mb-3">
+        <div
+          className="flex gap-1 p-1 rounded-xl backdrop-blur-xl"
+          style={{
+            backgroundColor: alpha(c.muted, 8),
+            border: `1px solid ${alpha(c.muted, 10)}`,
+          }}
+        >
+          {([
+            { id: 'ringkasan', label: 'Ringkasan', icon: Wallet },
+            { id: 'aktivitas', label: 'Aktivitas', icon: Activity },
+            { id: 'piutang', label: 'Piutang', icon: HandCoins },
+            { id: 'analisis', label: 'Analisis', icon: PieChart },
+          ] as const).map((tab) => {
+            const TabIcon = tab.icon;
+            const isActive = mobileTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setMobileTab(tab.id)}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-lg transition-all duration-200 min-h-[44px]"
+                style={{
+                  backgroundColor: isActive ? alpha(c.foreground, 10) : 'transparent',
+                  color: isActive ? c.foreground : c.muted,
+                }}
+              >
+                <TabIcon className="h-4 w-4" />
+                <span className="text-[9px] font-semibold">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ══ RINGKASAN TAB: Hero + Stats + Actions + Health Score ══ */}
+      <div className={tv('ringkasan')}>
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1: HERO OVERVIEW CARD (Financial Command Center)
           ═══════════════════════════════════════════════════════════════ */}
@@ -780,9 +822,9 @@ export default function BusinessDashboard() {
           }}>
         {/* h-px gradient accent line at top */}
         <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.4), rgba(187,134,252,0.3), transparent)' }} />
-        <CardContent className="p-4 sm:p-5">
+        <CardContent className="p-3 sm:p-5">
           {/* Header row: Title + Period selector */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2.5">
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
@@ -825,7 +867,7 @@ export default function BusinessDashboard() {
           </div>
 
           {/* Large Net Profit/Loss */}
-          <div className="mb-5">
+          <div className="mb-4 sm:mb-5">
             <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
               Laba Bersih {PERIOD_OPTIONS.find(p => p.value === period)?.label}
             </p>
@@ -859,7 +901,7 @@ export default function BusinessDashboard() {
           </div>
 
           {/* Revenue vs Expense row with sparklines */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
             {/* Pendapatan — warm emerald gradient */}
             <div
               className="p-3 rounded-xl transition-transform duration-200 hover:scale-[1.02]"
@@ -896,7 +938,7 @@ export default function BusinessDashboard() {
           </div>
 
           {/* Source breakdown chips */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {[
               { label: 'Kas Besar', value: data.allocationBreakdown?.kasBesarSaldo ?? 0, color: c.secondary },
               { label: 'Kas Kecil', value: data.allocationBreakdown?.kasKecilSaldo ?? 0, color: c.primary },
@@ -937,7 +979,7 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 2: QUICK STATS ROW (4 compact cards)
           ═══════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {quickStats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
@@ -952,7 +994,7 @@ export default function BusinessDashboard() {
               <div className="relative">
                 <div className="pointer-events-none absolute -inset-0.5 rounded-xl opacity-20" style={{ background: `radial-gradient(circle at 30% 30%, ${alpha(stat.color, 25)}, transparent 70%)` }} />
                 <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] cursor-default overflow-hidden transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05] biz-stat-card">
-                <CardContent className="p-3 pt-2.5">
+                <CardContent className="p-2.5 pt-2 sm:p-3 sm:pt-2.5">
                   <div className="flex items-center gap-2 mb-2">
                     <div
                       className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0 transition-transform duration-200"
@@ -980,7 +1022,7 @@ export default function BusinessDashboard() {
           SECTION 2.5: QUICK ACTIONS GRID
           ═══════════════════════════════════════════════════════════════ */}
       <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
-        <CardHeader className="pb-2 pt-4 px-4">
+        <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
@@ -991,7 +1033,7 @@ export default function BusinessDashboard() {
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="pb-4 px-4">
+        <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {quickActions.map((action, idx) => {
               const AIcon = action.icon;
@@ -1035,7 +1077,7 @@ export default function BusinessDashboard() {
           ═══════════════════════════════════════════════════════════════ */}
       {financialHealth && (
         <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
-          <CardHeader className="pb-2 pt-4 px-4">
+          <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: healthScore.color }} />
@@ -1049,7 +1091,7 @@ export default function BusinessDashboard() {
               </span>
             </div>
           </CardHeader>
-          <CardContent className="pb-4 px-4">
+          <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[
                 {
@@ -1141,7 +1183,10 @@ export default function BusinessDashboard() {
           </CardContent>
         </Card>
       )}
+      </div>{/* end ringkasan */}
 
+      {/* ══ PIUTANG TAB: Alerts ══ */}
+      <div className={tv('piutang')}>
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 3: ALERTS / NOTIFICATIONS
           ═══════════════════════════════════════════════════════════════ */}
@@ -1181,12 +1226,15 @@ export default function BusinessDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>{/* end piutang alerts */}
 
+      {/* ══ AKTIVITAS TAB: Recent Activity ══ */}
+      <div className={tv('aktivitas')}>
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 4: RECENT ACTIVITY (Unified Timeline)
           ═══════════════════════════════════════════════════════════════ */}
       <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
-        <CardHeader className="pb-2 pt-4 px-4">
+        <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
@@ -1208,7 +1256,7 @@ export default function BusinessDashboard() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="pb-4 px-4">
+        <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
           <div className="max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
             {groupedActivities.length > 0 ? (
               <AnimatePresence initial={false}>
@@ -1314,14 +1362,14 @@ export default function BusinessDashboard() {
           </div>
         </CardContent>
       </Card>
+      </div>{/* end aktivitas */}
 
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5: PIUTANG JATUH TEMPO + QUICK ACTIONS
-          ═══════════════════════════════════════════════════════════════ */}
+      {/* ══ PIUTANG TAB: Piutang Due Soon + Summary Grid ══ */}
+      <div className={tv('piutang')}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Piutang Jatuh Tempo (2/3) */}
         <Card className="md:col-span-2 bg-white/[0.02] border border-white/[0.06] biz-content-card">
-          <CardHeader className="pb-2 pt-4 px-4">
+          <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
@@ -1343,7 +1391,7 @@ export default function BusinessDashboard() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="pb-4 px-4">
+          <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
             {debtsDueSoonWithBadge.length > 0 ? (
               <div className="max-h-[240px] overflow-y-auto pr-1 custom-scrollbar space-y-1">
                 {debtsDueSoonWithBadge.map((debt) => (
@@ -1408,10 +1456,11 @@ export default function BusinessDashboard() {
 
         {/* Top Customers + Piutang Summary (1/3) */}
         <div className="space-y-3">
-          {/* Top Customers */}
+          {/* Top Customers — desktop only here (mobile shown in Aktivitas tab) */}
+          <div className="hidden md:block">
           {topCustomers.length > 0 && (
             <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
-              <CardHeader className="pb-2 pt-4 px-4">
+              <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
                 <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
                   <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.warning, 8) }}>
@@ -1420,7 +1469,7 @@ export default function BusinessDashboard() {
                   Top Pelanggan
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pb-4 px-4">
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
                 <div className="space-y-2">
                   {topCustomers.map((cust, idx) => {
                     const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
@@ -1444,6 +1493,7 @@ export default function BusinessDashboard() {
               </CardContent>
             </Card>
           )}
+          </div>
 
           {/* Piutang Summary */}
           <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
@@ -1486,14 +1536,56 @@ export default function BusinessDashboard() {
           </Card>
         </div>
       </div>
+      </div>{/* end piutang grid */}
 
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 6: TOP PRODUCTS + INVESTOR (if any)
-          ═══════════════════════════════════════════════════════════════ */}
+      {/* ══ AKTIVITAS TAB: Top Customers (mobile only) ══ */}
+      {mobileTab === 'aktivitas' && (
+        <div className="md:hidden">
+          {topCustomers.length > 0 && (
+            <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
+              <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
+                <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
+                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
+                  <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.warning, 8) }}>
+                  <Users className="h-3.5 w-3.5" style={{ color: c.warning }} />
+                  </div>
+                  Top Pelanggan
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
+                <div className="space-y-2">
+                  {topCustomers.map((cust, idx) => {
+                    const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+                    const rankColor = idx < 3 ? rankColors[idx] : c.muted;
+                    return (
+                      <div key={cust.name} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-white/[0.02]">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md shrink-0 text-[9px] font-bold" style={{ backgroundColor: idx < 3 ? alpha(rankColor, 12) : alpha(c.muted, 7), color: idx < 3 ? rankColor : c.muted }}>
+                          #{idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{cust.name}</p>
+                          <p className="text-[9px] text-muted-foreground">{cust.count} transaksi</p>
+                        </div>
+                        <span className="text-[11px] font-bold tabular-nums shrink-0" style={{ color: c.warning }}>
+                          {formatAmount(cust.total)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ══ AKTIVITAS/ANALISIS TAB: Top Products + Investor Grid ══ */}
+      <div className={`${(mobileTab === 'aktivitas' || (mobileTab === 'analisis' && (data.investorBreakdown?.length ?? 0) > 0)) ? '' : 'hidden'} md:block`}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Top Produk Terjual */}
+        <div className={tv('aktivitas')}>
         <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
-          <CardHeader className="pb-2 pt-4 px-4">
+          <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
@@ -1511,7 +1603,7 @@ export default function BusinessDashboard() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="pb-4 px-4">
+          <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
             {data?.topProductsSold && data.topProductsSold.length > 0 ? (
               <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
                 {data.topProductsSold.slice(0, 5).map((product, idx) => {
@@ -1572,11 +1664,13 @@ export default function BusinessDashboard() {
             )}
           </CardContent>
         </Card>
+        </div>{/* end aktivitas top products */}
 
         {/* Investor Summary (if any) */}
         {data.investorBreakdown && data.investorBreakdown.length > 0 && (
+          <div className={tv('analisis')}>
           <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
-            <CardHeader className="pb-2 pt-4 px-4">
+            <CardHeader className="pb-2 pt-3 px-3 sm:pt-4 sm:px-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#BB86FC' }} />
@@ -1595,7 +1689,7 @@ export default function BusinessDashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="pb-4 px-4">
+            <CardContent className="pb-3 px-3 sm:pb-4 sm:px-4">
               {/* Aggregate stats */}
               {data.investorSummary && (
                 <div className="grid grid-cols-3 gap-2 mb-3">
@@ -1653,9 +1747,13 @@ export default function BusinessDashboard() {
               </div>
             </CardContent>
           </Card>
+          </div>
         )}
       </div>
+      </div>{/* end top products + investor grid wrapper */}
 
+      {/* ══ RINGKASAN TAB: Tips ══ */}
+      <div className={tv('ringkasan')}>
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 7: TIPS + INSIGHT
           ═══════════════════════════════════════════════════════════════ */}
@@ -1719,6 +1817,7 @@ export default function BusinessDashboard() {
           </div>
         </CardContent>
       </Card>
+      </div>{/* end ringkasan tips */}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

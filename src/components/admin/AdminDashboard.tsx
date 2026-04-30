@@ -143,6 +143,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [reportGenerating, setReportGenerating] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(30);
   const [error, setError] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<'overview' | 'charts' | 'platform' | 'activity'>('overview');
 
   const fetchStats = useCallback(async (showSpinner = false) => {
     if (showSpinner) setIsRefreshing(true);
@@ -390,8 +391,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <ExportDialog />
+              <div className="hidden sm:block"><ExportDialog /></div>
 
+              <div className="hidden sm:block">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -417,8 +419,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
 
-              <div className="flex items-center gap-1.5 text-[10px] text-white/25 px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-white/25 px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                 <Clock className="h-3 w-3" />
                 {lastRefresh.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
               </div>
@@ -482,6 +485,38 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         </div>
       </motion.div>
 
+      {/* ═══════════════════ MOBILE SECTION TABS ═══════════════════ */}
+      <div className="lg:hidden sticky top-0 z-20 -mx-4 px-4 pt-1 pb-3 bg-[#0A0A0A]/95 backdrop-blur-xl">
+        <div className="flex gap-1.5 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.05]">
+          {([
+            { id: 'overview' as const, label: 'Overview', icon: BarChart3 },
+            { id: 'charts' as const, label: 'Charts', icon: PieChart },
+            { id: 'platform' as const, label: 'Platform', icon: Building2 },
+            { id: 'activity' as const, label: 'Activity', icon: Activity },
+          ]).map(tab => {
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setMobileTab(tab.id)}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-semibold transition-all duration-200',
+                  mobileTab === tab.id
+                    ? 'bg-[#03DAC6]/10 text-[#03DAC6] shadow-[0_0_16px_rgba(3,218,198,0.12)]'
+                    : 'text-white/30 active:text-white/50'
+                )}
+              >
+                <TabIcon className="h-3.5 w-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ═══════════════════ OVERVIEW TAB: Notification + Stats ═══════════════════ */}
+      <div className={cn(mobileTab !== 'overview' && 'hidden', 'lg:block', 'space-y-5')}>
+
       {/* ═══════════════════ NOTIFICATION ALERT BAR ═══════════════════ */}
       {notificationCount > 0 && (
         <motion.div
@@ -520,7 +555,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               <div className="absolute -inset-[1px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: `linear-gradient(135deg, ${card.color}35, transparent 50%, ${card.color}15)` }} />
               <Card
-                className="adm-stat-card relative overflow-hidden p-4 border-white/[0.06]"
+                className="adm-stat-card relative overflow-hidden p-3 sm:p-4 border-white/[0.06]"
                 style={{ background: card.gradient, '--biz-accent': `${card.color}50` } as React.CSSProperties}
               >
                 {/* Top glow */}
@@ -552,6 +587,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           );
         })}
       </div>
+      </div>{/* end overview tab */}
+
+      {/* ═══════════════════ CHARTS TAB: Registrations + Distribution ═══════════════════ */}
+      <div className={cn(mobileTab !== 'charts' && 'hidden', 'lg:block')}>
 
       {/* ═══════════════════ CHARTS SECTION ═══════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -578,7 +617,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="h-48 sm:h-56">
+              <div className="h-40 sm:h-48 lg:h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} barCategoryGap="20%">
                     <XAxis
@@ -691,6 +730,11 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           </Card>
         </motion.div>
       </div>
+
+      </div>{/* end charts tab */}
+
+      {/* ═══════════════════ PLATFORM TAB: Business & Investment ═══════════════════ */}
+      <div className={cn(mobileTab !== 'platform' && 'hidden', 'lg:block')}>
 
       {/* ═══════════════════ BUSINESS & INVESTMENT SECTION ═══════════════════ */}
       <motion.div
@@ -819,6 +863,11 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         </div>
       </motion.div>
 
+      </div>{/* end platform tab */}
+
+      {/* ═══════════════════ ACTIVITY TAB: Quick Actions + Activity + Top Users ═══════════════════ */}
+      <div className={cn(mobileTab !== 'activity' && 'hidden', 'lg:block', 'space-y-4')}>
+
       {/* ═══════════════════ QUICK ACTIONS + RECENT ACTIVITY ═══════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Quick Actions Row */}
@@ -835,14 +884,14 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+              <div className="flex flex-row gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-1 lg:overflow-visible lg:pb-0">
                 {quickActions.map((action) => {
                   const Icon = action.icon;
                   return (
                     <button
                       key={action.label}
                       onClick={() => action.page ? onNavigate?.(action.page) : action.action?.()}
-                      className="group flex items-center gap-3 p-3.5 rounded-xl text-left w-full hover:bg-white/[0.03] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 active:scale-[0.97]"
+                      className="group flex items-center gap-3 p-3.5 rounded-xl text-left min-w-[180px] lg:w-full hover:bg-white/[0.03] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 active:scale-[0.97]"
                     >
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
                         style={{ background: `linear-gradient(135deg, ${action.color}18, ${action.color}08)` }}>
@@ -974,6 +1023,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           </CardContent>
         </Card>
       </motion.div>
+      </div>{/* end activity tab */}
     </div>
   );
 }

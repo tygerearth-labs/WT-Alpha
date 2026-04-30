@@ -351,13 +351,13 @@ export function AdminLayout() {
               <Menu className="h-5 w-5" />
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <div className="relative flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center">
-                  <Shield className="h-4 w-4 text-[#03DAC6]" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#03DAC6]/15 flex items-center justify-center">
+                  <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#03DAC6]" />
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-base font-bold bg-clip-text text-transparent adm-gradient-text"
+                  <h1 className="text-sm sm:text-base font-bold bg-clip-text text-transparent adm-gradient-text"
                     style={{ backgroundImage: 'linear-gradient(135deg, #03DAC6 0%, #BB86FC 50%, #03DAC6 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease-in-out infinite' }}>
                     Admin Panel
                   </h1>
@@ -372,20 +372,20 @@ export function AdminLayout() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-2">
-            {/* Switch to User View Button — prominent */}
+          <div className="flex items-center gap-1.5">
+            {/* Switch to User View Button — hidden on mobile */}
             <Button
               variant="outline"
-              className="h-8 gap-1.5 text-[11px] font-semibold rounded-lg border-[#BB86FC]/20 text-[#BB86FC] hover:bg-[#BB86FC]/10 hover:text-[#BB86FC] bg-[#BB86FC]/5 transition-all"
+              className="hidden sm:flex h-8 gap-1.5 text-[11px] font-semibold rounded-lg border-[#BB86FC]/20 text-[#BB86FC] hover:bg-[#BB86FC]/10 hover:text-[#BB86FC] bg-[#BB86FC]/5 transition-all"
               onClick={() => { window.location.href = '/?view=user'; }}
             >
               <ArrowLeftRight className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">User View</span>
             </Button>
-            {/* Help / Tour Button */}
+            {/* Help / Tour Button — hidden on mobile */}
             <Button
               variant="ghost"
-              className="h-9 w-9 p-0 rounded-xl text-white/30 hover:text-[#BB86FC] hover:bg-[#BB86FC]/[0.06] transition-all"
+              className="hidden sm:flex h-9 w-9 p-0 rounded-xl text-white/30 hover:text-[#BB86FC] hover:bg-[#BB86FC]/[0.06] transition-all"
               onClick={handleStartTour}
               title="Start onboarding tour"
             >
@@ -455,7 +455,7 @@ export function AdminLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-md"
+            <span className="hidden md:inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-md"
               style={{ background: 'linear-gradient(135deg, #032E20, #0A1628)', color: '#03DAC6', border: '1px solid rgba(3,218,198,0.2)', boxShadow: '0 0 10px rgba(3,218,198,0.06)' }}>
               <Shield className="h-2.5 w-2.5" />
               ADMIN
@@ -591,7 +591,7 @@ export function AdminLayout() {
         {/* Page Content */}
         <main className={cn(
           'flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-scroll w-full min-w-0 max-w-full transition-all duration-300 ease-in-out adm-content-card',
-          'pb-[76px] lg:pb-8',
+          'pb-[60px] lg:pb-8',
           sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[232px] xl:ml-[264px]',
         )}>
           <div className="max-w-7xl mx-auto">
@@ -607,38 +607,82 @@ export function AdminLayout() {
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-t border-white/[0.06] max-md:flex hidden flex-col">
         <div
           ref={scrollRef}
-          className="flex items-stretch overflow-x-auto px-1 gap-0.5"
+          className="flex items-stretch overflow-x-auto px-0.5"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
+          {(() => {
+            // Primary 5 items shown directly in bottom nav
+            const primaryIds: AdminPage[] = ['dashboard', 'users', 'subscriptions', 'settings', 'analytics'];
+            const moreItems = navigation.filter(n => !primaryIds.includes(n.id));
             return (
-              <button
-                key={item.id}
-                onClick={() => navigateTo(item.id)}
-                className={cn(
-                  'relative flex flex-col items-center justify-center min-w-[56px] max-w-[72px] flex-1 py-2 px-1 rounded-xl transition-all duration-200 active:scale-95 shrink-0 adm-tab-item',
-                  isActive && 'adm-tab-item-active',
-                )}
-              >
-                {isActive && (
-                  <div className="absolute -top-px left-1/2 -translate-x-1/2 w-5 h-[2px] rounded-full bg-[#03DAC6]"
-                    style={{ boxShadow: '0 0 6px rgba(3,218,198,0.4)' }} />
-                )}
-                <Icon className={cn(
-                  'h-[18px] w-[18px] transition-all duration-200 mb-0.5',
-                  isActive ? 'text-[#03DAC6] drop-shadow-[0_0_4px_rgba(3,218,198,0.3)]' : 'text-white/30',
-                )} strokeWidth={isActive ? 2.2 : 1.5} />
-                <span className={cn(
-                  'text-[9px] font-medium leading-tight text-center truncate w-full',
-                  isActive ? 'text-[#03DAC6]' : 'text-white/30',
-                )}>
-                  {item.label.length > 6 ? item.label.slice(0, 5) + '…' : item.label}
-                </span>
-              </button>
+              <>
+                {navigation.filter(n => primaryIds.includes(n.id)).map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentPage === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => navigateTo(item.id)}
+                      className={cn(
+                        'relative flex flex-col items-center justify-center flex-1 py-1.5 px-0.5 rounded-lg transition-all duration-200 active:scale-95 shrink-0',
+                        isActive ? 'text-[#03DAC6]' : 'text-white/30',
+                      )}
+                    >
+                      {isActive && (
+                        <div className="absolute -top-px left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-[#03DAC6]"
+                          style={{ boxShadow: '0 0 6px rgba(3,218,198,0.4)' }} />
+                      )}
+                      <Icon className={cn(
+                        'h-[18px] w-[18px] transition-all duration-200 mb-0.5',
+                        isActive ? 'text-[#03DAC6] drop-shadow-[0_0_4px_rgba(3,218,198,0.3)]' : 'text-white/30',
+                      )} strokeWidth={isActive ? 2.2 : 1.5} />
+                      <span className={cn(
+                        'text-[9px] font-medium leading-tight text-center truncate w-full',
+                        isActive ? 'text-[#03DAC6]' : 'text-white/30',
+                      )}>
+                        {item.id === 'dashboard' ? 'Home' : item.id === 'subscriptions' ? 'Subs' : item.id === 'analytics' ? 'Stats' : item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+                {/* More menu for remaining items */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="relative flex flex-col items-center justify-center flex-1 py-1.5 px-0.5 rounded-lg transition-all duration-200 active:scale-95 shrink-0 text-white/30">
+                      <svg className="h-[18px] w-[18px] mb-0.5" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <circle cx="9" cy="4" r="1.2" /><circle cx="9" cy="9" r="1.2" /><circle cx="9" cy="14" r="1.2" />
+                      </svg>
+                      <span className="text-[9px] font-medium leading-tight text-center truncate w-full">More</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    side="top"
+                    align="end"
+                    className="w-48 bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] mb-2"
+                  >
+                    {moreItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = currentPage === item.id;
+                      return (
+                        <DropdownMenuItem
+                          key={item.id}
+                          onClick={() => navigateTo(item.id)}
+                          className={cn(
+                            'flex items-center gap-2.5 px-3 py-2.5 rounded-lg mx-1 my-0.5 cursor-pointer transition-colors',
+                            isActive ? 'bg-[#03DAC6]/10 text-[#03DAC6]' : 'text-white/50 focus:text-white focus:bg-white/[0.05]',
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="text-[13px] font-medium">{item.label}</span>
+                          {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#03DAC6]" />}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             );
-          })}
+          })()}
         </div>
       </nav>
 

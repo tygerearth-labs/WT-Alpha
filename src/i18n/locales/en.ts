@@ -527,6 +527,11 @@ export const translations = {
     sameSpending: 'Same spending as last month',
     // Spending breakdown empty state
     spendingBreakdownDesc: 'Add expense transactions to see your spending breakdown',
+    // Mobile tab labels
+    tabSummary: 'Summary',
+    tabAnalytics: 'Analytics',
+    tabTargets: 'Targets',
+    tabTips: 'Tips',
     // Daily tip
     tipOfTheDay: '💡 Tip of the Day',
     // Health Score labels
