@@ -1,48 +1,52 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+
+// Default config returned when DB is unreachable (e.g. Vercel ephemeral FS)
+const FALLBACK_CONFIG = {
+  basicPlanPrice: 'Gratis',
+  proPlanPrice: 'Rp 99.000',
+  ultimatePlanPrice: 'Rp 199.000',
+  basicPlanFeatures: null,
+  proPlanFeatures: null,
+  ultimatePlanFeatures: null,
+  basicPlanDiscount: null,
+  proPlanDiscount: null,
+  ultimatePlanDiscount: null,
+  basicPlanDiscountLabel: null,
+  proPlanDiscountLabel: null,
+  ultimatePlanDiscountLabel: null,
+  basicPurchaseUrl: null,
+  proPurchaseUrl: null,
+  ultimatePurchaseUrl: null,
+  trialEnabled: true,
+  trialDurationDays: 30,
+  trialPlan: 'basic',
+  whatsappNumber: null,
+  registrationOpen: true,
+  registrationMessage: null,
+  availablePlans: ['basic', 'pro', 'ultimate'],
+  sectionVisibility: null,
+  exportEnabled: { basic: { pdf: false, excel: false }, pro: { pdf: true, excel: true }, ultimate: { pdf: true, excel: true } },
+  landingPageConfig: {
+    showStory: true,
+    showFeatures: true,
+    showTestimonials: true,
+    showPricing: true,
+    showFaq: true,
+    showStats: true,
+    heroSubtitle: '',
+    customFooterText: '',
+  },
+  landingPageStats: null,
+};
 
 // GET /api/platform-config — Public endpoint for landing page config
 export async function GET() {
   try {
+    // Dynamic import so that Prisma engine init failure is caught here
+    const { db } = await import('@/lib/db');
     const config = await db.platformConfig.findUnique({ where: { id: 'platform' } });
     if (!config) {
-      return NextResponse.json({
-        basicPlanPrice: 'Gratis',
-        proPlanPrice: 'Rp 99.000',
-        ultimatePlanPrice: 'Rp 199.000',
-        basicPlanFeatures: null,
-        proPlanFeatures: null,
-        ultimatePlanFeatures: null,
-        basicPlanDiscount: null,
-        proPlanDiscount: null,
-        ultimatePlanDiscount: null,
-        basicPlanDiscountLabel: null,
-        proPlanDiscountLabel: null,
-        ultimatePlanDiscountLabel: null,
-        basicPurchaseUrl: null,
-        proPurchaseUrl: null,
-        ultimatePurchaseUrl: null,
-        trialEnabled: true,
-        trialDurationDays: 30,
-        trialPlan: 'basic',
-        whatsappNumber: null,
-        registrationOpen: true,
-        registrationMessage: null,
-        availablePlans: ['basic', 'pro', 'ultimate'],
-        sectionVisibility: null,
-        exportEnabled: null,
-        landingPageConfig: {
-          showStory: true,
-          showFeatures: true,
-          showTestimonials: true,
-          showPricing: true,
-          showFaq: true,
-          showStats: true,
-          heroSubtitle: '',
-          customFooterText: '',
-        },
-        landingPageStats: null,
-      });
+      return NextResponse.json(FALLBACK_CONFIG);
     }
 
     // Parse JSON fields
@@ -99,43 +103,8 @@ export async function GET() {
       landingPageStats: parsedLandingStats,
     });
   } catch (error) {
-    console.error('Public platform config error:', error);
-    return NextResponse.json({
-      basicPlanPrice: 'Gratis',
-      proPlanPrice: 'Rp 99.000',
-      ultimatePlanPrice: 'Rp 199.000',
-      basicPlanFeatures: null,
-      proPlanFeatures: null,
-      ultimatePlanFeatures: null,
-      basicPlanDiscount: null,
-      proPlanDiscount: null,
-      ultimatePlanDiscount: null,
-      basicPlanDiscountLabel: null,
-      proPlanDiscountLabel: null,
-      ultimatePlanDiscountLabel: null,
-      basicPurchaseUrl: null,
-      proPurchaseUrl: null,
-      ultimatePurchaseUrl: null,
-      trialEnabled: true,
-      trialDurationDays: 30,
-      trialPlan: 'basic',
-      whatsappNumber: null,
-      registrationOpen: true,
-      registrationMessage: null,
-      availablePlans: ['basic', 'pro', 'ultimate'],
-      sectionVisibility: null,
-      exportEnabled: null,
-      landingPageConfig: {
-        showStory: true,
-        showFeatures: true,
-        showTestimonials: true,
-        showPricing: true,
-        showFaq: true,
-        showStats: true,
-        heroSubtitle: '',
-        customFooterText: '',
-      },
-      landingPageStats: null,
-    }, { status: 500 });
+    // DB unreachable (e.g. SQLite on Vercel ephemeral FS) — return defaults with 200
+    console.error('Public platform config error (DB unreachable, using defaults):', error);
+    return NextResponse.json(FALLBACK_CONFIG);
   }
 }

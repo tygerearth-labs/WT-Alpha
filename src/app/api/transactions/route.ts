@@ -57,28 +57,36 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const [transactions, totalResult] = await Promise.all([
-      db.transaction.findMany({
-        where: whereClause,
-        include: {
-          category: true,
-        },
-        orderBy: {
-          date: 'desc',
-        },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
+    // Fetch pageSize + 1 to accurately detect if there are more items
+    const fetchedTransactions = await db.transaction.findMany({
+      where: whereClause,
+      include: {
+        category: true,
+      },
+      orderBy: {
+        date: 'desc',
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize + 1,
+    });
+
+    const [totalResult] = await Promise.all([
       db.transaction.aggregate({
         _sum: { amount: true },
         where: whereClause,
       }),
     ]);
 
+    // If we got more than pageSize items, there are more pages
+    const hasMore = fetchedTransactions.length > pageSize;
+    const transactions = hasMore
+      ? fetchedTransactions.slice(0, pageSize)
+      : fetchedTransactions;
+
     return NextResponse.json({
       transactions,
       totalAmount: totalResult._sum.amount || 0,
-      pagination: { page, pageSize, hasMore: transactions.length === pageSize },
+      pagination: { page, pageSize, hasMore },
     });
 
   } catch (error) {

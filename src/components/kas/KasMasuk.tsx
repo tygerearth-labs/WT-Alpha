@@ -174,6 +174,10 @@ export function KasMasuk() {
 
   const PAGE_SIZE = 20;
 
+  // Use ref for t to avoid infinite re-render loop (t is new function on every render)
+  const tRef = useRef(t);
+  tRef.current = t;
+
   const buildParams = useCallback((filter: DateFilter, pageNum: number) => {
     const searchParams = new URLSearchParams();
     searchParams.append('type', 'income');
@@ -232,12 +236,12 @@ export function KasMasuk() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error(t('kas.loadError'));
+      toast.error(tRef.current('kas.loadError'));
     } finally {
       setIsLoading(false);
       setLoadingMore(false);
     }
-  }, [t, buildParams]);
+  }, [buildParams]);
 
   useEffect(() => {
     setPage(1);
