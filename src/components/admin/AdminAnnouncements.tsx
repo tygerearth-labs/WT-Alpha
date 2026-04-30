@@ -287,7 +287,7 @@ export function AdminAnnouncements() {
           placeholder="Announcement title"
           value={formTitle}
           onChange={(e) => setFormTitle(e.target.value)}
-          className="bg-white/[0.03] border-white/[0.06] text-white/70"
+          className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input"
         />
       </div>
       <div className="space-y-2">
@@ -297,14 +297,14 @@ export function AdminAnnouncements() {
           value={formMessage}
           onChange={(e) => setFormMessage(e.target.value)}
           rows={3}
-          className="bg-white/[0.03] border-white/[0.06] text-white/70 resize-none"
+          className="bg-white/[0.03] border-white/[0.06] text-white/70 resize-none adm-form-input"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="text-[11px] text-white/50">Type</Label>
           <Select value={formType} onValueChange={setFormType}>
-            <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
+            <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-white/[0.03] border-white/[0.08]">
@@ -342,7 +342,7 @@ export function AdminAnnouncements() {
             min="0"
             value={formPriority}
             onChange={(e) => setFormPriority(e.target.value)}
-            className="bg-white/[0.03] border-white/[0.06] text-white/70"
+            className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input"
           />
         </div>
       </div>
@@ -355,7 +355,7 @@ export function AdminAnnouncements() {
             type="datetime-local"
             value={formStartsAt}
             onChange={(e) => setFormStartsAt(e.target.value)}
-            className="bg-white/[0.03] border-white/[0.06] text-white/70 [color-scheme:dark]"
+            className="bg-white/[0.03] border-white/[0.06] text-white/70 [color-scheme:dark] adm-form-input"
           />
         </div>
         <div className="space-y-2">
@@ -366,7 +366,7 @@ export function AdminAnnouncements() {
             type="datetime-local"
             value={formExpiresAt}
             onChange={(e) => setFormExpiresAt(e.target.value)}
-            className="bg-white/[0.03] border-white/[0.06] text-white/70 [color-scheme:dark]"
+            className="bg-white/[0.03] border-white/[0.06] text-white/70 [color-scheme:dark] adm-form-input"
           />
         </div>
       </div>
@@ -388,12 +388,12 @@ export function AdminAnnouncements() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white/90">Announcements</h2>
+          <h2 className="text-xl font-bold text-white/90 adm-section-header">Announcements</h2>
           <p className="text-sm text-white/40 mt-1">Manage banners and notifications shown to users</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
-            className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px]"
+            className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px] adm-quick-action"
             onClick={() => { resetForm(); setShowCreate(true); }}
           >
             <Plus className="h-4 w-4" /> Create Announcement
@@ -439,7 +439,7 @@ export function AdminAnnouncements() {
               'absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500',
               `bg-gradient-to-br ${stat.gradient} to-transparent`,
             )} />
-            <Card className="relative bg-[#0D0D0D] border-white/[0.06]">
+            <Card className="relative bg-[#0D0D0D] border-white/[0.06] adm-stat-card">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${stat.color}10` }}>
@@ -459,9 +459,9 @@ export function AdminAnnouncements() {
         {['', 'active', 'scheduled', 'expired', 'inactive'].map((status) => (
           <Button key={status} variant="outline" size="sm"
             className={cn(
-              'text-[11px] rounded-lg h-8 transition-all',
+              'text-[11px] rounded-lg h-8 transition-all adm-filter-chip',
               filterStatus === status
-                ? 'bg-[#03DAC6]/10 border-[#03DAC6]/25 text-[#03DAC6]'
+                ? 'bg-[#03DAC6]/10 border-[#03DAC6]/25 text-[#03DAC6] adm-filter-chip-active'
                 : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
             )}
             onClick={() => { setFilterStatus(status); fetchAnnouncements(1); }}
@@ -470,7 +470,7 @@ export function AdminAnnouncements() {
           </Button>
         ))}
         <div className="ml-auto flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px] font-medium px-2.5 py-1 bg-white/[0.02] border-white/[0.06] text-white/30">
+          <Badge variant="outline" className="text-[10px] font-medium px-2.5 py-1 bg-white/[0.02] border-white/[0.06] text-white/30 adm-badge">
             {pagination.total} total
           </Badge>
           <Button
@@ -485,7 +485,7 @@ export function AdminAnnouncements() {
       </div>
 
       {/* Announcements List */}
-      <Card className="bg-[#0D0D0D] border-white/[0.06]">
+      <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-4">
@@ -500,11 +500,11 @@ export function AdminAnnouncements() {
               ))}
             </div>
           ) : announcements.length === 0 ? (
-            <div className="text-center py-20 relative overflow-hidden">
+            <div className="text-center py-20 relative overflow-hidden adm-empty-state">
               {/* Animated gradient background */}
               <div className="absolute inset-0 animate-empty-gradient" />
               <div className="relative">
-                <div className="w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-5"
+                <div className="w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-5 adm-empty-state-icon"
                   style={{ animation: 'emptyPulse 4s ease-in-out infinite' }}>
                   <Megaphone className="h-9 w-9 text-white/[0.06]" />
                 </div>
@@ -533,7 +533,7 @@ export function AdminAnnouncements() {
                   <div
                     key={item.id}
                     className={cn(
-                      'p-4 hover:bg-white/[0.02] transition-all duration-200 group/item relative',
+                      'p-4 hover:bg-white/[0.02] transition-all duration-200 group/item relative adm-list-item',
                       item.type === 'info' ? 'border-l-info' :
                       item.type === 'warning' ? 'border-l-warning' :
                       item.type === 'success' ? 'border-l-success' :
@@ -551,10 +551,10 @@ export function AdminAnnouncements() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h3 className="text-sm font-semibold text-white/70 truncate">{item.title}</h3>
-                          <Badge variant="outline" className={cn('text-[9px] font-bold uppercase px-2 py-0.5', typeConfig.border, typeConfig.color, typeConfig.bg)}>
+                          <Badge variant="outline" className={cn('text-[9px] font-bold uppercase px-2 py-0.5 adm-badge', typeConfig.border, typeConfig.color, typeConfig.bg)}>
                             {typeConfig.label}
                           </Badge>
-                          <Badge variant="outline" className={cn('text-[9px] font-bold uppercase px-2 py-0.5', statusColorMap[status] || '')}>
+                          <Badge variant="outline" className={cn('text-[9px] font-bold uppercase px-2 py-0.5 adm-badge', statusColorMap[status] || '')}>
                             {status}
                           </Badge>
                           {/* Priority badge: HIGH / MED / LOW */}
@@ -585,7 +585,7 @@ export function AdminAnnouncements() {
                             </span>
                           )}
                           {item.priority > 0 && item.priority < 5 && (
-                            <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-white/10 text-white/40 bg-white/[0.02]">
+                            <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-white/10 text-white/40 bg-white/[0.02] adm-badge">
                               <Flame className="h-2.5 w-2.5 mr-0.5 inline" />
                               LOW
                             </Badge>
@@ -654,7 +654,7 @@ export function AdminAnnouncements() {
                           variant="ghost"
                           size="sm"
                           className={cn(
-                            'h-8',
+                            'h-8 adm-action-btn',
                             item.isActive
                               ? 'text-[#03DAC6]/60 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10'
                               : 'text-white/20 hover:text-white/40 hover:bg-white/[0.04]',
@@ -667,7 +667,7 @@ export function AdminAnnouncements() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-white/40 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10"
+                          className="h-8 text-white/40 hover:text-[#BB86FC] hover:bg-[#BB86FC]/10 adm-action-btn"
                           onClick={() => { populateForm(item); setEditItem(item); }}
                           title="Edit"
                         >
@@ -676,7 +676,7 @@ export function AdminAnnouncements() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-white/20 hover:text-[#CF6679] hover:bg-[#CF6679]/10"
+                          className="h-8 text-white/20 hover:text-[#CF6679] hover:bg-[#CF6679]/10 adm-action-btn"
                           onClick={() => setDeleteItem(item)}
                           title="Delete"
                         >
@@ -720,7 +720,7 @@ export function AdminAnnouncements() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } }}>
-        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md adm-dialog-content">
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -754,7 +754,7 @@ export function AdminAnnouncements() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editItem} onOpenChange={(open) => { if (!open) { setEditItem(null); resetForm(); } }}>
-        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md adm-dialog-content">
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -788,7 +788,7 @@ export function AdminAnnouncements() {
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
-        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden adm-dialog-content">
           <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Delete Announcement</AlertDialogTitle>
@@ -814,7 +814,7 @@ export function AdminAnnouncements() {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewItem} onOpenChange={() => setPreviewItem(null)}>
-        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md adm-dialog-content">
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">

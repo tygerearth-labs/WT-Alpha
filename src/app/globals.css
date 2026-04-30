@@ -2488,3 +2488,702 @@ html {
   justify-content: center;
   pointer-events: none;
 }
+/* ══════════════════════════════════════════════════════════════
+   ADMIN MODULE DARK PREMIUM STYLING
+   Mobile-first • Dark glassmorphism • Color palette: #BB86FC #03DAC6 #CF6679 #FFD700/#FFD54F
+   Admin accent: #BB86FC (purple)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Adm 1: Hero Card — Premium dark glass with purple gradient top-line ── */
+.adm-hero-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(40px) saturate(1.3);
+  -webkit-backdrop-filter: blur(40px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3),
+              0 1px 3px rgba(0, 0, 0, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.adm-hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(187, 134, 252, 0.25) 15%,
+    rgba(3, 218, 198, 0.15) 50%,
+    rgba(187, 134, 252, 0.25) 85%,
+    transparent 100%
+  );
+}
+@media screen and (max-width: 767px) {
+  .adm-hero-card {
+    border-radius: 1.25rem;
+  }
+}
+
+/* ── Adm 2: Stat/KPI Cards — Dark gradient with purple accent ── */
+.adm-stat-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease-out,
+              border-color 0.3s ease-out;
+}
+.adm-stat-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35),
+              0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.adm-stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--adm-accent, rgba(187, 134, 252, 0.3)), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.adm-stat-card:hover::after {
+  opacity: 1;
+}
+@media screen and (max-width: 767px) {
+  .adm-stat-card {
+    border-radius: 1rem;
+    padding: 14px;
+  }
+  .adm-stat-card:active {
+    transform: scale(0.98);
+  }
+}
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .adm-stat-card {
+    padding: 16px;
+  }
+}
+
+/* ── Adm 3: Content Cards — Standard dark card with subtle depth ── */
+.adm-content-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease-out;
+}
+.adm-content-card:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+@media screen and (max-width: 767px) {
+  .adm-content-card {
+    border-radius: 1.125rem;
+  }
+}
+
+/* ── Adm 4: Section Headers — Gradient text with icon badge ── */
+.adm-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.adm-section-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Adm 5: Empty States — Centered with animated glow ── */
+.adm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px 48px;
+  text-align: center;
+  position: relative;
+}
+.adm-empty-state-icon {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(187, 134, 252, 0.12);
+  background: linear-gradient(135deg, rgba(187, 134, 252, 0.08), rgba(3, 218, 198, 0.04));
+  margin-bottom: 16px;
+}
+.adm-empty-state-icon::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 24px;
+  border: 1px solid rgba(187, 134, 252, 0.06);
+  animation: admEmptyPulse 3s ease-in-out infinite;
+}
+@keyframes admEmptyPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.1; transform: scale(1.08); }
+}
+@media screen and (max-width: 767px) {
+  .adm-empty-state {
+    padding: 48px 20px 40px;
+  }
+  .adm-empty-state-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 22px;
+    margin-bottom: 18px;
+  }
+}
+@media screen and (min-width: 768px) {
+  .adm-empty-state {
+    padding: 64px 24px 56px;
+  }
+}
+
+/* ── Adm 6: List Items — Touch-optimized with left border accent ── */
+.adm-list-item {
+  position: relative;
+  padding: 14px;
+  transition: background-color 0.15s ease-out,
+              transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.adm-list-item:last-child {
+  border-bottom: none;
+}
+.adm-list-item:active {
+  background-color: rgba(255, 255, 255, 0.03);
+  transform: scale(0.995);
+}
+.adm-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+.adm-list-item-accent {
+  border-left: 3px solid transparent;
+  padding-left: 12px;
+}
+.adm-list-item-accent-active {
+  border-left: 3px solid var(--secondary);
+  padding-left: 12px;
+}
+.adm-list-item-accent-suspended {
+  border-left: 3px solid var(--destructive);
+  padding-left: 12px;
+}
+.adm-list-item-accent-pending {
+  border-left: 3px solid var(--warning);
+  padding-left: 12px;
+}
+.adm-list-item-accent-admin {
+  border-left: 3px solid var(--primary);
+  padding-left: 12px;
+}
+
+/* ── Adm 7: Table Styling (Desktop) ── */
+.adm-table-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+.adm-table-row {
+  transition: background-color 0.15s ease-out;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.adm-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+.adm-table-row-alt {
+  background-color: rgba(255, 255, 255, 0.012);
+}
+
+/* ── Adm 8: Dialog Overlay ── */
+.adm-dialog-content {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(40px) saturate(1.2);
+  -webkit-backdrop-filter: blur(40px) saturate(1.2);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5),
+              0 8px 24px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+.adm-dialog-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(187, 134, 252, 0.15),
+    rgba(3, 218, 198, 0.1),
+    transparent
+  );
+}
+@media screen and (max-width: 767px) {
+  .adm-dialog-content {
+    margin: 16px;
+    border-radius: 1.5rem;
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+/* ── Adm 9: Search Input — Admin search field ── */
+.adm-search-input {
+  height: 38px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0 12px 0 36px;
+  font-size: 12px;
+  color: var(--foreground);
+  transition: border-color 0.2s ease-out,
+              box-shadow 0.2s ease-out;
+  outline: none;
+}
+.adm-search-input:focus {
+  border-color: rgba(187, 134, 252, 0.3);
+  box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.08);
+}
+.adm-search-input::placeholder {
+  color: var(--muted-foreground);
+}
+@media screen and (max-width: 767px) {
+  .adm-search-input {
+    height: 42px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+}
+
+/* ── Adm 10: Filter Chips — Premium pill buttons ── */
+.adm-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.adm-filter-chip-active {
+  box-shadow: 0 0 12px rgba(187, 134, 252, 0.15);
+  background: rgba(187, 134, 252, 0.12) !important;
+  color: var(--primary) !important;
+  border: 1px solid rgba(187, 134, 252, 0.2) !important;
+}
+.adm-filter-chip:active {
+  transform: scale(0.96);
+}
+@media screen and (max-width: 767px) {
+  .adm-filter-chip {
+    padding: 7px 14px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+}
+
+/* ── Adm 11: Tab Switcher — Premium tab bar ── */
+.adm-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.adm-tab-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  z-index: 1;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+}
+.adm-tab-item-active {
+  color: var(--foreground) !important;
+  font-weight: 600;
+  background: rgba(187, 134, 252, 0.12);
+  border: 1px solid rgba(187, 134, 252, 0.15);
+  box-shadow: 0 0 10px rgba(187, 134, 252, 0.1);
+}
+.adm-tab-item:active {
+  transform: scale(0.96);
+}
+@media screen and (max-width: 767px) {
+  .adm-tab-item {
+    padding: 9px 14px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+  .adm-tab-bar {
+    border-radius: 12px;
+    padding: 4px;
+  }
+}
+
+/* ── Adm 12: Progress Bars — Premium dark with glow ── */
+.adm-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+.adm-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease;
+  opacity: 0.85;
+}
+.adm-progress-glow {
+  box-shadow: 0 0 8px var(--adm-progress-color, rgba(187, 134, 252, 0.3));
+}
+@media screen and (max-width: 767px) {
+  .adm-progress-track {
+    height: 7px;
+  }
+}
+@media screen and (min-width: 768px) {
+  .adm-progress-track {
+    height: 6px;
+  }
+}
+
+/* ── Adm 13: Ambient Glow Blobs ── */
+.adm-ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+}
+.adm-ambient-glow-purple {
+  background: radial-gradient(circle, rgba(187, 134, 252, 0.08), transparent 70%);
+}
+.adm-ambient-glow-teal {
+  background: radial-gradient(circle, rgba(3, 218, 198, 0.06), transparent 70%);
+}
+.adm-ambient-glow-gold {
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.04), transparent 70%);
+}
+.adm-ambient-glow-red {
+  background: radial-gradient(circle, rgba(207, 102, 121, 0.05), transparent 70%);
+}
+
+/* ── Adm 14: Scroll Container — Premium scroll for mobile ── */
+.adm-scroll-mobile {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.adm-scroll-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Adm 15: Badge / Tag styles ── */
+.adm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+}
+.adm-badge-active {
+  background: rgba(3, 218, 198, 0.1);
+  color: var(--secondary);
+}
+.adm-badge-suspended {
+  background: rgba(207, 102, 121, 0.1);
+  color: var(--destructive);
+}
+.adm-badge-pending {
+  background: rgba(249, 168, 37, 0.1);
+  color: var(--warning);
+}
+.adm-badge-pro {
+  background: rgba(255, 215, 0, 0.1);
+  color: #FFD700;
+}
+.adm-badge-admin {
+  background: rgba(187, 134, 252, 0.1);
+  color: var(--primary);
+}
+.adm-badge-expired {
+  background: rgba(207, 102, 121, 0.12);
+  color: var(--destructive);
+}
+
+/* ── Adm 16: Quick Action Buttons ── */
+.adm-quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  text-align: center;
+  width: 100%;
+}
+.adm-quick-action:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.adm-quick-action:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Adm 17: Alert Banner ── */
+.adm-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1.6;
+  background: rgba(207, 102, 121, 0.06);
+  border: 1px solid rgba(207, 102, 121, 0.15);
+}
+@media screen and (max-width: 767px) {
+  .adm-alert-banner {
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+}
+
+/* ── Adm 18: Info Banner ── */
+.adm-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  border: 1px solid rgba(187, 134, 252, 0.12);
+  background: linear-gradient(135deg, rgba(187, 134, 252, 0.04), rgba(3, 218, 198, 0.02));
+}
+@media screen and (max-width: 767px) {
+  .adm-info-banner {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+}
+
+/* ── Adm 19: Metric Chips ── */
+.adm-metric-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.adm-metric-chip:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.adm-metric-chip:active {
+  transform: scale(0.98);
+}
+.adm-metric-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+@media screen and (max-width: 767px) {
+  .adm-metric-chip {
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+  .adm-metric-chip-icon {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* ── Adm 20: Gradient Text ── */
+.adm-gradient-text {
+  background: linear-gradient(135deg, #BB86FC, #03DAC6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.adm-gradient-text-gold {
+  background: linear-gradient(135deg, #FFD700, #FF7043);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.adm-gradient-text-white {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.5));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Adm 21: Form Inputs (Mobile-optimized) ── */
+.adm-form-input {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0 14px;
+  font-size: 14px;
+  color: var(--foreground);
+  transition: border-color 0.2s ease-out,
+              box-shadow 0.2s ease-out;
+  outline: none;
+}
+.adm-form-input:focus {
+  border-color: rgba(187, 134, 252, 0.5);
+  box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.08),
+              inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.adm-form-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+@media screen and (min-width: 768px) {
+  .adm-form-input {
+    height: 40px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+}
+
+/* ── Adm 22: Action Buttons (Full-width mobile) ── */
+.adm-action-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.adm-action-btn:active {
+  transform: scale(0.97);
+}
+.adm-action-btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 16px rgba(187, 134, 252, 0.25);
+}
+.adm-action-btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(187, 134, 252, 0.35);
+}
+.adm-action-btn-secondary {
+  background: transparent;
+  color: var(--muted-foreground);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+@media screen and (min-width: 768px) {
+  .adm-action-btn {
+    width: auto;
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+}
+
+/* ── Adm 23: Card Glow Underlay ── */
+.adm-card-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  filter: blur(16px);
+  pointer-events: none;
+  z-index: -1;
+}
+.adm-card-glow-purple {
+  background: rgba(187, 134, 252, 0.06);
+}
+.adm-card-glow-teal {
+  background: rgba(3, 218, 198, 0.06);
+}
+.adm-card-glow-gold {
+  background: rgba(255, 215, 0, 0.06);
+}
+
+/* ── Adm 24: Tablet-specific Enhancements ── */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .adm-tablet-card {
+    border-radius: 1rem;
+    padding: 18px;
+  }
+  .adm-tablet-hero {
+    padding: 20px 24px;
+  }
+  .adm-tablet-grid {
+    gap: 14px;
+  }
+  .adm-tablet-compact {
+    padding: 12px 16px;
+  }
+}

@@ -200,10 +200,10 @@ export function AdminInvites() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white/90">Registration Invites</h2>
+          <h2 className="text-xl font-bold text-white/90 adm-section-header">Registration Invites</h2>
           <p className="text-sm text-white/40 mt-1">Generate temporary registration links for new users</p>
         </div>
-        <Button className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px]"
+        <Button className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px] adm-quick-action"
           onClick={() => setShowCreate(true)}>
           <UserPlus className="h-4 w-4" /> Create Invite
         </Button>
@@ -221,7 +221,7 @@ export function AdminInvites() {
               'absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500',
               `bg-gradient-to-br ${stat.gradient} to-transparent`,
             )} />
-            <Card className="relative bg-[#0D0D0D] border-white/[0.06]">
+            <Card className="relative bg-[#0D0D0D] border-white/[0.06] adm-stat-card">
               <CardContent className="p-4 text-center">
                 <div className="w-9 h-9 rounded-xl bg-[#03DAC6]/10 flex items-center justify-center mx-auto mb-2">
                   <stat.icon className="h-4 w-4" style={{ color: stat.color }} />
@@ -239,22 +239,22 @@ export function AdminInvites() {
         {['', 'active', 'used', 'expired'].map(status => (
           <Button key={status} variant="outline" size="sm"
             className={cn(
-              'text-[11px] rounded-lg h-8 transition-all',
-              filterStatus === status ? 'bg-[#03DAC6]/10 border-[#03DAC6]/25 text-[#03DAC6]' : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
+              'text-[11px] rounded-lg h-8 transition-all adm-filter-chip',
+              filterStatus === status ? 'bg-[#03DAC6]/10 border-[#03DAC6]/25 text-[#03DAC6] adm-filter-chip-active' : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
             )}
             onClick={() => setFilterStatus(status)}>
             {status === '' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
           </Button>
         ))}
         <div className="ml-auto">
-          <Badge variant="outline" className="text-[10px] font-medium px-2.5 py-1 bg-white/[0.02] border-white/[0.06] text-white/30">
+          <Badge variant="outline" className="text-[10px] font-medium px-2.5 py-1 bg-white/[0.02] border-white/[0.06] text-white/30 adm-badge">
             {pagination.total} total
           </Badge>
         </div>
       </div>
 
       {/* Invites List */}
-      <Card className="bg-[#0D0D0D] border-white/[0.06]">
+      <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-3 p-4">
@@ -275,8 +275,8 @@ export function AdminInvites() {
               ))}
             </div>
           ) : invites.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-14 h-14 rounded-2xl bg-white/[0.03] flex items-center justify-center mx-auto mb-3">
+            <div className="text-center py-16 adm-empty-state">
+              <div className="w-14 h-14 rounded-2xl bg-white/[0.03] flex items-center justify-center mx-auto mb-3 adm-empty-state-icon">
                 <UserPlus className="h-6 w-6 text-white/10" />
               </div>
               <p className="text-white/30 text-sm font-medium">No invites yet</p>
@@ -301,7 +301,7 @@ export function AdminInvites() {
                   <Tooltip key={invite.id}>
                   <TooltipTrigger asChild>
                   <div
-                    className="p-4 hover:bg-white/[0.02] transition-all duration-200 group/invite hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)] cursor-default"
+                    className="p-4 hover:bg-white/[0.02] transition-all duration-200 group/invite hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)] cursor-default adm-list-item"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -312,7 +312,7 @@ export function AdminInvites() {
                             {invite.token}
                           </code>
                           <Badge variant="outline" className={cn(
-                            'text-[9px] font-bold uppercase px-2 py-0.5',
+                            'text-[9px] font-bold uppercase px-2 py-0.5 adm-badge',
                             status === 'active' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' :
                             status === 'expiring' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' :
                             status === 'used' ? 'border-[#BB86FC]/20 text-[#BB86FC] bg-[#BB86FC]/5' :
@@ -324,7 +324,7 @@ export function AdminInvites() {
                             {status === 'expired' && <><XCircle className="h-2.5 w-2.5 mr-0.5 inline" />Expired</>}
                           </Badge>
                           <Badge variant="outline" className={cn(
-                            'text-[9px] font-bold uppercase px-2 py-0.5',
+                            'text-[9px] font-bold uppercase px-2 py-0.5 adm-badge',
                             invite.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : invite.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
                           )}>
                             {invite.plan === 'ultimate' ? <><Gem className="h-2.5 w-2.5 mr-0.5 inline" />ULTIMATE</> : invite.plan === 'pro' ? <><Crown className="h-2.5 w-2.5 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2.5 w-2.5 mr-0.5 inline" />BASIC</>}
@@ -379,8 +379,8 @@ export function AdminInvites() {
                         {/* Usage Progress */}
                         <div className="flex items-center gap-3 mb-2">
                           <div className="flex-1 max-w-[120px]">
-                            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                              <div className="h-full rounded-full transition-all duration-500"
+                            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden adm-progress-track">
+                              <div className="h-full rounded-full transition-all duration-500 adm-progress-fill"
                                 style={{
                                   width: `${usagePercent}%`,
                                   background: status === 'active' ? 'linear-gradient(90deg, #03DAC6, #03DAC680)' : status === 'used' ? '#BB86FC' : status === 'expiring' ? 'linear-gradient(90deg, #FFD700, #FFA500)' : '#CF6679',
@@ -415,7 +415,7 @@ export function AdminInvites() {
                         {status === 'active' && (
                           <>
                             <Button variant="ghost" size="sm"
-                              className="h-8 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 relative"
+                              className="h-8 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 relative adm-action-btn"
                               onClick={(e) => { e.stopPropagation(); copyLink(invite.token); }} title="Copy registration link">
                               {copiedToken === invite.token && copiedField === 'link' ? (
                                 <CheckCircle className="h-3.5 w-3.5 text-[#03DAC6] animate-checkmark-pop" />
@@ -424,7 +424,7 @@ export function AdminInvites() {
                               )}
                             </Button>
                             <Button variant="ghost" size="sm"
-                              className="h-8 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 relative"
+                              className="h-8 text-white/40 hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 relative adm-action-btn"
                               onClick={(e) => { e.stopPropagation(); copyToken(invite.token); }} title="Copy token code">
                               {copiedToken === invite.token && copiedField === 'token' ? (
                                 <CheckCircle className="h-3.5 w-3.5 text-[#03DAC6] animate-checkmark-pop" />
@@ -434,7 +434,7 @@ export function AdminInvites() {
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="sm" className="h-8 text-white/20 hover:text-[#CF6679] hover:bg-[#CF6679]/10"
+                        <Button variant="ghost" size="sm" className="h-8 text-white/20 hover:text-[#CF6679] hover:bg-[#CF6679]/10 adm-action-btn"
                           onClick={(e) => { e.stopPropagation(); setDeleteInvite(invite); }}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -500,7 +500,7 @@ export function AdminInvites() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md adm-dialog-content">
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -518,12 +518,12 @@ export function AdminInvites() {
               </Label>
               <Input type="email" placeholder="user@example.com (leave empty for public)"
                 value={createEmail} onChange={(e) => setCreateEmail(e.target.value)}
-                className="bg-white/[0.03] border-white/[0.06] text-white/70" />
+                className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input" />
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] text-white/50">Assigned Plan</Label>
               <Select value={createPlan} onValueChange={setCreatePlan}>
-                <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
+                <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white/[0.03] border-white/[0.08]">
@@ -552,12 +552,12 @@ export function AdminInvites() {
               <div className="space-y-2">
                 <Label className="text-[11px] text-white/50">Max Uses</Label>
                 <Input type="number" min="1" value={createMaxUses} onChange={(e) => setCreateMaxUses(e.target.value)}
-                  className="bg-white/[0.03] border-white/[0.06] text-white/70" />
+                  className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[11px] text-white/50">Expires In (hours)</Label>
                 <Input type="number" min="1" value={createExpiry} onChange={(e) => setCreateExpiry(e.target.value)}
-                  className="bg-white/[0.03] border-white/[0.06] text-white/70" />
+                  className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input" />
               </div>
             </div>
 
@@ -579,7 +579,7 @@ export function AdminInvites() {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[#03DAC6]/5 border border-[#03DAC6]/10">
+            <div className="p-3 rounded-xl bg-[#03DAC6]/5 border border-[#03DAC6]/10 adm-info-banner">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-[#03DAC6] shrink-0 mt-0.5" />
                 <div className="text-[11px] text-[#03DAC6]/60 leading-relaxed">
@@ -602,7 +602,7 @@ export function AdminInvites() {
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteInvite} onOpenChange={() => setDeleteInvite(null)}>
-        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden adm-dialog-content">
           <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Revoke Invite</AlertDialogTitle>

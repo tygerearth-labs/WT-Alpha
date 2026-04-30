@@ -183,7 +183,7 @@ export function ExportDialog({ trigger }: ExportDialogProps) {
         )}
       </DialogTrigger>
       <DialogContent
-        className="sm:max-w-[480px] p-0 gap-0 overflow-hidden bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] shadow-[0_16px_64px_rgba(0,0,0,0.6)]"
+        className="sm:max-w-[480px] p-0 gap-0 overflow-hidden bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] shadow-[0_16px_64px_rgba(0,0,0,0.6)] adm-dialog-content"
       >
         {/* Header gradient accent */}
         <div className="h-px bg-gradient-to-r from-transparent via-[#BB86FC]/40 to-transparent" />
@@ -212,9 +212,9 @@ export function ExportDialog({ trigger }: ExportDialogProps) {
                   key={t.value}
                   onClick={() => handleTypeChange(t.value)}
                   className={cn(
-                    'relative flex flex-col items-start gap-1.5 p-3 rounded-xl border transition-all text-left',
+                    'relative flex flex-col items-start gap-1.5 p-3 rounded-xl border transition-all text-left adm-filter-chip',
                     exportType === t.value
-                      ? 'border-white/[0.15] bg-white/[0.04]'
+                      ? 'border-white/[0.15] bg-white/[0.04] adm-filter-chip-active'
                       : 'border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/[0.08]',
                   )}
                 >
@@ -252,9 +252,9 @@ export function ExportDialog({ trigger }: ExportDialogProps) {
                   key={f.value}
                   onClick={() => handleFormatChange(f.value)}
                   className={cn(
-                    'relative flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left',
+                    'relative flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left adm-filter-chip',
                     format === f.value
-                      ? 'border-[#03DAC6]/30 bg-[#03DAC6]/[0.04]'
+                      ? 'border-[#03DAC6]/30 bg-[#03DAC6]/[0.04] adm-filter-chip-active'
                       : 'border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/[0.08]',
                   )}
                 >
@@ -302,7 +302,7 @@ export function ExportDialog({ trigger }: ExportDialogProps) {
               )}
             </div>
             <div
-              className="flex items-center gap-2 p-3 rounded-xl border border-white/[0.04] bg-white/[0.01] cursor-pointer hover:bg-white/[0.02] hover:border-white/[0.08] transition-all"
+              className="flex items-center gap-2 p-3 rounded-xl border border-white/[0.04] bg-white/[0.01] cursor-pointer hover:bg-white/[0.02] hover:border-white/[0.08] transition-all adm-form-input"
               onClick={() => setShowCalendar(!showCalendar)}
             >
               <CalendarRange className="h-4 w-4 text-white/25 shrink-0" />
@@ -383,7 +383,7 @@ export function ExportDialog({ trigger }: ExportDialogProps) {
                 <div className="mt-3 flex justify-end">
                   <Button
                     size="sm"
-                    className="h-7 px-3 text-[10px] rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25"
+                    className="h-7 px-3 text-[10px] rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 adm-action-btn"
                     onClick={handleDateChange}
                   >
                     Apply
@@ -433,7 +433,7 @@ export function ExportDialog({ trigger }: ExportDialogProps) {
               variant="ghost"
               size="sm"
               onClick={() => setOpen(false)}
-              className="flex-1 h-9 text-[12px] rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.04]"
+              className="flex-1 h-9 text-[12px] rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.04] adm-action-btn"
             >
               Cancel
             </Button>
@@ -441,7 +441,7 @@ export function ExportDialog({ trigger }: ExportDialogProps) {
               size="sm"
               onClick={handleExport}
               disabled={exporting}
-              className="flex-1 h-9 text-[12px] rounded-xl font-semibold text-white flex items-center justify-center gap-2"
+              className="flex-1 h-9 text-[12px] rounded-xl font-semibold text-white flex items-center justify-center gap-2 adm-action-btn"
               style={{
                 background: 'linear-gradient(135deg, #BB86FC90, #BB86FC70)',
                 boxShadow: '0 2px 8px rgba(187,134,252,0.25)',

@@ -511,7 +511,7 @@ export function AdminSettings() {
     </Select>
   );
 
-  const inputCls = 'bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15';
+  const inputCls = 'adm-form-input bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15';
   const textareaCls = 'w-full rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/80 text-sm px-3 py-2 focus:border-[#03DAC6]/30 focus:ring-1 focus:ring-[#03DAC6]/10 focus:outline-none placeholder:text-white/15 resize-none';
 
   /* ──────────────────────────────────────────────────────────────
@@ -522,12 +522,12 @@ export function AdminSettings() {
   const TabUmum = () => (
     <motion.div key="umum" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* Profile Section */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <User className="h-4 w-4 text-[#03DAC6]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <User className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
             Profile
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30 ml-auto">
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30 ml-auto">
               Admin
             </Badge>
           </CardTitle>
@@ -541,7 +541,7 @@ export function AdminSettings() {
               <p className="text-base font-semibold text-white/85">Admin</p>
               <p className="text-[12px] text-white/35 truncate">admin@wealthtracker.com</p>
               <div className="flex items-center gap-2 mt-1.5">
-                <Badge variant="outline" className="text-[8px] font-bold uppercase px-1.5 py-0 border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5">
+                <Badge variant="outline" className="adm-badge text-[8px] font-bold uppercase px-1.5 py-0 border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5">
                   <Shield className="h-2 w-2 mr-0.5 inline" />Admin
                 </Badge>
                 <span className="text-[10px] text-white/20">Joined {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
@@ -558,7 +558,7 @@ export function AdminSettings() {
               <Input value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className={inputCls} placeholder="admin@wealthtracker.com" type="email" />
             </div>
           </div>
-          <Button onClick={handleSaveProfile} className="h-9 px-4 text-[12px] font-semibold rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 border border-[#03DAC6]/20 transition-all">
+          <Button onClick={handleSaveProfile} className="adm-action-btn h-9 px-4 text-[12px] font-semibold rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 border border-[#03DAC6]/20 transition-all">
             <Check className="h-3.5 w-3.5 mr-1.5" />
             Save Profile
           </Button>
@@ -566,10 +566,10 @@ export function AdminSettings() {
       </Card>
 
       {/* Appearance Section */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Palette className="h-4 w-4 text-[#BB86FC]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Palette className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
             Appearance
           </CardTitle>
         </CardHeader>
@@ -635,12 +635,12 @@ export function AdminSettings() {
   const TabPlatform = () => (
     <motion.div key="platform" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* Platform Settings */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Globe className="h-4 w-4 text-[#FFD700]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Globe className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
             Platform Settings
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Configuration</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Configuration</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
@@ -690,12 +690,12 @@ export function AdminSettings() {
       </Card>
 
       {/* Registration & WhatsApp Configuration */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <MessageCircle className="h-4 w-4 text-[#25D366]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <MessageCircle className="adm-section-header-icon h-4 w-4 text-[#25D366]" />
             Registration & WhatsApp
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#25D366]/5 border-[#25D366]/15 text-[#25D366]/70 ml-auto">Contact & Access</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#25D366]/5 border-[#25D366]/15 text-[#25D366]/70 ml-auto">Contact & Access</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
@@ -742,7 +742,7 @@ export function AdminSettings() {
                   <div className="flex-1 px-3 py-2 rounded-lg bg-black/20 border border-white/[0.06] text-[11px] text-white/50 font-mono truncate">
                     {typeof window !== 'undefined' ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}` : `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`}
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 text-[10px] gap-1.5 bg-[#25D366]/10 border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 shrink-0" onClick={() => {
+                  <Button variant="outline" size="sm" className="adm-action-btn h-8 text-[10px] gap-1.5 bg-[#25D366]/10 border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 shrink-0" onClick={() => {
                     const url = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`;
                     navigator.clipboard.writeText(url).then(() => toast.success('WhatsApp link copied!')).catch(() => toast.info(`Link: ${url}`));
                   }}>
@@ -797,12 +797,12 @@ export function AdminSettings() {
   const TabPricing = () => (
     <motion.div key="pricing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* Plan & Trial Configuration */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Crown className="h-4 w-4 text-[#FFD700]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Crown className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
             Plan & Trial Configuration
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Pricing & Trial</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Pricing & Trial</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
@@ -890,7 +890,7 @@ export function AdminSettings() {
                   <div className="flex-1 px-3 py-2 rounded-lg bg-black/20 border border-white/[0.06] text-[11px] text-white/50 font-mono truncate">
                     {typeof window !== 'undefined' ? `${window.location.origin}/?trial=true` : '/?trial=true'}
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 text-[10px] gap-1.5 bg-[#03DAC6]/10 border-[#03DAC6]/20 text-[#03DAC6] hover:bg-[#03DAC6]/20 shrink-0" onClick={() => {
+                  <Button variant="outline" size="sm" className="adm-action-btn h-8 text-[10px] gap-1.5 bg-[#03DAC6]/10 border-[#03DAC6]/20 text-[#03DAC6] hover:bg-[#03DAC6]/20 shrink-0" onClick={() => {
                     const url = `${window.location.origin}/?trial=true`;
                     navigator.clipboard.writeText(url).then(() => toast.success('Trial registration link copied!')).catch(() => toast.info(`Link: ${url}`));
                   }}>
@@ -904,12 +904,12 @@ export function AdminSettings() {
       </Card>
 
       {/* Discount & Purchase Link Configuration */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Crown className="h-4 w-4 text-[#FFD700]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Crown className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
             Discount & Purchase Links
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Pricing</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Pricing</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
@@ -960,12 +960,12 @@ export function AdminSettings() {
   /* ── Tab 4: Landing Page ── */
   const TabLanding = () => (
     <motion.div key="landing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Layout className="h-4 w-4 text-[#03DAC6]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Layout className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
             Landing Page
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">Visibility</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">Visibility</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
@@ -1012,12 +1012,12 @@ export function AdminSettings() {
   /* ── Tab 5: Dashboard ── */
   const TabDashboard = () => (
     <motion.div key="dashboard" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-[#BB86FC]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
             Dashboard Section Visibility & Export
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]/70 ml-auto">Per Plan</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]/70 ml-auto">Per Plan</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-5">
@@ -1075,10 +1075,10 @@ export function AdminSettings() {
   const TabSistem = () => (
     <motion.div key="sistem" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* System Information */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Heart className="h-4 w-4 text-[#CF6679]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Heart className="adm-section-header-icon h-4 w-4 text-[#CF6679]" />
             System Information
           </CardTitle>
         </CardHeader>
@@ -1119,12 +1119,12 @@ export function AdminSettings() {
       </Card>
 
       {/* Email Notification Settings */}
-      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Mail className="h-4 w-4 text-[#03DAC6]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Mail className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
             Email Notifications
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">Alerts</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">Alerts</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
@@ -1160,12 +1160,12 @@ export function AdminSettings() {
       </Card>
 
       {/* Danger Zone */}
-      <Card className="bg-white/[0.02] border-[#CF6679]/15 hover:border-[#CF6679]/25 transition-colors hover:shadow-[0_4px_20px_rgba(207,102,121,0.08)]">
+      <Card className="adm-content-card bg-white/[0.02] border-[#CF6679]/15 hover:border-[#CF6679]/25 transition-colors hover:shadow-[0_4px_20px_rgba(207,102,121,0.08)]">
         <CardHeader className="pb-4">
-          <CardTitle className="text-sm font-semibold text-[#CF6679]/80 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-[#CF6679]" />
+          <CardTitle className="adm-section-header text-sm font-semibold text-[#CF6679]/80 flex items-center gap-2">
+            <AlertTriangle className="adm-section-header-icon h-4 w-4 text-[#CF6679]" />
             Danger Zone
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#CF6679]/5 border-[#CF6679]/15 text-[#CF6679]/70 ml-auto">Irreversible</Badge>
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#CF6679]/5 border-[#CF6679]/15 text-[#CF6679]/70 ml-auto">Irreversible</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
@@ -1174,7 +1174,7 @@ export function AdminSettings() {
               <div className="w-9 h-9 rounded-lg bg-[#CF6679]/10 flex items-center justify-center shrink-0"><Trash2 className="h-4 w-4 text-[#CF6679]" /></div>
               <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">Clear All Activity Logs</p><p className="text-[10px] text-white/30 mt-0.5">Permanently delete all admin activity audit trail entries</p></div>
             </div>
-            <Button variant="ghost" onClick={() => setShowClearLogsDialog(true)} className="shrink-0 h-8 px-3 text-[11px] font-semibold rounded-lg text-[#CF6679] hover:text-[#CF6679] hover:bg-[#CF6679]/10 border border-[#CF6679]/15 transition-all">
+            <Button variant="ghost" onClick={() => setShowClearLogsDialog(true)} className="adm-action-btn shrink-0 h-8 px-3 text-[11px] font-semibold rounded-lg text-[#CF6679] hover:text-[#CF6679] hover:bg-[#CF6679]/10 border border-[#CF6679]/15 transition-all">
               Clear Logs <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
           </div>
@@ -1183,7 +1183,7 @@ export function AdminSettings() {
               <div className="w-9 h-9 rounded-lg bg-[#CF6679]/10 flex items-center justify-center shrink-0"><RotateCcw className="h-4 w-4 text-[#CF6679]" /></div>
               <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">Reset Demo Data</p><p className="text-[10px] text-white/30 mt-0.5">Reset platform to default state with sample data</p></div>
             </div>
-            <Button variant="ghost" onClick={() => setShowResetDialog(true)} className="shrink-0 h-8 px-3 text-[11px] font-semibold rounded-lg text-[#CF6679] hover:text-[#CF6679] hover:bg-[#CF6679]/10 border border-[#CF6679]/15 transition-all">
+            <Button variant="ghost" onClick={() => setShowResetDialog(true)} className="adm-action-btn shrink-0 h-8 px-3 text-[11px] font-semibold rounded-lg text-[#CF6679] hover:text-[#CF6679] hover:bg-[#CF6679]/10 border border-[#CF6679]/15 transition-all">
               Reset <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
           </div>
@@ -1205,7 +1205,10 @@ export function AdminSettings() {
   const activeTabData = TABS.find(t => t.id === activeTab)!;
 
   return (
-    <div className="flex flex-col min-h-0">
+    <div className="relative flex flex-col min-h-0">
+      {/* Ambient glow effects */}
+      <div className="adm-ambient-glow adm-ambient-glow-purple pointer-events-none" />
+      <div className="adm-ambient-glow adm-ambient-glow-teal pointer-events-none" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="space-y-1">
@@ -1220,7 +1223,7 @@ export function AdminSettings() {
       </div>
 
       {/* Tab Bar */}
-      <div className="relative flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-6 overflow-x-auto">
+      <div className="adm-tab-bar adm-scroll-mobile relative flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-6 overflow-x-auto">
         {/* Animated slide indicator */}
         <motion.div
           layout
@@ -1241,8 +1244,8 @@ export function AdminSettings() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'relative z-10 flex items-center justify-center gap-2 flex-1 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all duration-200 min-w-0',
-                isActive ? 'text-white' : 'text-white/40 hover:text-white/60',
+                'relative z-10 flex items-center justify-center gap-2 flex-1 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all duration-200 min-w-0 adm-tab-item',
+                isActive ? 'text-white adm-tab-item-active' : 'text-white/40 hover:text-white/60',
               )}
             >
               <Icon className={cn('h-4 w-4 shrink-0', isActive ? '' : '')} style={{ color: isActive ? tab.color : undefined }} />
@@ -1253,7 +1256,7 @@ export function AdminSettings() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto pb-24">
+      <div className="adm-scroll-mobile flex-1 min-h-0 overflow-y-auto pb-24">
         <AnimatePresence mode="wait">
           {tabContent[activeTab]()}
         </AnimatePresence>
@@ -1274,7 +1277,7 @@ export function AdminSettings() {
           }
           transition={{ duration: 0.4 }}
           className={cn(
-            'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2',
+            'adm-action-btn w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2',
             !hasChanges && saveStatus === 'idle'
               ? 'bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.06]'
               : saveStatus === 'saving'
@@ -1318,7 +1321,7 @@ export function AdminSettings() {
 
       {/* Clear Logs Dialog */}
       <Dialog open={showClearLogsDialog} onOpenChange={setShowClearLogsDialog}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
+        <DialogContent className="adm-dialog-content bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <Trash2 className="h-4 w-4 text-[#CF6679]" />
@@ -1348,7 +1351,7 @@ export function AdminSettings() {
 
       {/* Reset Demo Data Dialog */}
       <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
+        <DialogContent className="adm-dialog-content bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <RotateCcw className="h-4 w-4 text-[#CF6679]" />

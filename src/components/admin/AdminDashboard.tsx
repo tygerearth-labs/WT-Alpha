@@ -330,7 +330,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-lg">👋</span>
-            <h2 className="text-xl font-bold text-white/90">{getGreeting()}, Admin!</h2>
+            <h2 className="text-xl font-bold adm-gradient-text">{getGreeting()}, Admin!</h2>
           </div>
           <p className="text-sm text-white/40">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -420,7 +420,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
       {/* Notification Alert Bar */}
       {notificationCount > 0 && (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/10 animate-in fade-in-0 slide-in-from-bottom-3 duration-500 [animation-delay:150ms]">
+        <div className="adm-alert-banner flex items-center gap-3 p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/10 animate-in fade-in-0 slide-in-from-bottom-3 duration-500 [animation-delay:150ms]">
           <div className="relative">
             <Bell className="h-4 w-4 text-[#FFD700]" />
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#CF6679] animate-ping" />
@@ -497,10 +497,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
       {/* Quick Actions Row */}
       <div className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '350ms', animationFillMode: 'backwards' }} data-tour="quick-actions">
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#FFD700]" />
+            <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Zap className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
               Quick Actions
             </CardTitle>
           </CardHeader>
@@ -534,11 +534,11 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '500ms', animationFillMode: 'backwards' }}>
         {/* Daily Registrations Chart */}
-        <Card className="lg:col-span-2 bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="adm-content-card lg:col-span-2 bg-[#0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-[#03DAC6]" />
+              <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+                <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
                 User Registrations
                 <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30">
                   Last 7 days
@@ -585,10 +585,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         </Card>
 
         {/* Plan Distribution */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Target className="h-4 w-4 text-[#BB86FC]" />
+            <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Target className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
               Plan Distribution
             </CardTitle>
           </CardHeader>
@@ -654,11 +654,11 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       {/* Middle Row: Recent Activity + Quick Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}>
         {/* Recent Activity Feed */}
-        <Card className="lg:col-span-2 bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="adm-content-card lg:col-span-2 bg-[#0D0D0D] border-white/[0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[#03DAC6]" />
+              <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+                <Activity className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
                 Recent Activity
                 <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/50">
                   Last 5
@@ -714,10 +714,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         </Card>
 
         {/* Platform Health */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#03DAC6]" />
+            <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Zap className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
               Platform Health
             </CardTitle>
           </CardHeader>
@@ -796,10 +796,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '750ms', animationFillMode: 'backwards' }}>
         {/* Top Active Users */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Star className="h-4 w-4 text-[#FFD700]" />
+            <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Star className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
               Top Active Users
             </CardTitle>
           </CardHeader>

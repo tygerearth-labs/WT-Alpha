@@ -90,19 +90,19 @@ export function AdminAnalytics() {
       <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-[#BB86FC]" />
-            <h3 className="text-base font-bold text-white/80">Financial Analytics</h3>
+            <BarChart3 className="h-5 w-5 text-[#BB86FC] adm-section-header-icon" />
+            <h3 className="text-base font-bold text-white/80 adm-section-header">Financial Analytics</h3>
           </div>
           <Button variant="ghost" size="sm"
-            className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/40 hover:text-white hover:bg-white/[0.04]"
+            className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/40 hover:text-white hover:bg-white/[0.04] adm-action-btn"
             onClick={() => { setLoading(true); fetchAnalytics(true); }}>
             <RefreshCw className="h-3 w-3" />
             Retry
           </Button>
         </div>
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardContent className="p-8 text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#CF6679]/10 flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-xl bg-[#CF6679]/10 flex items-center justify-center mx-auto mb-3 adm-empty-state adm-empty-state-icon">
               <AlertCircle className="h-6 w-6 text-[#CF6679]/70" />
             </div>
             <p className="text-white/50 text-sm font-medium">Failed to load analytics</p>
@@ -151,18 +151,22 @@ export function AdminAnalytics() {
   const catColors = ['#BB86FC', '#03DAC6', '#CF6679', '#F9A825', '#64B5F6', '#81C784', '#FFB74D', '#E57373'];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
+      {/* Ambient glow backgrounds */}
+      <div className="adm-ambient-glow adm-ambient-glow-purple absolute -top-20 -left-20 opacity-30 pointer-events-none" />
+      <div className="adm-ambient-glow adm-ambient-glow-teal absolute top-60 -right-20 opacity-20 pointer-events-none" />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-[#BB86FC]" />
-          <h3 className="text-base font-bold text-white/80">Financial Analytics</h3>
-          <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]/50">
+          <BarChart3 className="h-5 w-5 text-[#BB86FC] adm-section-header-icon" />
+          <h3 className="text-base font-bold text-white/80 adm-section-header">Financial Analytics</h3>
+          <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]/50 adm-badge adm-badge-info">
             Platform-wide
           </Badge>
         </div>
         <Button variant="ghost" size="sm"
-          className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/40 hover:text-white hover:bg-white/[0.04]"
+          className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/40 hover:text-white hover:bg-white/[0.04] adm-action-btn"
           onClick={() => fetchAnalytics(true)}>
           <RefreshCw className={cn('h-3 w-3', isRefreshing && 'animate-spin')} />
           Refresh
@@ -180,7 +184,7 @@ export function AdminAnalytics() {
               transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
               whileHover={{ y: -2 }}
             >
-              <Card className="border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+              <Card className="border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden adm-stat-card"
                 style={{ background: card.gradient }}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -211,19 +215,19 @@ export function AdminAnalytics() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Monthly Trends */}
-        <Card className="lg:col-span-2 bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="lg:col-span-2 bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-[#03DAC6]" />
-              <CardTitle className="text-sm font-semibold text-white/70">Monthly Revenue Trends</CardTitle>
-              <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/25">
+              <BarChart3 className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
+              <CardTitle className="text-sm font-semibold text-white/70 adm-section-header">Monthly Revenue Trends</CardTitle>
+              <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/25 adm-badge adm-badge-info">
                 6 months
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             {data.monthlyAggregates.length === 0 ? (
-              <div className="text-center py-10 text-white/15 text-[12px]">No transaction data yet</div>
+              <div className="text-center py-10 text-white/15 text-[12px] adm-empty-state">No transaction data yet</div>
             ) : (
               <div className="flex items-end gap-3 h-44 px-2">
                 {data.monthlyAggregates.map((m) => {
@@ -268,16 +272,16 @@ export function AdminAnalytics() {
         </Card>
 
         {/* Top Platform Categories */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <PieChartIcon className="h-4 w-4 text-[#BB86FC]" />
+            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
+              <PieChartIcon className="h-4 w-4 text-[#BB86FC] adm-section-header-icon" />
               Top Spending Categories
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             {data.topCategories.length === 0 ? (
-              <div className="text-center py-10 text-white/15 text-[12px]">No expense data yet</div>
+              <div className="text-center py-10 text-white/15 text-[12px] adm-empty-state">No expense data yet</div>
             ) : (
               <div className="space-y-2.5">
                 {data.topCategories.map((cat, idx) => (
@@ -287,8 +291,8 @@ export function AdminAnalytics() {
                       <span className="text-[11px] text-white/60 truncate max-w-[120px]">{cat.name}</span>
                       <span className="text-[10px] font-semibold text-white/40 tabular-nums">{formatNumber(cat.total)}</span>
                     </div>
-                    <div className="w-full h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700"
+                    <div className="w-full h-1.5 rounded-full bg-white/[0.04] overflow-hidden adm-progress-track">
+                      <div className="h-full rounded-full transition-all duration-700 adm-progress-fill"
                         style={{ width: `${(cat.total / totalCatAmount) * 100}%`, background: catColors[idx % catColors.length] }} />
                     </div>
                   </div>
@@ -302,10 +306,10 @@ export function AdminAnalytics() {
       {/* Platform Health & Activity Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Platform Health */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Target className="h-4 w-4 text-[#FFD700]" />
+            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
+              <Target className="h-4 w-4 text-[#FFD700] adm-section-header-icon" />
               Platform Health
             </CardTitle>
           </CardHeader>
@@ -322,7 +326,7 @@ export function AdminAnalytics() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
                   whileHover={{ y: -2 }}
-                  className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.03] transition-colors"
+                  className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.03] transition-colors adm-metric-chip"
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
@@ -337,21 +341,21 @@ export function AdminAnalytics() {
         </Card>
 
         {/* Recent Platform Activity */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[#03DAC6]" />
+            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
+              <Activity className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
               Recent Platform Activity
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             {data.recentActivity.length === 0 ? (
-              <div className="text-center py-8 text-white/15 text-[12px]">No activity yet</div>
+              <div className="text-center py-8 text-white/15 text-[12px] adm-empty-state">No activity yet</div>
             ) : (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
+              <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar adm-scroll-mobile">
                 {data.recentActivity.map((log) => (
-                  <div key={log.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/[0.02] transition-colors">
-                    <div className="w-7 h-7 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center shrink-0">
+                  <div key={log.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/[0.02] transition-colors adm-list-item">
+                    <div className="w-7 h-7 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center shrink-0 adm-list-item-accent">
                       <Activity className="h-3 w-3 text-[#03DAC6]" />
                     </div>
                     <div className="flex-1 min-w-0">

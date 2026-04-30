@@ -150,7 +150,7 @@ export function AdminSubscriptions() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white/90">Subscription Management</h2>
+          <h2 className="text-xl font-bold text-white/90 adm-section-header">Subscription Management</h2>
           <p className="text-sm text-white/40 mt-1">Control user subscriptions and payment periods</p>
         </div>
         <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export function AdminSubscriptions() {
         {statsData.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label} className="bg-[#0D0D0D] border-white/[0.06] hover:border-white/[0.12] transition-colors">
+            <Card key={stat.label} className="bg-[#0D0D0D] border-white/[0.06] hover:border-white/[0.12] transition-colors adm-stat-card">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[10px] text-white/25 uppercase tracking-wider font-semibold">{stat.label}</p>
@@ -193,8 +193,8 @@ export function AdminSubscriptions() {
         {['', 'pro', 'ultimate', 'basic'].map(plan => (
           <Button key={plan} variant="outline" size="sm"
             className={cn(
-              'text-[11px] rounded-lg h-8',
-              filterPlan === plan ? 'bg-[#FFD700]/10 border-[#FFD700]/20 text-[#FFD700]' : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60',
+              'text-[11px] rounded-lg h-8 adm-filter-chip',
+              filterPlan === plan ? 'bg-[#FFD700]/10 border-[#FFD700]/20 text-[#FFD700] adm-filter-chip-active' : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60',
             )}
             onClick={() => setFilterPlan(plan)}>
             {plan === '' ? 'All Plans' : plan.toUpperCase()}
@@ -205,21 +205,21 @@ export function AdminSubscriptions() {
       {/* Pro & Basic User Lists */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Pro Users */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Crown className="h-4 w-4 text-[#FFD700]" />
-              <h3 className="text-sm font-bold text-white/80">Pro Users</h3>
-              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5">
+              <Crown className="h-4 w-4 text-[#FFD700] adm-section-header-icon" />
+              <h3 className="text-sm font-bold text-white/80 adm-section-header">Pro Users</h3>
+              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5 adm-badge adm-badge-warning">
                 {subscriptions.filter(s => s.plan === 'pro').length}
               </Badge>
             </div>
-            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin">
+            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin adm-scroll-mobile">
               {subscriptions.filter(s => s.plan === 'pro').length === 0 ? (
                 <p className="text-[11px] text-white/20 text-center py-4">No pro users</p>
               ) : (
                 subscriptions.filter(s => s.plan === 'pro').map(sub => (
-                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors adm-list-item adm-list-item-accent">
                     <div className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-[8px] font-bold text-[#FFD700] shrink-0">
                       {sub.username.slice(0, 2).toUpperCase()}
                     </div>
@@ -228,7 +228,7 @@ export function AdminSubscriptions() {
                       <p className="text-[9px] text-white/25 truncate">{sub.email}</p>
                     </div>
                     {sub.isExpired ? (
-                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5">Expired</Badge>
+                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5 adm-badge adm-badge-danger">Expired</Badge>
                     ) : sub.daysRemaining !== null ? (
                       <span className="text-[9px] text-[#03DAC6]/60 tabular-nums">{sub.daysRemaining}d</span>
                     ) : null}
@@ -239,21 +239,21 @@ export function AdminSubscriptions() {
           </CardContent>
         </Card>
         {/* Ultimate Users */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Gem className="h-4 w-4 text-[#03DAC6]" />
-              <h3 className="text-sm font-bold text-white/80">Ultimate</h3>
-              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5">
+              <Gem className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
+              <h3 className="text-sm font-bold text-white/80 adm-section-header">Ultimate</h3>
+              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5 adm-badge adm-badge-success">
                 {subscriptions.filter(s => s.plan === 'ultimate').length}
               </Badge>
             </div>
-            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin">
+            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin adm-scroll-mobile">
               {subscriptions.filter(s => s.plan === 'ultimate').length === 0 ? (
                 <p className="text-[11px] text-white/20 text-center py-4">No ultimate users</p>
               ) : (
                 subscriptions.filter(s => s.plan === 'ultimate').map(sub => (
-                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors adm-list-item adm-list-item-accent">
                     <div className="w-6 h-6 rounded-full bg-[#03DAC6]/10 flex items-center justify-center text-[8px] font-bold text-[#03DAC6] shrink-0">
                       {sub.username.slice(0, 2).toUpperCase()}
                     </div>
@@ -262,7 +262,7 @@ export function AdminSubscriptions() {
                       <p className="text-[9px] text-white/25 truncate">{sub.email}</p>
                     </div>
                     {sub.isExpired ? (
-                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5">Expired</Badge>
+                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5 adm-badge adm-badge-danger">Expired</Badge>
                     ) : sub.daysRemaining !== null ? (
                       <span className="text-[9px] text-[#03DAC6]/60 tabular-nums">{sub.daysRemaining}d</span>
                     ) : null}
@@ -273,21 +273,21 @@ export function AdminSubscriptions() {
           </CardContent>
         </Card>
         {/* Basic Users */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
+        <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-[#BB86FC]" />
-              <h3 className="text-sm font-bold text-white/80">Basic Users</h3>
-              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#BB86FC]/20 text-[#BB86FC] bg-[#BB86FC]/5">
+              <Sparkles className="h-4 w-4 text-[#BB86FC] adm-section-header-icon" />
+              <h3 className="text-sm font-bold text-white/80 adm-section-header">Basic Users</h3>
+              <Badge variant="outline" className="ml-auto text-[9px] font-bold border-[#BB86FC]/20 text-[#BB86FC] bg-[#BB86FC]/5 adm-badge adm-badge-info">
                 {subscriptions.filter(s => s.plan === 'basic').length}
               </Badge>
             </div>
-            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin">
+            <div className="max-h-40 overflow-y-auto space-y-1.5 scrollbar-thin adm-scroll-mobile">
               {subscriptions.filter(s => s.plan === 'basic').length === 0 ? (
                 <p className="text-[11px] text-white/20 text-center py-4">No basic users</p>
               ) : (
                 subscriptions.filter(s => s.plan === 'basic').map(sub => (
-                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                  <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors adm-list-item adm-list-item-accent">
                     <div className="w-6 h-6 rounded-full bg-[#BB86FC]/10 flex items-center justify-center text-[8px] font-bold text-[#BB86FC] shrink-0">
                       {sub.username.slice(0, 2).toUpperCase()}
                     </div>
@@ -296,7 +296,7 @@ export function AdminSubscriptions() {
                       <p className="text-[9px] text-white/25 truncate">{sub.email}</p>
                     </div>
                     {sub.isExpired ? (
-                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5">Expired</Badge>
+                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5 adm-badge adm-badge-danger">Expired</Badge>
                     ) : sub.daysRemaining !== null ? (
                       <span className="text-[9px] text-[#03DAC6]/60 tabular-nums">{sub.daysRemaining}d</span>
                     ) : null}
@@ -309,7 +309,7 @@ export function AdminSubscriptions() {
       </div>
 
       {/* Subscriptions Table */}
-      <Card className="bg-[#0D0D0D] border-white/[0.06]">
+      <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-4">
@@ -325,10 +325,10 @@ export function AdminSubscriptions() {
               ))}
             </div>
           ) : subscriptions.length === 0 ? (
-            <div className="text-center py-20 relative overflow-hidden">
+            <div className="text-center py-20 relative overflow-hidden adm-empty-state">
               <div className="absolute inset-0 animate-empty-gradient" />
               <div className="relative">
-                <div className="w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-5"
+                <div className="w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-5 adm-empty-state-icon"
                   style={{ animation: 'emptyPulse 4s ease-in-out infinite' }}>
                   <CreditCard className="h-9 w-9 text-white/[0.06]" />
                 </div>
@@ -337,10 +337,10 @@ export function AdminSubscriptions() {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto adm-scroll-mobile">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06]">
+                  <tr className="border-b border-white/[0.06] adm-table-header">
                     <th className="text-left py-3 px-4 text-[10px] font-semibold text-white/25 uppercase tracking-wider">User</th>
                     <th className="text-center py-3 px-4 text-[10px] font-semibold text-white/25 uppercase tracking-wider">Plan</th>
                     <th className="text-left py-3 px-4 text-[10px] font-semibold text-white/25 uppercase tracking-wider min-w-[140px]">Time Remaining</th>
@@ -354,7 +354,10 @@ export function AdminSubscriptions() {
                     return (
                       <tr
                         key={sub.id}
-                        className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+                        className={cn(
+                          'border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors animate-in fade-in-0 slide-in-from-bottom-2 duration-300 adm-table-row',
+                          idx % 2 === 0 && 'adm-table-row-alt',
+                        )}
                         style={{ animationDelay: `${idx * 40}ms`, animationFillMode: 'backwards' }}
                       >
                         <td className="py-3 px-4">
@@ -370,8 +373,8 @@ export function AdminSubscriptions() {
                         </td>
                         <td className="py-3 px-4 text-center">
                           <Badge variant="outline" className={cn(
-                            'text-[9px] font-bold uppercase px-2 py-0.5',
-                            sub.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5' : sub.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/40 bg-white/[0.02]',
+                            'text-[9px] font-bold uppercase px-2 py-0.5 adm-badge',
+                            sub.plan === 'ultimate' ? 'border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5 adm-badge-success' : sub.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5 adm-badge-warning' : 'border-white/10 text-white/40 bg-white/[0.02] adm-badge-info',
                           )}>
                             {sub.plan === 'ultimate' ? <><Gem className="h-2 w-2 mr-0.5 inline" />ULTIMATE</> : sub.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
                           </Badge>
@@ -380,9 +383,9 @@ export function AdminSubscriptions() {
                         <td className="py-3 px-4">
                           {sub.subscriptionEnd ? (
                             <div className="space-y-1.5">
-                              <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                              <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden adm-progress-track">
                                 <div
-                                  className="h-full rounded-full transition-all duration-700"
+                                  className="h-full rounded-full transition-all duration-700 adm-progress-fill"
                                   style={{
                                     width: `${progress}%`,
                                     background: getProgressGradient(progress, sub.isExpired),
@@ -407,11 +410,11 @@ export function AdminSubscriptions() {
                         <td className="py-3 px-4 text-center">
                           <div className="flex flex-col items-center gap-1">
                           {sub.isExpired ? (
-                            <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#CF6679]/20 text-[#CF6679] bg-[#CF6679]/5">
+                            <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#CF6679]/20 text-[#CF6679] bg-[#CF6679]/5 adm-badge adm-badge-danger">
                               <AlertTriangle className="h-2.5 w-2.5 mr-0.5 inline" />Expired
                             </Badge>
                           ) : sub.daysRemaining !== null && sub.daysRemaining <= 7 ? (
-                            <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5">
+                            <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5 adm-badge adm-badge-warning">
                               <Clock className="h-2.5 w-2.5 mr-0.5 inline" />{sub.daysRemaining}d left
                             </Badge>
                           ) : (
@@ -421,14 +424,14 @@ export function AdminSubscriptions() {
                             </div>
                           )}
                           {sub.status === 'suspended' && (
-                            <Badge variant="outline" className="text-[8px] font-bold px-1.5 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5">
+                            <Badge variant="outline" className="text-[8px] font-bold px-1.5 py-0 border-[#CF6679]/15 text-[#CF6679]/60 bg-[#CF6679]/5 adm-badge adm-badge-danger">
                               Suspended
                             </Badge>
                           )}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-[#03DAC6] hover:text-[#03DAC6] hover:bg-[#03DAC6]/10"
+                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-[#03DAC6] hover:text-[#03DAC6] hover:bg-[#03DAC6]/10 adm-quick-action"
                             onClick={() => { setExtendSub(sub); setExtendDuration('30'); }}>
                             <Plus className="h-3 w-3 mr-1" /> Extend
                           </Button>
@@ -461,7 +464,7 @@ export function AdminSubscriptions() {
 
       {/* Assign Subscription Dialog */}
       <Dialog open={showAssign} onOpenChange={setShowAssign}>
-        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md adm-dialog-content">
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -477,12 +480,12 @@ export function AdminSubscriptions() {
               <Label className="text-[11px] text-white/50">User Email</Label>
               <Input type="email" placeholder="user@example.com"
                 value={assignEmail} onChange={(e) => setAssignEmail(e.target.value)}
-                className="bg-white/[0.03] border-white/[0.06] text-white/70" />
+                className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input" />
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] text-white/50">Plan</Label>
               <Select value={assignPlan} onValueChange={setAssignPlan}>
-                <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
+                <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
@@ -508,7 +511,7 @@ export function AdminSubscriptions() {
               </div>
               <Input type="number" min="1" placeholder="Or enter custom days"
                 value={assignDuration} onChange={(e) => setAssignDuration(e.target.value)}
-                className="bg-white/[0.03] border-white/[0.06] text-white/70" />
+                className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input" />
             </div>
           </div>
           <DialogFooter className="gap-2">
@@ -525,7 +528,7 @@ export function AdminSubscriptions() {
 
       {/* Extend Dialog */}
       <Dialog open={!!extendSub} onOpenChange={() => setExtendSub(null)}>
-        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md adm-dialog-content">
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90">Extend Subscription</DialogTitle>

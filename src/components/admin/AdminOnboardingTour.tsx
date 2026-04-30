@@ -204,7 +204,7 @@ function TourTooltip({
       style={tooltipStyle}
     >
       <div
-        className="rounded-2xl border border-white/[0.1] shadow-[0_16px_64px_rgba(0,0,0,0.6)] overflow-hidden"
+        className="adm-dialog-content rounded-2xl border border-white/[0.1] shadow-[0_16px_64px_rgba(0,0,0,0.6)] overflow-hidden"
         style={{
           background: 'linear-gradient(145deg, #141422 0%, #0D0D0D 50%, #0F0F1A 100%)',
         }}
@@ -221,7 +221,7 @@ function TourTooltip({
           {/* Header */}
           <div className="flex items-start gap-3 mb-3">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              className="adm-section-header-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{
                 background: `linear-gradient(135deg, ${step.accentColor}20, ${step.accentColor}08)`,
                 boxShadow: `0 2px 8px ${step.accentColor}15`,
@@ -230,17 +230,17 @@ function TourTooltip({
               <Icon className="h-5 w-5" style={{ color: step.accentColor }} />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-[14px] font-bold text-white/90 leading-snug">
+              <h3 className="adm-section-header text-[14px] font-bold text-white/90 leading-snug">
                 {step.title}
               </h3>
               {/* Step indicator */}
               <div className="flex items-center gap-2 mt-1.5">
-                <div className="flex gap-1">
+                <div className="adm-progress-track flex gap-1">
                   {TOUR_STEPS.map((_, i) => (
                     <div
                       key={i}
                       className={cn(
-                        'h-1 rounded-full transition-all duration-300',
+                        'h-1 rounded-full transition-all duration-300 adm-progress-fill',
                         i === stepIndex
                           ? 'w-4'
                           : i < stepIndex
@@ -255,14 +255,14 @@ function TourTooltip({
                     />
                   ))}
                 </div>
-                <span className="text-[10px] text-white/25 font-medium tabular-nums">
+                <span className="adm-badge adm-badge-info text-[10px] text-white/25 font-medium tabular-nums">
                   Step {stepIndex + 1} of {totalSteps}
                 </span>
               </div>
             </div>
             <button
               onClick={onSkip}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.06] transition-all shrink-0"
+              className="adm-action-btn w-7 h-7 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.06] transition-all shrink-0"
               aria-label="Close tour"
             >
               <X className="h-3.5 w-3.5" />
@@ -282,7 +282,7 @@ function TourTooltip({
                   variant="ghost"
                   size="sm"
                   onClick={onPrev}
-                  className="h-8 px-3 text-[11px] rounded-lg text-white/40 hover:text-white/70 hover:bg-white/[0.04] gap-1"
+                  className="adm-action-btn h-8 px-3 text-[11px] rounded-lg text-white/40 hover:text-white/70 hover:bg-white/[0.04] gap-1"
                 >
                   <ChevronLeft className="h-3 w-3" />
                   Back
@@ -295,7 +295,7 @@ function TourTooltip({
                 <Button
                   size="sm"
                   onClick={onNext}
-                  className="h-8 px-4 text-[11px] rounded-lg gap-1 font-semibold text-white"
+                  className="adm-action-btn h-8 px-4 text-[11px] rounded-lg gap-1 font-semibold text-white"
                   style={{
                     background: `linear-gradient(135deg, ${step.accentColor}90, ${step.accentColor}70)`,
                     boxShadow: `0 2px 8px ${step.accentColor}25`,
@@ -308,7 +308,7 @@ function TourTooltip({
                 <Button
                   size="sm"
                   onClick={onNext}
-                  className="h-8 px-4 text-[11px] rounded-lg gap-1 font-semibold text-white"
+                  className="adm-action-btn h-8 px-4 text-[11px] rounded-lg gap-1 font-semibold text-white"
                   style={{
                     background: `linear-gradient(135deg, ${step.accentColor}90, ${step.accentColor}70)`,
                     boxShadow: `0 2px 8px ${step.accentColor}25`,

@@ -601,7 +601,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
           ) : detailUser && (
             <div className="space-y-5">
               {/* User Info Header */}
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
                 {(() => {
                   const ac = getAvatarColor(detailUser.id);
                   return (
@@ -638,7 +638,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <BarChart3 className="h-3 w-3" /> Account Statistics
                 </h4>
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <div className="adm-stat-card p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                     <div className="flex items-center gap-1.5 mb-1">
                       <CreditCard className="h-3.5 w-3.5 text-[#03DAC6]" />
                       <span className="text-[10px] text-white/25 uppercase">Transactions</span>
@@ -647,7 +647,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                       {detailStats?.stats.totalTransactions ?? detailUser._count.transactions}
                     </p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <div className="adm-stat-card p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                     <div className="flex items-center gap-1.5 mb-1">
                       <Target className="h-3.5 w-3.5 text-[#BB86FC]" />
                       <span className="text-[10px] text-white/25 uppercase">Categories</span>
@@ -656,7 +656,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                       {detailStats?.stats.totalCategories ?? detailUser._count.categories}
                     </p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <div className="adm-stat-card p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                     <div className="flex items-center gap-1.5 mb-1">
                       <Wallet className="h-3.5 w-3.5 text-[#FFD700]" />
                       <span className="text-[10px] text-white/25 uppercase">Savings</span>
@@ -665,7 +665,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                       {detailStats?.stats.totalSavingsTargets ?? detailUser._count.savingsTargets}
                     </p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <div className="adm-stat-card p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                     <div className="flex items-center gap-1.5 mb-1">
                       {detailStats && detailStats.stats.balance >= 0
                         ? <TrendingUp className="h-3.5 w-3.5 text-[#03DAC6]" />
@@ -700,7 +700,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                         {detailUser._count.categories}/{detailUser.maxCategories}
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="adm-progress-track">
                       <div className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min((detailUser._count.categories / detailUser.maxCategories) * 100, 100)}%`,
@@ -716,7 +716,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                         {detailUser._count.savingsTargets}/{detailUser.maxSavings}
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="adm-progress-track">
                       <div className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min((detailUser._count.savingsTargets / detailUser.maxSavings) * 100, 100)}%`,
@@ -1191,7 +1191,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                 placeholder="Search by email, username, or ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-10 rounded-xl bg-white/[0.03] border-white/[0.06] text-white/80 text-sm placeholder:text-white/20"
+                className="pl-9 h-10 rounded-xl bg-white/[0.03] border-white/[0.06] text-white/80 text-sm placeholder:text-white/20 adm-search-input"
                 onKeyDown={(e) => e.key === 'Enter' && fetchUsers(1)}
               />
             </div>

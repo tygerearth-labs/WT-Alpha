@@ -123,7 +123,7 @@ export function AdminActivityLog() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white/90">Activity Log</h2>
+          <h2 className="adm-section-header text-xl font-bold text-white/90">Activity Log</h2>
           <p className="text-sm text-white/40 mt-1">Track all admin actions and changes</p>
         </div>
         <div className="flex items-center gap-2">
@@ -138,16 +138,16 @@ export function AdminActivityLog() {
               ))}
             </SelectContent>
           </Select>
-          <Badge variant="outline" className="text-[10px] font-medium px-2.5 py-1 bg-white/[0.02] border-white/[0.06] text-white/30">
+          <Badge variant="outline" className="adm-badge adm-badge-info text-[10px] font-medium px-2.5 py-1 bg-white/[0.02] border-white/[0.06] text-white/30">
             {pagination.total} events
           </Badge>
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
+          <Button variant="outline" size="sm" className="adm-action-btn h-8 gap-1.5 bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
             onClick={exportLogs} disabled={logs.length === 0}>
             <FileDown className="h-3.5 w-3.5" /> Export
           </Button>
           <Button variant="ghost" size="sm"
             className={cn(
-              'h-8 w-8 p-0 hover:bg-white/[0.04]',
+              'adm-action-btn h-8 w-8 p-0 hover:bg-white/[0.04]',
               isRefreshing ? 'text-[#03DAC6]' : 'text-white/40 hover:text-white',
             )}
             onClick={handleRefresh}>
@@ -169,7 +169,7 @@ export function AdminActivityLog() {
           placeholder="Search by target, details, or action..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-10 rounded-xl bg-white/[0.03] border-white/[0.06] text-white/80 text-sm placeholder:text-white/20"
+          className="adm-search-input pl-9 h-10 rounded-xl bg-white/[0.03] border-white/[0.06] text-white/80 text-sm placeholder:text-white/20"
         />
         {searchQuery && (
           <button
@@ -192,7 +192,7 @@ export function AdminActivityLog() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
               whileHover={{ y: -2 }}
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0D0D0D] border border-white/[0.06]"
+              className="adm-stat-card flex items-center gap-2.5 p-3 rounded-xl bg-[#0D0D0D] border border-white/[0.06]"
             >
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ background: `${config.bgColor}12` }}>
@@ -207,7 +207,7 @@ export function AdminActivityLog() {
         })}
       </div>
 
-      <Card className="bg-[#0D0D0D] border-white/[0.06]">
+      <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-4">
@@ -222,7 +222,7 @@ export function AdminActivityLog() {
               ))}
             </div>
           ) : logs.length === 0 ? (
-            <div className="text-center py-20 relative overflow-hidden">
+            <div className="adm-empty-state text-center py-20 relative overflow-hidden">
               {/* Animated gradient background */}
               <div className="absolute inset-0"
                 style={{
@@ -230,7 +230,7 @@ export function AdminActivityLog() {
                   animation: 'emptyPulse 4s ease-in-out infinite',
                 }} />
               <div className="relative">
-                <div className="w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-5">
+                <div className="adm-empty-state-icon w-20 h-20 rounded-3xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-5">
                   <Activity className="h-9 w-9 text-white/[0.06]" />
                 </div>
                 <p className="text-white/25 text-sm font-medium">No activity recorded yet</p>
@@ -238,19 +238,19 @@ export function AdminActivityLog() {
               </div>
             </div>
           ) : filteredLogs.length === 0 && searchQuery ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-4">
+            <div className="adm-empty-state text-center py-16">
+              <div className="adm-empty-state-icon w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mx-auto mb-4">
                 <Search className="h-7 w-7 text-white/[0.06]" />
               </div>
               <p className="text-white/25 text-sm font-medium">No matching entries</p>
               <p className="text-white/15 text-[11px] mt-1.5">Try a different search term</p>
             </div>
           ) : (
-            <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+            <div className="adm-scroll-mobile max-h-[600px] overflow-y-auto custom-scrollbar">
               {Object.entries(groupedLogs).map(([date, dateLogs]) => (
                 <div key={date}>
                   {/* Date separator */}
-                  <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-2 bg-[#0D0D0D]/95 backdrop-blur-sm border-b border-white/[0.04]">
+                  <div className="adm-table-header sticky top-0 z-10 flex items-center gap-3 px-4 py-2 bg-[#0D0D0D]/95 backdrop-blur-sm border-b border-white/[0.04]">
                     <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">{date}</span>
                     <div className="flex-1 h-px bg-white/[0.04]" />
                     <span className="text-[9px] text-white/15">{dateLogs.length} events</span>
@@ -272,7 +272,7 @@ export function AdminActivityLog() {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: entryIdx * 0.03, type: 'spring', stiffness: 400, damping: 25 }}
                             whileHover={{ x: 2 }}
-                            className="flex items-start gap-3 p-3.5 hover:bg-white/[0.02] transition-all duration-200 group/log"
+                            className="adm-list-item flex items-start gap-3 p-3.5 hover:bg-white/[0.02] transition-all duration-200 group/log"
                           >
                             {/* Timeline icon with connecting line */}
                             <div className="relative flex flex-col items-center shrink-0 z-[1]">
@@ -286,7 +286,7 @@ export function AdminActivityLog() {
                             </div>
 
                             {/* Left border glow on hover */}
-                            <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full opacity-0 group-hover/log:opacity-100 transition-opacity duration-300"
+                            <div className="adm-list-item-accent absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full opacity-0 group-hover/log:opacity-100 transition-opacity duration-300"
                               style={{ background: `${config.color}30`, boxShadow: `0 0 8px ${config.color}15` }} />
 
                             <div className="flex-1 min-w-0">

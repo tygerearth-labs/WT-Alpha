@@ -230,9 +230,9 @@ export function AdminLayout() {
             <button
               onClick={() => navigateTo(item.id)}
               className={cn(
-                'flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-200 text-left relative overflow-hidden',
+                'flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-200 text-left relative overflow-hidden adm-list-item',
                 isActive
-                  ? 'bg-[#03DAC6]/[0.08] text-[#03DAC6]'
+                  ? 'bg-[#03DAC6]/[0.08] text-[#03DAC6] adm-list-item-accent'
                   : 'text-white/35 hover:text-white/70 hover:bg-white/[0.04]',
                 !isActive && 'group-hover/nav:scale-[1.02]',
                 'active:scale-[0.98]',
@@ -295,13 +295,13 @@ export function AdminLayout() {
       } as React.CSSProperties}>
 
       {/* Ambient Glow */}
-      <div className="hidden lg:block fixed top-0 left-0 pointer-events-none z-0"
+      <div className="hidden lg:block fixed top-0 left-0 pointer-events-none z-0 adm-ambient-glow"
         style={{ width: '280px', height: '280px', background: 'radial-gradient(ellipse at 30% 20%, rgba(3,218,198,0.05) 0%, transparent 70%)' }} />
-      <div className="hidden lg:block fixed bottom-0 right-0 pointer-events-none z-0"
+      <div className="hidden lg:block fixed bottom-0 right-0 pointer-events-none z-0 adm-ambient-glow adm-ambient-glow-purple"
         style={{ width: '200px', height: '200px', background: 'radial-gradient(ellipse at 70% 80%, rgba(187,134,252,0.03) 0%, transparent 70%)' }} />
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-30" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      <header className="fixed top-0 left-0 right-0 z-30 adm-section-header" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="absolute inset-0 bg-[#0D0D0D]/80 backdrop-blur-xl" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#03DAC6]/25 to-transparent" />
         <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] blur-sm pointer-events-none"
@@ -330,7 +330,7 @@ export function AdminLayout() {
                   <Shield className="h-4 w-4 text-[#03DAC6]" />
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-base font-bold bg-clip-text text-transparent"
+                  <h1 className="text-base font-bold bg-clip-text text-transparent adm-gradient-text"
                     style={{ backgroundImage: 'linear-gradient(135deg, #03DAC6 0%, #BB86FC 50%, #03DAC6 100%)', backgroundSize: '200% 200%', animation: 'gradientShift 4s ease-in-out infinite' }}>
                     Admin Panel
                   </h1>
@@ -563,7 +563,7 @@ export function AdminLayout() {
 
         {/* Page Content */}
         <main className={cn(
-          'flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out',
+          'flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out adm-content-card',
           'pb-[76px] lg:pb-8',
           sidebarCollapsed ? 'lg:ml-[64px]' : 'lg:ml-56 xl:ml-64',
         )}>
@@ -577,10 +577,10 @@ export function AdminLayout() {
       </div>
 
       {/* Bottom Navigation Bar (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-t border-white/[0.06] md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-t border-white/[0.06] md:hidden adm-tab-bar">
         <div
           ref={scrollRef}
-          className="flex items-stretch overflow-x-auto scrollbar-none px-1 gap-0.5"
+          className="flex items-stretch overflow-x-auto scrollbar-none px-1 gap-0.5 adm-scroll-mobile"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           {navigation.map((item) => {
@@ -591,7 +591,8 @@ export function AdminLayout() {
                 key={item.id}
                 onClick={() => navigateTo(item.id)}
                 className={cn(
-                  'relative flex flex-col items-center justify-center min-w-[56px] max-w-[72px] flex-1 py-2 px-1 rounded-xl transition-all duration-200 active:scale-95 shrink-0',
+                  'relative flex flex-col items-center justify-center min-w-[56px] max-w-[72px] flex-1 py-2 px-1 rounded-xl transition-all duration-200 active:scale-95 shrink-0 adm-tab-item',
+                  isActive && 'adm-tab-item-active',
                 )}
               >
                 {isActive && (
