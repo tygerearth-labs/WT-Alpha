@@ -217,6 +217,7 @@ model PlatformConfig {
   availablePlans       String?  @default("[\"basic\",\"pro\",\"ultimate\"]")
   sectionVisibility    String?
   exportEnabled        String?
+  emailNotifications   String?
   landingPageConfig    String?
   landingPageStats     String?
   updatedAt            DateTime @updatedAt
