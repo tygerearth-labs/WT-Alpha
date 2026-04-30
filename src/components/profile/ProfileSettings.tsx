@@ -243,7 +243,7 @@ export function ProfileSettings() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-  const inputCls = 'bg-white/[0.04] border-white/[0.08] rounded-xl h-10 text-sm focus:border-white/15 focus:ring-0 transition-colors';
+  const inputCls = 'bg-white/[0.04] border-white/[0.08] rounded-xl h-11 text-sm focus:border-white/15 focus:ring-0 transition-colors';
   const inputStyle = { background: T_THEME.input, color: T_THEME.text, border: `1px solid ${T_THEME.border}` };
 
   // Format member since date
@@ -270,12 +270,12 @@ export function ProfileSettings() {
   }
 
   return (
-    <div className="space-y-5 max-w-2xl lg:max-w-3xl mx-auto">
+    <div className="px-4 sm:px-6 space-y-5 max-w-2xl lg:max-w-3xl mx-auto">
       {/* ══════════════════════════════════════════════════════════
           1. PROFILE HEADER CARD
           ══════════════════════════════════════════════════════════ */}
       <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
-        <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+        <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6 shadow-lg shadow-black/20" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
           {/* Ambient glow */}
           <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none" style={{ background: `linear-gradient(135deg, ${T_THEME.primary}, ${T_THEME.secondary})` }} />
           <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full opacity-10 blur-3xl pointer-events-none" style={{ background: T_THEME.secondary }} />
@@ -293,7 +293,7 @@ export function ProfileSettings() {
                 style={{ background: 'linear-gradient(135deg, #BB86FC 0%, #03DAC6 100%)' }}
               >
                 <div className="rounded-full p-[2px]" style={{ background: T_THEME.bg }}>
-                  <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
+                  <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2" style={{ borderColor: T_THEME.border }}>
                     {avatarPreview ? <AvatarImage src={avatarPreview} alt={userData.username} className="object-cover" /> : null}
                     <AvatarFallback className="text-2xl sm:text-3xl font-bold" style={{ background: `${T_THEME.primary}20`, color: T_THEME.primary }}>
                       {getInitials(userData.username)}
@@ -357,18 +357,18 @@ export function ProfileSettings() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              <a href="#account-settings">
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0 justify-center sm:justify-start">
+              <a href="#account-settings" className="w-full sm:w-auto">
                 <Button
                   variant="outline"
-                  className="h-9 px-4 rounded-xl text-xs font-medium gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="h-12 w-full sm:w-auto px-4 rounded-xl text-xs font-medium gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   style={{ borderColor: `${T_THEME.primary}40`, color: T_THEME.primary, background: 'transparent' }}
                 >
                   <User className="h-3.5 w-3.5" />
                   {t('profile.editProfile')}
                 </Button>
               </a>
-              <button onClick={handleLogout} className="p-2 rounded-xl transition-all hover:scale-[1.05] active:scale-[0.95]" style={{ background: `${T_THEME.destructive}10` }}>
+              <button onClick={handleLogout} className="p-3 sm:p-2 rounded-xl transition-all hover:scale-[1.05] active:scale-[0.95] min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" style={{ background: `${T_THEME.destructive}10` }}>
                 <LogOut className="h-4 w-4" style={{ color: T_THEME.destructive }} />
               </button>
             </div>
@@ -432,13 +432,13 @@ export function ProfileSettings() {
                 {imageError && <p className="text-[10px] mt-1" style={{ color: T_THEME.destructive }}>{imageError}</p>}
               </div>
 
-              <Button type="submit" disabled={isUpdating} className="w-full h-10 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: 'linear-gradient(135deg, var(--secondary), var(--primary))' }}>
+              <Button type="submit" disabled={isUpdating} className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: 'linear-gradient(135deg, var(--secondary), var(--primary))' }}>
                 {isUpdating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('profile.saving')}</> : t('common.save')}
               </Button>
             </form>
 
             {/* Section divider */}
-            <div className="h-px bg-white/[0.06] my-5" />
+            <div className="h-px bg-white/[0.06] my-6" />
 
             {/* Change Password */}
             <div>
@@ -484,7 +484,7 @@ export function ProfileSettings() {
                     />
                   </div>
                 </div>
-                <Button type="submit" disabled={isUpdating} className="w-full h-10 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: 'linear-gradient(135deg, var(--secondary), var(--primary))' }}>
+                <Button type="submit" disabled={isUpdating} className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: 'linear-gradient(135deg, var(--secondary), var(--primary))' }}>
                   {isUpdating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('profile.saving')}</> : t('profile.changePassword')}
                 </Button>
               </form>
@@ -513,7 +513,7 @@ export function ProfileSettings() {
                   key={opt.value}
                   onClick={() => handleLanguageChange(opt.value)}
                   disabled={isUpdating}
-                  className="flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium transition-all text-left w-full"
+                  className="flex items-center gap-2.5 p-3.5 rounded-xl text-sm font-medium transition-all text-left w-full min-h-[48px]"
                   style={{
                     background: currentLocale === opt.value ? `${T_THEME.primary}15` : `white/[0.04]`,
                     border: `1.5px solid ${currentLocale === opt.value ? T_THEME.primary : 'rgba(255,255,255,0.08)'}`,
@@ -558,7 +558,7 @@ export function ProfileSettings() {
             </div>
 
             <Select value={currentCurrency} onValueChange={handleCurrencyChange} disabled={isUpdating}>
-              <SelectTrigger className="w-full h-10 rounded-xl text-sm border-0 focus:ring-0" style={selectStyle}>
+              <SelectTrigger className="w-full h-11 rounded-xl text-sm border-0 focus:ring-0" style={selectStyle}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] rounded-xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -609,7 +609,7 @@ export function ProfileSettings() {
             {/* Export Data */}
             <button
               onClick={handleExportData}
-              className="w-full flex items-center gap-3 p-3.5 rounded-xl text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full flex items-center gap-3 p-3.5 rounded-xl text-left transition-all hover:scale-[1.01] active:scale-[0.99] min-h-[48px]"
               style={{ background: 'white/[0.04]', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               <div className="grid place-items-center w-9 h-9 rounded-lg shrink-0 [&>*]:block leading-none" style={{ background: `${T_THEME.primary}15` }}>
@@ -638,7 +638,7 @@ export function ProfileSettings() {
               </div>
               <button
                 onClick={() => setDeleteDialog(true)}
-                className="w-full text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-white transition-all hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full text-xs font-semibold py-3 rounded-xl flex items-center justify-center gap-1.5 text-white transition-all hover:scale-[1.01] active:scale-[0.99] min-h-[48px]"
                 style={{ background: 'linear-gradient(135deg, var(--destructive), #991B1B)', border: `1px solid ${T_THEME.destructive}25` }}
               >
                 <Trash2 className="h-3.5 w-3.5" /> {t('profile.deleteAccount')}
@@ -733,13 +733,13 @@ export function ProfileSettings() {
           {/* Section divider */}
           <div className="h-px bg-white/[0.06]" />
           <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
-            <AlertDialogCancel className="flex-1 bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1] rounded-xl h-10">
+            <AlertDialogCancel className="flex-1 bg-white/[0.06] text-white border-white/[0.08] hover:bg-white/[0.1] rounded-xl h-12 order-2 sm:order-1">
               {t('profile.cancelDelete')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAccount}
               disabled={isDeleting || !deletePassword}
-              className="flex-1 rounded-xl h-10 font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 rounded-xl h-12 font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 order-1 sm:order-2"
               style={{ background: 'linear-gradient(135deg, var(--destructive), #991B1B)' }}
             >
               {isDeleting ? <><Loader2 className="h-4 w-4 animate-spin inline mr-1.5" />Deleting...</> : <><Trash2 className="h-4 w-4 inline mr-1.5" />{t('profile.deleteAccount')}</>}

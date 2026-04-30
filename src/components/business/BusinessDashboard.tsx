@@ -367,11 +367,11 @@ function GradientProgressBar({
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
     <div
-      className="w-full rounded-full overflow-hidden"
+      className="w-full rounded-full overflow-hidden biz-progress-track"
       style={{ height: `${height}px`, backgroundColor: alpha(colorFrom, 8) }}
     >
       <div
-        className="h-full rounded-full transition-all duration-700 ease-out"
+        className="h-full rounded-full transition-all duration-700 ease-out biz-progress-fill"
         style={{
           width: `${Math.max(pct, 2)}%`,
           background: `linear-gradient(90deg, ${colorFrom}, ${colorTo})`,
@@ -744,16 +744,16 @@ export default function BusinessDashboard() {
   return (
     <div className="relative space-y-4">
       {/* ══ Ambient background blobs ══ */}
-      <div className="pointer-events-none absolute -top-32 -left-20 h-[500px] w-[500px] rounded-full opacity-[0.07]" style={{ background: `radial-gradient(circle, ${c.secondary}, transparent 70%)`, filter: 'blur(80px)' }} />
-      <div className="pointer-events-none absolute top-60 -right-24 h-[400px] w-[400px] rounded-full opacity-[0.05]" style={{ background: `radial-gradient(circle, ${c.primary}, transparent 70%)`, filter: 'blur(70px)' }} />
-      <div className="pointer-events-none absolute bottom-0 left-1/3 h-[350px] w-[350px] rounded-full opacity-[0.04]" style={{ background: `radial-gradient(circle, ${c.warning}, transparent 70%)`, filter: 'blur(60px)' }} />
+      <div className="biz-ambient-glow biz-ambient-glow-teal -top-32 -left-20 h-[500px] w-[500px] opacity-[0.07]" />
+      <div className="biz-ambient-glow biz-ambient-glow-purple top-60 -right-24 h-[400px] w-[400px] opacity-[0.05]" />
+      <div className="biz-ambient-glow biz-ambient-glow-gold bottom-0 left-1/3 h-[350px] w-[350px] opacity-[0.04]" />
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1: HERO OVERVIEW CARD (Financial Command Center)
           ═══════════════════════════════════════════════════════════════ */}
       {/* Ambient glow behind hero */}
       <div className="relative">
         <div className="pointer-events-none absolute -inset-1 rounded-2xl opacity-30" style={{ background: `radial-gradient(ellipse at 20% 50%, ${alpha(c.secondary, 15)}, transparent 60%), radial-gradient(ellipse at 80% 20%, ${alpha(c.primary, 10)}, transparent 50%)`, filter: 'blur(40px)' }} />
-        <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-none">
+        <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-none biz-hero-card">
         <CardContent className="p-4 sm:p-5">
           {/* Header row: Title + Period selector */}
           <div className="flex items-center justify-between mb-4">
@@ -765,7 +765,7 @@ export default function BusinessDashboard() {
                 <Wallet className="h-4 w-4" style={{ color: c.secondary }} />
               </div>
               <div>
-                <h2 className="text-[15px] font-bold leading-tight bg-gradient-to-r from-white/90 via-white/70 to-white/50 bg-clip-text text-transparent">Ringkasan Keuangan</h2>
+                <h2 className="text-[15px] font-bold leading-tight biz-gradient-text-white">Ringkasan Keuangan</h2>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {greeting.dateStr}
                 </p>
@@ -879,7 +879,7 @@ export default function BusinessDashboard() {
             ].map((chip) => (
               <div
                 key={chip.label}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-transparent transition-colors duration-150"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-transparent transition-colors duration-150 biz-metric-chip"
                 style={{ backgroundColor: alpha(chip.color, 6) }}
               >
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: chip.color }} />
@@ -892,7 +892,7 @@ export default function BusinessDashboard() {
 
             {/* Health Score chip */}
             <div
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ml-auto"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ml-auto biz-metric-chip"
               style={{ backgroundColor: alpha(healthScore.color, 8) }}
             >
               <ShieldCheck className="h-3 w-3" style={{ color: healthScore.color }} />
@@ -925,7 +925,7 @@ export default function BusinessDashboard() {
               {/* Per-card colored glow */}
               <div className="relative">
                 <div className="pointer-events-none absolute -inset-0.5 rounded-xl opacity-20" style={{ background: `radial-gradient(circle at 30% 30%, ${alpha(stat.color, 25)}, transparent 70%)` }} />
-                <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] cursor-default overflow-hidden transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05]">
+                <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] cursor-default overflow-hidden transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05] biz-stat-card">
                 <CardContent className="p-3 pt-2.5">
                   <div className="flex items-center gap-2 mb-2">
                     <div
@@ -953,12 +953,14 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 2.5: QUICK ACTIONS GRID
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="bg-white/[0.02] border border-white/[0.06]">
+      <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
+            <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
+              <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.primary, 8) }}>
               <Zap className="h-3.5 w-3.5" style={{ color: c.primary }} />
+              </div>
               Aksi Cepat
             </CardTitle>
           </div>
@@ -977,7 +979,7 @@ export default function BusinessDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto flex-col gap-1.5 rounded-xl border border-white/[0.06] p-3 text-muted-foreground w-full"
+                    className="h-auto flex-col gap-1.5 rounded-xl border border-white/[0.06] p-3 text-muted-foreground w-full biz-quick-action"
                     style={{ background: 'transparent' }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLElement).style.background = alpha(action.color, 7);
@@ -1006,12 +1008,14 @@ export default function BusinessDashboard() {
           SECTION 2.6: FINANCIAL HEALTH SCORE CARD
           ═══════════════════════════════════════════════════════════════ */}
       {financialHealth && (
-        <Card className="bg-white/[0.02] border border-white/[0.06]">
+        <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
+              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: healthScore.color }} />
+                <div className="biz-section-header-icon" style={{ backgroundColor: alpha(healthScore.color, 8) }}>
                 <ShieldCheck className="h-3.5 w-3.5" style={{ color: healthScore.color }} />
+                </div>
                 Kesehatan Finansial
               </CardTitle>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border-0" style={{ color: healthScore.color, backgroundColor: alpha(healthScore.color, 8) }}>
@@ -1132,11 +1136,7 @@ export default function BusinessDashboard() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.25 }}
-                  className="flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors duration-150 hover:bg-white/[0.02]"
-                  style={{
-                    backgroundColor: alpha(alert.color, 4),
-                    borderColor: alpha(alert.color, 10),
-                  }}
+                  className="flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors duration-150 hover:bg-white/[0.02] biz-alert-banner"
                 >
                   <div
                     className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0 mt-0.5"
@@ -1159,12 +1159,14 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 4: RECENT ACTIVITY (Unified Timeline)
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="bg-white/[0.02] border border-white/[0.06]">
+      <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
+            <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
+              <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.primary, 8) }}>
               <Activity className="h-3.5 w-3.5" style={{ color: c.primary }} />
+              </div>
               Aktivitas Terbaru
             </CardTitle>
             {combinedActivities.length > 0 && (
@@ -1292,12 +1294,14 @@ export default function BusinessDashboard() {
           ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Piutang Jatuh Tempo (2/3) */}
-        <Card className="md:col-span-2 bg-white/[0.02] border border-white/[0.06]">
+        <Card className="md:col-span-2 bg-white/[0.02] border border-white/[0.06] biz-content-card">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
+              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
+                <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.warning, 8) }}>
                 <AlertTriangle className="h-3.5 w-3.5" style={{ color: c.warning }} />
+                </div>
                 Piutang Jatuh Tempo
               </CardTitle>
               {(data?.debtsDueSoon?.length ?? 0) > 0 && (
@@ -1380,11 +1384,13 @@ export default function BusinessDashboard() {
         <div className="space-y-3">
           {/* Top Customers */}
           {topCustomers.length > 0 && (
-            <Card className="bg-white/[0.02] border border-white/[0.06]">
+            <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
               <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
+                <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
+                  <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.warning, 8) }}>
                   <Users className="h-3.5 w-3.5" style={{ color: c.warning }} />
+                  </div>
                   Top Pelanggan
                 </CardTitle>
               </CardHeader>
@@ -1414,11 +1420,13 @@ export default function BusinessDashboard() {
           )}
 
           {/* Piutang Summary */}
-          <Card className="bg-white/[0.02] border border-white/[0.06]">
+          <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
             <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2 text-foreground">
+              <CardTitle className="text-xs font-semibold flex items-center gap-2 text-foreground biz-section-header">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
+                <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.primary, 8) }}>
                 <HandCoins className="h-3 w-3" style={{ color: c.primary }} />
+                </div>
                 Piutang
               </CardTitle>
             </CardHeader>
@@ -1458,12 +1466,14 @@ export default function BusinessDashboard() {
           ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Top Produk Terjual */}
-        <Card className="bg-white/[0.02] border border-white/[0.06]">
+        <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
+              <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
+                <div className="biz-section-header-icon" style={{ backgroundColor: alpha(c.primary, 8) }}>
                 <Package className="h-3.5 w-3.5" style={{ color: c.primary }} />
+                </div>
                 Top Produk
               </CardTitle>
               {(data?.topProductsSold?.length ?? 0) > 0 && (
@@ -1539,12 +1549,14 @@ export default function BusinessDashboard() {
 
         {/* Investor Summary (if any) */}
         {data.investorBreakdown && data.investorBreakdown.length > 0 && (
-          <Card className="bg-white/[0.02] border border-white/[0.06]">
+          <Card className="bg-white/[0.02] border border-white/[0.06] biz-content-card">
             <CardHeader className="pb-2 pt-4 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
+                <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground biz-section-header">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#BB86FC' }} />
+                  <div className="biz-section-header-icon" style={{ backgroundColor: alpha('#BB86FC', 8) }}>
                   <Users className="h-3.5 w-3.5" style={{ color: '#BB86FC' }} />
+                  </div>
                   Dana Investor
                 </CardTitle>
                 {data.investorSummary && (
@@ -1621,7 +1633,7 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 7: TIPS + INSIGHT
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="overflow-hidden bg-white/[0.02] border border-white/[0.06]">
+      <Card className="overflow-hidden bg-white/[0.02] border border-white/[0.06] biz-content-card">
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center gap-3">
             {/* Tip icon + dots */}

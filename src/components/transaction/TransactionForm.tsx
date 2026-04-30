@@ -124,9 +124,9 @@ export function TransactionForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#141414] border-white/[0.08] sm:max-w-md rounded-2xl p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
+      <DialogContent className="bg-[#141414] border-white/[0.08] sm:max-w-md mx-4 sm:mx-0 rounded-2xl sm:rounded-xl p-0 gap-0 max-h-[calc(100vh-2rem)] sm:max-h-[85vh] overflow-y-auto overflow-x-hidden">
+        <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
+          <DialogTitle className="text-xs sm:text-sm font-semibold" style={{ color: '#E6E1E5' }}>
             <span className="inline-flex items-center gap-2">
               <span
                 className="w-2 h-2 rounded-full"
@@ -137,10 +137,10 @@ export function TransactionForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
+        <form onSubmit={handleSubmit} className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3 sm:space-y-4" style={{ '--mode-glow': `${accentColor}30` } as React.CSSProperties}>
           {/* Amount */}
           <div className="space-y-1.5">
-            <Label className="text-[11px]" style={{ color: T.muted }}>{t('transaction.amount')}</Label>
+            <Label className="text-xs sm:text-sm text-white/60 sm:text-white/70">{t('transaction.amount')}</Label>
             <Input
               type="number"
               value={formData.amount}
@@ -149,7 +149,7 @@ export function TransactionForm({
               required
               min="0.01"
               step="0.01"
-              className="h-10 text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-[#555] focus:border-white/15 focus:ring-0 rounded-xl"
+              className="h-11 text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus-visible:border-white/20 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[var(--mode-glow)] rounded-xl transition-all"
               autoFocus
             />
             <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>
@@ -161,20 +161,20 @@ export function TransactionForm({
           <div className="h-px bg-white/[0.06]" />
 
           {/* Category & Date - Grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1.5">
-              <Label className="text-[11px]" style={{ color: T.muted }}>{t('kas.categories')}</Label>
+              <Label className="text-xs sm:text-sm text-white/60 sm:text-white/70">{t('kas.categories')}</Label>
               <Select
                 value={formData.categoryId}
                 onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                 required
               >
-                <SelectTrigger className="h-10 text-xs bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:ring-0 focus:border-white/15">
+                <SelectTrigger className={`h-11 text-xs sm:text-sm bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[var(--mode-glow)] focus-visible:border-white/20 transition-all ${formData.categoryId ? 'shadow-[0_0_14px_-4px_var(--mode-glow)]' : ''}`}>
                   <SelectValue placeholder={t('transaction.select')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1a1a] border-white/[0.08]">
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id} className="text-white focus:bg-white/[0.08]">
+                    <SelectItem key={cat.id} value={cat.id} className="text-white focus:bg-white/[0.08] py-2.5">
                       <DynamicIcon name={cat.icon} className="h-4 w-4 inline" /> {cat.name}
                     </SelectItem>
                   ))}
@@ -185,13 +185,13 @@ export function TransactionForm({
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px]" style={{ color: T.muted }}>{t('laporan.date')}</Label>
+              <Label className="text-xs sm:text-sm text-white/60 sm:text-white/70">{t('laporan.date')}</Label>
               <Input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
-                className="h-10 text-xs bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:ring-0 focus:border-white/15 [color-scheme:dark]"
+                className="h-11 text-xs sm:text-sm bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[var(--mode-glow)] focus-visible:border-white/20 [color-scheme:dark] transition-all"
               />
             </div>
           </div>
@@ -201,13 +201,13 @@ export function TransactionForm({
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-[11px]" style={{ color: T.muted }}>{t('laporan.excelDescription')}</Label>
+            <Label className="text-xs sm:text-sm text-white/60 sm:text-white/70">{t('laporan.excelDescription')}</Label>
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder={placeholderText}
               rows={2}
-              className="text-xs bg-white/[0.04] border-white/[0.08] text-white placeholder:text-[#555] focus:border-white/15 focus:ring-0 rounded-xl resize-none"
+              className="text-xs sm:text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus-visible:border-white/20 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[var(--mode-glow)] rounded-xl resize-none min-h-[2.75rem] transition-all"
             />
             <p className="text-[9px] mt-0.5" style={{ color: T.muted }}>{t('form.tipDescription')}</p>
           </div>
@@ -218,7 +218,7 @@ export function TransactionForm({
               {/* Section divider */}
               <div className="h-px bg-white/[0.06]" />
               <div
-                className="rounded-xl p-3 space-y-3"
+                className="rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-3 sm:space-y-4"
                 style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
               >
                 <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: T.primary }}>
@@ -227,18 +227,18 @@ export function TransactionForm({
                 <p className="text-[9px]" style={{ color: `${T.primary}80` }}>{t('form.tipAllocation')}</p>
                 <div className="space-y-2">
                   <div className="space-y-1.5">
-                    <Label className="text-[11px]" style={{ color: T.muted }}>{t('nav.target')}</Label>
+                    <Label className="text-xs sm:text-sm text-white/60 sm:text-white/70">{t('nav.target')}</Label>
                     <Select
                       value={formData.targetId}
                       onValueChange={(value) => setFormData({ ...formData, targetId: value })}
                     >
-                      <SelectTrigger className="h-9 text-xs bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus:ring-0 focus:border-white/15">
+                      <SelectTrigger className={`h-11 text-xs sm:text-sm bg-white/[0.04] border-white/[0.08] text-white rounded-xl focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[var(--mode-glow)] focus-visible:border-white/20 transition-all ${formData.targetId && formData.targetId !== 'none' ? 'shadow-[0_0_14px_-4px_var(--mode-glow)]' : ''}`}>
                         <SelectValue placeholder={t('nav.target')} />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1a1a1a] border-white/[0.08]">
-                        <SelectItem value="none" className="text-white focus:bg-white/[0.08]">{t('transaction.notAllocated')}</SelectItem>
+                        <SelectItem value="none" className="text-white focus:bg-white/[0.08] py-2.5">{t('transaction.notAllocated')}</SelectItem>
                         {savingsTargets.map((target) => (
-                          <SelectItem key={target.id} value={target.id} className="text-white focus:bg-white/[0.08]">
+                          <SelectItem key={target.id} value={target.id} className="text-white focus:bg-white/[0.08] py-2.5">
                             {target.name}
                           </SelectItem>
                         ))}
@@ -246,7 +246,7 @@ export function TransactionForm({
                     </Select>
                   </div>
                   {formData.targetId && formData.targetId !== 'none' && (
-                    <div className="flex items-center justify-between rounded-lg px-2.5 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
                       <span className="text-[10px]" style={{ color: T.muted }}>{t('transaction.autoAllocate')}</span>
                       <span className="text-[11px] font-bold" style={{ color: T.primary }}>
                         {formData.allocationPercentage || 0}% = {formatAmount(allocAmount)}
@@ -262,12 +262,12 @@ export function TransactionForm({
           <div className="h-px bg-white/[0.06]" />
 
           {/* Submit */}
-          <DialogFooter className="pt-1 gap-2">
+          <DialogFooter className="pt-1 sm:pt-2 gap-2 sm:gap-3">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-xl text-xs hover:bg-white/[0.06]"
+              className="w-full sm:w-auto flex-1 rounded-xl text-xs sm:text-sm h-12 hover:bg-white/[0.06] active:scale-[0.98] transition-all"
               style={{ color: T.muted }}
             >
               {t('common.cancel')}
@@ -275,7 +275,7 @@ export function TransactionForm({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 rounded-xl text-xs font-semibold border-0 text-white"
+              className="w-full sm:w-auto flex-1 rounded-xl text-xs sm:text-sm font-semibold border-0 text-white h-12 shadow-lg hover:shadow-xl hover:shadow-black/20 active:scale-[0.98] transition-all"
               style={{ background: saveButtonGradient }}
             >
               {isSubmitting && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}

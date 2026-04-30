@@ -379,7 +379,7 @@ export default function TradingJournal() {
       {/* Stats Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-white/[0.03] border-white/[0.06]">
+          <Card className="inv-stat-card bg-white/[0.03] border-white/[0.06]">
             <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.totalTrades')}</p>
@@ -388,7 +388,7 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-white/[0.03] border-white/[0.06]">
+          <Card className="inv-stat-card bg-white/[0.03] border-white/[0.06]">
             <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.winRate')}</p>
@@ -397,7 +397,7 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-white/[0.03] border-white/[0.06]">
+          <Card className="inv-stat-card bg-white/[0.03] border-white/[0.06]">
             <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.avgPnL')}</p>
@@ -408,7 +408,7 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-white/[0.03] border-white/[0.06]">
+          <Card className="inv-stat-card bg-white/[0.03] border-white/[0.06]">
             <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.bestTrade')}</p>
@@ -417,7 +417,7 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-white/[0.03] border-white/[0.06]">
+          <Card className="inv-stat-card bg-white/[0.03] border-white/[0.06]">
             <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.worstTrade')}</p>
@@ -468,7 +468,7 @@ export default function TradingJournal() {
           <Badge
             variant="outline"
             className={cn(
-              'border text-xs rounded-full px-3 py-0.5 transition-colors',
+              'border text-xs rounded-full px-3 py-1 min-h-[28px] flex items-center transition-colors',
               portfolioFilter !== 'all' || typeFilter !== 'all' || dateFrom || dateTo
                 ? 'border-[#BB86FC]/30 bg-[#BB86FC]/10 text-[#BB86FC]'
                 : 'border-white/[0.08] text-white/50'
@@ -482,7 +482,7 @@ export default function TradingJournal() {
             variant="outline"
             size="sm"
             onClick={exportExcel}
-            className="border-white/[0.08] rounded-xl text-white/50 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/15 h-9 text-xs transition-colors"
+            className="border-white/[0.08] rounded-xl text-white/50 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/15 min-h-[44px] sm:min-h-0 h-11 sm:h-9 text-xs transition-colors"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />
             Excel
@@ -491,7 +491,7 @@ export default function TradingJournal() {
             variant="outline"
             size="sm"
             onClick={exportPDF}
-            className="border-white/[0.08] rounded-xl text-white/50 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/15 h-9 text-xs transition-colors"
+            className="border-white/[0.08] rounded-xl text-white/50 hover:text-white/80 hover:bg-white/[0.04] hover:border-white/15 min-h-[44px] sm:min-h-0 h-11 sm:h-9 text-xs transition-colors"
           >
             <FileText className="h-3.5 w-3.5 mr-1" />
             PDF
@@ -499,7 +499,7 @@ export default function TradingJournal() {
           <Button
             onClick={openCreate}
             size="sm"
-            className="rounded-xl text-white h-9 text-xs"
+            className="rounded-xl text-white min-h-[44px] sm:min-h-0 h-11 sm:h-9 text-xs"
             style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -509,7 +509,7 @@ export default function TradingJournal() {
       </div>
 
       {/* Journal Table */}
-      <Card className="bg-white/[0.03] border-white/[0.06]">
+      <Card className="inv-content-card bg-white/[0.03] border-white/[0.06]">
         <div className="h-px bg-white/[0.06]" />
         <CardContent className="p-0">
           {loading ? (
@@ -523,10 +523,10 @@ export default function TradingJournal() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col items-center justify-center py-16 relative"
+              className="inv-empty-state flex flex-col items-center justify-center py-16 relative"
             >
               <div className="absolute w-32 h-32 rounded-full bg-[#BB86FC]/5 blur-3xl" />
-              <div className="w-16 h-16 rounded-2xl bg-[#BB86FC]/10 border border-[#BB86FC]/20 flex items-center justify-center mb-4">
+              <div className="inv-empty-state-icon w-16 h-16 rounded-2xl bg-[#BB86FC]/10 border border-[#BB86FC]/20 flex items-center justify-center mb-4">
                 <BookOpen className="h-8 w-8 text-[#BB86FC]/60" />
               </div>
               <p className="text-white/40 text-sm font-medium">{t('inv.noJournalData')}</p>
@@ -536,7 +536,7 @@ export default function TradingJournal() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-white/[0.06] hover:bg-transparent">
+                  <TableRow className="border-white/[0.06] hover:bg-transparent uppercase tracking-wider">
                     <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40">Tipe</TableHead>
                     <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40">Symbol</TableHead>
                     <TableHead className="text-[13px] font-bold uppercase tracking-wider text-white/40 text-right">H. Masuk</TableHead>
@@ -562,8 +562,8 @@ export default function TradingJournal() {
                         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                       >
                         <TableRow className={cn(
-                          'border-white/[0.04] hover:bg-white/[0.02] transition-colors',
-                          isBuy ? 'border-l-[3px] border-l-[#03DAC6]' : 'border-l-[3px] border-l-[#CF6679]'
+                          'inv-journal-row border-white/[0.04] hover:bg-white/[0.02] transition-colors',
+                          isBuy ? 'inv-journal-row-buy border-l-[3px] border-l-[#03DAC6]' : 'inv-journal-row-sell border-l-[3px] border-l-[#CF6679]'
                         )}>
                           <TableCell className="py-3">
                             <Badge
@@ -632,7 +632,7 @@ export default function TradingJournal() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden text-white sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="inv-dialog-content bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden text-white sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
           <div className="h-px bg-white/[0.06]" />
           <div className="p-5">
             <DialogHeader>
@@ -817,7 +817,7 @@ export default function TradingJournal() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl text-white">
+        <AlertDialogContent className="inv-dialog-content bg-[#141414] border-white/[0.08] rounded-2xl text-white">
           <div className="h-px bg-white/[0.06]" />
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>

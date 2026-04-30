@@ -446,15 +446,15 @@ export default function BusinessInvoice() {
   return (
     <div className="space-y-4 relative">
       {/* ── Ambient Background ── */}
-      <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-[0.04] blur-3xl pointer-events-none" style={{ backgroundColor: c.primary }} />
-      <div className="absolute top-40 -right-16 w-60 h-60 rounded-full opacity-[0.03] blur-3xl pointer-events-none" style={{ backgroundColor: c.secondary }} />
-      <div className="absolute bottom-20 left-1/3 w-56 h-56 rounded-full opacity-[0.025] blur-3xl pointer-events-none" style={{ backgroundColor: c.warning }} />
+      <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-[0.04] blur-3xl pointer-events-none biz-ambient-glow-primary" style={{ backgroundColor: c.primary }} />
+      <div className="absolute top-40 -right-16 w-60 h-60 rounded-full opacity-[0.03] blur-3xl pointer-events-none biz-ambient-glow-secondary" style={{ backgroundColor: c.secondary }} />
+      <div className="absolute bottom-20 left-1/3 w-56 h-56 rounded-full opacity-[0.025] blur-3xl pointer-events-none biz-ambient-glow-warning" style={{ backgroundColor: c.warning }} />
 
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
         {/* ═══ Invoice Overview Hero ═══ */}
         <motion.div variants={itemVariants}>
-          <Card className="rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl">
+          <Card className="biz-hero-card rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl">
             <CardContent className="p-4 sm:p-5">
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
@@ -475,10 +475,8 @@ export default function BusinessInvoice() {
                         key={opt.value}
                         onClick={() => setPeriodFilter(opt.value)}
                         className={cn(
-                          'px-2.5 py-1 text-[10px] font-medium rounded-md transition-all',
-                          periodFilter === opt.value
-                            ? 'text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
+                          'biz-period-pill px-2.5 py-1 text-[10px] font-medium rounded-md transition-all',
+                          periodFilter === opt.value && 'biz-period-pill-active text-foreground shadow-sm'
                         )}
                         style={periodFilter === opt.value ? { backgroundColor: alpha(c.primary, 15), color: c.primary } : {}}
                       >
@@ -494,15 +492,15 @@ export default function BusinessInvoice() {
               </div>
 
               {/* Mobile period filter */}
-              <div className="flex sm:hidden items-center gap-1.5 mb-3">
+              <div className="flex sm:hidden items-center gap-1.5 mb-3 biz-scroll-mobile">
                 {PERIOD_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setPeriodFilter(opt.value)}
                     className={cn(
-                      'px-3 py-1.5 text-[10px] font-medium rounded-full border transition-all',
+                      'biz-period-pill px-3 py-1.5 text-[10px] font-medium rounded-full border transition-all shrink-0',
                       periodFilter === opt.value
-                        ? 'border-0'
+                        ? 'biz-period-pill-active border-0'
                         : 'border-0 text-muted-foreground'
                     )}
                     style={periodFilter === opt.value ? { backgroundColor: alpha(c.primary, 15), color: c.primary } : { backgroundColor: alpha(c.foreground, 4) }}
@@ -517,7 +515,7 @@ export default function BusinessInvoice() {
                 {/* Total Invoices */}
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: alpha(c.primary, 5) }} />
-                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                  <div className="biz-stat-card relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]" style={{ '--biz-accent': alpha(c.primary, 30) } as React.CSSProperties}>
                     <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.primary, 12) }}>
                       <Receipt className="h-4 w-4" style={{ color: c.primary }} />
                     </div>
@@ -531,7 +529,7 @@ export default function BusinessInvoice() {
                 {/* Total Amount */}
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: alpha(c.secondary, 5) }} />
-                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                  <div className="biz-stat-card relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]" style={{ '--biz-accent': alpha(c.secondary, 30) } as React.CSSProperties}>
                     <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.secondary, 12) }}>
                       <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
                     </div>
@@ -545,7 +543,7 @@ export default function BusinessInvoice() {
                 {/* Paid % */}
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: alpha(c.warning, 5) }} />
-                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                  <div className="biz-stat-card relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]" style={{ '--biz-accent': alpha(c.warning, 30) } as React.CSSProperties}>
                     <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.warning, 12) }}>
                       <CheckCircle2 className="h-4 w-4" style={{ color: c.warning }} />
                     </div>
@@ -559,7 +557,7 @@ export default function BusinessInvoice() {
                 {/* Overdue */}
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 5) : alpha(c.muted, 3) }} />
-                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                  <div className="biz-stat-card relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]" style={{ '--biz-accent': alpha(overdueCount > 0 ? c.destructive : c.muted, 30) } as React.CSSProperties}>
                     <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 12) : alpha(c.muted, 6) }}>
                       <AlertTriangle className="h-4 w-4" style={{ color: overdueCount > 0 ? c.destructive : c.muted }} />
                     </div>
@@ -577,13 +575,14 @@ export default function BusinessInvoice() {
 
         {/* ═══ Status Filter Chips + Search ═══ */}
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 sm:pb-0 biz-scroll-mobile">
             {STATUS_CHIPS.map((chip) => (
               <button
                 key={chip.value}
                 onClick={() => setStatusFilter(chip.value)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full border-0 whitespace-nowrap transition-all shrink-0'
+                  'biz-filter-chip flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-full border-0 whitespace-nowrap transition-all shrink-0',
+                  statusFilter === chip.value && 'biz-filter-chip-active'
                 )}
                 style={
                   statusFilter === chip.value
@@ -606,14 +605,14 @@ export default function BusinessInvoice() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('common.search') + '...'}
-              className="h-8 pl-8 text-xs bg-transparent border border-border text-foreground rounded-lg"
+              className="biz-search-input h-8 pl-8 text-xs bg-transparent border border-border text-foreground rounded-lg"
             />
           </div>
         </motion.div>
 
         {/* ═══ Invoice List ═══ */}
         <motion.div variants={itemVariants}>
-          <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
+          <Card className="biz-content-card rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-2 p-4">
@@ -626,7 +625,7 @@ export default function BusinessInvoice() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
-                  className="flex flex-col items-center justify-center py-16 px-6 relative"
+                  className="biz-empty-state flex flex-col items-center justify-center py-16 px-6 relative"
                 >
                   {/* Decorative background glow */}
                   <div className="absolute w-32 h-32 rounded-full blur-3xl opacity-20" style={{ backgroundColor: alpha(c.primary, 30), top: '20%', left: '50%', transform: 'translateX(-50%)' }} />
@@ -673,7 +672,7 @@ export default function BusinessInvoice() {
                   </div>
 
                   {/* Mobile Card List */}
-                  <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border">
+                  <div className="sm:hidden max-h-[500px] overflow-y-auto divide-y divide-border premium-scroll">
                     <AnimatePresence mode="popLayout">
                       {filteredInvoices.map((inv, index) => {
                         const sc = STATUS_CONFIG[inv.status] || STATUS_CONFIG.pending;
@@ -686,7 +685,7 @@ export default function BusinessInvoice() {
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ delay: index * 0.03, duration: 0.25 }}
                             whileHover={{ x: 2 }}
-                            className="p-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.03] border-l-[3px] border-l-transparent hover:border-l-white/[0.15]"
+                            className="biz-list-item biz-list-item-accent p-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.03] border-l-[3px] border-l-transparent hover:border-l-white/[0.15]"
                             onClick={() => setViewInvoice(inv)}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -764,7 +763,7 @@ export default function BusinessInvoice() {
                   <div className="hidden sm:block max-h-[500px] overflow-y-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-b border-border hover:bg-transparent">
+                        <TableRow className="biz-table-header border-b border-border hover:bg-transparent">
                           <TableHead className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">No. Invoice</TableHead>
                           <TableHead className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pelanggan</TableHead>
                           <TableHead className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Status</TableHead>
@@ -863,7 +862,7 @@ export default function BusinessInvoice() {
 
       {/* ═══ View Invoice Dialog (Responsive) ═══ */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[92vh] overflow-y-auto rounded-2xl p-0 border border-white/[0.08] bg-[#141414]">
+        <DialogContent className="biz-dialog-content w-[95vw] sm:max-w-[700px] max-h-[92vh] overflow-y-auto rounded-2xl p-0 border border-white/[0.08] bg-[#141414]">
           <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.secondary, 30)}, ${alpha(c.primary, 30)}, transparent)` }} />
           {viewInvoice && (() => {
             const tmpl = invoiceSettings?.template || 'modern';
@@ -1091,7 +1090,7 @@ export default function BusinessInvoice() {
 
       {/* ═══ Create/Edit Dialog ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-[#141414] border-white/[0.08]">
+        <DialogContent className="biz-dialog-content sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-[#141414] border-white/[0.08]">
           <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.secondary, 30)}, ${alpha(c.primary, 30)}, transparent)` }} />
           <DialogHeader className="p-4 sm:p-5 pb-0">
             <DialogTitle className="text-sm font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
@@ -1287,7 +1286,7 @@ export default function BusinessInvoice() {
 
       {/* ═══ Delete Confirmation ═══ */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="rounded-2xl bg-[#141414] border-white/[0.08] p-0 overflow-hidden">
+        <AlertDialogContent className="biz-dialog-content rounded-2xl bg-[#141414] border-white/[0.08] p-0 overflow-hidden">
           <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.destructive, 30)}, transparent)` }} />
           <div className="p-4 sm:p-5 space-y-3">
             <AlertDialogHeader className="space-y-1.5">

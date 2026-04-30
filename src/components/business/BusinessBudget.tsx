@@ -218,9 +218,9 @@ function SectionHeader({
   label: string;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
+    <div className="biz-section-header flex items-center gap-2 mb-3">
       <div
-        className="h-6 w-6 rounded-md flex items-center justify-center"
+        className="biz-section-header-icon h-6 w-6 rounded-md flex items-center justify-center"
         style={{ background: alpha(c.primary, 12) }}
       >
         <Icon className="h-3 w-3" style={{ color: c.primary }} />
@@ -537,7 +537,7 @@ export default function BusinessBudget() {
     <div className="space-y-3">
       {/* ═══ INFO BANNER ═══ */}
       <div
-        className="flex items-start gap-2 p-2.5 rounded-lg text-[11px] border"
+        className="biz-info-banner flex items-start gap-2 p-2.5 rounded-lg text-[11px] border"
         style={{
           background: alpha(c.primary, 5),
           borderColor: alpha(c.primary, 15),
@@ -594,7 +594,7 @@ export default function BusinessBudget() {
 
         {/* Month Pills */}
         <div
-          className="flex items-center gap-1 overflow-x-auto pb-1 px-1"
+          className="biz-scroll-mobile flex items-center gap-1 overflow-x-auto pb-1 px-1"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -609,7 +609,7 @@ export default function BusinessBudget() {
               <button
                 key={monthNum}
                 onClick={() => setSelectedMonth(monthNum)}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border"
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${isActive ? 'biz-period-pill-active' : 'biz-period-pill'}`}
                 style={{
                   background: isActive ? alpha(c.primary, 15) : 'transparent',
                   color: isActive ? c.primary : c.muted,
@@ -639,7 +639,7 @@ export default function BusinessBudget() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          <Card className="rounded-xl overflow-hidden border" style={{ background: c.card, borderColor: c.border }}>
+          <Card className="biz-hero-card rounded-xl overflow-hidden border" style={{ background: c.card, borderColor: c.border }}>
             <div
               className="h-px"
               style={{
@@ -701,9 +701,9 @@ export default function BusinessBudget() {
                       {Math.round((summary.totalSpent / summary.totalBudget) * 100)}%
                     </span>
                   </div>
-                  <div className="h-2.5 rounded-full overflow-hidden" style={{ background: c.border }}>
+                  <div className="biz-progress-track h-2.5 rounded-full overflow-hidden" style={{ background: c.border }}>
                     <motion.div
-                      className="h-full rounded-full"
+                      className="biz-progress-fill h-full rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min((summary.totalSpent / summary.totalBudget) * 100, 100)}%` }}
                       transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -719,11 +719,11 @@ export default function BusinessBudget() {
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Spent Chip */}
                 <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                  className="biz-metric-chip flex items-center gap-2 px-3 py-2 rounded-lg border"
                   style={{ background: alpha(c.warning, 6), borderColor: alpha(c.warning, 12) }}
                 >
                   <div
-                    className="w-6 h-6 rounded-md flex items-center justify-center"
+                    className="biz-metric-chip-icon w-6 h-6 rounded-md flex items-center justify-center"
                     style={{ background: alpha(c.warning, 15) }}
                   >
                     <TrendingDown className="h-3 w-3" style={{ color: c.warning }} />
@@ -738,11 +738,11 @@ export default function BusinessBudget() {
 
                 {/* Remaining Chip */}
                 <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                  className="biz-metric-chip flex items-center gap-2 px-3 py-2 rounded-lg border"
                   style={{ background: alpha(c.secondary, 6), borderColor: alpha(c.secondary, 12) }}
                 >
                   <div
-                    className="w-6 h-6 rounded-md flex items-center justify-center"
+                    className="biz-metric-chip-icon w-6 h-6 rounded-md flex items-center justify-center"
                     style={{ background: alpha(c.secondary, 15) }}
                   >
                     <CheckCircle className="h-3 w-3" style={{ color: c.secondary }} />
@@ -757,11 +757,11 @@ export default function BusinessBudget() {
 
                 {/* Allocated Chip */}
                 <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                  className="biz-metric-chip flex items-center gap-2 px-3 py-2 rounded-lg border"
                   style={{ background: alpha(c.primary, 6), borderColor: alpha(c.primary, 12) }}
                 >
                   <div
-                    className="w-6 h-6 rounded-md flex items-center justify-center"
+                    className="biz-metric-chip-icon w-6 h-6 rounded-md flex items-center justify-center"
                     style={{ background: alpha(c.primary, 15) }}
                   >
                     <CircleDollarSign className="h-3 w-3" style={{ color: c.primary }} />
@@ -786,10 +786,10 @@ export default function BusinessBudget() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1 }}
         >
-          <Card className="rounded-xl border" style={{ background: c.card, borderColor: c.border }}>
+          <Card className="biz-content-card rounded-xl border" style={{ background: c.card, borderColor: c.border }}>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Wallet className="h-3.5 w-3.5" style={{ color: c.primary }} />
+              <div className="biz-section-header flex items-center gap-2 mb-3">
+                <Wallet className="biz-section-header-icon h-3.5 w-3.5" style={{ color: c.primary }} />
                 <span className="text-xs font-semibold" style={{ color: c.foreground }}>
                   Saldo Sumber Dana
                 </span>
@@ -834,13 +834,13 @@ export default function BusinessBudget() {
       )}
 
       {/* ═══ BUDGET LIST ═══ */}
-      <Card className="rounded-xl overflow-hidden border" style={{ background: c.card, borderColor: c.border }}>
+      <Card className="biz-content-card rounded-xl overflow-hidden border" style={{ background: c.card, borderColor: c.border }}>
         <CardContent className="p-0">
           {/* Header with Add Button */}
           <div className="flex items-center justify-between p-3 sm:p-4" style={{ borderBottom: `1px solid ${c.border}` }}>
-            <div className="flex items-center gap-2">
+            <div className="biz-section-header flex items-center gap-2">
               <div
-                className="h-6 w-6 rounded-md flex items-center justify-center"
+                className="biz-section-header-icon h-6 w-6 rounded-md flex items-center justify-center"
                 style={{ background: alpha(c.primary, 12) }}
               >
                 <Target className="h-3 w-3" style={{ color: c.primary }} />
@@ -876,9 +876,9 @@ export default function BusinessBudget() {
             </div>
           ) : budgets.length === 0 ? (
             /* ═══ EMPTY STATE ═══ */
-            <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-6">
+            <div className="biz-empty-state flex flex-col items-center justify-center py-12 sm:py-16 px-6">
               <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 border"
+                className="biz-empty-state-icon w-14 h-14 rounded-xl flex items-center justify-center mb-4 border"
                 style={{ background: alpha(c.primary, 5), borderColor: c.border }}
               >
                 <PiggyBank className="h-6 w-6" style={{ color: c.muted }} />
@@ -1008,9 +1008,9 @@ export default function BusinessBudget() {
 
                         {/* Progress Bar */}
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: c.border }}>
+                          <div className="biz-progress-track flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: c.border }}>
                             <div
-                              className="h-full rounded-full transition-all duration-700"
+                              className="biz-progress-fill h-full rounded-full transition-all duration-700"
                               style={{
                                 width: `${Math.min(budget.spentPct, 100)}%`,
                                 background: getProgressBgColor(budget.spentPct),
@@ -1146,7 +1146,7 @@ export default function BusinessBudget() {
               <div className="hidden sm:block max-h-[600px] overflow-y-auto">
                 <table className="w-full">
                   <thead>
-                    <tr style={{ borderBottom: `1px solid ${c.border}` }}>
+                    <tr className="biz-table-header" style={{ borderBottom: `1px solid ${c.border}` }}>
                       <th className="text-[10px] font-medium uppercase tracking-wider text-left py-2.5 px-4" style={{ color: c.muted }}>
                         Kategori
                       </th>
@@ -1188,6 +1188,7 @@ export default function BusinessBudget() {
                         return (
                           <motion.tr
                             key={budget.id}
+                            className="biz-table-row"
                             custom={i}
                             initial={{ opacity: 0, y: 4 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -1270,7 +1271,7 @@ export default function BusinessBudget() {
                               <div className="flex items-center gap-2">
                                 <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: c.border }}>
                                   <div
-                                    className="h-full rounded-full transition-all duration-700"
+                                    className="biz-progress-fill h-full rounded-full transition-all duration-700"
                                     style={{
                                       width: `${Math.min(budget.spentPct, 100)}%`,
                                       background: getProgressBgColor(budget.spentPct),
@@ -1418,7 +1419,7 @@ export default function BusinessBudget() {
       {/* ═══ ADD / EDIT BUDGET DIALOG ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
+          className="biz-dialog-content bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
           style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
           <div className="h-px bg-white/[0.06]" />

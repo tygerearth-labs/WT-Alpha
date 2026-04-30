@@ -270,13 +270,13 @@ export default function BusinessCategoryManager() {
   /* ── Empty State ── */
   const renderEmptyState = () => (
     <motion.div
-      className="flex flex-col items-center justify-center py-16 px-6"
+      className="biz-empty-state flex flex-col items-center justify-center py-16 px-6"
       variants={emptyPulseVariants}
       initial="hidden"
       animate="visible"
     >
       <div
-        className="relative flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
+        className="biz-empty-state-icon relative flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
         style={{
           background: `linear-gradient(135deg, ${typeConfig.gradientFrom}20, ${typeConfig.gradientTo}15)`,
           boxShadow: `0 0 30px ${typeConfig.gradientFrom}08`,
@@ -347,7 +347,7 @@ export default function BusinessCategoryManager() {
     >
       {/* ── Header Card ── */}
       <motion.div variants={cardPopVariants}>
-        <Card className="bg-card border-border overflow-hidden">
+        <Card className="biz-content-card bg-card border-border overflow-hidden">
           {/* Gradient header strip */}
           <div
             className="h-1 w-full"
@@ -403,7 +403,7 @@ export default function BusinessCategoryManager() {
           }}
         >
           <div
-            className="bg-card border border-border rounded-2xl p-1.5 relative overflow-x-auto"
+            className="biz-scroll-mobile bg-card border border-border rounded-2xl p-1.5 relative overflow-x-auto"
           >
             {/* Decorative gradient circle */}
             <div
@@ -486,7 +486,7 @@ export default function BusinessCategoryManager() {
               </div>
 
               {/* ── Category List ── */}
-              <Card className="bg-card border-border overflow-hidden">
+              <Card className="biz-content-card bg-card border-border overflow-hidden">
                 <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
                   {loading ? (
                     renderSkeleton()
@@ -519,7 +519,7 @@ export default function BusinessCategoryManager() {
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-                            className="flex items-center gap-3 px-4 md:px-5 py-3.5 group hover:bg-muted/20 transition-all duration-200"
+                            className="biz-list-item flex items-center gap-3 px-4 md:px-5 py-3.5 group hover:bg-muted/20 transition-all duration-200"
                           >
                             {/* Icon */}
                             <div
@@ -606,7 +606,7 @@ export default function BusinessCategoryManager() {
       {/* ── Add / Edit Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="bg-card border-border w-[95vw] sm:max-w-md rounded-2xl"
+          className="biz-dialog-content bg-card border-border w-[95vw] sm:max-w-md rounded-2xl"
         >
           {/* Gradient header line */}
           <div

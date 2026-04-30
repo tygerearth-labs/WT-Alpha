@@ -213,7 +213,7 @@ function StatCard({
         className="absolute -inset-1 rounded-2xl blur-3xl opacity-[0.05] pointer-events-none"
         style={{ background: `radial-gradient(ellipse at 30% 20%, ${gradientFrom}, transparent 70%)` }}
       />
-      <Card className="relative rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] transition-all duration-300 hover:border-white/[0.14]">
+      <Card className="biz-hero-card relative rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] transition-all duration-300 hover:border-white/[0.14]">
         <CardContent className="p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <div
@@ -632,9 +632,9 @@ export default function BusinessForecast() {
           ))}
         </div>
       ) : data && data.months.length > 0 ? (
-        <Card className="rounded-xl bg-white/[0.02] border border-white/[0.05]">
+        <Card className="biz-content-card rounded-xl bg-white/[0.02] border border-white/[0.05]">
           <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="biz-section-header flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
                 style={{ backgroundColor: alpha(c.warning, 10) }}>
                 <CircleDollarSign className="h-3 w-3" style={{ color: c.warning }} />
@@ -756,9 +756,9 @@ export default function BusinessForecast() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Expense Categories */}
           {expenseCategories.length > 0 && (
-            <Card className="rounded-xl bg-white/[0.03] border border-white/[0.06]">
+            <Card className="biz-content-card rounded-xl bg-white/[0.03] border border-white/[0.06]">
               <CardContent className="p-4 sm:p-5">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="biz-section-header flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center"
                     style={{ backgroundColor: alpha(c.destructive, 10) }}>
                     <TrendingDown className="h-3 w-3" style={{ color: c.destructive }} />
@@ -781,9 +781,9 @@ export default function BusinessForecast() {
                           </span>
                         </div>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.destructive, 6) }}>
+                      <div className="biz-progress-track h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.destructive, 6) }}>
                         <motion.div
-                          className="h-full rounded-full"
+                          className="biz-progress-fill h-full rounded-full"
                           style={{ background: `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 60)})`, boxShadow: `0 0 8px ${alpha(c.destructive, 30)}` }}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(cat.percentage, 100)}%` }}
@@ -799,9 +799,9 @@ export default function BusinessForecast() {
 
           {/* Income Categories */}
           {incomeCategories.length > 0 && (
-            <Card className="rounded-xl bg-white/[0.03] border border-white/[0.06]">
+            <Card className="biz-content-card rounded-xl bg-white/[0.03] border border-white/[0.06]">
               <CardContent className="p-4 sm:p-5">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="biz-section-header flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center"
                     style={{ backgroundColor: alpha(c.secondary, 10) }}>
                     <TrendingUp className="h-3 w-3" style={{ color: c.secondary }} />
@@ -824,9 +824,9 @@ export default function BusinessForecast() {
                           </span>
                         </div>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.secondary, 6) }}>
+                      <div className="biz-progress-track h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.secondary, 6) }}>
                         <motion.div
-                          className="h-full rounded-full"
+                          className="biz-progress-fill h-full rounded-full"
                           style={{ background: `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 60)})`, boxShadow: `0 0 8px ${alpha(c.secondary, 30)}` }}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(cat.percentage, 100)}%` }}
@@ -846,9 +846,9 @@ export default function BusinessForecast() {
       {loading ? (
         <Skeleton className="h-20 rounded-xl" />
       ) : data ? (
-        <Card className="rounded-xl bg-white/[0.02] border border-white/[0.05]">
+        <Card className="biz-content-card rounded-xl bg-white/[0.02] border border-white/[0.05]">
           <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="biz-section-header flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
                 style={{ backgroundColor: alpha(c.primary, 8) }}>
                 <TrendingUp className="h-3 w-3" style={{ color: c.primary }} />

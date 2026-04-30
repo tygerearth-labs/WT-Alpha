@@ -260,7 +260,7 @@ export default function MacroEconomy() {
   // ── No data state ─────────────────────────────────────────────────────────
   if (!macroData) {
     return (
-      <Card className="bg-[#1A1A2E] border-white/[0.06]">
+      <Card className="inv-empty-state bg-[#1A1A2E] border-white/[0.06]">
         <CardContent className="flex flex-col items-center justify-center py-20">
           <Globe className="h-14 w-14 text-white/15 mb-4" />
           <p className="text-white/40 text-center mb-1">{t('macro.noData')}</p>
@@ -339,8 +339,8 @@ export default function MacroEconomy() {
         variants={cardVariants}
         custom={0}
       >
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${UP_COLOR}18` }}>
+        <div className="inv-section-header flex items-center gap-3">
+          <div className="inv-section-header-icon flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${UP_COLOR}18` }}>
             <Globe className="h-5 w-5" style={{ color: UP_COLOR }} />
           </div>
           <div>
@@ -379,7 +379,7 @@ export default function MacroEconomy() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {metricCards.map((card, i) => (
           <motion.div key={card.label} variants={cardVariants} custom={i + 1}>
-            <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
+            <Card className="inv-macro-card bg-[#1A1A2E] border-white/[0.06] h-full">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2.5">
                   <p className="text-[10px] text-white/40 uppercase tracking-wider font-medium leading-tight">
@@ -407,7 +407,7 @@ export default function MacroEconomy() {
         {/* Sentiment Gauge */}
         {sentiment && (
           <motion.div variants={cardVariants} custom={8}>
-            <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
+            <Card className="inv-content-card inv-gauge-container bg-[#1A1A2E] border-white/[0.06] h-full">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Gauge className="h-4 w-4 text-white/40" />
@@ -498,7 +498,7 @@ export default function MacroEconomy() {
 
         {/* Market Statistics */}
         <motion.div variants={cardVariants} custom={9}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
+          <Card className="inv-content-card bg-[#1A1A2E] border-white/[0.06] h-full">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-4">
                 <PieChart className="h-4 w-4 text-white/40" />
@@ -577,7 +577,7 @@ export default function MacroEconomy() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Top Gainers */}
         <motion.div variants={cardVariants} custom={10}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+          <Card className="inv-content-card bg-[#1A1A2E] border-white/[0.06]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -594,7 +594,7 @@ export default function MacroEconomy() {
                   {macroData.topGainers.map((item, i) => (
                     <div
                       key={item.symbol}
-                      className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
+                      className="inv-mover-row flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-[10px] text-white/20 font-mono w-4 text-right">{i + 1}</span>
@@ -619,7 +619,7 @@ export default function MacroEconomy() {
 
         {/* Top Losers */}
         <motion.div variants={cardVariants} custom={11}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+          <Card className="inv-content-card bg-[#1A1A2E] border-white/[0.06]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -636,7 +636,7 @@ export default function MacroEconomy() {
                   {macroData.topLosers.map((item, i) => (
                     <div
                       key={item.symbol}
-                      className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
+                      className="inv-mover-row flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-[10px] text-white/20 font-mono w-4 text-right">{i + 1}</span>
@@ -685,7 +685,7 @@ export default function MacroEconomy() {
                       key={item.symbol}
                       whileHover={{ scale: 1.03, y: -2 }}
                       transition={{ duration: 0.15 }}
-                      className="rounded-xl border border-white/[0.06] p-3 hover:border-white/[0.12] transition-colors cursor-default"
+                      className="inv-trending-card rounded-xl border border-white/[0.06] p-3 hover:border-white/[0.12] transition-colors cursor-default"
                       style={{ backgroundColor: `${color}06` }}
                     >
                       <div className="flex flex-col items-start gap-1.5">
@@ -717,22 +717,7 @@ export default function MacroEconomy() {
         </motion.div>
       )}
 
-      {/* ── Inline custom scrollbar style ──────────────────────────────── */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.08);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.15);
-        }
-      `}</style>
+
     </motion.div>
   );
 }

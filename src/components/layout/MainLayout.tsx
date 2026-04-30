@@ -603,7 +603,7 @@ export function MainLayout() {
         )}>
           <div className="flex items-center gap-2.5">
             <button onClick={() => setTabletSidebarOpen(true)}
-              className={cn('md:flex hidden items-center justify-center w-9 h-9 rounded-xl transition-all duration-200', 'lg:hidden', 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]', 'active:scale-[0.95]')}
+              className={cn('md:flex hidden items-center justify-center w-10 h-10 rounded-xl transition-all duration-200', 'lg:hidden', 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]', 'active:scale-[0.95]', 'border border-white/[0.06] hover:border-white/[0.12]')}
               aria-label="Open sidebar">
               <Menu className="h-5 w-5" />
             </button>
@@ -639,9 +639,9 @@ export function MainLayout() {
             <NotificationCenter />
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-9 w-9 p-0 rounded-full relative group/avatar">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#BB86FC]/20 to-[#03DAC6]/20 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 blur-sm" />
-                  <Avatar className="relative h-8 w-8 ring-1 ring-white/[0.08] group-hover/avatar:ring-[#BB86FC]/30 transition-all duration-300">
+                <Button variant="ghost" className="h-10 w-10 p-0 rounded-full relative group/avatar">
+                  <div className="absolute -inset-0.5 rounded-full opacity-60 group-hover/avatar:opacity-100 transition-opacity duration-300" style={{ background: `conic-gradient(from 0deg, ${modeColor(mode)}40, transparent 60%, ${modeColor(mode)}40)`, padding: '1.5px', WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }} />
+                  <Avatar className="relative h-8 w-8 ring-1 ring-white/[0.08] group-hover/avatar:ring-white/[0.15] transition-all duration-300">
                     {user?.image ? <AvatarImage src={user.image} alt={user.username} className="object-cover" /> : null}
                     <AvatarFallback className="bg-[#BB86FC]/15 text-[#BB86FC] text-xs font-semibold border border-[#BB86FC]/10">
                       {user?.username ? getInitials(user.username) : 'U'}
@@ -745,11 +745,11 @@ export function MainLayout() {
           {/* Tablet Sidebar */}
           {tabletSidebarOpen && (
             <>
-              <div className="md:block hidden fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setTabletSidebarOpen(false)} style={{ animation: 'fadeIn 0.2s ease-out' }} />
-              <aside className="md:block hidden fixed left-0 bottom-0 z-40 w-64 flex-col lg:hidden"
-                style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))', animation: 'slideInLeft 0.25s ease-out' }}>
+              <div className="md:block hidden fixed inset-0 z-30 lg:hidden transition-opacity duration-300" onClick={() => setTabletSidebarOpen(false)} style={{ animation: 'fadeIn 0.3s ease-out', background: 'radial-gradient(ellipse at left center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.4) 100%)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
+              <aside className="md:block hidden fixed left-0 bottom-0 z-40 w-72 flex-col lg:hidden"
+                style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))', animation: 'slideInLeft 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}>
                 <div className="absolute inset-0 bg-[#0D0D0D]/95 backdrop-blur-2xl rounded-r-2xl" />
-                <div className="absolute inset-0 pointer-events-none rounded-r-2xl" style={{ background: 'linear-gradient(180deg, rgba(187,134,252,0.04) 0%, transparent 30%, transparent 70%, rgba(3,218,198,0.02) 100%)' }} />
+                <div className="absolute inset-0 pointer-events-none rounded-r-2xl" style={{ background: `linear-gradient(180deg, ${modeColor(mode)}08 0%, transparent 30%, transparent 70%, ${modeColor(mode)}04 100%)` }} />
                 <div className="absolute top-0 right-0 bottom-0 w-px overflow-hidden">
                   <div className="absolute inset-0 h-full animate-divider-shimmer" style={{ background: 'linear-gradient(180deg, #BB86FC 0%, transparent 30%, transparent 70%, #03DAC6 100%)', backgroundSize: '100% 200%' }} />
                 </div>
@@ -758,7 +758,7 @@ export function MainLayout() {
                     <Image src="/logo.png" alt="Logo" width={24} height={24} className="rounded-md" />
                     <span className="text-sm font-bold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>Wealth Tracker</span>
                   </div>
-                  <button onClick={() => setTabletSidebarOpen(false)} className="grid place-items-center w-7 h-7 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all duration-200 [&>*]:block leading-none">
+                  <button onClick={() => setTabletSidebarOpen(false)} className="grid place-items-center w-8 h-8 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.1] transition-all duration-200 active:scale-[0.92] [&>*]:block leading-none">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -796,19 +796,22 @@ export function MainLayout() {
       </div>
 
       {/* Bottom Navigation (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
-        style={{ background: 'rgba(13, 13, 13, 0.88)', backdropFilter: 'blur(24px) saturate(180%)', WebkitBackdropFilter: 'blur(24px) saturate(180%)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden safe-bottom"
+        style={{ background: 'rgba(13, 13, 13, 0.82)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)' }}>
+        {/* Subtle top gradient line */}
+        <div className="absolute top-0 left-0 right-0 h-px z-10" style={{ background: `linear-gradient(90deg, transparent 0%, ${modeColor(mode)}30 20%, ${modeColor(mode)}50 50%, ${modeColor(mode)}30 80%, transparent 100%)` }} />
+        <div className="absolute top-0 left-1/4 right-1/4 h-[3px] pointer-events-none" style={{ background: `linear-gradient(90deg, transparent, ${modeColor(mode)}18, transparent)`, filter: 'blur(2px)' }} />
         {/* Mobile Mode Switch */}
         <div className="relative flex items-center gap-0.5 px-2 py-1.5 border-b border-white/[0.04]">
           {/* Sliding pill */}
           <div
-            className="absolute top-[6px] bottom-[6px] rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            className="absolute top-[6px] bottom-[6px] rounded-lg transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
             style={{
               width: `calc((100% - 20px) / 3)`,
               left: `calc(${modeList.findIndex(m => m.key === mode)} * ((100% - 20px) / 3) + 10px)`,
               background: `${modeColor(mode)}15`,
               border: `1px solid ${modeColor(mode)}20`,
-              boxShadow: `0 0 12px ${modeColor(mode)}10`,
+              boxShadow: `0 0 16px ${modeColor(mode)}15, inset 0 0 8px ${modeColor(mode)}08`,
             }}
           />
           {modeList.map((m) => {
@@ -840,18 +843,18 @@ export function MainLayout() {
             const isActive = currentPage === item.id;
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
-                className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-lg min-w-[60px] shrink-0 transition-all duration-200 active:scale-95">
+                className="relative flex flex-col items-center justify-center py-1 px-3 rounded-xl min-w-[64px] shrink-0 transition-all duration-200 active:scale-[0.88] active:opacity-70">
                 {isActive && (
                   <div className="absolute -top-0 left-1/2 -translate-x-1/2">
-                    <div className="w-5 h-[2.5px] rounded-full" style={{ background: modeColor(mode), boxShadow: `0 0 8px ${modeColor(mode)}66` }} />
+                    <div className="w-6 h-[2.5px] rounded-full animate-pulse" style={{ background: modeColor(mode), boxShadow: `0 0 10px ${modeColor(mode)}88, 0 0 20px ${modeColor(mode)}44` }} />
                   </div>
                 )}
                 <Icon className={cn(
-                  'h-[18px] w-[18px] transition-all duration-200',
-                  isActive ? 'drop-shadow-[0_0_4px_currentColor]' : 'text-[#555]',
+                  'h-5 w-5 transition-all duration-200',
+                  isActive ? 'drop-shadow-[0_0_6px_currentColor]' : 'text-[#555]',
                 )} strokeWidth={isActive ? 2.2 : 1.5} style={isActive ? { color: modeColor(mode) } : undefined} />
                 <span className={cn(
-                  'text-[9px] mt-0.5 font-medium truncate w-full text-center leading-tight',
+                  'text-[10px] mt-0.5 font-medium truncate w-full text-center leading-tight',
                   isActive ? 'text-white/80' : 'text-white/25',
                 )}>{item.label}</span>
                 {item.lock && <Lock className="absolute top-0 right-1 h-2 w-2 text-[#FFD700]/40" />}
@@ -862,8 +865,8 @@ export function MainLayout() {
       </nav>
 
       {/* Footer (mobile) */}
-      <footer className="border-t border-white/[0.06] px-2 py-2 bg-[#0D0D0D]/50 pb-[56px] md:hidden">
-        <div className="text-center text-[11px] text-white/20">Creator: Tyger Earth | Ahtjong Labs</div>
+      <footer className="px-2 py-2 pb-[88px] md:hidden" style={{ background: 'linear-gradient(to bottom, transparent, rgba(13,13,13,0.6))' }}>
+        <div className="text-center text-[10px] text-white/15">Creator: Tyger Earth | Ahtjong Labs</div>
       </footer>
 
       {/* Dialogs */}

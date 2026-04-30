@@ -108,7 +108,7 @@ export default function InvestmentRegisterDialog({
   if (isAlreadyRegistered) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent aria-describedby={undefined} className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl">
+        <DialogContent aria-describedby={undefined} className={cn("bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl", "inv-dialog-content")}>
           <VisuallyHidden>
             <DialogTitle>{t('inv.alreadyRegistered')}</DialogTitle>
           </VisuallyHidden>
@@ -137,7 +137,7 @@ export default function InvestmentRegisterDialog({
       <DialogContent
         showCloseButton={false}
         aria-describedby={undefined}
-        className="bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl"
+        className={cn("bg-[#0D0D0D] border-white/[0.08] text-white sm:max-w-[520px] p-0 overflow-hidden rounded-2xl", "inv-dialog-content")}
       >
         <VisuallyHidden>
           <DialogTitle>{t('inv.createInvestment')}</DialogTitle>

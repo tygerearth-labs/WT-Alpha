@@ -329,7 +329,7 @@ export default function InvestmentPortfolio() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[130px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9">
+            <SelectTrigger className={cn("w-[130px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9", "inv-pos-filter", typeFilter !== 'all' && "inv-pos-filter-active")}>
               <SelectValue placeholder="Tipe" />
             </SelectTrigger>
             <SelectContent>
@@ -342,7 +342,7 @@ export default function InvestmentPortfolio() {
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9">
+            <SelectTrigger className={cn("w-[130px] bg-white/[0.05] border-white/[0.1] text-white text-xs h-9", "inv-pos-filter", statusFilter !== 'all' && "inv-pos-filter-active")}>
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -367,7 +367,7 @@ export default function InvestmentPortfolio() {
         <Button
           onClick={openCreate}
           size="sm"
-          className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB] h-9"
+          className="bg-[#BB86FC] text-black hover:bg-[#9B6FDB] h-9 shadow-lg shadow-[#BB86FC]/20 hover:shadow-xl hover:shadow-[#BB86FC]/30"
         >
           <Plus className="h-4 w-4 mr-1" />
           {t('inv.addPortfolio')}
@@ -382,9 +382,11 @@ export default function InvestmentPortfolio() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="bg-white/[0.03] border-white/[0.06]">
+        <Card className="inv-empty-state bg-white/[0.03] border-white/[0.06]">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Package className="h-10 w-10 text-white/20 mb-3" />
+            <div className="inv-empty-state-icon">
+              <Package className="h-10 w-10 text-white/20 mb-3" />
+            </div>
             <p className="text-white/40 text-sm">{t('inv.noInvData')}</p>
           </CardContent>
         </Card>
@@ -402,12 +404,12 @@ export default function InvestmentPortfolio() {
                 whileHover={{ y: -2 }}
                 transition={{ duration: 0.25 }}
               >
-              <Card className="bg-white/[0.03] border-white/[0.06] hover:border-white/[0.1] transition-colors">
+              <Card className="inv-portfolio-card bg-white/[0.03] border-white/[0.06] hover:border-white/[0.1] transition-colors">
                 <CardContent className="p-4 space-y-3">
                   {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', typeColor.bg)}>
+                      <div className={cn('inv-type-badge flex h-9 w-9 items-center justify-center rounded-lg', typeColor.bg)}>
                         <span className={cn('text-xs font-bold', typeColor.text)}>
                           {(item.type || 'crypto').slice(0, 2).toUpperCase()}
                         </span>
@@ -430,6 +432,7 @@ export default function InvestmentPortfolio() {
                         if (!livePrice) return null;
                         return (
                           <div className="flex items-center gap-1">
+                            <span className="inv-live-dot" />
                             <span className="text-[10px] text-white/40">{t('inv.dashTicker')}</span>
                             <span className={cn('text-xs font-medium', livePrice.change24h >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
                               {livePrice.change24h >= 0 ? '+' : ''}{(livePrice.change24h ?? 0).toFixed(2)}%
@@ -472,9 +475,9 @@ export default function InvestmentPortfolio() {
                         {isPositive ? '+' : ''}{(item.unrealizedPnlPercentage ?? 0).toFixed(2)}%
                       </span>
                     </div>
-                    <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                    <div className="inv-pnl-track h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-300"
+                        className={cn('inv-pnl-fill', isPositive ? 'inv-pnl-fill-positive' : 'inv-pnl-fill-negative', 'h-full rounded-full transition-all duration-300')}
                         style={{
                           width: `${Math.min(Math.abs(item.unrealizedPnlPercentage), 100)}%`,
                           backgroundColor: isPositive ? '#03DAC6' : '#CF6679',
@@ -537,7 +540,7 @@ export default function InvestmentPortfolio() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-[480px] bg-white/[0.03] border-white/[0.06] text-white overflow-y-auto p-0"
+          className="inv-dialog-content w-full sm:max-w-[480px] bg-white/[0.03] border-white/[0.06] text-white overflow-y-auto p-0"
         >
           <SheetHeader className="px-6 pt-8 pb-4">
             <SheetTitle className="text-white text-lg">
@@ -659,7 +662,7 @@ export default function InvestmentPortfolio() {
                       value={form.symbol}
                       onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
                       placeholder="BBCA"
-                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
+                      className="inv-search-input bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
                     />
                   </div>
                   <div className="space-y-2">
@@ -668,7 +671,7 @@ export default function InvestmentPortfolio() {
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder="Bank BC"
-                      className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
+                      className="inv-search-input bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
                     />
                   </div>
                 </div>
@@ -701,7 +704,7 @@ export default function InvestmentPortfolio() {
                 placeholder={form.type === 'saham' ? '9750' : '65000'}
                 min="0"
                 step="any"
-                className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
+                className="inv-search-input bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
               />
             </div>
 
@@ -716,7 +719,7 @@ export default function InvestmentPortfolio() {
                   placeholder="0"
                   min="0"
                   step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10 pr-32"
+                  className="inv-search-input bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10 pr-32"
                 />
                 {/* Inline Nominal Preview Badge */}
                 {computedNominal > 0 && (
@@ -833,7 +836,7 @@ export default function InvestmentPortfolio() {
                   onChange={(e) => setForm({ ...form, targetPrice: e.target.value })}
                   placeholder="0"
                   step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
+                  className="inv-search-input bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
                 />
               </div>
               <div className="space-y-2">
@@ -844,7 +847,7 @@ export default function InvestmentPortfolio() {
                   onChange={(e) => setForm({ ...form, stopLoss: e.target.value })}
                   placeholder="0"
                   step="any"
-                  className="bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
+                  className="inv-search-input bg-white/[0.05] border-white/[0.1] text-white placeholder:text-white/30 h-10"
                 />
               </div>
             </div>
@@ -891,7 +894,7 @@ export default function InvestmentPortfolio() {
 
       {/* Chart Dialog (kept as Dialog — fine for chart view) */}
       <Dialog open={!!chartDialog} onOpenChange={() => setChartDialog(null)}>
-        <DialogContent className="bg-[#0D0D0D] border-white/[0.06] text-white sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="inv-dialog-content bg-[#0D0D0D] border-white/[0.06] text-white sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0">
           {chartDialog && (
             <>
               <DialogHeader className="px-6 pt-6">
@@ -909,7 +912,7 @@ export default function InvestmentPortfolio() {
 
       {/* Delete Confirmation (kept as AlertDialog — fine for confirmation) */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent className="bg-white/[0.03] border-white/[0.06] text-white">
+        <AlertDialogContent className="inv-dialog-content bg-white/[0.03] border-white/[0.06] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription className="text-white/60">

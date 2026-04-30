@@ -150,7 +150,7 @@ function FilterTabs({
           key={f.key}
           onClick={() => onChange(f.key)}
           className={cn(
-            'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-200',
+            'flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold transition-all duration-200 min-h-[36px] sm:min-h-0',
           )}
           style={
             active === f.key
@@ -205,11 +205,13 @@ function StatCard({
   return (
     <motion.div
       whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      className="bg-white/[0.03] border-white/[0.06] rounded-xl overflow-hidden"
+      className="bg-white/[0.03] border-white/[0.06] rounded-2xl md:rounded-xl overflow-hidden cursor-pointer"
+      style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}
     >
       <div className="h-px bg-white/[0.06]" />
-      <div className="p-4 flex items-center gap-3">
+      <div className="p-4 sm:p-5 flex items-center gap-3">
         <div
           className="w-9 h-9 rounded-lg grid place-items-center shrink-0 [&>*]:block leading-none"
           style={{ background: `${color}12` }}
@@ -256,11 +258,16 @@ function BillCard({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
       whileHover={{ x: 2 }}
-      className="rounded-xl overflow-hidden transition-all duration-200"
+      className="rounded-2xl overflow-hidden transition-all duration-200"
       style={{
         background: T.bg,
         border: `1px solid ${T.border}`,
         borderLeft: `3px solid ${accentColor}`,
+        boxShadow: bill.isPaid
+          ? `0 0 20px ${T.secondary}08, 0 2px 8px rgba(0,0,0,0.15)`
+          : status === 'overdue'
+          ? `0 0 20px ${T.destructive}08, 0 2px 8px rgba(0,0,0,0.15)`
+          : '0 2px 8px rgba(0,0,0,0.15)',
       }}
     >
       <div className="p-3 sm:p-4">
@@ -275,13 +282,13 @@ function BillCard({
             </h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span
-                className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+                className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-2 py-1 sm:py-0.5 rounded-full inline-flex items-center gap-1"
                 style={{ background: `${accentColor}15`, color: accentColor }}
               >
                 {getRecurrenceIcon(bill.recurrence)} {getRecurrenceLabel(bill.recurrence)}
               </span>
               <span
-                className="text-[9px] font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+                className="text-[9px] sm:text-[10px] font-medium px-2 py-1 sm:py-0.5 rounded-full inline-flex items-center gap-1"
                 style={{ background: 'rgba(255,255,255,0.04)', color: T.muted }}
               >
                 <Tag className="h-2.5 w-2.5" /> {bill.category}
@@ -311,12 +318,12 @@ function BillCard({
         {/* Amount + Due Date */}
         <div className="flex items-center justify-between mt-2">
           <div>
-            <p className="text-[15px] font-bold" style={{ color: bill.isPaid ? T.muted : accentColor }}>
+            <p className="text-sm sm:text-base font-bold" style={{ color: bill.isPaid ? T.muted : accentColor }}>
               {formatAmount(bill.amount)}
             </p>
             <div className="flex items-center gap-1 mt-0.5">
               <Calendar className="h-3 w-3" style={{ color: T.muted }} />
-              <p className="text-[10px]" style={{ color: T.muted }}>
+              <p className="text-[11px]" style={{ color: T.muted }}>
                 {format(dueDate, 'dd MMM yyyy', { locale: id })}
               </p>
             </div>
@@ -341,7 +348,7 @@ function BillCard({
           {!bill.isPaid && (
             <button
               onClick={() => onPay(bill)}
-              className="flex-1 text-[11px] font-semibold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95"
+              className="flex-1 text-[11px] sm:text-[12px] font-semibold h-11 sm:h-auto sm:py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95"
               style={{ background: `linear-gradient(135deg, ${T.secondary}, ${T.primary})`, color: '#fff' }}
             >
               <CheckCircle2 className="h-3 w-3" /> Bayar
@@ -349,14 +356,14 @@ function BillCard({
           )}
           <button
             onClick={() => onEdit(bill)}
-            className="flex-1 text-[11px] font-medium py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+            className="flex-1 text-[11px] sm:text-[12px] font-medium h-11 sm:h-auto sm:py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95"
             style={{ background: `${T.primary}10`, color: T.primary }}
           >
             <Edit className="h-3 w-3" /> {t('common.edit')}
           </button>
           <button
             onClick={() => onDelete(bill.id)}
-            className="text-[11px] font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+            className="text-[11px] sm:text-[12px] font-medium h-11 w-11 min-w-[44px] sm:h-auto sm:w-auto sm:min-w-0 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95"
             style={{ background: `${T.destructive}10`, color: T.destructive }}
           >
             <Trash2 className="h-3 w-3" />
@@ -413,7 +420,7 @@ function BillFormDialog({
   };
 
   const inputCls =
-    'h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/30 focus:ring-0';
+    'h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/30 focus:ring-0';
 
   const categories = [
     'Lainnya',
@@ -438,7 +445,7 @@ function BillFormDialog({
         className="sm:max-w-[440px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5">
+        <div className="p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-white">
               {isEdit ? 'Edit Tagihan' : 'Tambah Tagihan'}
@@ -500,7 +507,7 @@ function BillFormDialog({
                     value={form.category}
                     onValueChange={(v) => setForm({ ...form, category: v })}
                   >
-                    <SelectTrigger className="h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0">
+                    <SelectTrigger className="h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0">
                       <SelectValue placeholder="Pilih" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1a1a1a] border-white/[0.08] rounded-xl">
@@ -518,7 +525,7 @@ function BillFormDialog({
                     value={form.recurrence}
                     onValueChange={(v) => setForm({ ...form, recurrence: v })}
                   >
-                    <SelectTrigger className="h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0">
+                    <SelectTrigger className="h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0">
                       <SelectValue placeholder="Pilih" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1a1a1a] border-white/[0.08] rounded-xl">
@@ -544,19 +551,19 @@ function BillFormDialog({
               </div>
             </div>
 
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-4 flex-col sm:flex-row gap-2 sm:gap-2">
               <Button
                 type="button"
                 variant="ghost"
-                className="rounded-xl hover:bg-white/[0.06] text-[#9E9E9E]"
+                className="w-full sm:w-auto rounded-xl hover:bg-white/[0.06] text-[#9E9E9E] h-11 sm:h-9"
                 onClick={() => onOpenChange(false)}
               >
                 {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
-                className="rounded-xl font-semibold text-white"
-                style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}
+                className="w-full sm:w-auto rounded-xl font-semibold text-white h-11 sm:h-9"
+                style={{ background: 'linear-gradient(135deg, #BB86FC, #03DAC6)', boxShadow: '0 4px 20px rgba(187,134,252,0.25)' }}
               >
                 {isEdit ? t('common.save') : 'Tambah Tagihan'}
               </Button>
@@ -706,9 +713,9 @@ export function BillReminders() {
   }, [bills, activeFilter]);
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="px-4 sm:px-6 space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: T.text }}>
             {t('nav.billReminders') || 'Pengingat Tagihan'}
@@ -720,10 +727,10 @@ export function BillReminders() {
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <Button
             size="sm"
-            className="h-8 px-3 text-xs font-semibold gap-1.5 rounded-xl"
-            style={{ background: T.primary, color: '#000' }}
+            className="w-full sm:w-auto h-12 sm:h-8 px-4 sm:px-3 text-xs sm:text-[13px] font-semibold gap-1.5 rounded-xl"
+            style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.secondary})`, color: '#000', boxShadow: `0 4px 20px ${T.primary}30` }}
           >
-            <Plus className="h-3.5 w-3.5" /> Tambah
+            <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> Tambah Tagihan
           </Button>
           <BillFormDialog
             open={isAddOpen}
@@ -736,7 +743,7 @@ export function BillReminders() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Total Bulan Ini"
           value={formatAmount(stats.monthlyTotal)}
@@ -782,16 +789,16 @@ export function BillReminders() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-col items-center justify-center py-12 text-center relative"
+          className="flex flex-col items-center justify-center py-16 sm:py-20 text-center relative"
         >
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: T.primary }} />
           </div>
           <div
-            className="w-16 h-16 rounded-2xl grid place-items-center mb-4 relative border"
+            className="w-20 h-20 sm:w-16 sm:h-16 rounded-2xl grid place-items-center mb-4 relative border"
             style={{ background: `${T.primary}10`, borderColor: `${T.primary}20` }}
           >
-            <Bell className="h-8 w-8 relative" style={{ color: T.primary, opacity: 0.7 }} />
+            <Bell className="h-10 w-10 sm:h-8 sm:w-8 relative" style={{ color: T.primary, opacity: 0.7 }} />
           </div>
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -816,8 +823,8 @@ export function BillReminders() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
             onClick={() => setIsAddOpen(true)}
-            className="mt-4 text-[11px] font-semibold px-4 py-2 rounded-full relative"
-            style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.secondary})`, color: '#fff' }}
+            className="mt-4 text-[12px] sm:text-[11px] font-semibold px-6 sm:px-4 py-3 sm:py-2 rounded-full relative min-h-[44px] sm:min-h-0 flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.secondary})`, color: '#fff', boxShadow: `0 4px 20px ${T.primary}25` }}
           >
             <span className="flex items-center gap-1.5">
               <Plus className="h-3.5 w-3.5" /> Tambah Tagihan
@@ -828,7 +835,7 @@ export function BillReminders() {
 
       {/* Bill List */}
       {!isLoading && filteredBills.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 sm:space-y-4">
           {filteredBills.map((bill, idx) => (
             <BillCard
               key={bill.id}
@@ -862,7 +869,7 @@ export function BillReminders() {
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
       >
-        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl">
+        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-4 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Hapus tagihan?</AlertDialogTitle>
             <AlertDialogDescription className="text-[#9E9E9E]">

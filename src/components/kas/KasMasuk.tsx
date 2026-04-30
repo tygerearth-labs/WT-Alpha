@@ -406,7 +406,7 @@ export function KasMasuk() {
   const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 6);
 
   return (
-    <div className="w-full max-w-full space-y-3 sm:space-y-4 relative">
+    <div className="w-full max-w-full px-4 md:px-6 space-y-4 md:space-y-5 relative">
       {/* Page-level ambient background */}
       <div className="absolute -top-48 left-1/3 w-96 h-96 rounded-full opacity-[0.04] blur-[120px] pointer-events-none" style={{ background: T.accent }} />
       <div className="absolute top-1/2 -right-32 w-80 h-80 rounded-full opacity-[0.03] blur-[100px] pointer-events-none" style={{ background: T.primary }} />
@@ -560,8 +560,8 @@ export function KasMasuk() {
             </div>
 
             {/* Mobile stats */}
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] lg:hidden" style={{ color: T.textSub }}>
-              <Calendar className="h-3 w-3" />
+            <div className="mt-3.5 flex items-center gap-2 text-[11px] lg:hidden" style={{ color: T.textSub }}>
+              <Calendar className="h-3.5 w-3.5" />
               <span>{t('filter.transactionCount', { count: transactions.length })}</span>
             </div>
           </div>
@@ -569,7 +569,7 @@ export function KasMasuk() {
       </div>
 
       {/* ── Quick Stats ── Enhanced ── */}
-      <div className="grid grid-cols-3 gap-2 lg:gap-5">
+      <div className="grid grid-cols-3 gap-2.5 md:gap-3 lg:gap-5">
         {[
           {
             label: t('kas.average'),
@@ -610,19 +610,22 @@ export function KasMasuk() {
         ].map((stat) => (
           <motion.div
             key={stat.label}
-            className="rounded-xl p-3 lg:p-5 lg:py-6 text-center relative overflow-hidden group"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
+            className="rounded-2xl md:rounded-xl p-4 sm:p-5 lg:p-5 lg:py-6 text-center relative overflow-hidden group active:scale-[0.98] transition-shadow duration-300"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}
             whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 24px rgba(0,0,0,0.35)`; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)'; }}
           >
             {/* Per-card colored glow */}
             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 h-16 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: stat.color }} />
             <div className="relative z-10">
               <div className="relative inline-block">
-                <stat.icon className="relative h-3.5 w-3.5 lg:h-5 lg:w-5 mx-auto mb-1.5 lg:mb-2" style={{ color: stat.color, opacity: 0.7 }} />
+                <stat.icon className="relative h-4 w-4 lg:h-5 lg:w-5 mx-auto mb-1.5 lg:mb-2" style={{ color: stat.color, opacity: 0.7 }} />
               </div>
-              <p className="text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-0.5 lg:mb-1" style={{ color: T.muted }}>{stat.label}</p>
-              <p className="text-xs sm:text-sm lg:text-lg font-bold truncate" style={{ color: stat.color }}>
+              <p className="text-[10px] md:text-[11px] lg:text-xs font-medium uppercase tracking-wider mb-0.5 lg:mb-1" style={{ color: T.muted }}>{stat.label}</p>
+              <p className="text-lg sm:text-xl lg:text-lg font-bold truncate" style={{ color: stat.color }}>
                 {/* Mobile: show actual value */}
                 <span className="lg:hidden">{stat.displayValue}</span>
                 {/* Desktop: show animated value for numeric stats */}
@@ -633,7 +636,7 @@ export function KasMasuk() {
                 )}
               </p>
               {/* Desktop sparkline */}
-              <div className="hidden lg:block mt-2 h-6 opacity-60">
+              <div className="hidden lg:block mt-2 min-h-[2rem] h-6 rounded-xl opacity-60 overflow-hidden">
                 <MiniSparkline data={stat.sparkData} color={stat.color} height={24} />
               </div>
               {/* Desktop hover context */}
@@ -913,10 +916,10 @@ export function KasMasuk() {
                 <span className="text-[11px] font-medium" style={{ color: T.muted }}>Monthly Progress</span>
                 <span className="text-[11px] font-bold tabular-nums" style={{ color: T.textSub }}>{monthlyProgress}%</span>
               </div>
-              <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="h-2 sm:h-2.5 rounded-full overflow-hidden relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <motion.div
                   className="h-full rounded-full"
-                  style={{ background: `linear-gradient(90deg, ${T.accent}, ${T.primary})` }}
+                  style={{ background: `linear-gradient(90deg, ${T.accent}, ${T.primary})`, boxShadow: `0 0 8px ${T.accent}40` }}
                   initial={{ width: 0 }}
                   animate={{ width: `${monthlyProgress}%` }}
                   transition={{ duration: 1.2, ease: 'easeOut' as const, delay: 0.3 }}
@@ -1080,15 +1083,18 @@ export function KasMasuk() {
       </div>
 
       {/* ═══ Mobile stacked layout (< md / <768px) ═══ */}
-      <div className="md:hidden space-y-3">
+      <div className="md:hidden space-y-3 sm:space-y-4">
         {/* Category Distribution */}
         {incomeByCategory.length > 0 && (
           <div
-            className="rounded-xl p-3 sm:p-4"
-            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+            className="rounded-2xl p-3.5 sm:p-4 active:scale-[0.99]"
+            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', transition: 'transform 0.15s ease' }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>{t('kas.distribution')}</p>
-            <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.textSub }}>{t('kas.distribution')}</p>
+            </div>
+            <div className="space-y-2.5">
               {incomeByCategory.slice(0, 5).map((cat) => {
                 const pct = totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0;
                 return (
@@ -1116,12 +1122,15 @@ export function KasMasuk() {
         )}
 
         {/* Categories */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.categories')}</p>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.primary}, ${T.accent})` }} />
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.textSub }}>{t('kas.categories')}</p>
+            </div>
             <Button
               size="icon"
-              className="h-7 w-7 rounded-lg"
+              className="h-7 w-7 rounded-lg active:scale-95 transition-transform"
               style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
               onClick={() => setIsCategoryDialogOpen(true)}
             >
@@ -1139,26 +1148,33 @@ export function KasMasuk() {
         </div>
 
         {/* Transactions */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.history')}</p>
-            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-              {FILTERS.map((f) => (
-                <button
-                  key={f.key}
-                  onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
-                  className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
-                  style={{
-                    background: dateFilter === f.key
-                      ? 'rgba(3,218,198,0.1)'
-                      : 'transparent',
-                    color: dateFilter === f.key ? T.accent : T.muted,
-                    border: dateFilter === f.key ? '1px solid rgba(3,218,198,0.15)' : '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.textSub }}>{t('kas.history')}</p>
+            </div>
+            <div className="relative">
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1">
+                {FILTERS.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
+                    className="h-8 text-[10px] sm:text-[11px] font-semibold px-3.5 rounded-full shrink-0 transition-all active:scale-95"
+                    style={{
+                      background: dateFilter === f.key
+                        ? 'rgba(3,218,198,0.1)'
+                        : 'transparent',
+                      color: dateFilter === f.key ? T.accent : T.muted,
+                      border: dateFilter === f.key ? '1px solid rgba(3,218,198,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              {/* Right edge fade indicator */}
+              <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-8" style={{ background: 'linear-gradient(to right, transparent, #121212)' }} />
             </div>
           </div>
 
@@ -1172,7 +1188,7 @@ export function KasMasuk() {
           {transactions.length > 6 && (
             <button
               onClick={() => setShowAllTransactions(!showAllTransactions)}
-              className="w-full text-center py-2.5 text-[11px] font-medium rounded-xl transition-colors"
+              className="w-full text-center py-3 text-[11px] font-semibold rounded-2xl active:scale-[0.98] transition-all"
               style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
               {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}

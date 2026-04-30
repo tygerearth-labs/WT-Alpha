@@ -359,8 +359,8 @@ function SectionHeader({ icon: Icon, color, title, badge }: {
   badge?: string | number;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
-      <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` }}>
+    <div className="biz-section-header flex items-center gap-2 mb-3">
+      <div className="biz-section-header-icon h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` }}>
         <Icon className="h-3 w-3" style={{ color } as React.CSSProperties} />
       </div>
       <h3 className="text-xs font-semibold" style={{ color } as React.CSSProperties}>{title}</h3>
@@ -389,9 +389,9 @@ function ProgressBar({ value, max, color, height = 6 }: {
 }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)', height: `${height}px` }}>
+    <div className="biz-progress-track rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)', height: `${height}px` }}>
       <div
-        className="h-full rounded-full transition-all duration-700"
+        className="biz-progress-fill h-full rounded-full transition-all duration-700"
         style={{ width: `${pct}%`, backgroundColor: color }}
       />
     </div>
@@ -490,7 +490,7 @@ function normalizeResponse(raw: ApiResponse): ReportData | null {
 function EmptyState({ icon: Icon, color, text }: { icon: React.ElementType; color: string; text: string }) {
   return (
     <motion.div
-      className="flex flex-col items-center justify-center py-16"
+      className="biz-empty-state flex flex-col items-center justify-center py-16"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: 'spring' as const, stiffness: 200, damping: 20 }}
@@ -502,7 +502,7 @@ function EmptyState({ icon: Icon, color, text }: { icon: React.ElementType; colo
           animate={{ opacity: [0.4, 0.7, 0.4] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
         />
-        <div className="relative h-14 w-14 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 80%, transparent), color-mix(in srgb, var(--card) 60%, transparent))', border: '1px solid var(--border)' }}>
+        <div className="biz-empty-state-icon relative h-14 w-14 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 80%, transparent), color-mix(in srgb, var(--card) 60%, transparent))', border: '1px solid var(--border)' }}>
           <Icon className="h-7 w-7" style={{ color } as React.CSSProperties} />
         </div>
       </div>
@@ -926,12 +926,12 @@ export default function BusinessLaporan() {
       {/* ═══════════════════════════════════════════════════════════════
           P&L HERO CARD — Profit & Loss at-a-Glance (from Cash API)
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="rounded-xl overflow-hidden" style={{ background: alpha(c.card, 0), border: `1px solid ${alpha(c.border, 0)}` }}>
+      <Card className="biz-hero-card rounded-xl overflow-hidden" style={{ background: alpha(c.card, 0), border: `1px solid ${alpha(c.border, 0)}` }}>
         <CardContent className="p-4 sm:p-5">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 10) }}>
+              <div className="biz-section-header-icon h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 10) }}>
                 <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
               </div>
               <div>
@@ -1064,7 +1064,7 @@ export default function BusinessLaporan() {
       </div>
 
       {/* Date Range Filter */}
-      <Card className="rounded-xl" style={cardStyle}>
+      <Card className="biz-content-card rounded-xl" style={cardStyle}>
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="flex items-center gap-2 shrink-0">
@@ -1125,7 +1125,7 @@ export default function BusinessLaporan() {
                 transition={{ delay: idx * 0.05, type: 'spring' as const, stiffness: 300, damping: 24 }}
                 whileHover={springHover}
               >
-                <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+                <Card className="biz-content-card rounded-xl overflow-hidden" style={cardStyle}>
                   <div className="h-px bg-white/[0.06]" />
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -1158,7 +1158,7 @@ export default function BusinessLaporan() {
           P&L SUMMARY CARD (Profit & Loss At-a-Glance)
           ═══════════════════════════════════════════════════════════════ */}
       {!loading && data && (
-        <Card className="rounded-xl" style={cardStyle}>
+        <Card className="biz-content-card rounded-xl" style={cardStyle}>
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 8%, transparent)' }}>
@@ -1276,7 +1276,7 @@ export default function BusinessLaporan() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full sm:w-auto rounded-full p-1 h-auto overflow-x-auto flex-nowrap" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+        <TabsList className="biz-scroll-mobile biz-tab-bar w-full sm:w-auto rounded-full p-1 h-auto overflow-x-auto flex-nowrap" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
           {[
             { value: 'labaRugi', label: 'Laba Rugi', color: 'var(--secondary)' },
             { value: 'arusKas', label: 'Arus Kas', color: 'var(--primary)' },
@@ -1321,7 +1321,7 @@ export default function BusinessLaporan() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring' as const, stiffness: 200, damping: 22 }}
               >
-                <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+                <Card className="biz-content-card rounded-xl overflow-hidden" style={cardStyle}>
                   <div className="h-px bg-white/[0.06]" />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={TrendingUp} color="var(--secondary)" title="Pendapatan per Sumber" badge={labaRugiDetail.income.filter((i) => i.amount > 0).length} />
@@ -1365,7 +1365,7 @@ export default function BusinessLaporan() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05, type: 'spring' as const, stiffness: 200, damping: 22 }}
               >
-              <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+              <Card className="biz-content-card rounded-xl overflow-hidden" style={cardStyle}>
                 <div className="h-px bg-white/[0.06]" />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={TrendingDown} color="var(--destructive)" title="Pengeluaran per Kategori" badge={expenseCategories.length} />
@@ -1472,7 +1472,7 @@ export default function BusinessLaporan() {
           ) : (
             <>
               {/* Operating Cash Flow */}
-              <Card className="rounded-xl" style={cardStyle}>
+              <Card className="biz-content-card rounded-xl" style={cardStyle}>
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={ArrowDownUp} color="var(--secondary)" title="Arus Kas Operasional" />
                   <div className="space-y-2">
@@ -1498,7 +1498,7 @@ export default function BusinessLaporan() {
               </Card>
 
               {/* Investing Cash Flow */}
-              <Card className="rounded-xl" style={cardStyle}>
+              <Card className="biz-content-card rounded-xl" style={cardStyle}>
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={PiggyBank} color="var(--primary)" title="Arus Kas Investasi" />
                   <div className="flex items-center justify-between p-2 rounded-lg" style={{ border: '1px solid var(--border)' }}>
@@ -1515,7 +1515,7 @@ export default function BusinessLaporan() {
               </Card>
 
               {/* Cash Balances */}
-              <Card className="rounded-xl" style={cardStyle}>
+              <Card className="biz-content-card rounded-xl" style={cardStyle}>
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={Banknote} color="var(--warning)" title="Saldo Kas" />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1623,7 +1623,7 @@ export default function BusinessLaporan() {
               </Card>
 
               {/* Aging Analysis */}
-              <Card className="rounded-xl" style={cardStyle}>
+              <Card className="biz-content-card rounded-xl" style={cardStyle}>
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={Timer} color="var(--primary)" title="Aging Analysis" />
                   {piutangAnalysis.totalOutstanding === 0 ? (
@@ -1663,7 +1663,7 @@ export default function BusinessLaporan() {
               </Card>
 
               {/* Top 5 Biggest Piutang */}
-              <Card className="rounded-xl" style={cardStyle}>
+              <Card className="biz-content-card rounded-xl" style={cardStyle}>
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={CreditCard} color="var(--destructive)" title="Top 5 Piutang Terbesar" badge={piutangAnalysis.top5.length} />
                   {piutangAnalysis.top5.length === 0 ? (
@@ -1824,7 +1824,7 @@ export default function BusinessLaporan() {
         {/*  SALES TAB (existing)                                          */}
         {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="sales" className="mt-3">
-          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+          <Card className="biz-content-card rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-2 p-3">
@@ -1896,7 +1896,7 @@ export default function BusinessLaporan() {
         {/*  EXPENSES TAB (existing)                                       */}
         {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="expenses" className="mt-3">
-          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+          <Card className="biz-content-card rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-2 p-3">
@@ -1955,7 +1955,7 @@ export default function BusinessLaporan() {
         {/*  INVOICES TAB (existing)                                       */}
         {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="invoices" className="mt-3">
-          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+          <Card className="biz-content-card rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-2 p-3">
@@ -2033,7 +2033,7 @@ export default function BusinessLaporan() {
         {/*  DEBTS TAB (existing)                                          */}
         {/* ═══════════════════════════════════════════════════════════════ */}
         <TabsContent value="debts" className="mt-3">
-          <Card className="rounded-xl overflow-hidden" style={cardStyle}>
+          <Card className="biz-content-card rounded-xl overflow-hidden" style={cardStyle}>
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-2 p-3">
@@ -2374,7 +2374,7 @@ export default function BusinessLaporan() {
 
       {/* Expense Breakdown Chart (kept below tabs) */}
       {data && data.expenses.length > 0 && !loading && (
-        <Card className="rounded-xl" style={cardStyle}>
+        <Card className="biz-content-card rounded-xl" style={cardStyle}>
           <CardContent className="p-3 sm:p-4">
             <SectionHeader icon={BarChart3} color="var(--destructive)" title="Expense Breakdown" badge={data.expenses.length} />
             <ExpenseBreakdownChart expenses={data.expenses} formatAmount={formatAmount} />

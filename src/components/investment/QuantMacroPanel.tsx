@@ -717,7 +717,7 @@ function SignalCard({
       layout
     >
       <Card
-        className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.12] transition-all cursor-pointer group relative overflow-hidden"
+        className={cn("bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.12] transition-all cursor-pointer group relative overflow-hidden", "inv-content-card")}
         onClick={() => signal && onSelect(signal)}
       >
         {/* Glow effect */}
@@ -1155,7 +1155,7 @@ export default function QuantMacroPanel() {
         },
       ].map((item, i) => (
         <motion.div key={item.label} variants={cardVariants} custom={i}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all group">
+          <Card className={cn("bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all group", "inv-stat-card")}>
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[9px] text-white/35 uppercase tracking-wider font-medium">{item.label}</span>
@@ -1174,9 +1174,9 @@ export default function QuantMacroPanel() {
 
   // ── Macro tab no-data state ────────────────────────────────────────────────
   const renderMacroNoData = () => (
-    <Card className="bg-[#1A1A2E] border-white/[0.06]">
+    <Card className={cn("bg-[#1A1A2E] border-white/[0.06]", "inv-empty-state")}>
       <CardContent className="flex flex-col items-center justify-center py-20">
-        <Globe className="h-14 w-14 text-white/15 mb-4" />
+        <Globe className="h-14 w-14 text-white/15 mb-4 inv-empty-state-icon" />
         <p className="text-white/40 text-center mb-1">{t('macro.noData')}</p>
         <Button variant="ghost" size="sm" className="mt-3 text-white/30 hover:text-white/60 hover:bg-white/[0.04] gap-2"
           onClick={() => fetchMacro(true)}>
@@ -1206,7 +1206,7 @@ export default function QuantMacroPanel() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {metricCards.map((card, i) => (
             <motion.div key={card.label} variants={macroCardVariants} custom={i + 1}>
-              <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
+              <Card className={cn("bg-[#1A1A2E] border-white/[0.06] h-full", "inv-macro-card")}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2.5">
                     <p className="text-[10px] text-white/40 uppercase tracking-wider font-medium leading-tight">{card.label}</p>
@@ -1226,7 +1226,7 @@ export default function QuantMacroPanel() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {sentiment && (
             <motion.div variants={macroCardVariants} custom={8}>
-              <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
+              <Card className={cn("bg-[#1A1A2E] border-white/[0.06] h-full", "inv-content-card")}>
                 <CardContent className="p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <Gauge className="h-4 w-4 text-white/40" />
@@ -1253,7 +1253,7 @@ export default function QuantMacroPanel() {
             </motion.div>
           )}
           <motion.div variants={macroCardVariants} custom={9}>
-            <Card className="bg-[#1A1A2E] border-white/[0.06] h-full">
+            <Card className={cn("bg-[#1A1A2E] border-white/[0.06] h-full", "inv-content-card")}>
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <PieChart className="h-4 w-4 text-white/40" />
@@ -1405,7 +1405,7 @@ export default function QuantMacroPanel() {
             ].map(card => {
               const isUp = card.change !== null && card.change >= 0;
               return (
-                <Card key={card.label} className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-colors">
+                <Card key={card.label} className={cn("bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-colors", "inv-macro-card")}>
                   <CardContent className="p-3">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <card.icon className="h-3 w-3 text-white/20" />
@@ -1899,7 +1899,7 @@ export default function QuantMacroPanel() {
 
       {/* ── Expanded Analysis Dialog (shared between tabs) ─────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent showCloseButton={false} aria-describedby={undefined} className="max-w-7xl w-[calc(100vw-1.5rem)] sm:w-[95vw] max-h-[92vh] bg-[#141414] border-white/[0.08] rounded-2xl p-0 gap-0 overflow-hidden">
+        <DialogContent showCloseButton={false} aria-describedby={undefined} className={cn("max-w-7xl w-[calc(100vw-1.5rem)] sm:w-[95vw] max-h-[92vh] bg-[#141414] border-white/[0.08] rounded-2xl p-0 gap-0 overflow-hidden", "inv-dialog-content")}>
           {/* Gradient accent strip */}
           <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6)' }} />
           {selectedAsset && (

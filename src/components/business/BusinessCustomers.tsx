@@ -422,7 +422,7 @@ export default function BusinessCustomers() {
               <div className="relative rounded-xl">
                 {/* Ambient glow behind stat card */}
                 <div className="absolute -inset-1 rounded-xl blur-xl pointer-events-none" style={{ background: alpha(item.color, 5) }} />
-                <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]">
+                <Card className="biz-hero-card relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]">
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(item.color, 10) }}>
@@ -463,7 +463,7 @@ export default function BusinessCustomers() {
 
       {/* Mobile Card Grid / Desktop Table */}
       <motion.div variants={itemVariants}>
-      <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] transition-all duration-200 hover:bg-white/[0.03] hover:border-white/[0.1]">
+      <Card className="biz-content-card rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] transition-all duration-200 hover:bg-white/[0.03] hover:border-white/[0.1]">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-3">
@@ -476,7 +476,7 @@ export default function BusinessCustomers() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="flex flex-col items-center justify-center py-16 px-4 relative"
+              className="biz-empty-state flex flex-col items-center justify-center py-16 px-4 relative"
             >
               {/* Decorative background glow */}
               <div className="absolute w-32 h-32 rounded-full blur-3xl opacity-20" style={{ backgroundColor: alpha(c.primary, 30), top: '20%', left: '50%', transform: 'translateX(-50%)' }} />
@@ -520,7 +520,7 @@ export default function BusinessCustomers() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ delay: index * 0.03, duration: 0.2 }}
-                        className="relative p-3 border-b border-border cursor-pointer hover:bg-white/[0.03] transition-colors duration-150"
+                        className="biz-list-item relative p-3 border-b border-border cursor-pointer hover:bg-white/[0.03] transition-colors duration-150"
                         onClick={() => setDetailCustomer(customer)}
                         whileHover={{ x: 2 }}
                         style={{ borderLeft: '2px solid transparent' }}

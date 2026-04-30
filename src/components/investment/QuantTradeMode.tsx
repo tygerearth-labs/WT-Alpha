@@ -705,7 +705,7 @@ export default function QuantTradeMode() {
           initial="hidden"
           animate="visible"
         >
-          <div className="flex items-center gap-2 mb-3">
+          <div className={cn("flex items-center gap-2 mb-3", "inv-section-header")}>
             <Globe className="h-3.5 w-3.5 text-white/30" />
             <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
               {tf('quant.globalMarket', 'Global Market')}
@@ -746,7 +746,7 @@ export default function QuantTradeMode() {
             ].map((card) => {
               const isUp = card.change !== null && card.change >= 0;
               return (
-                <Card key={card.label} className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-colors">
+                <Card key={card.label} className={cn("bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-colors", "inv-macro-card")}>
                   <CardContent className="p-3">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <card.icon className="h-3 w-3 text-white/20" />
@@ -779,7 +779,7 @@ export default function QuantTradeMode() {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex items-center justify-between mb-3">
+        <div className={cn("flex items-center justify-between mb-3", "inv-section-header")}>
           <div className="flex items-center gap-2">
             <Target className="h-3.5 w-3.5 text-[#FFD700]/60" />
             <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
@@ -801,9 +801,9 @@ export default function QuantTradeMode() {
         </div>
 
         {portfolioItems.length === 0 ? (
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
+          <Card className={cn("bg-[#1A1A2E] border-white/[0.06]", "inv-empty-state")}>
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <BarChart3 className="h-12 w-12 text-white/10 mb-3" />
+              <BarChart3 className="h-12 w-12 text-white/10 mb-3 inv-empty-state-icon" />
               <p className="text-white/30 text-sm">{tf('quant.noSignals', 'No signals available. Add assets to your portfolio to see analysis.')}</p>
             </CardContent>
           </Card>
@@ -830,7 +830,7 @@ export default function QuantTradeMode() {
                     layout
                   >
                     <Card
-                      className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.12] transition-all cursor-pointer group relative overflow-hidden"
+                      className={cn("bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.12] transition-all cursor-pointer group relative overflow-hidden", "inv-content-card")}
                       onClick={() => signal && setSelectedAsset(signal)}
                     >
                       {/* Glow effect */}
@@ -953,7 +953,7 @@ export default function QuantTradeMode() {
           initial="hidden"
           animate="visible"
         >
-          <div className="flex items-center gap-2 mb-3">
+          <div className={cn("flex items-center gap-2 mb-3", "inv-section-header")}>
             <Activity className="h-3.5 w-3.5 text-[#03DAC6]/60" />
             <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
               {tf('quant.trendingAssets', 'Trending Assets')}
@@ -962,7 +962,7 @@ export default function QuantTradeMode() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top Gainers */}
-            <Card className="bg-[#1A1A2E] border-white/[0.06]">
+            <Card className={cn("bg-[#1A1A2E] border-white/[0.06]", "inv-content-card")}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="h-3.5 w-3.5 text-[#03DAC6]" />
@@ -1012,7 +1012,7 @@ export default function QuantTradeMode() {
             </Card>
 
             {/* Top Losers */}
-            <Card className="bg-[#1A1A2E] border-white/[0.06]">
+            <Card className={cn("bg-[#1A1A2E] border-white/[0.06]", "inv-content-card")}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingDown className="h-3.5 w-3.5 text-[#CF6679]" />
@@ -1066,7 +1066,7 @@ export default function QuantTradeMode() {
 
       {/* ── Expanded Analysis Dialog ─────────────────────────────────────── */}
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-7xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden">
+        <DialogContent aria-describedby={undefined} className={cn("max-w-7xl w-[95vw] max-h-[90vh] bg-[#0D0D0D] border-white/[0.08] p-0 gap-0 overflow-hidden", "inv-dialog-content")}>
           {selectedAsset && (
             <>
               {/* Dialog Header */}

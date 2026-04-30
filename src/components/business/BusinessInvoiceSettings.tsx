@@ -245,8 +245,8 @@ function SectionHeader({ icon: Icon, title, color }: {
   title: string; color: string;
 }) {
   return (
-    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2.5 mb-4">
-      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(color, 12) }}>
+    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="biz-section-header flex items-center gap-2.5 mb-4">
+      <div className="biz-section-header-icon h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(color, 12) }}>
         <Icon className="h-4 w-4" style={{ color }} />
       </div>
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
@@ -446,7 +446,7 @@ export default function BusinessInvoiceSettings() {
               { label: 'Completion', value: `${completionPct}%`, color: c.secondary, icon: CheckCircle2 },
               { label: 'Brand', value: null, color: c.warning, icon: Palette },
             ].map((stat, i) => (
-              <div key={i} className="rounded-xl p-3 border border-border" style={{ backgroundColor: alpha(stat.color, 4) }}>
+              <div key={i} className="biz-stat-card rounded-xl p-3 border border-border" style={{ backgroundColor: alpha(stat.color, 4) }}>
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(stat.color, 15) }}>
                     <stat.icon className="h-3 w-3" style={{ color: stat.color }} />
@@ -475,7 +475,7 @@ export default function BusinessInvoiceSettings() {
             <div className="md:col-span-2 space-y-4">
 
               {/* 1. Template Selection */}
-              <Card className="bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={FileText} title="Template Selection" color={c.primary} />
                   <div className="grid grid-cols-3 gap-2">
@@ -498,7 +498,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 2. Invoice Template Settings */}
-              <Card className="bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Settings} title="Invoice Template Settings" color={c.warning} />
                   <div className="space-y-4">
@@ -564,7 +564,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 3. Business Info */}
-              <Card className="bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Building2} title="Informasi Bisnis" color="#CF6679" />
                   {/* Logo + Signature */}
@@ -627,7 +627,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 4. Color & Branding */}
-              <Card className="bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Palette} title="Warna & Branding" color={c.secondary} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -643,7 +643,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 5. Rekening Pembayaran */}
-              <Card className="bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
@@ -685,7 +685,7 @@ export default function BusinessInvoiceSettings() {
               </Card>
 
               {/* 6. Footer & Payment Terms */}
-              <Card className="bg-card border border-border rounded-xl overflow-hidden">
+              <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
                 <CardContent className="p-4">
                   <SectionHeader icon={Sparkles} title="Footer & Ketentuan" color="#BB86FC" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -705,7 +705,7 @@ export default function BusinessInvoiceSettings() {
             {/* ========== RIGHT COLUMN — Live Preview ========== */}
             <div className="md:col-span-1">
               <div className="md:sticky md:top-4">
-                <Card className="bg-card border border-border rounded-xl overflow-hidden">
+                <Card className="biz-content-card bg-card border border-border rounded-xl overflow-hidden">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}><Eye className="h-3.5 w-3.5" style={{ color: c.secondary }} /></div>
@@ -745,7 +745,7 @@ export default function BusinessInvoiceSettings() {
 
       {/* ═══ Bank Account Dialog ═══ */}
       <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
-        <DialogContent className="bg-card border border-border text-foreground sm:max-w-[440px] rounded-xl">
+        <DialogContent className="biz-dialog-content bg-card border border-border text-foreground sm:max-w-[440px] rounded-xl">
           <DialogHeader>
             <DialogTitle className="text-sm flex items-center gap-2">
               <div className={cn('h-6 w-6 rounded-md flex items-center justify-center', editingBank ? 'bg-warning/20' : 'bg-secondary/20')}>

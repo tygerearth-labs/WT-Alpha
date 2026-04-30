@@ -116,7 +116,7 @@ export function Laporan() {
   const avgDaily = txCount > 0 ? totalExpense / Math.max(uniqueDays, 1) : 0;
 
   const filterBtnCls = (active: boolean) =>
-    `text-[10px] font-medium px-2.5 py-1.5 rounded-full shrink-0 transition-all ${active ? '' : ''}`;
+    `text-[10px] sm:text-[11px] font-medium px-2.5 py-1.5 h-9 sm:h-10 rounded-full shrink-0 transition-all ${active ? '' : ''}`;
 
   const filterStyle = (active: boolean) => ({
     background: active ? `linear-gradient(135deg, ${T.primary}20, ${T.primary}08)` : 'transparent',
@@ -130,7 +130,7 @@ export function Laporan() {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="px-4 sm:px-6 space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -182,7 +182,7 @@ export function Laporan() {
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: t('laporan.income'), value: totalIncome, color: T.secondary, icon: ArrowUpRight, sub: t('laporan.subIncome') },
           { label: t('laporan.expense'), value: totalExpense, color: T.destructive, icon: ArrowDownRight, sub: t('laporan.subExpense') },
@@ -199,7 +199,7 @@ export function Laporan() {
 
             <div className="flex items-center gap-1.5 mb-1">
               <item.icon className="h-3 w-3" style={{ color: item.color }} />
-              <span className="text-[9px] uppercase tracking-wider font-medium" style={{ color: T.muted }}>{item.label}</span>
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium" style={{ color: T.muted }}>{item.label}</span>
             </div>
             <p className="text-sm sm:text-base lg:text-lg font-bold truncate" style={{ color: item.color }}>
               {formatAmount(item.value)}
@@ -222,7 +222,7 @@ export function Laporan() {
         <div className="h-px bg-white/[0.06]" />
         <div className="p-3 sm:p-4 lg:p-5 grid grid-cols-3 gap-3 lg:gap-6">
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.savingsRate')}</p>
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.savingsRate')}</p>
             <p className="text-base lg:text-xl font-bold" style={{ color: savingsRate >= 20 ? T.secondary : T.warning }}>{(savingsRate ?? 0).toFixed(1)}%</p>
             <div className="w-full h-1.5 rounded-full overflow-hidden mt-2" style={{ background: T.border }}>
               <motion.div
@@ -235,11 +235,11 @@ export function Laporan() {
             </div>
           </div>
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.dailyAvg')}</p>
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.dailyAvg')}</p>
             <p className="text-base lg:text-xl font-bold truncate" style={{ color: T.textSub }}>{formatAmount(avgDaily)}</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.transaction')}</p>
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.transaction')}</p>
             <p className="text-base lg:text-xl font-bold" style={{ color: T.primary }}>{txCount}</p>
           </div>
         </div>
@@ -260,7 +260,7 @@ export function Laporan() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
-            className="py-12 text-center relative"
+            className="py-16 sm:py-20 text-center relative px-6"
           >
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: T.primary }} />
@@ -333,9 +333,9 @@ export function Laporan() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate" style={{ color: T.text }}>{tx.description || tx.category.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px]" style={{ color: T.muted }}>{tx.category.name}</span>
-                      <span className="text-[9px]" style={{ color: `${T.border}` }}>·</span>
-                      <span className="text-[9px]" style={{ color: T.muted }}>{format(new Date(tx.date), 'dd MMM yyyy', { locale: id })}</span>
+                      <span className="text-[10px] sm:text-[11px]" style={{ color: T.muted }}>{tx.category.name}</span>
+                      <span className="text-[10px] sm:text-[11px]" style={{ color: `${T.border}` }}>·</span>
+                      <span className="text-[10px] sm:text-[11px]" style={{ color: T.muted }}>{format(new Date(tx.date), 'dd MMM yyyy', { locale: id })}</span>
                     </div>
                   </div>
                   <span
@@ -402,12 +402,12 @@ export function Laporan() {
             })}
           </div>
           {/* Mobile: list layout */}
-          <div className="lg:hidden max-h-64 overflow-y-auto">
+          <div className="lg:hidden max-h-64 overflow-y-auto rounded-b-2xl">
             {savingsTargets.map(target => {
               const pct = (target.currentAmount / target.targetAmount) * 100;
               const barColor = pct >= 80 ? T.secondary : pct >= 50 ? T.primary : pct >= 25 ? T.warning : T.destructive;
               return (
-                <div key={target.id} className="px-3 sm:px-4 py-2.5 flex items-center gap-3" style={{ borderBottom: `1px solid ${T.border}` }}>
+                <div key={target.id} className="px-4 sm:px-5 py-3 flex items-center gap-3" style={{ borderBottom: `1px solid ${T.border}`, borderLeft: '3px solid ' + barColor + '40' }}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium truncate" style={{ color: T.text }}>{target.name}</span>
@@ -423,8 +423,8 @@ export function Laporan() {
                       />
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-[9px]" style={{ color: T.muted }}>{formatAmount(target.currentAmount)}</span>
-                      <span className="text-[9px]" style={{ color: T.muted }}>{formatAmount(target.targetAmount)}</span>
+                      <span className="text-[10px] sm:text-[11px]" style={{ color: T.muted }}>{formatAmount(target.currentAmount)}</span>
+                      <span className="text-[10px] sm:text-[11px]" style={{ color: T.muted }}>{formatAmount(target.targetAmount)}</span>
                     </div>
                   </div>
                   <span className="text-[10px] shrink-0" style={{ color: T.muted }}>

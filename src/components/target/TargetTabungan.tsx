@@ -45,7 +45,7 @@ function ProgressRing({ pct, size = 56, stroke = 4, color }: { pct: number; size
         strokeWidth={stroke}
         strokeLinecap="round"
         strokeDasharray={circ + ' ' + circ}
-        style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 1s ease-out' }}
+        style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 1s ease-out', filter: `drop-shadow(0 0 6px ${color}50)` }}
         r={r} cx={size / 2} cy={size / 2}
       />
     </svg>
@@ -101,14 +101,14 @@ function QuickDeposit({ targetId }: { targetId: string }) {
     }
   };
   return (
-    <div className="flex gap-1.5 flex-wrap">
+    <div className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-1 px-1">
       {amounts.map(a => (
         <motion.button
           key={a}
           onClick={() => handleDeposit(a)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-150"
+          className="text-[11px] font-semibold px-3 h-10 rounded-xl transition-all duration-150 snap-start shrink-0"
           style={{ background: `linear-gradient(135deg, ${T.primary}18, ${T.primary}08)`, color: T.primary, border: `1px solid ${T.primary}25` }}
         >
           +{a}k
@@ -124,7 +124,7 @@ function MiniBar({ value, color, height = 3 }: { value: number; color: string; h
     <div className="w-full rounded-full overflow-hidden" style={{ height, background: T.border }}>
       <div
         className="h-full rounded-full transition-all duration-700"
-        style={{ width: `${Math.min(value, 100)}%`, background: color }}
+        style={{ width: `${Math.min(value, 100)}%`, background: color, boxShadow: `0 0 8px ${color}40` }}
       />
     </div>
   );
@@ -231,7 +231,7 @@ function TransactionHistory({ targetId }: { targetId: string }) {
       {allocations.length > 3 && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="w-full text-[10px] font-medium py-1.5 rounded-lg transition-all flex items-center justify-center gap-1"
+          className="w-full text-[11px] font-medium h-11 rounded-xl transition-all flex items-center justify-center gap-1"
           style={{ background: `${T.primary}08`, color: T.primary, border: `1px solid ${T.primary}12` }}
         >
           <History className="h-3 w-3" />
@@ -276,11 +276,13 @@ function TargetCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.3 }}
-      className="rounded-2xl overflow-hidden transition-shadow duration-200"
+      className="rounded-2xl md:rounded-xl overflow-hidden transition-shadow duration-200"
       style={{
         background: T.bg,
         border: `1px solid ${T.border}`,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
       }}
     >
       {/* Gradient accent strip */}
@@ -288,44 +290,48 @@ function TargetCard({
       {/* Clickable header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-3 sm:p-4 flex items-center gap-3 active:bg-white/[0.02] transition-colors"
+        className="w-full text-left p-4 sm:p-5 active:bg-white/[0.02] transition-colors"
       >
-        {/* Ring */}
-        <div className="relative shrink-0">
-          <ProgressRing pct={pct} size={48} stroke={3.5} color={ringColor} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[11px] font-bold" style={{ color: ringColor }}>{(pct || 0).toFixed(0)}</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          {/* Ring - centered on mobile */}
+          <div className="relative shrink-0 self-center sm:self-auto">
+            <ProgressRing pct={pct} size={48} stroke={3.5} color={ringColor} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[11px] font-bold" style={{ color: ringColor }}>{(pct || 0).toFixed(0)}</span>
+            </div>
+          </div>
+
+          {/* Info + Chevron */}
+          <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-sm font-semibold truncate" style={{ color: T.text }}>{target.name}</span>
+                {!isCompleted && <StatusChip status={metrics.targetStatus} />}
+                {isCompleted && (
+                  <span className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ color: T.secondary, background: `${T.secondary}15` }}>
+                    {t('target.completed')}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3 text-[11px]" style={{ color: T.muted }}>
+                <span>{formatAmount(target.currentAmount)}</span>
+                <ChevronRight className="h-3 w-3" />
+                <span style={{ color: T.textSub }}>{formatAmount(target.targetAmount)}</span>
+              </div>
+            </div>
+
+            {/* Chevron */}
+            <ChevronRight
+              className="h-4 w-4 shrink-0 transition-transform duration-200"
+              style={{ color: T.muted, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            />
           </div>
         </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-semibold truncate" style={{ color: T.text }}>{target.name}</span>
-            {!isCompleted && <StatusChip status={metrics.targetStatus} />}
-            {isCompleted && (
-              <span className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ color: T.secondary, background: `${T.secondary}15` }}>
-                {t('target.completed')}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-[10px]" style={{ color: T.muted }}>
-            <span>{formatAmount(target.currentAmount)}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span style={{ color: T.textSub }}>{formatAmount(target.targetAmount)}</span>
-          </div>
-        </div>
-
-        {/* Chevron */}
-        <ChevronRight
-          className="h-4 w-4 shrink-0 transition-transform duration-200"
-          style={{ color: T.muted, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
-        />
       </button>
 
       {/* Expanded Details */}
       {expanded && (
-        <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3" style={{ borderTop: `1px solid ${T.border}` }}>
+        <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3" style={{ borderTop: `1px solid ${T.border}` }}>
           {/* ETA & Speed */}
           <div className="grid grid-cols-3 gap-2 pt-3">
             <div className="text-center">
@@ -386,7 +392,7 @@ function TargetCard({
                 <p className="text-[10px]" style={{ color: T.muted }}>{miniChallenge.description}</p>
               </div>
               <button
-                className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+                className="shrink-0 text-[11px] font-semibold px-3 h-10 rounded-xl transition-all active:scale-95 flex items-center"
                 style={{ background: T.primary, color: '#000' }}
                 onClick={async () => {
                   try {
@@ -420,17 +426,17 @@ function TargetCard({
           <div className="flex gap-2 pt-1">
             <button
               onClick={() => onEdit(target)}
-              className="flex-1 text-[11px] font-medium py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              className="flex-1 text-[11px] font-medium h-11 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-[0.97]"
               style={{ background: `${T.primary}10`, color: T.primary }}
             >
-              <Edit className="h-3 w-3" /> {t('common.edit')}
+              <Edit className="h-3.5 w-3.5" /> {t('common.edit')}
             </button>
             <button
               onClick={() => onDelete(target.id)}
-              className="flex-1 text-[11px] font-medium py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              className="flex-1 text-[11px] font-medium h-11 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-[0.97]"
               style={{ background: `${T.destructive}10`, color: T.destructive }}
             >
-              <Trash2 className="h-3 w-3" /> {t('common.delete')}
+              <Trash2 className="h-3.5 w-3.5" /> {t('common.delete')}
             </button>
           </div>
         </div>
@@ -484,14 +490,14 @@ function TargetFormDialog({
     onSubmit(form);
   };
 
-  const inputCls = "h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/30 focus:ring-0";
+  const inputCls = "h-11 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/30 focus:ring-0";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[420px] lg:max-w-[520px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Gradient accent strip */}
         <div className="h-px bg-white/[0.06]" />
-        <div className="p-5">
+        <div className="p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-white">{isEdit ? t('target.editTitle') : t('target.addTitle')}</DialogTitle>
             <DialogDescription className="text-[#9E9E9E]">
@@ -536,11 +542,11 @@ function TargetFormDialog({
                 <p className="text-[9px]" style={{ color: T.muted }}>{t('target.allocationDesc')}</p>
               </div>
             </div>
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" className="rounded-xl hover:bg-white/[0.06] text-[#9E9E9E]" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="pt-4 flex flex-col sm:flex-row gap-2">
+              <Button type="button" variant="ghost" className="w-full sm:w-auto h-11 rounded-xl hover:bg-white/[0.06] text-[#9E9E9E]" onClick={() => onOpenChange(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" className="rounded-xl font-semibold text-white" style={{ background: 'linear-gradient(135deg, #03DAC6, #BB86FC)' }}>
+              <Button type="submit" className="w-full sm:w-auto h-12 rounded-xl font-semibold text-white" style={{ background: 'linear-gradient(135deg, #03DAC6, #BB86FC)' }}>
                 {isEdit ? t('common.save') : t('target.createTarget')}
               </Button>
             </DialogFooter>
@@ -612,21 +618,21 @@ export function TargetTabungan() {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-4 lg:space-y-6 px-4 sm:px-6">
       {/* Header + Add Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: T.text }}>{t('target.title')}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{t('target.targetCount', { count: savingsTargets.length })}</p>
+          <p className="text-sm sm:text-[13px] font-bold uppercase tracking-wider" style={{ color: T.text }}>{t('target.title')}</p>
+          <p className="text-[11px] sm:text-[10px] mt-0.5" style={{ color: T.muted }}>{t('target.targetCount', { count: savingsTargets.length })}</p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
             <Button
               size="sm"
-              className="h-8 px-3 text-xs font-semibold gap-1.5 rounded-xl"
+              className="w-full sm:w-auto h-12 sm:h-8 px-4 sm:px-3 text-sm sm:text-xs font-semibold gap-2 sm:gap-1.5 rounded-xl"
               style={{ background: T.primary, color: '#000' }}
             >
-              <Plus className="h-3.5 w-3.5" /> {t('common.add')}
+              <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> {t('common.add')}
             </Button>
           </DialogTrigger>
           <TargetFormDialog open={isAddOpen} onOpenChange={setIsAddOpen} onSubmit={handleAdd} initialData={null} isEdit={false} />
@@ -642,17 +648,17 @@ export function TargetTabungan() {
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-col items-center justify-center py-12 text-center relative"
+          className="flex flex-col items-center justify-center py-16 sm:py-20 text-center relative"
         >
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: T.primary }} />
+            <div className="w-40 h-40 rounded-full blur-3xl opacity-20" style={{ background: T.primary }} />
           </div>
-          <div className="w-16 h-16 rounded-2xl grid place-items-center mb-4 relative border"
+          <div className="w-20 h-20 rounded-2xl grid place-items-center mb-5 relative border"
             style={{ background: `${T.primary}10`, borderColor: `${T.primary}20` }}>
-            <PiggyBank className="h-8 w-8 relative" style={{ color: T.primary, opacity: 0.7 }} />
+            <PiggyBank className="h-10 w-10 relative" style={{ color: T.primary, opacity: 0.7 }} />
           </div>
-          <p className="text-sm font-semibold relative" style={{ color: T.text }}>{t('target.noData')}</p>
-          <p className="text-xs mt-1 relative" style={{ color: T.muted }}>{t('target.noDataDesc')}</p>
+          <p className="text-base font-semibold relative" style={{ color: T.text }}>{t('target.noData')}</p>
+          <p className="text-sm mt-1.5 relative" style={{ color: T.muted }}>{t('target.noDataDesc')}</p>
         </motion.div>
       )}
 
@@ -660,7 +666,7 @@ export function TargetTabungan() {
       {savingsTargets.length > 0 && <div className="h-px bg-white/[0.06]" />}
 
       {/* Target Cards */}
-      <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {savingsTargets.map(target => (
           <TargetCard
             key={target.id}

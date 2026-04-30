@@ -967,7 +967,7 @@ export default function InvestmentDashboard() {
     >
       {/* ── WELCOME / FEATURE GUIDE ── */}
       <motion.div variants={cardVariants} custom={-1}>
-        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
+        <div className="inv-content-card rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
           {/* Gradient header */}
           <button
             className="w-full flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-[#BB86FC]/20 via-[#03DAC6]/10 to-[#FFD700]/10 hover:from-[#BB86FC]/25 hover:via-[#03DAC6]/15 hover:to-[#FFD700]/15 transition-all"
@@ -978,7 +978,7 @@ export default function InvestmentDashboard() {
                 <Layers className="h-4 w-4 text-[#BB86FC]" />
               </div>
               <div className="text-left">
-                <h3 className="text-sm font-bold text-white/90">{t('inv.dashWelcomeTitle')}</h3>
+                <h3 className="inv-gradient-text text-sm font-bold text-white/90">{t('inv.dashWelcomeTitle')}</h3>
                 <p className="text-[11px] text-white/40 mt-0.5">{t('inv.dashWelcomeDesc')}</p>
               </div>
             </div>
@@ -1020,8 +1020,8 @@ export default function InvestmentDashboard() {
       {/* ── TICKER BAR ── */}
       {(sortedPositions.length > 0 || watchlist.length > 0) && (
         <motion.div variants={cardVariants} custom={0}>
-          <div className="rounded-xl bg-[#0D0D0D] border border-white/[0.06] px-4 py-2.5 overflow-hidden">
-            <div className="flex items-center gap-4 overflow-x-auto scrollbar-none">
+          <div className="inv-ticker-bar rounded-xl bg-[#0D0D0D] border border-white/[0.06] px-4 py-2.5 overflow-hidden">
+            <div className="inv-scroll-mobile flex items-center gap-4 overflow-x-auto scrollbar-none">
               <div className="flex items-center gap-1.5 shrink-0">
                 <Activity className="h-3.5 w-3.5 text-[#03DAC6] animate-pulse" />
                 <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{tf('inv.dashTicker', 'Live')}</span>
@@ -1082,8 +1082,8 @@ export default function InvestmentDashboard() {
       {/* ── MACRO STRIP ── */}
       {macroData && (
         <motion.div variants={cardVariants} custom={1}>
-          <div className="rounded-xl bg-white/[0.03] border border-white/[0.05] px-4 py-3 overflow-hidden">
-            <div className="flex items-center gap-6 overflow-x-auto scrollbar-none">
+          <div className="inv-content-card rounded-xl bg-white/[0.03] border border-white/[0.05] px-4 py-3 overflow-hidden">
+            <div className="inv-scroll-mobile flex items-center gap-6 overflow-x-auto scrollbar-none">
               {[
                 { label: tf('inv.dashMarketCap', 'Market Cap'), value: formatMarketCap(macroData.global.totalMarketCap), icon: Globe, change: macroData.global.marketCapChange24h },
                 { label: tf('inv.dashBtcDom', 'BTC Dom'), value: `${toF(macroData.global.btcDominance, 1)}%`, icon: Zap, change: null },
@@ -1116,11 +1116,11 @@ export default function InvestmentDashboard() {
         <motion.div variants={cardVariants} custom={2} className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Top Gainers */}
           {macroData.topGainers?.length > 0 && (
-            <Card className="bg-white/[0.03] border-white/[0.05]">
+            <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2 mb-2.5">
-                  <TrendingUp className="h-3.5 w-3.5 text-[#03DAC6]" />
-                  <span className="text-[10px] text-white/50 uppercase tracking-wider font-bold">{tf('inv.dashTopGainers', 'Top Gainers')}</span>
+                  <TrendingUp className="inv-section-header-icon h-3.5 w-3.5 text-[#03DAC6]" />
+                  <span className="inv-section-header text-[10px] text-white/50 uppercase tracking-wider font-bold">{tf('inv.dashTopGainers', 'Top Gainers')}</span>
                   <Badge variant="outline" className="border-[#03DAC6]/20 text-[#03DAC6]/60 text-[9px] ml-auto">24h</Badge>
                 </div>
                 <div className="space-y-1">
@@ -1131,8 +1131,8 @@ export default function InvestmentDashboard() {
                         <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="h-1.5 w-12 rounded-full bg-[#03DAC6]/20 overflow-hidden">
-                          <div className="h-full rounded-full bg-[#03DAC6]" style={{ width: `${Math.min(100, Math.abs(item.change24h ?? 0) * 5)}%` }} />
+                        <div className="inv-pnl-track h-1.5 w-12 rounded-full bg-[#03DAC6]/20 overflow-hidden">
+                          <div className="inv-pnl-fill inv-pnl-fill-positive h-full rounded-full bg-[#03DAC6]" style={{ width: `${Math.min(100, Math.abs(item.change24h ?? 0) * 5)}%` }} />
                         </div>
                         <span className="text-[11px] font-bold font-mono text-[#03DAC6]">+{toF(item.change24h)}%</span>
                       </div>
@@ -1144,11 +1144,11 @@ export default function InvestmentDashboard() {
           )}
           {/* Top Losers */}
           {macroData.topLosers?.length > 0 && (
-            <Card className="bg-white/[0.03] border-white/[0.05]">
+            <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2 mb-2.5">
-                  <TrendingDown className="h-3.5 w-3.5 text-[#CF6679]" />
-                  <span className="text-[10px] text-white/50 uppercase tracking-wider font-bold">{tf('inv.dashTopLosers', 'Top Losers')}</span>
+                  <TrendingDown className="inv-section-header-icon h-3.5 w-3.5 text-[#CF6679]" />
+                  <span className="inv-section-header text-[10px] text-white/50 uppercase tracking-wider font-bold">{tf('inv.dashTopLosers', 'Top Losers')}</span>
                   <Badge variant="outline" className="border-[#CF6679]/20 text-[#CF6679]/60 text-[9px] ml-auto">24h</Badge>
                 </div>
                 <div className="space-y-1">
@@ -1159,8 +1159,8 @@ export default function InvestmentDashboard() {
                         <span className="text-xs font-bold text-white/80 font-mono">{item.symbol}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="h-1.5 w-12 rounded-full bg-[#CF6679]/20 overflow-hidden">
-                          <div className="h-full rounded-full bg-[#CF6679]" style={{ width: `${Math.min(100, Math.abs(item.change24h ?? 0) * 5)}%` }} />
+                        <div className="inv-pnl-track h-1.5 w-12 rounded-full bg-[#CF6679]/20 overflow-hidden">
+                          <div className="inv-pnl-fill inv-pnl-fill-negative h-full rounded-full bg-[#CF6679]" style={{ width: `${Math.min(100, Math.abs(item.change24h ?? 0) * 5)}%` }} />
                         </div>
                         <span className="text-[11px] font-bold font-mono text-[#CF6679]">{toF(item.change24h)}%</span>
                       </div>
@@ -1182,7 +1182,7 @@ export default function InvestmentDashboard() {
             { label: t('inv.realizedPnL'), value: (stats.realizedPnl >= 0 ? '+' : '') + formatCurrency(stats.realizedPnl, currency as CurrencyCode), sub: stats.totalTrades + ' trades closed', icon: stats.realizedPnl >= 0 ? TrendingUp : TrendingDown, color: pnlColor(stats.realizedPnl) },
             { label: t('inv.winRate'), value: toF(stats.winRate, 1) + '%', sub: stats.totalTrades > 0 ? (stats.winRate >= 50 ? 'Profitable' : 'Review strategy') : 'No closed trades', icon: Trophy, color: stats.winRate >= 50 ? UP_COLOR : DOWN_COLOR },
           ].map((card) => (
-            <Card key={card.label} className="bg-white/[0.03] border-white/[0.05]">
+            <Card key={card.label} className="inv-stat-card bg-white/[0.03] border-white/[0.05]" style={{ '--inv-accent': `${card.color}30` } as React.CSSProperties}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[11px] text-white/40 uppercase tracking-wider font-medium">{card.label}</p>
@@ -1204,10 +1204,10 @@ export default function InvestmentDashboard() {
         <div className="lg:col-span-2">
           {chartTabs.length > 0 ? (
             <motion.div variants={cardVariants} custom={6}>
-              <Card className="bg-[#0D0D0D] border-white/[0.06] overflow-hidden group">
+              <Card className="inv-content-card bg-[#0D0D0D] border-white/[0.06] overflow-hidden group">
                 <CardContent className="p-0">
                   {/* Tab pills */}
-                  <div className="flex items-center gap-2 px-4 pt-3 pb-2 overflow-x-auto scrollbar-none">
+                  <div className="inv-chart-tabs inv-scroll-mobile flex items-center gap-2 px-4 pt-3 pb-2 overflow-x-auto scrollbar-none">
                     {chartTabs.map((tab) => {
                       const isActive = selectedAsset === tab.key || (!selectedAsset && chartTabs[0]?.key === tab.key);
                       const isWatchlist = tab.key.startsWith('wl:');
@@ -1216,9 +1216,9 @@ export default function InvestmentDashboard() {
                           key={tab.key}
                           onClick={() => setSelectedAsset(tab.key)}
                           className={cn(
-                            'shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all',
+                            'inv-chart-tab shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all',
                             isActive
-                              ? 'bg-[#BB86FC]/20 text-[#BB86FC] border border-[#BB86FC]/30'
+                              ? 'inv-chart-tab-active bg-[#BB86FC]/20 text-[#BB86FC] border border-[#BB86FC]/30'
                               : 'bg-white/[0.04] text-white/40 border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/60',
                           )}
                         >
@@ -1254,9 +1254,9 @@ export default function InvestmentDashboard() {
             </motion.div>
           ) : (
             <motion.div variants={cardVariants} custom={6}>
-              <Card className="bg-white/[0.03] border-white/[0.05]">
-                <CardContent className="flex flex-col items-center justify-center py-20">
-                  <BarChart3 className="h-12 w-12 text-white/15 mb-3" />
+              <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
+                <CardContent className="inv-empty-state flex flex-col items-center justify-center py-20">
+                  <BarChart3 className="inv-empty-state-icon h-12 w-12 text-white/15 mb-3" />
                   <p className="text-white/30 text-sm">{tf('inv.dashNoChartAssets', 'No open positions or watchlist items')}</p>
                 </CardContent>
               </Card>
@@ -1266,11 +1266,11 @@ export default function InvestmentDashboard() {
           {/* ── AI INSIGHTS PANEL (below chart) ── */}
           {activeChartAsset && activeChartSignal && (
             <motion.div variants={cardVariants} custom={7} className="mt-4">
-              <Card className="bg-white/[0.03] border-white/[0.05]">
+              <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Brain className="h-4 w-4 text-[#BB86FC]/80" />
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+                    <Brain className="inv-section-header-icon h-4 w-4 text-[#BB86FC]/80" />
+                    <span className="inv-section-header text-[10px] text-white/40 uppercase tracking-wider font-bold">
                       AI Insights — {activeChartAsset.symbol}
                     </span>
                     {activeChartSignal.aiAnalysis && (
@@ -1450,12 +1450,12 @@ export default function InvestmentDashboard() {
         {/* Right Panel: Watchlist + Quant Signals + News stacked */}
         <div className="flex flex-col gap-4">
           {/* Compact Watchlist */}
-          <Card className="bg-white/[0.03] border-white/[0.05]">
+          <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-[#FFD700]/60" />
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashWatchlist', 'Watchlist')}</span>
+                  <Eye className="inv-section-header-icon h-4 w-4 text-[#FFD700]/60" />
+                  <span className="inv-section-header text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashWatchlist', 'Watchlist')}</span>
                   <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[9px]">{watchlist.length}</Badge>
                 </div>
                 <Button
@@ -1469,8 +1469,8 @@ export default function InvestmentDashboard() {
               </div>
               <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
                 {watchlist.length === 0 && !loadingWatchlist ? (
-                  <div className="flex flex-col items-center justify-center py-6">
-                    <Eye className="h-8 w-8 text-white/10 mb-2" />
+                  <div className="inv-empty-state flex flex-col items-center justify-center py-6">
+                    <Eye className="inv-empty-state-icon h-8 w-8 text-white/10 mb-2" />
                     <p className="text-white/30 text-xs">{tf('inv.dashWatchlistEmpty', 'Tambahkan aset ke watchlist')}</p>
                   </div>
                 ) : (
@@ -1482,7 +1482,7 @@ export default function InvestmentDashboard() {
                     return (
                       <div
                         key={w.id}
-                        className="group flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer"
+                        className="inv-watchlist-item group flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer"
                         onClick={() => setSelectedAsset(`wl:${w.type}:${w.symbol}`)}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -1519,12 +1519,12 @@ export default function InvestmentDashboard() {
           </Card>
 
           {/* Quant Signals */}
-          <Card className="bg-white/[0.03] border-white/[0.05]">
+          <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-[#FFD700]/60" />
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashQuantSignals', 'Quant Signals')}</span>
+                  <Target className="inv-section-header-icon h-4 w-4 text-[#FFD700]/60" />
+                  <span className="inv-section-header text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashQuantSignals', 'Quant Signals')}</span>
                   {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
                 </div>
                 <Button
@@ -1539,8 +1539,8 @@ export default function InvestmentDashboard() {
               </div>
               <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-2">
                 {(openPortfolios.length === 0 && watchlist.length === 0) ? (
-                  <div className="flex flex-col items-center justify-center py-6">
-                    <BarChart3 className="h-8 w-8 text-white/10 mb-2" />
+                  <div className="inv-empty-state flex flex-col items-center justify-center py-6">
+                    <BarChart3 className="inv-empty-state-icon h-8 w-8 text-white/10 mb-2" />
                     <p className="text-white/30 text-xs">{tf('inv.noSignals', 'Add positions to see signals')}</p>
                   </div>
                 ) : (
@@ -1574,10 +1574,10 @@ export default function InvestmentDashboard() {
                         <div className="flex items-center gap-1.5">
                           {signal ? (
                             <>
-                              <div className="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                                <div className="h-full rounded-full transition-all" style={{ width: `${((strength + 100) / 200) * 100}%`, backgroundColor: signalColor }} />
+                              <div className="inv-pnl-track w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div className="inv-pnl-fill h-full rounded-full transition-all" style={{ width: `${((strength + 100) / 200) * 100}%`, backgroundColor: signalColor }} />
                               </div>
-                              <Badge className="text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
+                              <Badge className="inv-signal-badge text-[8px] px-1.5 py-0 h-3.5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
                                 {signalLabel}
                               </Badge>
                             </>
@@ -1594,12 +1594,12 @@ export default function InvestmentDashboard() {
           </Card>
 
           {/* News + Social Feed */}
-          <Card className="bg-white/[0.03] border-white/[0.05]">
+          <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Newspaper className="h-4 w-4 text-[#FF7043]/60" />
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashNewsSocial', 'News & Social')}</span>
+                  <Newspaper className="inv-section-header-icon h-4 w-4 text-[#FF7043]/60" />
+                  <span className="inv-section-header text-[10px] text-white/40 uppercase tracking-wider font-bold">{tf('inv.dashNewsSocial', 'News & Social')}</span>
                   {loadingNews && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -1616,8 +1616,8 @@ export default function InvestmentDashboard() {
               </div>
               <div className="max-h-[240px] overflow-y-auto custom-scrollbar">
                 {mergedFeed.length === 0 && !loadingNews && (
-                  <div className="flex flex-col items-center justify-center py-6">
-                    <Newspaper className="h-8 w-8 text-white/10 mb-2" />
+                  <div className="inv-empty-state flex flex-col items-center justify-center py-6">
+                    <Newspaper className="inv-empty-state-icon h-8 w-8 text-white/10 mb-2" />
                     <p className="text-white/30 text-xs">{tf('inv.dashNoNews', 'No news available')}</p>
                   </div>
                 )}
@@ -1652,7 +1652,13 @@ export default function InvestmentDashboard() {
                         initial="hidden"
                         animate="visible"
                       >
-                        <div className="flex items-start gap-2 px-2 py-2.5 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] group">
+                        <div className={cn(
+                          'inv-news-item',
+                          isBullish && 'inv-news-sentiment-bullish',
+                          isBearish && 'inv-news-sentiment-bearish',
+                          !isBullish && !isBearish && 'inv-news-sentiment-neutral',
+                          'flex items-start gap-2 px-2 py-2.5 transition-colors border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] group'
+                        )}>
                           <div className="mt-0.5 shrink-0" style={{ color: sentimentColor }}>
                             {isBullish ? <TrendingUp className="h-3 w-3" /> : isBearish ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
                           </div>
@@ -1730,12 +1736,12 @@ export default function InvestmentDashboard() {
 
         return (
           <motion.div variants={cardVariants} custom={8}>
-            <Card className="bg-white/[0.03] border-white/[0.05]">
+            <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-[#FFD700]/60" />
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+                    <Zap className="inv-section-header-icon h-4 w-4 text-[#FFD700]/60" />
+                    <span className="inv-section-header text-[10px] text-white/40 uppercase tracking-wider font-bold">
                       Smart Money Signals — {activeChartAsset.symbol}
                     </span>
                     {activeChartSignal.dataQuality?.isMock && (
@@ -1748,7 +1754,7 @@ export default function InvestmentDashboard() {
                     )}
                     {loadingSignals && <RefreshCw className="h-3 w-3 text-white/20 animate-spin" />}
                   </div>
-                  <Badge className="text-[10px] px-2.5 py-0 h-5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
+                  <Badge className="inv-signal-badge text-[10px] px-2.5 py-0 h-5 font-bold border-0" style={{ backgroundColor: `${signalColor}18`, color: signalColor }}>
                     {signalLabel} {strength > 0 ? '+' : ''}{strength}
                   </Badge>
                 </div>
@@ -1757,7 +1763,7 @@ export default function InvestmentDashboard() {
                 {signal.marketDetail && (() => {
                   const md = signal.marketDetail;
                   return (
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/[0.06] overflow-x-auto">
+                    <div className="inv-scroll-mobile flex items-center gap-3 mb-3 pb-3 border-b border-white/[0.06] overflow-x-auto">
                       {md.marketCapRank != null && (
                         <div className="flex items-center gap-1 shrink-0">
                           <Trophy className="h-3 w-3 text-[#FFD700]/50" />
@@ -1823,7 +1829,8 @@ export default function InvestmentDashboard() {
                 )}>
                   {/* Background glow */}
                   <div className={cn(
-                    'absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none',
+                    'absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none inv-ambient-glow',
+                    signal.overallSignal === 'buy' ? 'inv-ambient-glow-teal' : signal.overallSignal === 'sell' ? '' : '',
                     signal.overallSignal === 'buy' ? 'bg-[#03DAC6]/20' : signal.overallSignal === 'sell' ? 'bg-[#CF6679]/20' : 'bg-[#FFD700]/15',
                   )} />
 
@@ -1849,7 +1856,7 @@ export default function InvestmentDashboard() {
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className={cn(
-                            'text-lg font-black uppercase tracking-wider',
+                            'inv-gradient-text text-lg font-black uppercase tracking-wider',
                             signal.overallSignal === 'buy' ? 'text-[#03DAC6]' : signal.overallSignal === 'sell' ? 'text-[#CF6679]' : 'text-[#FFD700]',
                           )}>
                             {signal.overallSignal === 'buy' ? 'BELI' : signal.overallSignal === 'sell' ? 'JUAL' : 'HOLD'}
@@ -1900,9 +1907,9 @@ export default function InvestmentDashboard() {
                             {ai.confidence}%
                           </span>
                         </div>
-                        <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div className="inv-pnl-track h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
                           <div
-                            className="h-full rounded-full transition-all duration-700"
+                            className="inv-pnl-fill h-full rounded-full transition-all duration-700"
                             style={{
                               width: `${ai.confidence}%`,
                               backgroundColor: ai.confidence >= 70 ? '#03DAC6' : ai.confidence >= 40 ? '#FFD700' : '#CF6679',
@@ -1967,7 +1974,7 @@ export default function InvestmentDashboard() {
                         <p className="text-[11px] font-mono font-bold text-white/70 truncate">{ai.entryZone}</p>
                         <div className="mt-1.5">
                           <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                            <div className="h-full rounded-full bg-[#03DAC6]/70 transition-all" style={{ width: `${Math.min(ai.confidence + 10, 100)}%` }} />
+                            <div className="inv-pnl-fill inv-pnl-fill-positive h-full rounded-full bg-[#03DAC6]/70 transition-all" style={{ width: `${Math.min(ai.confidence + 10, 100)}%` }} />
                           </div>
                           <span className="text-[8px] font-mono text-[#03DAC6]/60 mt-0.5 block">{Math.min(ai.confidence + 10, 100)}%</span>
                         </div>
@@ -1982,7 +1989,7 @@ export default function InvestmentDashboard() {
                         <p className="text-[11px] font-mono font-bold text-[#CF6679]/70 truncate">{ai.stopLossZone}</p>
                         <div className="mt-1.5">
                           <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                            <div className="h-full rounded-full bg-[#CF6679]/70 transition-all" style={{ width: `${Math.max(100 - ai.confidence, 30)}%` }} />
+                            <div className="inv-pnl-fill inv-pnl-fill-negative h-full rounded-full bg-[#CF6679]/70 transition-all" style={{ width: `${Math.max(100 - ai.confidence, 30)}%` }} />
                           </div>
                           <span className="text-[8px] font-mono text-[#CF6679]/60 mt-0.5 block">Risk Zone</span>
                         </div>
@@ -1997,7 +2004,7 @@ export default function InvestmentDashboard() {
                         <p className="text-[11px] font-mono font-bold text-[#FFD700]/70 truncate">{ai.takeProfitZone}</p>
                         <div className="mt-1.5">
                           <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                            <div className="h-full rounded-full bg-[#FFD700]/70 transition-all" style={{ width: `${Math.min(ai.confidence - 5, 100)}%` }} />
+                            <div className="inv-pnl-fill h-full rounded-full bg-[#FFD700]/70 transition-all" style={{ width: `${Math.min(ai.confidence - 5, 100)}%` }} />
                           </div>
                           <span className="text-[8px] font-mono text-[#FFD700]/60 mt-0.5 block">{Math.min(ai.confidence - 5, 95)}%</span>
                         </div>
@@ -2034,8 +2041,8 @@ export default function InvestmentDashboard() {
                           <div className="flex items-center justify-between">
                             <span className="text-[9px] text-white/25">Confidence</span>
                             <div className="flex items-center gap-1.5">
-                              <div className="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                                <div className="h-full rounded-full bg-[#BB86FC]" style={{ width: `${ai.confidence}%` }} />
+                              <div className="inv-pnl-track w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                <div className="inv-pnl-fill h-full rounded-full bg-[#BB86FC]" style={{ width: `${ai.confidence}%` }} />
                               </div>
                               <span className="text-[10px] font-mono font-bold text-[#BB86FC]">{ai.confidence}%</span>
                             </div>
@@ -2255,14 +2262,14 @@ export default function InvestmentDashboard() {
         {/* Simplified Allocation */}
         {allocationData.length > 0 && (
           <motion.div variants={cardVariants} custom={9}>
-            <Card className="bg-white/[0.03] border-white/[0.05]">
+            <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
               <CardContent className="p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashAllocation', 'Allocation')}</p>
+                  <p className="inv-section-header text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashAllocation', 'Allocation')}</p>
                   <Badge variant="outline" className="border-white/[0.06] text-white/30 text-[10px]">{openPortfolios.length} open</Badge>
                 </div>
                 {/* Stacked bar */}
-                <div className="flex h-2.5 rounded-full overflow-hidden bg-white/[0.04]">
+                <div className="inv-pnl-track flex h-2.5 rounded-full overflow-hidden bg-white/[0.04]">
                   {allocationData.map((item) => (
                     <div
                       key={item.type}
@@ -2289,20 +2296,20 @@ export default function InvestmentDashboard() {
 
         {/* Positions Table */}
         <motion.div variants={cardVariants} custom={10} className={allocationData.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}>
-          <Card className="bg-white/[0.03] border-white/[0.05]">
+          <Card className="inv-content-card bg-white/[0.03] border-white/[0.05]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashPositions', 'Positions')}</p>
+                  <p className="inv-section-header text-xs text-white/40 uppercase tracking-wider font-medium">{tf('inv.dashPositions', 'Positions')}</p>
                   <div className="flex items-center gap-0.5">
                     {(['open', 'closed', 'all'] as const).map((f) => (
                       <button
                         key={f}
                         onClick={() => setPositionFilter(f)}
                         className={cn(
-                          'px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors',
+                          'inv-pos-filter px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors',
                           positionFilter === f
-                            ? 'bg-white/[0.08] text-white/70'
+                            ? 'inv-pos-filter-active bg-white/[0.08] text-white/70'
                             : 'text-white/25 hover:text-white/40',
                         )}
                       >
@@ -2452,7 +2459,7 @@ export default function InvestmentDashboard() {
 
       {/* ── Expanded Chart Dialog ── */}
       <Dialog open={!!expandedChart} onOpenChange={() => setExpandedChart(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-5xl w-[95vw] bg-[#0D0D0D] border-white/[0.06] p-0 gap-0 overflow-hidden">
+        <DialogContent aria-describedby={undefined} className="inv-dialog-content max-w-5xl w-[95vw] bg-[#0D0D0D] border-white/[0.06] p-0 gap-0 overflow-hidden">
           {expandedChart && (() => {
             // Find in chartTabs first (covers both portfolio and watchlist)
             const tab = chartTabs.find((t) => t.key === expandedChart);
@@ -2501,7 +2508,7 @@ export default function InvestmentDashboard() {
 
       {/* ── Quick Add Portfolio Sheet ── */}
       <Sheet open={showAddPortfolio} onOpenChange={setShowAddPortfolio}>
-        <SheetContent side="right" className="w-[400px] max-w-[92vw] bg-[#0D0D0D] border-white/[0.06] text-white overflow-y-auto">
+        <SheetContent side="right" className="inv-dialog-content w-[400px] max-w-[92vw] bg-[#0D0D0D] border-white/[0.06] text-white overflow-y-auto">
           <SheetHeader className="pt-8 pb-4">
             <SheetTitle className="text-white flex items-center gap-2">
               <Gem className="h-5 w-5 text-[#BB86FC]" />
@@ -2645,7 +2652,7 @@ export default function InvestmentDashboard() {
 
       {/* ── Add Watchlist Dialog ── */}
       <Dialog open={showAddAsset} onOpenChange={setShowAddAsset}>
-        <DialogContent aria-describedby={undefined} className="max-w-md bg-[#0D0D0D] border-white/[0.06]">
+        <DialogContent aria-describedby={undefined} className="inv-dialog-content max-w-md bg-[#0D0D0D] border-white/[0.06]">
           <DialogHeader>
             <DialogTitle className="text-white text-sm font-bold">{tf('inv.dashAddToWatchlist', 'Add to Watchlist')}</DialogTitle>
           </DialogHeader>

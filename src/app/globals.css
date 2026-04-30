@@ -745,3 +745,1746 @@ html {
     bottom: 2rem; /* 32px — no bottom nav on desktop/tablet */
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PREMIUM MOBILE & TABLET CSS ENHANCEMENTS
+   Dark-mode only • Mobile-first • Color palette: #BB86FC #03DAC6 #FFD700 #CF6679
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Premium Mobile Typography Scale ── */
+@media screen and (max-width: 767px) {
+  .mobile-premium-text {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* ── 2. Premium Glassmorphism Classes ── */
+.glass-premium {
+  background: rgba(18, 18, 18, 0.7);
+  backdrop-filter: blur(32px) saturate(1.2);
+  -webkit-backdrop-filter: blur(32px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-card-mobile {
+  background: rgba(18, 18, 18, 0.65);
+  backdrop-filter: blur(24px) saturate(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+}
+
+.glass-subtle {
+  background: rgba(30, 30, 30, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* ── 3. Premium Touch Feedback ── */
+@media screen and (max-width: 767px) {
+  .premium-touch {
+    transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1),
+                box-shadow 0.2s ease-out,
+                background-color 0.15s ease-out;
+  }
+  .premium-touch:active {
+    transform: scale(0.97);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ── 4. Premium Card Styles for Mobile ── */
+@media screen and (max-width: 767px) {
+  .premium-card {
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+                0 1px 2px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s ease-out;
+  }
+  .premium-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35),
+                0 2px 4px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(187, 134, 252, 0.08);
+    border-color: rgba(187, 134, 252, 0.12);
+  }
+}
+
+/* ── 5. Premium Bottom Nav Enhancements ── */
+.premium-bottom-nav {
+  position: relative;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.premium-bottom-nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(187, 134, 252, 0.3), rgba(3, 218, 198, 0.2), transparent);
+}
+
+/* ── 6. Premium Scrollbar for Mobile ── */
+@media screen and (max-width: 767px) {
+  .premium-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+  }
+  .premium-scroll::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+  .premium-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .premium-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+  }
+  .premium-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* ── 7. Premium Input Fields for Mobile ── */
+@media screen and (max-width: 767px) {
+  .premium-input {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: border-color 0.2s ease-out,
+                box-shadow 0.2s ease-out;
+  }
+  .premium-input:focus {
+    border-color: rgba(187, 134, 252, 0.5);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25),
+                0 0 0 3px rgba(187, 134, 252, 0.1);
+    outline: none;
+  }
+}
+
+/* ── 8. Premium Section Dividers ── */
+@keyframes sectionDividerShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.premium-divider {
+  height: 1px;
+  border: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(187, 134, 252, 0.2) 20%,
+    rgba(3, 218, 198, 0.15) 50%,
+    rgba(187, 134, 252, 0.2) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sectionDividerShift 6s ease-in-out infinite;
+}
+@media screen and (max-width: 767px) {
+  .premium-divider-mobile {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}
+
+/* ── 9. Premium Transition Utilities ── */
+.premium-spring {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.premium-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── 10. Mobile-specific Premium Shadows ── */
+.shadow-premium-sm {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+              0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.shadow-premium-md {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35),
+              0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.shadow-premium-lg {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+              0 4px 8px rgba(0, 0, 0, 0.25);
+}
+.shadow-premium-glow-purple {
+  box-shadow: 0 0 20px rgba(187, 134, 252, 0.1),
+              0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.shadow-premium-glow-teal {
+  box-shadow: 0 0 20px rgba(3, 218, 198, 0.1),
+              0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ── 11. Premium Mobile Card Grid Spacing ── */
+@media screen and (max-width: 767px) {
+  .premium-grid-mobile {
+    display: grid;
+    gap: 12px;
+    padding: 0 16px;
+  }
+  .premium-stack-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 16px;
+  }
+}
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .premium-grid-tablet {
+    display: grid;
+    gap: 16px;
+    padding: 0 24px;
+  }
+}
+
+/* ── 12. Premium Active Nav Item Indicator ── */
+.premium-nav-active {
+  position: relative;
+}
+.premium-nav-active::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 0 0 4px 4px;
+  background: currentColor;
+  box-shadow: 0 2px 8px currentColor;
+}
+
+/* ── 13. Premium Loading States ── */
+@keyframes premiumShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.premium-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 30, 30, 1) 0%,
+    rgba(50, 50, 50, 1) 25%,
+    rgba(60, 60, 60, 1) 50%,
+    rgba(50, 50, 50, 1) 75%,
+    rgba(30, 30, 30, 1) 100%
+  );
+  background-size: 200% 100%;
+  animation: premiumShimmer 2s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* ── 14. Premium Mobile Content Area ── */
+@media screen and (max-width: 767px) {
+  .premium-content-area {
+    padding-left: 16px;
+    padding-right: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUSINESS MODULE DARK PREMIUM STYLING
+   Mobile-first • Dark glassmorphism • Color palette: #BB86FC #03DAC6 #FFD700 #CF6679
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Biz 1: Hero Card — Premium dark glass with ambient glow ── */
+.biz-hero-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(40px) saturate(1.3);
+  -webkit-backdrop-filter: blur(40px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3),
+              0 1px 3px rgba(0, 0, 0, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.biz-hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(187, 134, 252, 0.2) 15%,
+    rgba(3, 218, 198, 0.15) 50%,
+    rgba(187, 134, 252, 0.2) 85%,
+    transparent 100%
+  );
+}
+@media screen and (max-width: 767px) {
+  .biz-hero-card {
+    border-radius: 1.25rem;
+  }
+}
+
+/* ── Biz 2: Stat/KPI Cards — Dark gradient with colored accent ── */
+.biz-stat-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease-out,
+              border-color 0.3s ease-out;
+}
+.biz-stat-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35),
+              0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.biz-stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--biz-accent, rgba(187, 134, 252, 0.3)), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.biz-stat-card:hover::after {
+  opacity: 1;
+}
+@media screen and (max-width: 767px) {
+  .biz-stat-card {
+    border-radius: 1rem;
+    padding: 14px;
+  }
+  .biz-stat-card:active {
+    transform: scale(0.98);
+  }
+}
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .biz-stat-card {
+    padding: 16px;
+  }
+}
+
+/* ── Biz 3: Content Cards — Standard dark card with subtle depth ── */
+.biz-content-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease-out;
+}
+.biz-content-card:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+@media screen and (max-width: 767px) {
+  .biz-content-card {
+    border-radius: 1.125rem;
+  }
+}
+
+/* ── Biz 4: Mobile List Items — Touch-optimized with accent borders ── */
+.biz-list-item {
+  position: relative;
+  padding: 14px;
+  transition: background-color 0.15s ease-out,
+              transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.biz-list-item:last-child {
+  border-bottom: none;
+}
+.biz-list-item:active {
+  background-color: rgba(255, 255, 255, 0.03);
+  transform: scale(0.995);
+}
+.biz-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Status accent left border variants */
+.biz-list-item-accent {
+  border-left: 3px solid transparent;
+  padding-left: 12px;
+}
+.biz-list-item-accent-lunas {
+  border-left: 3px solid var(--secondary);
+  padding-left: 12px;
+}
+.biz-list-item-accent-cicilan {
+  border-left: 3px solid var(--warning);
+  padding-left: 12px;
+}
+.biz-list-item-accent-pending {
+  border-left: 3px solid var(--destructive);
+  padding-left: 12px;
+}
+.biz-list-item-accent-aktif {
+  border-left: 3px solid var(--primary);
+  padding-left: 12px;
+}
+
+/* ── Biz 5: Filter Chips — Premium pill buttons ── */
+.biz-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.biz-filter-chip-active {
+  box-shadow: 0 0 12px rgba(187, 134, 252, 0.15);
+}
+.biz-filter-chip:active {
+  transform: scale(0.96);
+}
+@media screen and (max-width: 767px) {
+  .biz-filter-chip {
+    padding: 7px 14px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+}
+
+/* ── Biz 6: Period Selector Pills ── */
+.biz-period-pill {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  border: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.biz-period-pill:active {
+  transform: scale(0.95);
+}
+.biz-period-pill-active {
+  background: rgba(187, 134, 252, 0.12) !important;
+  color: var(--primary) !important;
+  border: 1px solid rgba(187, 134, 252, 0.2) !important;
+}
+@media screen and (max-width: 767px) {
+  .biz-period-pill {
+    min-height: 32px;
+    padding: 6px 14px;
+  }
+}
+
+/* ── Biz 7: Section Headers — Gradient text with icon badge ── */
+.biz-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.biz-section-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Biz 8: Progress Bars — Premium dark with glow ── */
+.biz-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+.biz-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease;
+  opacity: 0.85;
+}
+.biz-progress-glow {
+  box-shadow: 0 0 8px var(--biz-progress-color, rgba(3, 218, 198, 0.3));
+}
+@media screen and (max-width: 767px) {
+  .biz-progress-track {
+    height: 7px;
+  }
+}
+@media screen and (min-width: 768px) {
+  .biz-progress-track {
+    height: 6px;
+  }
+}
+
+/* ── Biz 9: Info Banner — Subtle glassmorphism alert ── */
+.biz-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  border: 1px solid rgba(187, 134, 252, 0.12);
+  background: linear-gradient(135deg, rgba(187, 134, 252, 0.04), rgba(3, 218, 198, 0.02));
+}
+@media screen and (max-width: 767px) {
+  .biz-info-banner {
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+}
+
+/* ── Biz 10: Empty States — Centered with animated glow ── */
+.biz-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px 48px;
+  text-align: center;
+  position: relative;
+}
+.biz-empty-state-icon {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(187, 134, 252, 0.12);
+  background: linear-gradient(135deg, rgba(187, 134, 252, 0.08), rgba(3, 218, 198, 0.04));
+  margin-bottom: 16px;
+}
+.biz-empty-state-icon::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 24px;
+  border: 1px solid rgba(187, 134, 252, 0.06);
+  animation: bizEmptyPulse 3s ease-in-out infinite;
+}
+@keyframes bizEmptyPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.1; transform: scale(1.08); }
+}
+@media screen and (max-width: 767px) {
+  .biz-empty-state {
+    padding: 48px 20px 40px;
+  }
+  .biz-empty-state-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 22px;
+    margin-bottom: 18px;
+  }
+}
+@media screen and (min-width: 768px) {
+  .biz-empty-state {
+    padding: 64px 24px 56px;
+  }
+}
+
+/* ── Biz 11: Tab Switcher — Premium tab bar ── */
+.biz-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.biz-tab-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  z-index: 1;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+}
+.biz-tab-item-active {
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+.biz-tab-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 8px;
+  background: rgba(187, 134, 252, 0.12);
+  border: 1px solid rgba(187, 134, 252, 0.15);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 0;
+}
+.biz-tab-item:active {
+  transform: scale(0.96);
+}
+@media screen and (max-width: 767px) {
+  .biz-tab-item {
+    padding: 9px 14px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+  .biz-tab-bar {
+    border-radius: 12px;
+    padding: 4px;
+  }
+}
+
+/* ── Biz 12: Metric Chips — Inline stat badges ── */
+.biz-metric-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.biz-metric-chip:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.biz-metric-chip:active {
+  transform: scale(0.98);
+}
+.biz-metric-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+@media screen and (max-width: 767px) {
+  .biz-metric-chip {
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+  .biz-metric-chip-icon {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* ── Biz 13: Quick Action Buttons ── */
+.biz-quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  text-align: center;
+  width: 100%;
+}
+.biz-quick-action:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.biz-quick-action:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.04);
+}
+.biz-quick-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Biz 14: Donut/Pie Chart Container ── */
+.biz-donut-container {
+  position: relative;
+}
+.biz-donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  text-align: center;
+}
+
+/* ── Biz 15: Badge/Tag styles ── */
+.biz-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+}
+.biz-badge-lunas {
+  background: rgba(3, 218, 198, 0.1);
+  color: var(--secondary);
+}
+.biz-badge-cicilan {
+  background: rgba(249, 168, 37, 0.1);
+  color: var(--warning);
+}
+.biz-badge-pending {
+  background: rgba(207, 102, 121, 0.1);
+  color: var(--destructive);
+}
+.biz-badge-aktif {
+  background: rgba(187, 134, 252, 0.1);
+  color: var(--primary);
+}
+.biz-badge-overdue {
+  background: rgba(207, 102, 121, 0.12);
+  color: var(--destructive);
+}
+
+/* ── Biz 16: Mobile Scroll Container ── */
+.biz-scroll-mobile {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.biz-scroll-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Biz 17: Ambient Glow Blobs ── */
+.biz-ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+}
+.biz-ambient-glow-purple {
+  background: radial-gradient(circle, rgba(187, 134, 252, 0.08), transparent 70%);
+}
+.biz-ambient-glow-teal {
+  background: radial-gradient(circle, rgba(3, 218, 198, 0.06), transparent 70%);
+}
+.biz-ambient-glow-gold {
+  background: radial-gradient(circle, rgba(249, 168, 37, 0.04), transparent 70%);
+}
+.biz-ambient-glow-red {
+  background: radial-gradient(circle, rgba(207, 102, 121, 0.05), transparent 70%);
+}
+
+/* ── Biz 18: Card Glow Underlay ── */
+.biz-card-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  filter: blur(16px);
+  pointer-events: none;
+  z-index: -1;
+}
+.biz-card-glow-purple {
+  background: rgba(187, 134, 252, 0.06);
+}
+.biz-card-glow-teal {
+  background: rgba(3, 218, 198, 0.06);
+}
+.biz-card-glow-gold {
+  background: rgba(249, 168, 37, 0.06);
+}
+
+/* ── Biz 19: Dialog Overlay ── */
+.biz-dialog-content {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(40px) saturate(1.2);
+  -webkit-backdrop-filter: blur(40px) saturate(1.2);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5),
+              0 8px 24px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+.biz-dialog-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(187, 134, 252, 0.15),
+    rgba(3, 218, 198, 0.1),
+    transparent
+  );
+}
+@media screen and (max-width: 767px) {
+  .biz-dialog-content {
+    margin: 16px;
+    border-radius: 1.5rem;
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+/* ── Biz 20: Action Buttons (Full-width mobile) ── */
+.biz-action-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.biz-action-btn:active {
+  transform: scale(0.97);
+}
+.biz-action-btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 16px rgba(187, 134, 252, 0.25);
+}
+.biz-action-btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(187, 134, 252, 0.35);
+}
+.biz-action-btn-secondary {
+  background: transparent;
+  color: var(--muted-foreground);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+@media screen and (min-width: 768px) {
+  .biz-action-btn {
+    width: auto;
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+}
+
+/* ── Biz 21: Form Inputs (Mobile-optimized) ── */
+.biz-form-input {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0 14px;
+  font-size: 14px;
+  color: var(--foreground);
+  transition: border-color 0.2s ease-out,
+              box-shadow 0.2s ease-out;
+  outline: none;
+}
+.biz-form-input:focus {
+  border-color: rgba(187, 134, 252, 0.5);
+  box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.08),
+              inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.biz-form-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+@media screen and (min-width: 768px) {
+  .biz-form-input {
+    height: 40px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+}
+
+/* ── Biz 22: Health Score Ring ── */
+.biz-health-ring {
+  filter: drop-shadow(0 0 6px var(--biz-health-color, rgba(3, 218, 198, 0.25)));
+}
+
+/* ── Biz 23: Sparkline Bars ── */
+.biz-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+.biz-sparkline-bar {
+  width: 3px;
+  border-radius: 2px;
+  min-height: 2px;
+  transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom;
+}
+
+/* ── Biz 24: Data Table (Desktop) ── */
+.biz-table-row {
+  transition: background-color 0.15s ease-out;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.biz-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+.biz-table-row-alt {
+  background-color: rgba(255, 255, 255, 0.012);
+}
+.biz-table-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+/* ── Biz 25: Gradient Text ── */
+.biz-gradient-text-purple {
+  background: linear-gradient(135deg, var(--primary), rgba(187, 134, 252, 0.6));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.biz-gradient-text-teal {
+  background: linear-gradient(135deg, var(--secondary), rgba(3, 218, 198, 0.6));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.biz-gradient-text-white {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.5));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Biz 26: Alert / Warning Banner ── */
+.biz-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1.6;
+  background: rgba(207, 102, 121, 0.06);
+  border: 1px solid rgba(207, 102, 121, 0.15);
+}
+.biz-warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1.6;
+  background: rgba(249, 168, 37, 0.06);
+  border: 1px solid rgba(249, 168, 37, 0.15);
+}
+
+/* ── Biz 27: Tablet-specific Enhancements ── */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .biz-tablet-card {
+    border-radius: 1rem;
+    padding: 18px;
+  }
+  .biz-tablet-hero {
+    padding: 20px 24px;
+  }
+  .biz-tablet-grid {
+    gap: 14px;
+  }
+  .biz-tablet-compact {
+    padding: 12px 16px;
+  }
+}
+
+/* ── Biz 28: Search Input (Business) ── */
+.biz-search-input {
+  height: 38px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0 12px 0 36px;
+  font-size: 12px;
+  color: var(--foreground);
+  transition: border-color 0.2s ease-out;
+  outline: none;
+}
+.biz-search-input:focus {
+  border-color: rgba(187, 134, 252, 0.3);
+}
+.biz-search-input::placeholder {
+  color: var(--muted-foreground);
+}
+@media screen and (max-width: 767px) {
+  .biz-search-input {
+    height: 42px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+}
+
+/* ── Biz 29: Activity/Transaction List Items ── */
+.biz-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  transition: background-color 0.15s ease-out;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.biz-activity-item:last-child {
+  border-bottom: none;
+}
+.biz-activity-item:active {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+.biz-activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+@media screen and (max-width: 767px) {
+  .biz-activity-item {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .biz-activity-icon {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* ── Biz 30: Floating Action Button (Business) ── */
+.biz-fab {
+  position: fixed;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 16px);
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 20px rgba(187, 134, 252, 0.35),
+              0 2px 8px rgba(0, 0, 0, 0.3);
+  border: none;
+  cursor: pointer;
+  z-index: 40;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+.biz-fab:active {
+  transform: scale(0.92);
+  box-shadow: 0 2px 12px rgba(187, 134, 252, 0.25);
+}
+.biz-fab:hover {
+  box-shadow: 0 6px 28px rgba(187, 134, 252, 0.45),
+              0 2px 8px rgba(0, 0, 0, 0.3);
+}
+@media (min-width: 768px) {
+  .biz-fab {
+    bottom: 32px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+}
+@media (display-mode: standalone) {
+  .biz-fab {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 20px);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INVESTMENT MODULE DARK PREMIUM STYLING
+   Mobile-first • Dark glassmorphism • Color palette: #BB86FC #03DAC6 #FFD700 #CF6679 #64B5F6
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Inv 1: Ticker Bar — Horizontal live price scroll ── */
+.inv-ticker-bar {
+  position: relative;
+  background: rgba(13, 13, 13, 0.9);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.875rem;
+  overflow: hidden;
+}
+.inv-ticker-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(3, 218, 198, 0.2), rgba(187, 134, 252, 0.15), transparent);
+}
+@media screen and (max-width: 767px) {
+  .inv-ticker-bar {
+    border-radius: 1rem;
+    padding: 10px 14px;
+  }
+}
+
+/* ── Inv 2: Stat Cards — Portfolio KPI with glow ── */
+.inv-stat-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease-out,
+              border-color 0.3s ease-out;
+}
+.inv-stat-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.inv-stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--inv-accent, rgba(187, 134, 252, 0.3)), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.inv-stat-card:hover::after {
+  opacity: 1;
+}
+@media screen and (max-width: 767px) {
+  .inv-stat-card {
+    border-radius: 1rem;
+  }
+  .inv-stat-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ── Inv 3: Content Cards — Dark card containers ── */
+.inv-content-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease-out;
+}
+.inv-content-card:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+@media screen and (max-width: 767px) {
+  .inv-content-card {
+    border-radius: 1.125rem;
+  }
+}
+
+/* ── Inv 4: Asset Type Badge — Colored icon container ── */
+.inv-type-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+@media screen and (max-width: 767px) {
+  .inv-type-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+}
+
+/* ── Inv 5: PnL Progress Bar — Green/Red indicator ── */
+.inv-pnl-track {
+  width: 100%;
+  height: 5px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+}
+.inv-pnl-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.inv-pnl-fill-positive {
+  box-shadow: 0 0 6px rgba(3, 218, 198, 0.25);
+}
+.inv-pnl-fill-negative {
+  box-shadow: 0 0 6px rgba(207, 102, 121, 0.25);
+}
+@media screen and (max-width: 767px) {
+  .inv-pnl-track {
+    height: 6px;
+  }
+}
+
+/* ── Inv 6: Chart Tab Switcher ── */
+.inv-chart-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.inv-chart-tabs::-webkit-scrollbar {
+  display: none;
+}
+.inv-chart-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+}
+.inv-chart-tab-active {
+  background: rgba(187, 134, 252, 0.12);
+  border: 1px solid rgba(187, 134, 252, 0.15);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(187, 134, 252, 0.1);
+}
+.inv-chart-tab:active {
+  transform: scale(0.96);
+}
+@media screen and (max-width: 767px) {
+  .inv-chart-tab {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-height: 38px;
+  }
+  .inv-chart-tabs {
+    border-radius: 14px;
+  }
+}
+
+/* ── Inv 7: Position Filter — Open/Closed/All ── */
+.inv-pos-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+}
+.inv-pos-filter-active {
+  background: rgba(187, 134, 252, 0.12);
+  border-color: rgba(187, 134, 252, 0.2);
+  color: var(--primary);
+  box-shadow: 0 0 10px rgba(187, 134, 252, 0.1);
+}
+.inv-pos-filter:active {
+  transform: scale(0.96);
+}
+@media screen and (max-width: 767px) {
+  .inv-pos-filter {
+    padding: 6px 14px;
+    min-height: 34px;
+  }
+}
+
+/* ── Inv 8: Watchlist Item — Compact ticker row ── */
+.inv-watchlist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  transition: background-color 0.15s ease-out;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.inv-watchlist-item:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+.inv-watchlist-item:active {
+  transform: scale(0.99);
+}
+@media screen and (max-width: 767px) {
+  .inv-watchlist-item {
+    padding: 12px 14px;
+    border-radius: 12px;
+    min-height: 52px;
+  }
+}
+
+/* ── Inv 9: Signal Badge — Buy/Sell/Neutral indicator ── */
+.inv-signal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.inv-signal-buy {
+  background: rgba(3, 218, 198, 0.15);
+  color: #03DAC6;
+  border: 1px solid rgba(3, 218, 198, 0.2);
+}
+.inv-signal-sell {
+  background: rgba(207, 102, 121, 0.15);
+  color: #CF6679;
+  border: 1px solid rgba(207, 102, 121, 0.2);
+}
+.inv-signal-neutral {
+  background: rgba(255, 213, 79, 0.15);
+  color: #FFD54F;
+  border: 1px solid rgba(255, 213, 79, 0.2);
+}
+.inv-signal-strong-buy {
+  background: rgba(0, 230, 118, 0.15);
+  color: #00E676;
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.1);
+}
+.inv-signal-strong-sell {
+  background: rgba(255, 23, 68, 0.15);
+  color: #FF1744;
+  border: 1px solid rgba(255, 23, 68, 0.2);
+  box-shadow: 0 0 8px rgba(255, 23, 68, 0.1);
+}
+
+/* ── Inv 10: Section Header — Investment section title ── */
+.inv-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inv-section-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+/* ── Inv 11: Macro Metric Card — Market data grid item ── */
+.inv-macro-card {
+  background: rgba(26, 26, 46, 0.6);
+  backdrop-filter: blur(12px) saturate(1.05);
+  -webkit-backdrop-filter: blur(12px) saturate(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s ease-out;
+}
+.inv-macro-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+.inv-macro-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 5%, rgba(255, 255, 255, 0.04) 50%, transparent 95%);
+}
+@media screen and (max-width: 767px) {
+  .inv-macro-card {
+    border-radius: 1rem;
+  }
+  .inv-macro-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ── Inv 12: Market Mover Row — Top gainer/loser list item ── */
+.inv-mover-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease-out;
+}
+.inv-mover-row:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+.inv-mover-row:active {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+@media screen and (max-width: 767px) {
+  .inv-mover-row {
+    padding: 10px 14px;
+    border-radius: 10px;
+    min-height: 48px;
+  }
+}
+
+/* ── Inv 13: Trending Asset Card — Compact trending item ── */
+.inv-trending-card {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  padding: 10px 12px;
+  transition: transform 0.15s ease-out,
+              border-color 0.2s ease-out;
+  cursor: default;
+}
+.inv-trending-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px) scale(1.02);
+}
+@media screen and (max-width: 767px) {
+  .inv-trending-card {
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .inv-trending-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ── Inv 14: Portfolio Card — Investment position card ── */
+.inv-portfolio-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s ease-out,
+              box-shadow 0.3s ease-out;
+}
+.inv-portfolio-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+@media screen and (max-width: 767px) {
+  .inv-portfolio-card {
+    border-radius: 1.125rem;
+  }
+  .inv-portfolio-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ── Inv 15: Dialog/Sheet — Investment form overlays ── */
+.inv-dialog-content {
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(32px) saturate(1.2);
+  -webkit-backdrop-filter: blur(32px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1.25rem;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5),
+              0 4px 16px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.inv-dialog-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 5%,
+    rgba(187, 134, 252, 0.15) 25%,
+    rgba(3, 218, 198, 0.1) 50%,
+    rgba(187, 134, 252, 0.15) 75%,
+    transparent 95%
+  );
+}
+@media screen and (max-width: 767px) {
+  .inv-dialog-content {
+    border-radius: 1.5rem;
+    margin: 16px;
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+/* ── Inv 16: Journal Table Row — Trading journal entry ── */
+.inv-journal-row {
+  transition: background-color 0.15s ease-out;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.inv-journal-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+.inv-journal-row-buy {
+  border-left: 3px solid #03DAC6;
+}
+.inv-journal-row-sell {
+  border-left: 3px solid #CF6679;
+}
+@media screen and (max-width: 767px) {
+  .inv-journal-row {
+    padding: 12px 14px;
+  }
+}
+
+/* ── Inv 17: Fear & Greed Gauge Container ── */
+.inv-gauge-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+@media screen and (max-width: 767px) {
+  .inv-gauge-container {
+    padding: 16px;
+  }
+}
+
+/* ── Inv 18: Live Price Pulse Indicator ── */
+@keyframes invLivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.inv-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #03DAC6;
+  animation: invLivePulse 2s ease-in-out infinite;
+}
+
+/* ── Inv 19: Search Input — Asset search field ── */
+.inv-search-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: border-color 0.2s ease-out,
+              box-shadow 0.2s ease-out;
+  height: 42px;
+}
+.inv-search-input:focus {
+  border-color: rgba(187, 134, 252, 0.3);
+  box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.08);
+  outline: none;
+}
+@media screen and (max-width: 767px) {
+  .inv-search-input {
+    height: 44px;
+    border-radius: 14px;
+  }
+}
+
+/* ── Inv 20: Scroll Container — Premium scroll for mobile ── */
+.inv-scroll-mobile {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.inv-scroll-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Inv 21: Empty State — Investment module ── */
+.inv-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px 40px;
+  text-align: center;
+  position: relative;
+}
+.inv-empty-state-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(187, 134, 252, 0.12);
+  background: linear-gradient(135deg, rgba(187, 134, 252, 0.08), rgba(3, 218, 198, 0.04));
+  margin-bottom: 16px;
+  position: relative;
+}
+.inv-empty-state-icon::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 24px;
+  border: 1px solid rgba(187, 134, 252, 0.06);
+  animation: invEmptyPulse 3s ease-in-out infinite;
+}
+@keyframes invEmptyPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.1; transform: scale(1.06); }
+}
+@media screen and (max-width: 767px) {
+  .inv-empty-state {
+    padding: 40px 16px 32px;
+  }
+  .inv-empty-state-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 22px;
+  }
+}
+
+/* ── Inv 22: Gradient Text — Premium heading ── */
+.inv-gradient-text {
+  background: linear-gradient(135deg, #BB86FC, #03DAC6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.inv-gradient-text-gold {
+  background: linear-gradient(135deg, #FFD700, #FF7043);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Inv 23: Ambient Glow — Background blobs ── */
+.inv-ambient-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+.inv-ambient-glow-purple {
+  background: radial-gradient(circle, rgba(187, 134, 252, 0.15), transparent 70%);
+}
+.inv-ambient-glow-teal {
+  background: radial-gradient(circle, rgba(3, 218, 198, 0.12), transparent 70%);
+}
+.inv-ambient-glow-gold {
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.1), transparent 70%);
+}
+
+/* ── Inv 24: News Feed Item — Compact news/social card ── */
+.inv-news-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background-color 0.15s ease-out,
+              border-color 0.2s ease-out;
+}
+.inv-news-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+.inv-news-sentiment-bullish {
+  border-left: 3px solid #03DAC6;
+}
+.inv-news-sentiment-bearish {
+  border-left: 3px solid #CF6679;
+}
+.inv-news-sentiment-neutral {
+  border-left: 3px solid #FFD54F;
+}
+@media screen and (max-width: 767px) {
+  .inv-news-item {
+    padding: 14px;
+    border-radius: 12px;
+  }
+}
+
+/* ── Inv 25: Allocation Donut — Center label ── */
+.inv-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}

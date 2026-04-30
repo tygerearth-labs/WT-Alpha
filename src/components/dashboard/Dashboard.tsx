@@ -223,7 +223,9 @@ function HealthScoreRing({ score, grade, label }: { score: number; grade: string
   return (
     <div className="flex flex-col items-center">
       <div className="relative">
-        <svg height={radius * 2} width={radius * 2} className="-rotate-90">
+        {/* Subtle glow ring behind the score */}
+        <div className="absolute inset-[-6px] rounded-full opacity-20 blur-md" style={{ background: gradeColor }} />
+        <svg height={radius * 2} width={radius * 2} className="-rotate-90 relative">
           <circle
             stroke={THEME.border}
             fill="transparent"
@@ -246,10 +248,10 @@ function HealthScoreRing({ score, grade, label }: { score: number; grade: string
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-bold" style={{ color: gradeColor }}>{grade}</span>
-          <span className="text-[10px]" style={{ color: THEME.muted }}>{score}</span>
+          <span className="text-[10px] font-medium" style={{ color: THEME.muted }}>{score}</span>
         </div>
       </div>
-      <p className="mt-2 text-xs font-medium" style={{ color: THEME.textSecondary }}>{label}</p>
+      <p className="mt-2.5 text-xs font-medium" style={{ color: THEME.textSecondary }}>{label}</p>
     </div>
   );
 }
@@ -341,15 +343,15 @@ function AnalyticsCarousel({
   const scrollTo = (idx: number) => setSelectedIdx(idx);
 
   return (
-    <div className="space-y-3 w-full">
+    <div className="space-y-4 w-full">
       {/* Carousel Header with Tabs + Arrows — hidden on desktop grid */}
-      <div className="flex items-center justify-between gap-2 px-0 lg:hidden">
+      <div className="flex items-center justify-between gap-2 px-0 lg:hidden pt-1">
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
           {slides.map((s, i) => (
             <button
               key={s.label}
               onClick={() => scrollTo(i)}
-              className="flex items-center gap-1 sm:gap-1.5 shrink-0 transition-all duration-200 px-2 py-1 rounded-lg"
+              className="flex items-center gap-1.5 sm:gap-2 shrink-0 transition-all duration-200 px-3 py-1.5 rounded-xl"
               style={{
                 background: selectedIdx === i ? `${THEME.primary}15` : 'transparent',
               }}
@@ -533,7 +535,7 @@ function AnalyticsCarousel({
       </div>
 
       {/* Mobile/Tablet: Carousel Slides */}
-      <div ref={viewportRef} className="w-full overflow-hidden lg:hidden">
+      <div ref={viewportRef} className="w-full overflow-hidden lg:hidden scroll-smooth snap-x snap-mandatory">
         <div
           className="flex transition-transform duration-300 ease-out"
           style={{
@@ -542,14 +544,16 @@ function AnalyticsCarousel({
           }}
         >
           {/* Slide 1: Cash Flow */}
-          <div className="shrink-0" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
+          <div className="shrink-0 snap-start" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
             <Card
-              className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
+              className="overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06]"
             >
-              <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4">
+              <CardHeader className="pb-2 pt-4 sm:pt-4 px-4 sm:px-4">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" style={{ color: THEME.primary }} />
-                  <CardTitle className="text-sm" style={{ color: THEME.text }}>
+                  <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+                    <BarChart3 className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+                  </div>
+                  <CardTitle className="text-sm font-semibold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
                     {t('dashboard.cashFlow')}
                   </CardTitle>
                   <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: THEME.muted }}>
@@ -557,8 +561,8 @@ function AnalyticsCarousel({
                   </span>
                 </div>
               </CardHeader>
-              <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-                <div className="h-40 sm:h-48 w-full">
+              <CardContent className="px-4 pb-4">
+                <div className="h-44 sm:h-48 w-full min-h-[11rem]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={cashFlowData} barGap={4} barCategoryGap="20%">
                       <XAxis
@@ -584,7 +588,7 @@ function AnalyticsCarousel({
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex items-center gap-4 mt-1.5 justify-center">
+                <div className="flex items-center gap-4 mt-2.5 justify-center">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: THEME.secondary }} />
                     <span className="text-[10px]" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
@@ -599,19 +603,21 @@ function AnalyticsCarousel({
           </div>
 
           {/* Slide 2: Top Spending */}
-          <div className="shrink-0" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
+          <div className="shrink-0 snap-start" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
             <Card
-              className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
+              className="overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06]"
             >
-              <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4">
+              <CardHeader className="pb-2 pt-4 sm:pt-4 px-4 sm:px-4">
                 <div className="flex items-center gap-2">
-                  <PieChartIcon className="h-4 w-4" style={{ color: THEME.primary }} />
-                  <CardTitle className="text-sm" style={{ color: THEME.text }}>
+                  <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}15` }}>
+                    <PieChartIcon className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
+                  </div>
+                  <CardTitle className="text-sm font-semibold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #CF6679, #F9A825)' }}>
                     {t('dashboard.topSpending')}
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <CardContent className="px-4 pb-4">
                 {categoryData.length === 0 ? (
                   <EnhancedEmptyState
                     icon={PieChartIcon}
@@ -682,20 +688,22 @@ function AnalyticsCarousel({
           </div>
 
           {/* Slide 3: Financial Health */}
-          <div className="shrink-0" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
+          <div className="shrink-0 snap-start" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
             <Card
-              className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
+              className="overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06]"
             >
-              <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4">
+              <CardHeader className="pb-2 pt-4 sm:pt-4 px-4 sm:px-4">
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" style={{ color: THEME.primary }} />
-                  <CardTitle className="text-sm" style={{ color: THEME.text }}>
+                  <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}15` }}>
+                    <Shield className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+                  </div>
+                  <CardTitle className="text-sm font-semibold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #03DAC6, #BB86FC)' }}>
                     {t('dashboard.financialHealth')}
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+              <CardContent className="px-4 pb-4">
+                <div className="flex flex-col sm:flex-row gap-3 items-center">
                   {/* Score ring */}
                   <div className="flex items-center justify-center">
                     <HealthScoreRing
@@ -745,15 +753,16 @@ function AnalyticsCarousel({
       </div>
 
       {/* Dot indicators (mobile only) */}
-      <div className="flex items-center justify-center gap-2 lg:hidden">
+      <div className="flex items-center justify-center gap-2.5 lg:hidden py-1">
         {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => scrollTo(i)}
-            className="h-1.5 rounded-full transition-all duration-300"
+            className="h-2 rounded-full transition-all duration-300"
             style={{
-              width: selectedIdx === i ? 20 : 6,
-              background: selectedIdx === i ? THEME.primary : THEME.border,
+              width: selectedIdx === i ? 24 : 8,
+              height: selectedIdx === i ? 8 : 8,
+              background: selectedIdx === i ? THEME.primary : `${THEME.border}80`,
             }}
           />
         ))}
@@ -789,7 +798,7 @@ function ConsultantCard({ insight }: { insight: {
 
   return (
         <div
-          className="shrink-0 w-[260px] sm:w-[280px] lg:w-auto rounded-xl p-3.5 transition-all duration-200 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]"
+          className="shrink-0 w-[260px] sm:w-[280px] lg:w-auto rounded-2xl sm:rounded-xl p-4 sm:p-3.5 transition-all duration-200 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] active:scale-[0.98]"
         >
       {/* Subtle colored glow */}
       <div
@@ -1468,7 +1477,7 @@ export function Dashboard() {
   const GreetingIcon = getGreetingIcon();
 
   return (
-    <div className="relative space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full">
+    <div className="relative space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full px-4 md:px-6 lg:px-0">
       {/* ═══ Ambient Background ═══ */}
       <div aria-hidden="true" className="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-[0.07] blur-[120px]" style={{ background: 'radial-gradient(circle, #BB86FC, transparent 70%)' }} />
       <div aria-hidden="true" className="pointer-events-none absolute top-1/3 -right-48 w-[600px] h-[600px] rounded-full opacity-[0.05] blur-[140px]" style={{ background: 'radial-gradient(circle, #03DAC6, transparent 70%)' }} />
@@ -1588,27 +1597,27 @@ export function Dashboard() {
       </div>
 
       {/* ═══ Section 2: KPI Strip ═══ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 xl:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* Net Worth */}
         <motion.div
-          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+          className="rounded-2xl md:rounded-xl backdrop-blur-xl cursor-default relative transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1] active:scale-[0.98]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: `0 2px 12px -2px ${THEME.primary}10` }}
           whileHover={cardHover}
           transition={springHover}
         >
           {/* Per-card colored glow */}
-          <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.primary }} />
-          <div className="relative z-10 p-3 sm:p-4">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
-                <Wallet className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+          <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.primary }} />
+          <div className="relative z-10 p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+                <Wallet className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.primary }} />
               </div>
-              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.netWorth')}</span>
+              <span className="text-[11px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.netWorth')}</span>
             </div>
-            <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
+            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
               {formatAmount(data.totalSavings)}
             </p>
-            <div className="flex items-center gap-1 mt-1 overflow-hidden">
+            <div className="flex items-center gap-1.5 mt-1.5 overflow-hidden">
               <span
                 className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
                 style={{ background: `${THEME.primary}15`, color: THEME.primary }}
@@ -1626,27 +1635,27 @@ export function Dashboard() {
 
         {/* Monthly Income */}
         <motion.div
-          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+          className="rounded-2xl md:rounded-xl backdrop-blur-xl cursor-default relative transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1] active:scale-[0.98]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: `0 2px 12px -2px ${THEME.secondary}10` }}
           whileHover={cardHover}
           transition={springHover}
         >
-          <div className="pointer-events-none absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.secondary }} />
-          <div className="relative z-10 p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}15` }}>
-                  <ArrowUpRight className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
+          <div className="pointer-events-none absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.secondary }} />
+          <div className="relative z-10 p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}15` }}>
+                  <ArrowUpRight className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.secondary }} />
                 </div>
-                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
+                <span className="text-[11px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.income')}</span>
               </div>
               {mc && getTrendIcon(mc.incomeChange)}
             </div>
-            <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
+            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
               {formatAmount(mc?.currentMonthIncome ?? data.totalIncome)}
             </p>
             {mc && mc.incomeChange !== 0 && (
-              <p className="text-[10px] sm:text-[11px] mt-1 truncate" style={{ color: getTrendColor(mc.incomeChange) }}>
+              <p className="text-[11px] sm:text-[11px] mt-1.5 truncate" style={{ color: getTrendColor(mc.incomeChange) }}>
                 {mc.incomeChange > 0 ? '+' : ''}{(mc.incomeChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
@@ -1655,27 +1664,27 @@ export function Dashboard() {
 
         {/* Monthly Expense */}
         <motion.div
-          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+          className="rounded-2xl md:rounded-xl backdrop-blur-xl cursor-default relative transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1] active:scale-[0.98]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: `0 2px 12px -2px ${THEME.destructive}10` }}
           whileHover={cardHover}
           transition={springHover}
         >
-          <div className="pointer-events-none absolute -bottom-12 -right-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.destructive }} />
-          <div className="relative z-10 p-3 sm:p-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}15` }}>
-                  <ArrowDownRight className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
+          <div className="pointer-events-none absolute -bottom-12 -right-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.destructive }} />
+          <div className="relative z-10 p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}15` }}>
+                  <ArrowDownRight className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.destructive }} />
                 </div>
-                <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
+                <span className="text-[11px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.expense')}</span>
               </div>
               {mc && getTrendIcon(mc.expenseChange)}
             </div>
-            <p className="text-base sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
+            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
               {formatAmount(mc?.currentMonthExpense ?? data.totalExpense)}
             </p>
             {mc && mc.expenseChange !== 0 && (
-              <p className="text-[10px] sm:text-[11px] mt-1 truncate" style={{ color: getTrendColor(mc.expenseChange, true) }}>
+              <p className="text-[11px] sm:text-[11px] mt-1.5 truncate" style={{ color: getTrendColor(mc.expenseChange, true) }}>
                 {mc.expenseChange > 0 ? '+' : ''}{(mc.expenseChange ?? 0).toFixed(1)}% {t('dashboard.vsLastMonth')}
               </p>
             )}
@@ -1684,16 +1693,16 @@ export function Dashboard() {
 
         {/* Savings Rate */}
         <motion.div
-          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+          className="rounded-2xl md:rounded-xl backdrop-blur-xl cursor-default relative transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1] active:scale-[0.98]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: `0 2px 12px -2px ${THEME.warning}10` }}
           whileHover={cardHover}
           transition={springHover}
         >
-          <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.warning }} />
-          <div className="relative z-10 p-3 sm:p-4">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.warning}15` }}>
-                <Activity className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
+          <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.10] blur-[40px]" style={{ background: THEME.warning }} />
+          <div className="relative z-10 p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.warning}15` }}>
+                <Activity className="h-4 w-4 md:h-3.5 md:w-3.5" style={{ color: THEME.warning }} />
               </div>
               <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: THEME.muted }}>{t('dashboard.savingsRate')}</span>
             </div>
@@ -1726,7 +1735,7 @@ export function Dashboard() {
         <div className="h-px bg-white/[0.06]" />
       )}
       {(isSectionVisible('healthScore') || isSectionVisible('budget') || isSectionVisible('savingsOverview')) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {isSectionVisible('healthScore') && (
             <ProFeatureWrapper feature="healthScore">
               <FinancialHealthScore />
@@ -1766,7 +1775,7 @@ export function Dashboard() {
         <div className="h-px bg-white/[0.06]" />
       )}
       {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
           {isSectionVisible('spendingTrend') && (
             <ProFeatureWrapper feature="spendingTrend">
               <SpendingTrendChart
@@ -1796,15 +1805,17 @@ export function Dashboard() {
       {insights.length > 0 && (
         <>
         <div className="h-px bg-white/[0.06]" />
-      <div className="space-y-2.5">
-          <div className="flex items-center gap-2">
-            <Brain className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-            <h3 className="text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
+      <div className="space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+              <Brain className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+            </div>
+            <h3 className="text-[13px] sm:text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
               {t('dashboard.consultantInsights')}
             </h3>
           </div>
           {/* Mobile: horizontal scroll */}
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 lg:hidden">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 lg:hidden">
             {insights.map((insight) => (
               <motion.div
                 key={insight.id}
@@ -1837,8 +1848,10 @@ export function Dashboard() {
         <div className="h-px bg-white/[0.06]" />
       <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
+                <Target className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
+              </div>
               <h3 className="text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
                 {t('dashboard.savingsTargets')}
               </h3>
@@ -1857,7 +1870,7 @@ export function Dashboard() {
             </div>
           </div>
           {/* Mobile: horizontal scroll */}
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-3 px-3 lg:hidden">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 lg:hidden">
             {data.savingsTargets.slice(0, 6).map((target: any) => {
               const progress = Math.min((target.currentAmount / target.targetAmount) * 100, 100);
               const remaining = Math.max(target.targetAmount - target.currentAmount, 0);
@@ -1876,7 +1889,7 @@ export function Dashboard() {
               return (
                 <motion.div
                   key={target.id}
-                  className="rounded-xl p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
+                  className="rounded-2xl p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200 active:scale-[0.98]"
                   whileHover={cardHover}
                   transition={springHover}
                 >
@@ -2016,12 +2029,12 @@ export function Dashboard() {
         transition={springHover}
       >
         <Card
-          className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
+          className="overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06]"
         >
-          <CardContent className="p-4 lg:p-5">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <CardContent className="p-4 sm:p-5 lg:p-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <motion.div
-                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
                 whileHover={cardHover}
                 transition={springHover}
               >
@@ -2033,7 +2046,7 @@ export function Dashboard() {
                 </p>
               </motion.div>
               <motion.div
-                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
                 whileHover={cardHover}
                 transition={springHover}
               >
@@ -2045,7 +2058,7 @@ export function Dashboard() {
                 </p>
               </motion.div>
               <motion.div
-                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
                 whileHover={cardHover}
                 transition={springHover}
               >
@@ -2060,7 +2073,7 @@ export function Dashboard() {
                 )}
               </motion.div>
               <motion.div
-                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                className="text-center rounded-xl sm:rounded-2xl p-4 sm:p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.98]"
                 whileHover={cardHover}
                 transition={springHover}
               >

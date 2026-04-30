@@ -173,8 +173,8 @@ function ChangeIndicator({ value, label }: { value: number | null; label: string
 // ─── Section Title ─────────────────────────────────────────────
 function SectionTitle({ children, icon: Icon, color }: { children: React.ReactNode; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; color: string }) {
   return (
-    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-      <div className="h-7 w-7 rounded-lg flex items-center justify-center"
+    <div className="biz-section-header flex items-center gap-2 mb-3 sm:mb-4">
+      <div className="biz-section-header-icon h-7 w-7 rounded-lg flex items-center justify-center"
         style={{ backgroundColor: alpha(color, 10) }}>
         <Icon className="h-3.5 w-3.5" style={{ color }} />
       </div>
@@ -221,7 +221,7 @@ function PeriodNavigator({
   const months = MONTH_NAMES.map((name, i) => ({ value: i + 1, label: name }));
 
   return (
-    <Card className="rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] transition-colors duration-300 hover:bg-white/[0.05]">
+    <Card className="biz-content-card rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] transition-colors duration-300 hover:bg-white/[0.05]">
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="flex items-center gap-2 shrink-0">
@@ -614,7 +614,7 @@ export default function BusinessPnL() {
               {/* Ambient glow behind card */}
               <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
                 style={{ backgroundColor: alpha(c.secondary, 15) }} />
-              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
+              <Card className="biz-content-card relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
                 {/* Bottom accent glow line */}
                 <div className="absolute bottom-0 left-6 right-6 h-px"
                   style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.secondary, 35)}, transparent)` }} />
@@ -648,7 +648,7 @@ export default function BusinessPnL() {
             <div className="relative">
               <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
                 style={{ backgroundColor: alpha(c.destructive, 15) }} />
-              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
+              <Card className="biz-content-card relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
                 <div className="absolute bottom-0 left-6 right-6 h-px"
                   style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.destructive, 35)}, transparent)` }} />
                 <CardContent className="relative p-4 sm:p-5">
@@ -681,7 +681,7 @@ export default function BusinessPnL() {
             <div className="relative">
               <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
                 style={{ backgroundColor: alpha(isProfit ? c.secondary : c.destructive, 15) }} />
-              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]"
+              <Card className="biz-hero-card relative rounded-xl bg-white/[0.03] backdrop-blur-xl border overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]"
                 style={{ borderColor: alpha(isProfit ? c.secondary : c.destructive, 12) }}>
                 <div className="absolute bottom-0 left-6 right-6 h-px"
                   style={{ background: `linear-gradient(90deg, transparent, ${alpha(isProfit ? c.secondary : c.destructive, 40)}, transparent)` }} />
@@ -718,7 +718,7 @@ export default function BusinessPnL() {
             <div className="relative">
               <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
                 style={{ backgroundColor: alpha(c.warning, 15) }} />
-              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
+              <Card className="biz-content-card relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
                 <div className="absolute bottom-0 left-6 right-6 h-px"
                   style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.warning, 35)}, transparent)` }} />
                 <CardContent className="relative p-4 sm:p-5">
@@ -747,7 +747,7 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-64 sm:h-72 rounded-xl" />
       ) : chartData.length > 0 ? (
-        <Card className="rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
+        <Card className="biz-content-card rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
           style={{ background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)' }}>
           <CardContent className="p-5 sm:p-6">
             <SectionTitle icon={BarChart3} color={c.primary}>
@@ -804,7 +804,7 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-48 rounded-xl" />
       ) : (
-        <Card className="rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
+        <Card className="biz-content-card rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
           style={{ background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)' }}>
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
@@ -900,7 +900,7 @@ export default function BusinessPnL() {
                 </div>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-10">
+              <div className="biz-empty-state flex flex-col items-center justify-center py-10">
                 <CircleDollarSign className="h-10 w-10 mb-2" style={{ color: alpha(c.muted, 30) }} />
                 <p className="text-xs" style={{ color: c.muted }}>Belum ada data pendapatan pada periode ini</p>
               </div>
@@ -913,7 +913,7 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-48 rounded-xl" />
       ) : (
-        <Card className="rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
+        <Card className="biz-content-card rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
           style={{ background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)' }}>
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
@@ -1009,7 +1009,7 @@ export default function BusinessPnL() {
                 </div>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-10">
+              <div className="biz-empty-state flex flex-col items-center justify-center py-10">
                 <Receipt className="h-10 w-10 mb-2" style={{ color: alpha(c.muted, 30) }} />
                 <p className="text-xs" style={{ color: c.muted }}>Belum ada data pengeluaran pada periode ini</p>
               </div>
@@ -1022,7 +1022,7 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-36 rounded-xl" />
       ) : data ? (
-        <Card className="rounded-xl border overflow-hidden transition-colors duration-300 hover:border-white/[0.08]"
+        <Card className="biz-content-card rounded-xl border overflow-hidden transition-colors duration-300 hover:border-white/[0.08]"
           style={{
             background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)',
             borderColor: alpha(isProfit ? c.secondary : c.destructive, 10),
@@ -1152,8 +1152,8 @@ export default function BusinessPnL() {
 
       {/* ── No Data State ── */}
       {!loading && !data && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3"
+        <div className="biz-empty-state flex flex-col items-center justify-center py-16">
+          <div className="biz-empty-state-icon h-14 w-14 rounded-xl flex items-center justify-center mb-3"
             style={{ background: c.card, border: `1px solid ${c.border}` }}>
             <BarChart3 className="h-7 w-7" style={{ color: alpha(c.primary, 30) }} />
           </div>

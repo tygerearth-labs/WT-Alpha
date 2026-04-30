@@ -223,9 +223,9 @@ export default function NewsAnalysis() {
 
   if (!newsData) {
     return (
-      <Card className={cn('border-white/[0.06]', 'bg-[#1A1A2E]')}>
+      <Card className={cn('border-white/[0.06]', 'bg-[#1A1A2E]', 'inv-empty-state')}>
         <CardContent className="flex flex-col items-center justify-center py-16">
-          <Newspaper className="h-12 w-12 text-white/15 mb-3" />
+          <Newspaper className="h-12 w-12 text-white/15 mb-3 inv-empty-state-icon" />
           <p className="text-white/40 text-center mb-1">Unable to load market news</p>
           <Button
             variant="ghost"
@@ -256,7 +256,7 @@ export default function NewsAnalysis() {
       >
         <div className="flex items-center gap-3">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            className={cn('flex h-9 w-9 items-center justify-center rounded-lg', 'inv-section-header-icon')}
             style={{ backgroundColor: `${UP}18` }}
           >
             <Newspaper className="h-5 w-5" style={{ color: UP }} />
@@ -296,7 +296,7 @@ export default function NewsAnalysis() {
       {/* ── AI Impact Cards ──────────────────────────────────────────────── */}
       {newsData.impacts.length > 0 && (
         <motion.div variants={cardVariants} custom={1}>
-          <div className="flex items-center gap-2 mb-3">
+          <div className={cn('flex items-center gap-2 mb-3', 'inv-section-header')}>
             <BrainCircuit className="h-4 w-4 text-[#03DAC6]/60" />
             <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
               AI Asset Impact Analysis
@@ -330,6 +330,7 @@ export default function NewsAnalysis() {
                       className={cn(
                         'bg-[#1A1A2E] border border-white/[0.06] hover:border-white/[0.12]',
                         'transition-all relative overflow-hidden group cursor-default',
+                        'inv-content-card',
                       )}
                     >
                       {/* Top accent line */}
@@ -386,9 +387,9 @@ export default function NewsAnalysis() {
                               {impact.confidence}%
                             </span>
                           </div>
-                          <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                          <div className={cn('h-1.5 rounded-full bg-white/[0.04] overflow-hidden', 'inv-pnl-track')}>
                             <motion.div
-                              className="h-full rounded-full"
+                              className={cn('h-full rounded-full', 'inv-pnl-fill')}
                               style={{ backgroundColor: actionColor }}
                               initial={{ width: '0%' }}
                               animate={{ width: `${impact.confidence}%` }}
@@ -443,7 +444,7 @@ export default function NewsAnalysis() {
       {/* ── News Feed ─────────────────────────────────────────────────────── */}
       {newsData.news.length > 0 && (
         <motion.div variants={cardVariants} custom={2}>
-          <div className="flex items-center justify-between mb-3">
+          <div className={cn('flex items-center justify-between mb-3', 'inv-section-header')}>
             <div className="flex items-center gap-2">
               <Flame className="h-4 w-4 text-[#FF7043]" />
               <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">
@@ -458,7 +459,7 @@ export default function NewsAnalysis() {
             </div>
           </div>
 
-          <Card className="bg-[#1A1A2E] border border-white/[0.06]">
+          <Card className={cn('bg-[#1A1A2E] border border-white/[0.06]', 'inv-content-card')}>
             <CardContent className="p-0">
               <div className="max-h-[400px] overflow-y-auto">
                 <AnimatePresence mode="popLayout">
@@ -495,99 +496,103 @@ export default function NewsAnalysis() {
                           <div
                             className={cn(
                               'flex items-start gap-3 px-4 py-3 transition-colors border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]',
-                            isSelected && 'bg-white/[0.03]',
-                          )}
-                        >
-                          {/* Sentiment indicator */}
-                          <div
-                            className="mt-1 shrink-0"
-                            style={{
-                              color: sentimentColor,
-                            }}
-                          >
-                            {isUp ? (
-                              <TrendingUp className="h-4 w-4" />
-                            ) : isDown ? (
-                              <TrendingDown className="h-4 w-4" />
-                            ) : (
-                              <Minus className="h-4 w-4" />
+                              isSelected && 'bg-white/[0.03]',
+                              'inv-news-item',
+                              item.sentiment === 'bullish' && 'inv-news-sentiment-bullish',
+                              item.sentiment === 'bearish' && 'inv-news-sentiment-bearish',
+                              item.sentiment === 'neutral' && 'inv-news-sentiment-neutral',
                             )}
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4
-                                className="text-[13px] text-white/70 font-semibold leading-snug line-clamp-1"
-                                title={item.title}
-                              >
-                                {item.title}
-                              </h4>
-                              <ChevronRight
-                                className={cn(
-                                  'h-4 w-4 shrink-0 mt-0.5 transition-transform text-white/20',
-                                  isSelected && 'rotate-90',
-                                )}
-                              />
+                          >
+                            {/* Sentiment indicator */}
+                            <div
+                              className="mt-1 shrink-0"
+                              style={{
+                                color: sentimentColor,
+                              }}
+                            >
+                              {isUp ? (
+                                <TrendingUp className="h-4 w-4" />
+                              ) : isDown ? (
+                                <TrendingDown className="h-4 w-4" />
+                              ) : (
+                                <Minus className="h-4 w-4" />
+                              )}
                             </div>
 
-                            {isSelected && (
-                              <motion.p
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                className="text-[11px] text-white/35 leading-relaxed mt-1.5 line-clamp-3"
-                              >
-                                {item.snippet}
-                              </motion.p>
-                            )}
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4
+                                  className="text-[13px] text-white/70 font-semibold leading-snug line-clamp-1"
+                                  title={item.title}
+                                >
+                                  {item.title}
+                                </h4>
+                                <ChevronRight
+                                  className={cn(
+                                    'h-4 w-4 shrink-0 mt-0.5 transition-transform text-white/20',
+                                    isSelected && 'rotate-90',
+                                  )}
+                                />
+                              </div>
 
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <span className="text-[10px] text-white/20 truncate max-w-[200px]">
-                                {item.source}
-                              </span>
-                              <span className="text-[10px] text-white/15">•</span>
-                              <Clock className="h-3 w-3 text-white/15" />
-                              <span className="text-[10px] text-white/15">
-                                {item.publishedAt
-                                  ? new Date(item.publishedAt).toLocaleTimeString([], {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })
-                                  : 'now'}
-                              </span>
+                              {isSelected && (
+                                <motion.p
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  className="text-[11px] text-white/35 leading-relaxed mt-1.5 line-clamp-3"
+                                >
+                                  {item.snippet}
+                                </motion.p>
+                              )}
+
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[10px] text-white/20 truncate max-w-[200px]">
+                                  {item.source}
+                                </span>
+                                <span className="text-[10px] text-white/15">•</span>
+                                <Clock className="h-3 w-3 text-white/15" />
+                                <span className="text-[10px] text-white/15">
+                                  {item.publishedAt
+                                    ? new Date(item.publishedAt).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })
+                                    : 'now'}
+                                </span>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* External link icon */}
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-0.5 shrink-0 p-1.5 rounded-md text-white/15 hover:text-white/50 hover:bg-white/[0.06] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                            title="Open article"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </div>
-                      </button>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+                            {/* External link icon */}
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-0.5 shrink-0 p-1.5 rounded-md text-white/15 hover:text-white/50 hover:bg-white/[0.06] transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                              title="Open article"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        </button>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
 
       {/* ── No impacts disclaimer ─────────────────────────────────────────── */}
       {newsData.impacts.length === 0 && newsData.news.length > 0 && (
-        <Card className="bg-[#1A1A2E] border-white/[0.06]">
+        <Card className={cn('bg-[#1A1A2E] border-white/[0.06]', 'inv-content-card')}>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <div
-                className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
+                className={cn('flex h-8 w-8 items-center justify-center rounded-lg shrink-0', 'inv-section-header-icon')}
                 style={{ backgroundColor: 'rgba(255,213,79,0.1)' }}
               >
                 <ShieldAlert className="h-4 w-4" style={{ color: NEUTRAL }} />

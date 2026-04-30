@@ -143,12 +143,12 @@ const DebtEmptyState = ({ type }: { type: string }) => (
     initial={{ opacity: 0, scale: 0.95 }} 
     animate={{ opacity: 1, scale: 1 }} 
     transition={{ duration: 0.4 }}
-    className="flex flex-col items-center justify-center py-12 px-4 relative"
+    className="biz-empty-state flex flex-col items-center justify-center py-12 px-4 relative"
   >
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: type === 'hutang' ? 'var(--destructive)' : 'var(--secondary)' }} />
     </div>
-    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border relative" 
+    <div className="biz-empty-state-icon w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border relative" 
       style={{ background: type === 'hutang' ? 'var(--destructive)/10' : 'var(--secondary)/10', borderColor: type === 'hutang' ? 'var(--destructive)/20' : 'var(--secondary)/20' }}>
       {type === 'hutang' ? (
         <ArrowDownCircle className="h-8 w-8" style={{ color: 'var(--destructive)', opacity: 0.7 }} />
@@ -457,7 +457,7 @@ export default function BusinessDebts() {
   return (
     <div className="space-y-3">
       {/* Info Banner */}
-      <div className="flex items-start gap-2 p-2.5 rounded-lg text-[11px] bg-primary/5 border border-primary/15">
+      <div className="biz-info-banner flex items-start gap-2 p-2.5 rounded-lg text-[11px] bg-primary/5 border border-primary/15">
         <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />
         <span className="text-muted-foreground">
           Kelola hutang dan piutang bisnis Anda. Untuk cicilan, sistem menghitung tempo otomatis dari tanggal pembuatan.
@@ -466,13 +466,13 @@ export default function BusinessDebts() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <TabsList
-            className="bg-card border border-border rounded-full p-1"
+            className="biz-tab-bar bg-card border border-border rounded-full p-1"
           >
             <TabsTrigger
               value="hutang"
               className={cn(
-                'data-[state=active]:shadow-none rounded-full transition-all duration-200',
-                activeTab === 'hutang' ? 'text-white' : 'text-white/60'
+                'biz-tab-item data-[state=active]:shadow-none rounded-full transition-all duration-200',
+                activeTab === 'hutang' ? 'biz-tab-item-active text-white' : 'text-white/60'
               )}
               style={activeTab === 'hutang' ? { background: 'linear-gradient(135deg, var(--destructive), rgba(239,68,68,0.8))', boxShadow: '0 0 12px rgba(239,68,68,0.25)' } : undefined}
             >
@@ -482,8 +482,8 @@ export default function BusinessDebts() {
             <TabsTrigger
               value="piutang"
               className={cn(
-                'data-[state=active]:shadow-none rounded-full transition-all duration-200',
-                activeTab === 'piutang' ? 'text-white' : 'text-white/60'
+                'biz-tab-item data-[state=active]:shadow-none rounded-full transition-all duration-200',
+                activeTab === 'piutang' ? 'biz-tab-item-active text-white' : 'text-white/60'
               )}
               style={activeTab === 'piutang' ? { background: 'linear-gradient(135deg, var(--secondary), rgba(16,185,129,0.8))', boxShadow: '0 0 12px rgba(16,185,129,0.25)' } : undefined}
             >
@@ -510,7 +510,7 @@ export default function BusinessDebts() {
           {/* Total Amount */}
           <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 border border-border"
+            className="biz-stat-card rounded-xl p-3 sm:p-4 border border-border"
             style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, var(--destructive) 10%), color-mix(in srgb, var(--card) 95%, var(--warning) 5%))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
@@ -518,9 +518,9 @@ export default function BusinessDebts() {
               <span className="text-[11px] text-muted-foreground">{t('biz.debtAmount')}</span>
             </div>
             <p className="text-sm font-bold text-foreground">{formatAmount(totalAmount)}</p>
-            <div className="mt-1.5 h-1 rounded-full overflow-hidden bg-border">
+            <div className="mt-1.5 biz-progress-track h-1 rounded-full overflow-hidden bg-border">
               <div
-                className="h-full rounded-full"
+                className="biz-progress-fill h-full rounded-full"
                 style={{ width: '100%', background: accentColor, opacity: 0.3, transition: 'width 0.8s ease' }}
               />
             </div>
@@ -530,7 +530,7 @@ export default function BusinessDebts() {
           {/* Remaining */}
           <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 border border-border"
+            className="biz-stat-card rounded-xl p-3 sm:p-4 border border-border"
             style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, var(--warning) 10%), var(--card))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
@@ -538,9 +538,9 @@ export default function BusinessDebts() {
               <span className="text-[11px] text-muted-foreground">{t('biz.debtRemaining')}</span>
             </div>
             <p className="text-sm font-bold text-foreground">{formatAmount(totalRemaining)}</p>
-            <div className="mt-1.5 h-1 rounded-full overflow-hidden bg-border">
+            <div className="mt-1.5 biz-progress-track h-1 rounded-full overflow-hidden bg-border">
               <div
-                className="h-full rounded-full"
+                className="biz-progress-fill h-full rounded-full"
                 style={{
                   width: totalAmount > 0 ? `${(totalRemaining / totalAmount) * 100}%` : '0%',
                   background: 'var(--warning)',
@@ -554,7 +554,7 @@ export default function BusinessDebts() {
           {/* Paid */}
           <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 border border-border"
+            className="biz-stat-card rounded-xl p-3 sm:p-4 border border-border"
             style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, var(--secondary) 10%), var(--card))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
@@ -562,9 +562,9 @@ export default function BusinessDebts() {
               <span className="text-[11px] text-muted-foreground">Dibayar</span>
             </div>
             <p className="text-sm font-bold" style={{ color: 'var(--secondary)' }}>{formatAmount(totalPaid)}</p>
-            <div className="mt-1.5 h-1 rounded-full overflow-hidden bg-border">
+            <div className="mt-1.5 biz-progress-track h-1 rounded-full overflow-hidden bg-border">
               <div
-                className="h-full rounded-full"
+                className="biz-progress-fill h-full rounded-full"
                 style={{
                   width: totalAmount > 0 ? `${(totalPaid / totalAmount) * 100}%` : '0%',
                   background: 'var(--secondary)',
@@ -578,7 +578,7 @@ export default function BusinessDebts() {
           {/* Health Score */}
           <motion.div whileHover={{ scale: 1.02, y: -1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
           <Card
-            className="rounded-xl p-3 sm:p-4 border border-border"
+            className="biz-stat-card rounded-xl p-3 sm:p-4 border border-border"
             style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--card) 88%, var(--primary) 12%), var(--card))' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
@@ -595,9 +595,9 @@ export default function BusinessDebts() {
               <span className="text-[10px] mb-0.5 text-muted-foreground">/100</span>
             </div>
             <div className="flex items-center gap-1 mt-1.5">
-              <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
+              <div className="flex-1 biz-progress-track h-1.5 rounded-full overflow-hidden bg-border">
                 <div
-                  className="h-full rounded-full"
+                  className="biz-progress-fill h-full rounded-full"
                   style={{
                     width: `${healthData.score}%`,
                     background: getHealthLabel(healthData.score).color,
@@ -631,7 +631,7 @@ export default function BusinessDebts() {
 
         <TabsContent value={activeTab} className="mt-0">
           <Card
-            className="rounded-xl overflow-hidden bg-card border border-border"
+            className="biz-content-card rounded-xl overflow-hidden bg-card border border-border"
           >
             <CardContent className="p-0">
               {loading ? (
@@ -645,7 +645,7 @@ export default function BusinessDebts() {
               ) : (
                 <>
                   {/* Mobile Card List */}
-                  <div className="sm:hidden max-h-[500px] overflow-y-auto">
+                  <div className="sm:hidden max-h-[500px] overflow-y-auto premium-scroll">
                     <AnimatePresence>
                       {filtered.map((debt, index) => {
                         const isInstallment = !!debt.installmentAmount && debt.installmentAmount > 0;
@@ -661,7 +661,7 @@ export default function BusinessDebts() {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="p-3 pl-4 space-y-2 border-l-[3px] hover:bg-white/[0.02] transition-colors"
+                            className="biz-list-item biz-list-item-accent p-3 pl-4 space-y-2 border-l-[3px] hover:bg-white/[0.02] transition-colors"
                             style={{ borderLeftColor: accentBorder, borderBottom: '1px solid var(--border)' }}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -685,8 +685,8 @@ export default function BusinessDebts() {
                             </div>
                             {debt.remaining > 0 && (
                               <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
-                                  <div className="h-full rounded-full" style={{ width: `${paidPercent}%`, background: paidPercent >= 75 ? 'var(--secondary)' : paidPercent >= 40 ? 'var(--warning)' : 'var(--destructive)', transition: 'width 0.6s ease' }} />
+                                <div className="flex-1 biz-progress-track h-1.5 rounded-full overflow-hidden bg-border">
+                                  <div className="biz-progress-fill h-full rounded-full" style={{ width: `${paidPercent}%`, background: paidPercent >= 75 ? 'var(--secondary)' : paidPercent >= 40 ? 'var(--warning)' : 'var(--destructive)', transition: 'width 0.6s ease' }} />
                                 </div>
                                 <span className="text-[10px] tabular-nums text-muted-foreground">{paidPercent}%</span>
                               </div>
@@ -724,10 +724,10 @@ export default function BusinessDebts() {
                   </div>
 
                   {/* Desktop Table */}
-                  <div className="hidden sm:block max-h-[500px] overflow-y-auto">
+                  <div className="hidden sm:block max-h-[500px] overflow-y-auto premium-scroll">
                   <Table>
                     <TableHeader>
-                      <TableRow className="hover:bg-transparent border-b border-border">
+                      <TableRow className="biz-table-header hover:bg-transparent border-b border-border">
                         <TableHead className="text-xs text-muted-foreground">{t('biz.debtCounterpart')}</TableHead>
                         <TableHead className="text-xs text-right hidden sm:table-cell text-muted-foreground">{t('biz.debtAmount')}</TableHead>
                         <TableHead className="text-xs text-muted-foreground">{t('biz.debtRemaining')}</TableHead>
@@ -789,9 +789,9 @@ export default function BusinessDebts() {
                                       <div className="mt-1">
                                         {/* Visual Progress Bar */}
                                         <div className="flex items-center gap-2">
-                                          <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
+                                          <div className="flex-1 biz-progress-track h-1.5 rounded-full overflow-hidden bg-border">
                                             <div
-                                              className="h-full rounded-full"
+                                              className="biz-progress-fill h-full rounded-full"
                                               style={{
                                                 width: `${paidPercent}%`,
                                                 background: paidPercent >= 75 ? 'var(--secondary)' : paidPercent >= 40 ? 'var(--warning)' : 'var(--destructive)',
@@ -950,7 +950,7 @@ export default function BusinessDebts() {
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="w-[95vw] sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
+          className="biz-dialog-content w-[95vw] sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
           style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
         >
           <div className="h-px bg-white/[0.06]" />
@@ -1238,7 +1238,7 @@ export default function BusinessDebts() {
       {/* Partial Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent
-          className="w-[95vw] sm:max-w-[420px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
+          className="biz-dialog-content w-[95vw] sm:max-w-[420px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
           style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
         >
           <div className="h-px bg-white/[0.06]" />
@@ -1401,7 +1401,7 @@ export default function BusinessDebts() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="bg-card border border-border text-foreground">
+        <AlertDialogContent className="biz-dialog-content bg-card border border-border text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">

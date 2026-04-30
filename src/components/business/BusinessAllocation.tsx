@@ -121,9 +121,9 @@ function AllocationBar({ allocations, totalSales }: { allocations: Allocation[];
         <span className="text-muted-foreground">Total Alokasi vs Total Penjualan</span>
         <span className="font-medium tabular-nums text-muted-foreground">{pct.toFixed(1)}%</span>
       </div>
-      <div className="h-3 rounded-full overflow-hidden flex" style={{ backgroundColor: 'var(--border)' }}>
+      <div className="biz-progress-track h-3 rounded-full overflow-hidden flex" style={{ backgroundColor: 'var(--border)' }}>
         <div
-          className="h-full transition-all duration-700"
+          className="biz-progress-fill h-full transition-all duration-700"
           style={{
             width: `${businessPct}%`,
             backgroundColor: 'var(--primary)',
@@ -160,7 +160,7 @@ function AllocationBar({ allocations, totalSales }: { allocations: Allocation[];
 // ─── Empty State ────────────────────────────────────────────────
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4">
+    <div className="biz-empty-state flex flex-col items-center justify-center py-16 px-4">
       <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-3 border border-border" style={{ backgroundColor: alpha(c.primary, 8) }}>
         <ArrowDownToLine className="h-7 w-7" style={{ color: alpha(c.primary, 40) }} />
       </div>
@@ -413,9 +413,9 @@ export default function BusinessAllocation() {
         {/* ═══ Visual Allocation Bar ═══ */}
         {!loading && allocations.length > 0 && (
           <motion.div variants={itemVariants}>
-            <Card className="rounded-xl border border-border">
+            <Card className="biz-content-card rounded-xl border border-border">
               <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="biz-section-header flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.primary, 12) }}>
                     <Wallet className="h-3 w-3" style={{ color: c.primary }} />
                   </div>
@@ -448,9 +448,9 @@ export default function BusinessAllocation() {
         {/* ═══ Available Savings Targets ═══ */}
         {!loading && savingsTargets.length > 0 && (
           <motion.div variants={itemVariants}>
-            <Card className="rounded-xl border border-border">
+            <Card className="biz-content-card rounded-xl border border-border">
               <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="biz-section-header flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.warning, 12) }}>
                     <PiggyBank className="h-3 w-3" style={{ color: c.warning }} />
                   </div>
@@ -472,8 +472,8 @@ export default function BusinessAllocation() {
                           <p className="text-[10px] text-muted-foreground">
                             {formatAmount(target.currentAmount)} / {formatAmount(target.targetAmount)}
                           </p>
-                          <div className="mt-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
-                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: c.warning, opacity: 0.7 }} />
+                          <div className="biz-progress-track mt-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                            <div className="biz-progress-fill h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: c.warning, opacity: 0.7 }} />
                           </div>
                         </div>
                         <p className="text-xs font-bold tabular-nums shrink-0" style={{ color: c.warning }}>{pct.toFixed(0)}%</p>
@@ -488,7 +488,7 @@ export default function BusinessAllocation() {
 
         {/* ═══ History Table ═══ */}
         <motion.div variants={itemVariants}>
-          <Card className="rounded-xl overflow-hidden border border-border">
+          <Card className="biz-content-card rounded-xl overflow-hidden border border-border">
             <CardContent className="p-0">
               <div className="flex items-center gap-2 p-3 sm:p-4 border-b border-border">
                 <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}>
@@ -596,7 +596,7 @@ export default function BusinessAllocation() {
 
       {/* ═══ Add Allocation Dialog ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-xl w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto border border-border">
+        <DialogContent className="biz-dialog-content rounded-xl w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto border border-border">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}>

@@ -231,7 +231,8 @@ export default function AssetSearchInput({
             'border-white/[0.12] text-white',
             'hover:bg-white/[0.09] hover:border-white/[0.18] focus:outline-none',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            !displayValue && 'text-white/35'
+            !displayValue && 'text-white/35',
+            'inv-search-input',
           )}
         >
           <Search className="h-5 w-5 shrink-0 text-white/40" />

@@ -324,11 +324,11 @@ export function TransactionList({ transactions, onEdit, onDelete, onAdd, type }:
         </div>
       )}
 
-      {/* Floating Action Button (FAB) for quick add */}
+      {/* Floating Action Button — hidden on mobile (md:hidden) to avoid overlap with QuickTransaction FAB */}
       {onAdd && (
         <button
           onClick={onAdd}
-          className="fixed bottom-20 right-4 z-30 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105 md:bottom-6"
+          className="hidden md:flex fixed bottom-6 right-8 z-30 w-12 h-12 rounded-full items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105"
           style={{
             background: type === 'income'
               ? 'linear-gradient(135deg, var(--secondary), var(--primary))'

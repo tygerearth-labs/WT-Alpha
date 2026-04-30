@@ -162,7 +162,7 @@ function InvestmentChartInner({
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="bg-[#0D0D0D] overflow-hidden rounded-lg">
+    <div className={cn("bg-[#0D0D0D] overflow-hidden rounded-lg", "inv-content-card")}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       {showHeader && (
         <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04]">
@@ -225,8 +225,8 @@ function InvestmentChartInner({
 
         {/* Error state */}
         {error ? (
-          <div className="flex flex-col items-center justify-center h-full bg-[#0D0D0D]">
-            <BarChart3 className="h-10 w-10 text-white/15 mb-3" />
+          <div className={cn("flex flex-col items-center justify-center h-full bg-[#0D0D0D]", "inv-empty-state")}>
+            <BarChart3 className="h-10 w-10 text-white/15 mb-3 inv-empty-state-icon" />
             <p className="text-white/40 text-sm mb-1">Chart unavailable</p>
             <p className="text-white/20 text-[11px] mb-3">Could not load TradingView widget</p>
             <Button

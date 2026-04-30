@@ -159,7 +159,7 @@ export default function BusinessRegisterDialog({
   if (isAllRegistered) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent aria-describedby={undefined} className="bg-background border-border text-foreground sm:max-w-[520px] p-0 overflow-hidden rounded-2xl">
+        <DialogContent aria-describedby={undefined} className="biz-dialog-content bg-background border-border text-foreground sm:max-w-[520px] p-0 overflow-hidden rounded-2xl">
           <VisuallyHidden>
             <DialogTitle>{t('biz.allRegistered')}</DialogTitle>
           </VisuallyHidden>
@@ -188,7 +188,7 @@ export default function BusinessRegisterDialog({
       <DialogContent
         showCloseButton={false}
         aria-describedby={undefined}
-        className="bg-background border-border text-foreground sm:max-w-[520px] p-0 overflow-hidden rounded-2xl"
+        className="biz-dialog-content bg-background border-border text-foreground sm:max-w-[520px] p-0 overflow-hidden rounded-2xl"
       >
         <VisuallyHidden>
           <DialogTitle>
