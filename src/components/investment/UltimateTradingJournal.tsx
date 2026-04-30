@@ -132,7 +132,7 @@ const T = {
 } as const;
 
 const EMPTY_FORM = {
-  portfolioId: '', type: 'buy' as const, strategy: '',
+  portfolioId: '', type: 'buy' as 'buy' | 'sell', strategy: '',
   emotionalState: '', confluence: [] as string[],
   entryPrice: '', exitPrice: '', quantity: '',
   stopLoss: '', targetPrice: '', fees: '0',
@@ -417,7 +417,7 @@ export default function UltimateTradingJournal({ businessId }: UltimateTradingJo
 
       const body: Record<string, unknown> = {
         portfolioId: form.portfolioId, type: form.type,
-        entryPrice, exitPrice: exit > 0 ? exit : null,
+        entryPrice: entry, exitPrice: exit > 0 ? exit : null,
         quantity: qty, pnl, pnlPercentage: pnlPct,
         riskReward: rm, fees,
         notes: form.notes || null,

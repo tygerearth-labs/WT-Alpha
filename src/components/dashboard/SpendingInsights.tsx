@@ -55,7 +55,7 @@ const PRIORITY_STYLE: Record<string, { color: string; label: string }> = {
 };
 
 // ── Default Data ───────────────────────────────────────────────
-const defaultData: SpendingInsightsProps['data'] = [
+const defaultData: NonNullable<SpendingInsightsProps['data']> = [
   {
     type: 'alert' as const,
     priority: 'high' as const,
@@ -191,7 +191,7 @@ function InsightCard({ insight, index }: { insight: NonNullable<SpendingInsights
 
 // ── Main Widget ────────────────────────────────────────────────
 export function SpendingInsights({ data }: SpendingInsightsProps) {
-  const insights: NonNullable<SpendingInsightsProps['data']> = data ?? defaultData;
+  const insights = data ?? defaultData;
 
   return (
     <motion.section

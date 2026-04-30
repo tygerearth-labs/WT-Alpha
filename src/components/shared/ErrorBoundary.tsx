@@ -168,7 +168,6 @@ export class ErrorBoundary extends Component<Props, State> {
                   background: `linear-gradient(135deg, ${ACCENT}30, ${ACCENT}18)`,
                   color: ACCENT,
                   border: `1px solid ${ACCENT}40`,
-                  focusVisibleRingColor: ACCENT,
                 }}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
