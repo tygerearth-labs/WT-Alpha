@@ -337,8 +337,7 @@ export function AdminLayout() {
 
         <div className={cn(
           'relative flex items-center justify-between px-4 h-14 transition-all duration-300 ease-in-out',
-          'lg:pl-[72px]',
-          !sidebarCollapsed && 'lg:pl-[240px]',
+          sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[240px] xl:pl-[272px]',
         )}>
           <div className="flex items-center gap-3">
             <button
@@ -591,7 +590,7 @@ export function AdminLayout() {
 
         {/* Page Content */}
         <main className={cn(
-          'flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto w-full min-w-0 max-w-full transition-all duration-300 ease-in-out adm-content-card',
+          'flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-scroll w-full min-w-0 max-w-full transition-all duration-300 ease-in-out adm-content-card',
           'pb-[76px] lg:pb-8',
           sidebarCollapsed ? 'lg:ml-[64px]' : 'lg:ml-56 xl:ml-64',
         )}>
@@ -604,11 +603,11 @@ export function AdminLayout() {
       </div>
       </div>
 
-      {/* Bottom Navigation Bar (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-t border-white/[0.06] md:hidden adm-tab-bar">
+      {/* Bottom Navigation Bar (mobile only) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-t border-white/[0.06] max-md:flex hidden flex-col">
         <div
           ref={scrollRef}
-          className="flex items-stretch overflow-x-auto scrollbar-none px-1 gap-0.5 adm-scroll-mobile"
+          className="flex items-stretch overflow-x-auto px-1 gap-0.5"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           {navigation.map((item) => {

@@ -566,7 +566,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-                  <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
+                  <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(3,218,198,0.1)' }}><BarChart3 className="h-4 w-4 text-[#03DAC6]" /></div>
                   User Registrations
                   <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30">
                     Last 7 days
@@ -630,7 +630,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
             <CardHeader className="pb-3">
               <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-                <PieChart className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
+                <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(187,134,252,0.1)' }}><PieChart className="h-4 w-4 text-[#BB86FC]" /></div>
                 Plan Distribution
               </CardTitle>
             </CardHeader>
@@ -830,7 +830,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]" data-tour="quick-actions">
             <CardHeader className="pb-3">
               <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-                <Zap className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
+                <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(255,215,0,0.1)' }}><Zap className="h-4 w-4 text-[#FFD700]" /></div>
                 Quick Actions
               </CardTitle>
             </CardHeader>
@@ -842,7 +842,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     <button
                       key={action.label}
                       onClick={() => action.page ? onNavigate?.(action.page) : action.action?.()}
-                      className="adm-quick-action group flex items-center gap-3 p-3.5 rounded-xl text-left"
+                      className="group flex items-center gap-3 p-3.5 rounded-xl text-left w-full hover:bg-white/[0.03] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 active:scale-[0.97]"
                     >
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
                         style={{ background: `linear-gradient(135deg, ${action.color}18, ${action.color}08)` }}>
@@ -871,7 +871,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-                  <Activity className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
+                  <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(3,218,198,0.1)' }}><Activity className="h-4 w-4 text-[#03DAC6]" /></div>
                   Recent Activity
                   <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/50">
                     Last 5
@@ -940,7 +940,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-3">
             <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Star className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
+              <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(255,215,0,0.1)' }}><Star className="h-4 w-4 text-[#FFD700]" /></div>
               Top Active Users
             </CardTitle>
           </CardHeader>

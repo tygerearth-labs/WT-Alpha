@@ -166,13 +166,15 @@ function SectionHeader({
 }) {
   return (
     <CardHeader className="pb-4">
-      <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-        <Icon className="adm-section-header-icon h-4 w-4" style={{ color }} />
-        {title}
+      <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+        <div className="adm-section-header-icon" style={{ backgroundColor: `${color}10` }}>
+          <Icon className="h-4 w-4" style={{ color }} />
+        </div>
+        <span className="truncate">{title}</span>
         {badge && (
           <Badge
             variant="outline"
-            className="adm-badge text-[9px] font-semibold px-1.5 py-0 ml-auto"
+            className="adm-badge shrink-0 text-[9px] font-semibold px-2 py-[3px] ml-auto leading-none"
             style={{
               backgroundColor: `${color}08`,
               borderColor: `${color}20`,
@@ -406,6 +408,23 @@ export function AdminSettings() {
       doSaveRef.current();
     }, 400);
   }, []);
+
+  /* ── Auto-save for text/select inputs (debounced) ── */
+  const handleInputWithAutoSave = useCallback((setter: (v: string) => void, value: string) => {
+    setter(value);
+  }, []);
+
+  /* ── Unified auto-save: triggers on ANY form change ── */
+  useEffect(() => {
+    if (!configLoaded || !hasChanges) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      doSaveRef.current();
+    }, 800);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [configLoaded, hasChanges, currentValues]);
 
   /* ── Manual save (button click) ── */
   const handleSave = useCallback(async () => {
@@ -642,36 +661,8 @@ export function AdminSettings() {
      SAVE BUTTON — used at bottom of each tab
      ═══════════════════════════════════════════════════════════════ */
   const isSaving = saveStatus === 'saving';
-
-  const SaveButtonBar = () => (
-    <div className="pt-8 pb-2">
-      <motion.button
-        type="button"
-        disabled={!hasChanges || isSaving}
-        onClick={handleSave}
-        animate={saveStatus === 'error' ? { x: [0, -6, 6, -4, 4, -2, 2, 0] } : saveStatus === 'success' ? { scale: [1, 1.02, 1] } : {}}
-        transition={{ duration: 0.4 }}
-        className={cn(
-          'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2',
-          !hasChanges && saveStatus === 'idle'
-            ? 'bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.06]'
-            : saveStatus === 'saving'
-            ? 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white cursor-wait shadow-[0_0_24px_rgba(3,218,198,0.2)]'
-            : saveStatus === 'success'
-            ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-[0_0_24px_rgba(16,185,129,0.3)]'
-            : saveStatus === 'error'
-            ? 'bg-gradient-to-r from-red-500/80 to-red-400/80 text-white'
-            : 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white hover:shadow-[0_4px_24px_rgba(3,218,198,0.3)] hover:scale-[1.01] active:scale-[0.99]',
-        )}
-      >
-        {saveStatus === 'saving' && <><Loader2 className="h-4 w-4 animate-spin" />Menyimpan...</>}
-        {saveStatus === 'success' && <><Check className="h-4 w-4" />Tersimpan!</>}
-        {saveStatus === 'error' && <><AlertTriangle className="h-4 w-4" />Gagal! Coba lagi</>}
-        {saveStatus === 'idle' && !hasChanges && <>Tidak ada perubahan</>}
-        {saveStatus === 'idle' && hasChanges && <><Check className="h-4 w-4" />Simpan Perubahan</>}
-      </motion.button>
-    </div>
-  );
+  const isIdle = saveStatus === 'idle';
+  const isSuccess = saveStatus === 'success';
 
   /* ═══════════════════════════════════════════════════════════════
      TAB 1: UMUM (General)
@@ -772,7 +763,6 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-      <SaveButtonBar />
     </motion.div>
   );
 
@@ -902,7 +892,6 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-      <SaveButtonBar />
     </motion.div>
   );
 
@@ -1079,7 +1068,6 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-      <SaveButtonBar />
     </motion.div>
   );
 
@@ -1193,7 +1181,6 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-      <SaveButtonBar />
     </motion.div>
   );
 
@@ -1299,7 +1286,6 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-      <SaveButtonBar />
     </motion.div>
   );
 
@@ -1396,7 +1382,6 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-      <SaveButtonBar />
     </motion.div>
   );
 
@@ -1464,41 +1449,68 @@ export function AdminSettings() {
       </div>
 
       {/* Tab Content */}
-      <div className="adm-scroll-mobile flex-1 min-h-0 overflow-y-auto pb-28">
+      <div className="adm-scroll-mobile flex-1 min-h-0 overflow-y-auto pb-4">
         <AnimatePresence mode="wait">
           {tabContent[activeTab]()}
         </AnimatePresence>
       </div>
 
-      {/* Sticky Save Button (always visible) */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 sm:sticky sm:bottom-0 sm:z-20">
-        <div className="pt-3 pb-4 sm:pb-3 px-0 sm:px-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/95 to-transparent sm:via-[#0D0D0D] sm:to-transparent">
-          <motion.button
-            type="button"
-            disabled={!hasChanges || isSaving}
-            onClick={handleSave}
-            animate={saveStatus === 'error' ? { x: [0, -6, 6, -4, 4, -2, 2, 0] } : saveStatus === 'success' ? { scale: [1, 1.02, 1] } : {}}
-            transition={{ duration: 0.4 }}
-            className={cn(
-              'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 max-w-2xl mx-auto',
-              !hasChanges && saveStatus === 'idle'
-                ? 'bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.06]'
-                : saveStatus === 'saving'
-                ? 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white cursor-wait shadow-[0_0_24px_rgba(3,218,198,0.2)]'
-                : saveStatus === 'success'
-                ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-[0_0_24px_rgba(16,185,129,0.3)]'
-                : saveStatus === 'error'
-                ? 'bg-gradient-to-r from-red-500/80 to-red-400/80 text-white'
-                : 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white hover:shadow-[0_4px_24px_rgba(3,218,198,0.3)] hover:scale-[1.01] active:scale-[0.99] shadow-[0_2px_16px_rgba(3,218,198,0.15)]',
-            )}
-          >
-            {saveStatus === 'saving' && <><Loader2 className="h-4 w-4 animate-spin" />Menyimpan...</>}
-            {saveStatus === 'success' && <><Check className="h-4 w-4" />Tersimpan!</>}
-            {saveStatus === 'error' && <><AlertTriangle className="h-4 w-4" />Gagal! Coba lagi</>}
-            {saveStatus === 'idle' && !hasChanges && <>Tidak ada perubahan</>}
-            {saveStatus === 'idle' && hasChanges && <><Check className="h-4 w-4" />Simpan Perubahan</>}
-          </motion.button>
-        </div>
+      {/* Auto-save Status Indicator */}
+      <div className="flex items-center justify-center py-3 mt-auto">
+        <AnimatePresence mode="wait">
+          {isSaving && (
+            <motion.div
+              key="saving"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#03DAC6]/[0.06] border border-[#03DAC6]/15"
+            >
+              <Loader2 className="h-3 w-3 animate-spin text-[#03DAC6]" />
+              <span className="text-[11px] font-medium text-[#03DAC6]/70">Menyimpan...</span>
+            </motion.div>
+          )}
+          {isSuccess && !isSaving && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/[0.08] border border-emerald-500/15"
+            >
+              <Check className="h-3 w-3 text-emerald-400" />
+              <span className="text-[11px] font-medium text-emerald-400/80">Tersimpan otomatis</span>
+            </motion.div>
+          )}
+          {saveStatus === 'error' && !isSaving && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/[0.08] border border-red-500/15"
+            >
+              <AlertTriangle className="h-3 w-3 text-red-400" />
+              <span className="text-[11px] font-medium text-red-400/80">Gagal menyimpan</span>
+              <button onClick={handleSave} className="ml-1 text-[10px] font-semibold text-red-400 underline hover:text-red-300">Coba lagi</button>
+            </motion.div>
+          )}
+          {isIdle && !hasChanges && !isSaving && (
+            <motion.div
+              key="idle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-1.5 text-[10px] text-white/15"
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-50" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500/50" />
+              </span>
+              Auto-save aktif
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Clear Logs Dialog */}

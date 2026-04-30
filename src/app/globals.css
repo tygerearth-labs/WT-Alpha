@@ -2961,19 +2961,12 @@ html {
 
 /* ── Adm 16: Quick Action Buttons ── */
 .adm-quick-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 8px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: transparent;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-tap-highlight-color: transparent;
-  text-align: center;
-  width: 100%;
 }
 .adm-quick-action:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -2982,6 +2975,16 @@ html {
 .adm-quick-action:active {
   transform: scale(0.96);
   background: rgba(255, 255, 255, 0.04);
+}
+/* Column variant — for card-style buttons with icon on top */
+.adm-quick-action-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  text-align: center;
+  width: 100%;
 }
 
 /* ── Adm 17: Alert Banner ── */
@@ -3110,17 +3113,12 @@ html {
   }
 }
 
-/* ── Adm 22: Action Buttons (Full-width mobile) ── */
+/* ── Adm 22: Action Buttons ── */
 .adm-action-btn {
-  width: 100%;
   height: 48px;
   border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-tap-highlight-color: transparent;
 }
@@ -3142,7 +3140,6 @@ html {
 }
 @media screen and (min-width: 768px) {
   .adm-action-btn {
-    width: auto;
     height: 40px;
     padding: 0 20px;
     border-radius: 10px;

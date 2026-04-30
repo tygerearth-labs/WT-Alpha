@@ -948,7 +948,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
         <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
-              <Shield className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
+              <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(3,218,198,0.1)' }}><Shield className="h-4 w-4 text-[#03DAC6]" /></div>
               Admin Users
               <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5 adm-badge adm-badge-admin">
                 {adminUsers.length}
@@ -1007,7 +1007,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
           <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
-                <Settings className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
+                <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(3,218,198,0.1)' }}><Settings className="h-4 w-4 text-[#03DAC6]" /></div>
                 Plan Feature Limits
               </CardTitle>
             </CardHeader>
@@ -1074,7 +1074,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
           <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
-                <Shield className="h-4 w-4 text-[#BB86FC] adm-section-header-icon" />
+                <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(187,134,252,0.1)' }}><Shield className="h-4 w-4 text-[#BB86FC]" /></div>
                 Quick Actions
               </CardTitle>
             </CardHeader>
@@ -1102,7 +1102,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
         <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
-              <Users className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
+              <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(3,218,198,0.1)' }}><Users className="h-4 w-4 text-[#03DAC6]" /></div>
               Current User Limits
               <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30 adm-badge">
                 {pagination.total} users

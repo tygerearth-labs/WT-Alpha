@@ -1528,7 +1528,7 @@ export default function BusinessCash() {
         {/* ── TAB 1: ARUS KAS ─────────────────────────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
         {mainTab === 'arus_kas' && (
-          <div key="arus_kas" className="space-y-3 p-3 sm:p-4 relative z-10">
+          <div key="arus_kas" className="space-y-3 p-3 sm:p-4 relative z-10 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-4">
             {/* ══════════════════════════════════════════════ */}
             {/* SECTION 1: SALDO OVERVIEW (Accountant Hero)    */}
             {/* ══════════════════════════════════════════════ */}
@@ -1555,8 +1555,8 @@ export default function BusinessCash() {
               <div className="absolute top-0 left-4 right-4 h-px z-20" style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.4), rgba(187,134,252,0.3), transparent)' }} />
               <CardContent className="p-4 sm:p-5 relative z-10">
                 {/* Header: title + period filter */}
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-bold bg-gradient-to-r from-secondary via-foreground to-primary bg-clip-text text-transparent">
+                <div className="flex items-center justify-between mb-4 sm:mb-5 gap-2">
+                  <h2 className="text-xs sm:text-sm font-bold bg-gradient-to-r from-secondary via-foreground to-primary bg-clip-text text-transparent whitespace-nowrap">
                     Saldo Dana
                   </h2>
                   <div className="flex gap-0.5 rounded-full p-0.5 bg-white/[0.03] border border-white/[0.06]">
@@ -1566,7 +1566,7 @@ export default function BusinessCash() {
                         <button
                           key={opt.value}
                           onClick={() => setCashPeriod(opt.value)}
-                          className={cn("biz-period-pill px-2.5 py-1 rounded-full text-[10px] font-medium transition-all duration-200", isActive && "biz-period-pill-active")}
+                          className={cn("biz-period-pill min-h-[32px] sm:min-h-0 px-2.5 sm:px-2.5 rounded-full text-[10px] sm:text-[10px] font-medium transition-all duration-200", isActive && "biz-period-pill-active")}
                           style={isActive ? {
                             background: alpha(c.primary, 10),
                             color: c.primary,
@@ -1580,14 +1580,14 @@ export default function BusinessCash() {
                 </div>
 
                 {/* Total Saldo — big number with glow */}
-                <div className="text-center mb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Total Saldo Saat Ini</p>
+                <div className="text-center mb-4 sm:mb-5">
+                  <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1 sm:mb-1.5">Total Saldo Saat Ini</p>
                   <motion.p
                     key={totalSaldo}
                     initial={{ scale: 0.95, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.4, ease: 'easeOut' }}
-                    className="text-2xl sm:text-3xl font-extrabold tabular-nums text-foreground"
+                    className="text-xl sm:text-3xl font-extrabold tabular-nums text-foreground"
                     style={{ textShadow: `0 0 40px ${alpha(c.secondary, 25)}, 0 0 80px ${alpha(c.secondary, 10)}` }}
                   >
                     {formatAmount(animSaldo)}
@@ -1595,7 +1595,7 @@ export default function BusinessCash() {
                 </div>
 
                 {/* Period Flow Row: Pemasukan / Pengeluaran / Arus Bersih */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4">
                   <motion.div
                     whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ duration: 0.15 }}
@@ -1652,7 +1652,7 @@ export default function BusinessCash() {
                 </div>
 
                 {/* Source Breakdown Chips */}
-                <div className="flex items-center justify-center gap-2 flex-wrap">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
                   <div className="biz-metric-chip flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30">
                     <div className="biz-metric-chip-icon h-1.5 w-1.5 rounded-full bg-secondary" />
                     <span className="text-[10px] text-muted-foreground">Kas Besar</span>
@@ -1690,7 +1690,7 @@ export default function BusinessCash() {
                       <button
                         key={f.key}
                         onClick={() => setCashFilter(f.key)}
-                        className={cn("biz-filter-chip biz-tab-item flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
+                        className={cn("biz-filter-chip biz-tab-item flex-1 flex items-center justify-center gap-1 px-2 sm:px-3 min-h-[36px] sm:min-h-0 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
                         style={
                           isActive
                             ? {
@@ -1730,15 +1730,15 @@ export default function BusinessCash() {
                     value={cashSearch}
                     onChange={(e) => setCashSearch(e.target.value)}
                     placeholder={t('common.search') + '...'}
-                    className="biz-search-input pl-8 h-8 text-xs rounded-lg bg-white/[0.03] border border-border/30 text-foreground w-full"
+                    className="biz-search-input pl-8 h-10 sm:h-8 text-xs rounded-lg bg-white/[0.03] border border-border/30 text-foreground w-full"
                   />
                 </div>
                 <Button
                   onClick={openCashCreate}
                   size="sm"
-                  className="biz-action-btn biz-action-btn-primary rounded-lg h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="biz-action-btn biz-action-btn-primary rounded-lg h-10 sm:h-8 px-4 sm:px-3 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" />
                   <span className="hidden sm:inline">{t('biz.addCashEntry')}</span>
                   <span className="sm:hidden">Tambah</span>
                 </Button>
@@ -1794,8 +1794,8 @@ export default function BusinessCash() {
                       )}
                     </div>
 
-                    {/* ── Mobile Card List ── */}
-                    <div className="biz-scroll-mobile sm:hidden max-h-[500px] overflow-y-auto space-y-1.5 p-2.5">
+            {/* ── Mobile Card List ── */}
+                    <div className="biz-scroll-mobile sm:hidden max-h-[500px] overflow-y-auto space-y-2 p-3">
                       <AnimatePresence mode="popLayout">
                         {filteredCashEntries.slice(0, cashPageSize).map((entry, index) => {
                           const isExpense = entry.type === 'kas_keluar';
@@ -1819,7 +1819,7 @@ export default function BusinessCash() {
                               initial="hidden"
                               animate="show"
                               layout
-                              className="biz-list-item rounded-lg p-2.5 border border-white/[0.06] bg-white/[0.01] hover:bg-white/[0.04] transition-all duration-200 cursor-pointer"
+                              className="biz-list-item rounded-lg p-3 border border-white/[0.06] bg-white/[0.01] hover:bg-white/[0.04] active:bg-white/[0.05] transition-all duration-200 cursor-pointer"
                               whileHover={{ x: 2 }}
                               onClick={() => setTransactionDetail(entry)}
                             >
@@ -2397,10 +2397,11 @@ export default function BusinessCash() {
               <Button
                 onClick={openInvestorCreate}
                 size="sm"
-                className="biz-action-btn biz-action-btn-primary rounded-lg h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="biz-action-btn biz-action-btn-primary rounded-lg h-10 sm:h-8 px-4 sm:px-3 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <UserPlus className="h-3.5 w-3.5 mr-1" />
-                Tambah Investor
+                <UserPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" />
+                <span className="sm:hidden">Tambah</span>
+                <span className="hidden sm:inline">Tambah Investor</span>
               </Button>
             </div>
 
@@ -2438,9 +2439,9 @@ export default function BusinessCash() {
                           layout
                           exit={{ opacity: 0, height: 0, transition: { duration: 0.15 } }}
                         >
-                          <div className="biz-list-item flex items-center gap-2 py-2 border-b border-border last:border-b-0">
+                          <div className="biz-list-item flex items-center gap-2.5 py-2.5 border-b border-border last:border-b-0">
                             {/* Avatar */}
-                            <div className="h-8 w-8 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 bg-primary/8 text-primary">
+                            <div className="h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 bg-primary/8 text-primary">
                               {inv.name.charAt(0).toUpperCase()}
                             </div>
                             {/* Info */}
@@ -2471,10 +2472,10 @@ export default function BusinessCash() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 rounded-md shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                              className="h-9 w-9 p-0 rounded-lg shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/5"
                               onClick={() => openInvestorEdit(inv)}
                             >
-                              <Pencil className="h-3 w-3" />
+                              <Pencil className="h-4 w-4" />
                             </Button>
                           </div>
                         </motion.div>
@@ -3064,7 +3065,7 @@ export default function BusinessCash() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* Cicilan Berjalan */}
               <Card className="biz-stat-card rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
-                <CardContent className="p-3">
+                <CardContent className="p-3 sm:p-3">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="h-6 w-6 rounded-md flex items-center justify-center bg-secondary/8">
                       <Clock className="h-3 w-3 text-secondary" />
@@ -3162,7 +3163,7 @@ export default function BusinessCash() {
                     <button
                       key={key}
                       onClick={() => setPiutangSubTab(key)}
-                      className={cn("biz-filter-chip biz-tab-item flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
+                      className={cn("biz-filter-chip biz-tab-item flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 min-h-[36px] sm:min-h-0 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200", isActive && "biz-filter-chip-active biz-tab-item-active")}
                       style={isActive ? {
                         background: alpha(cfg.color, 10),
                         color: cfg.color,
@@ -3191,7 +3192,7 @@ export default function BusinessCash() {
                   value={piutangSearch}
                   onChange={(e) => setPiutangSearch(e.target.value)}
                   placeholder={t('common.search') + '...'}
-                  className="biz-search-input pl-8 rounded-lg h-8 text-xs bg-white/[0.03] border border-border text-foreground w-full"
+                  className="biz-search-input pl-8 rounded-lg h-10 sm:h-8 text-xs bg-white/[0.03] border border-border text-foreground w-full"
                 />
               </div>
             </div>
@@ -3279,17 +3280,17 @@ export default function BusinessCash() {
                                   )}
                                 </div>
                               )}
-                              <div className="flex items-center gap-1.5 pt-1.5 border-t border-border">
+                              <div className="flex items-center gap-1 sm:gap-1.5 pt-2 sm:pt-1.5 border-t border-border">
                                 {debt.status !== 'paid' && (
-                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-medium rounded-md text-secondary" onClick={() => openPaymentDialog(debt)}>
-                                    <CircleDollarSign className="h-3 w-3 mr-1" />Bayar
+                                  <Button variant="ghost" size="sm" className="h-9 sm:h-7 px-3 sm:px-2 text-[11px] sm:text-[10px] font-medium rounded-lg sm:rounded-md text-secondary" onClick={() => openPaymentDialog(debt)}>
+                                    <CircleDollarSign className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />Bayar
                                   </Button>
                                 )}
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-medium rounded-md" style={{ color: '#25D366' }} onClick={() => sendReminder(debt)}>
-                                  <MessageCircle className="h-3 w-3 mr-1" />Tagih
+                                <Button variant="ghost" size="sm" className="h-9 sm:h-7 px-3 sm:px-2 text-[11px] sm:text-[10px] font-medium rounded-lg sm:rounded-md" style={{ color: '#25D366' }} onClick={() => sendReminder(debt)}>
+                                  <MessageCircle className="h-3.5 w-3.5 sm:h-3 sm:w-3 mr-1" />Tagih
                                 </Button>
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-medium rounded-md text-muted-foreground ml-auto" onClick={() => openDetailDialog(debt)}>
-                                  <ChevronRight className="h-3 w-3" />
+                                <Button variant="ghost" size="sm" className="h-9 sm:h-7 w-9 sm:w-7 p-0 rounded-lg sm:rounded-md text-muted-foreground ml-auto" onClick={() => openDetailDialog(debt)}>
+                                  <ChevronRight className="h-4 w-4 sm:h-3 sm:w-3" />
                                 </Button>
                               </div>
                             </motion.div>
@@ -3445,9 +3446,9 @@ export default function BusinessCash() {
       {/* ── CASH ENTRY DIALOG ──────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={cashDialogOpen} onOpenChange={setCashDialogOpen}>
-        <DialogContent className="biz-dialog-content w-[95vw] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden">
+        <DialogContent className="biz-dialog-content w-[calc(100%-1.5rem)] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden max-h-[92vh] sm:max-h-[85vh] overflow-y-auto">
           <div className="h-px w-full bg-white/[0.06]" />
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <DialogHeader className="mb-4">
               <DialogTitle className="text-sm font-semibold flex items-center gap-2.5 text-foreground">
                 <div
@@ -3755,9 +3756,9 @@ export default function BusinessCash() {
       {/* ── INVESTOR DIALOG ────────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={investorDialogOpen} onOpenChange={setInvestorDialogOpen}>
-        <DialogContent className="biz-dialog-content w-[95vw] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden">
+        <DialogContent className="biz-dialog-content w-[calc(100%-1.5rem)] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden max-h-[92vh] sm:max-h-[85vh] overflow-y-auto">
           <div className="h-px w-full bg-white/[0.06]" />
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <DialogHeader className="mb-4">
               <DialogTitle className="text-sm font-semibold flex items-center gap-2.5 text-foreground">
                 <div
@@ -3883,8 +3884,8 @@ export default function BusinessCash() {
       {/* ── PAYMENT RECORDING DIALOG ───────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={!!paymentDialogDebt} onOpenChange={(open) => !open && setPaymentDialogDebt(null)}>
-        <DialogContent className="biz-dialog-content max-w-[95vw] sm:max-w-[440px] rounded-xl bg-card border border-border">
-          <DialogHeader>
+        <DialogContent className="biz-dialog-content max-w-[calc(100%-1.5rem)] sm:max-w-[440px] rounded-xl bg-card border border-border max-h-[92vh] sm:max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="p-4 sm:p-6 pb-0 sm:pb-0">
             <DialogTitle className="text-sm sm:text-lg font-semibold flex items-center gap-2 text-foreground">
               <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center bg-secondary/8">
                 <CircleDollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-secondary" />
@@ -3897,7 +3898,7 @@ export default function BusinessCash() {
           </DialogHeader>
 
           {paymentDialogDebt && (
-            <div className="space-y-3 mt-1">
+            <div className="space-y-3 mt-1 p-4 sm:p-6">
               {/* Debt summary mini */}
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.03] border border-border">
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -4028,7 +4029,7 @@ export default function BusinessCash() {
       {/* ── DETAIL / TIMELINE DIALOG ───────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={!!detailDialogDebt} onOpenChange={(open) => !open && setDetailDialogDebt(null)}>
-        <DialogContent className="biz-dialog-content max-w-[95vw] sm:max-w-[480px] rounded-xl max-h-[85vh] overflow-y-auto bg-card border border-border">
+        <DialogContent className="biz-dialog-content max-w-[calc(100%-1.5rem)] sm:max-w-[480px] rounded-xl max-h-[92vh] sm:max-h-[85vh] overflow-y-auto bg-card border border-border">
           {detailDialogDebt && (
             <>
               <DialogHeader>
@@ -4254,7 +4255,7 @@ export default function BusinessCash() {
       {/* ── TRANSACTION DETAIL DIALOG ────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════ */}
       <Dialog open={!!transactionDetail} onOpenChange={(open) => { if (!open) setTransactionDetail(null); }}>
-        <DialogContent className="biz-dialog-content bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md" aria-label="Detail Transaksi">
+        <DialogContent className="biz-dialog-content bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-1.5rem)] sm:max-w-md max-h-[92vh] sm:max-h-[85vh] overflow-y-auto" aria-label="Detail Transaksi">
           <div className="h-px w-full bg-white/[0.06]" />
           <DialogDescription className="sr-only">Detail transaksi kas</DialogDescription>
           {transactionDetail && (
@@ -4262,7 +4263,7 @@ export default function BusinessCash() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
-              className="p-5"
+              className="p-4 sm:p-5"
             >
               {/* Type + Source badges */}
               <div className="flex items-center gap-2 mb-4">
@@ -4379,7 +4380,7 @@ export default function BusinessCash() {
       {/* ── DELETE CONFIRMATION ────────────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════ */}
       <AlertDialog open={!!cashDeleteId} onOpenChange={(open) => !open && setCashDeleteId(null)}>
-        <AlertDialogContent className="biz-dialog-content w-[95vw] sm:max-w-md rounded-xl bg-card border border-border">
+        <AlertDialogContent className="biz-dialog-content w-[calc(100%-1.5rem)] sm:max-w-md rounded-xl bg-card border border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-foreground">
               <div className="h-7 w-7 rounded-lg flex items-center justify-center bg-destructive/5">

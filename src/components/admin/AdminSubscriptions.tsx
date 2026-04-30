@@ -642,7 +642,7 @@ export function AdminSubscriptions() {
                     value={assignEmail} onChange={(e) => { setAssignEmail(e.target.value); setAssignFoundUser(null); setAssignCurrentPlan(null); }}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearchUser()}
                     className="flex-1 bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input" />
-                  <Button variant="outline" size="sm" className="h-10 bg-white/[0.03] border-white/[0.06] text-white/50 hover:text-white adm-quick-action"
+                  <Button variant="outline" size="sm" className="h-[44px] md:h-10 px-4 bg-white/[0.03] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.06] shrink-0"
                     onClick={handleSearchUser}>
                     <Search className="h-4 w-4" />
                   </Button>

@@ -868,11 +868,12 @@ export default function BusinessBudget() {
             <Button
               onClick={openCreateDialog}
               size="sm"
-              className="rounded-lg"
+              className="h-10 sm:h-8 rounded-lg"
               style={{ background: c.primary, color: 'var(--primary-foreground)' }}
             >
-              <Plus className="h-3.5 w-3.5 mr-1" />
+              <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-1" />
               <span className="hidden sm:inline text-xs">Tambah Anggaran</span>
+              <span className="sm:hidden text-xs">Tambah</span>
             </Button>
           </div>
 
@@ -938,7 +939,7 @@ export default function BusinessBudget() {
                         exit="exit"
                         layout
                         whileHover={{ x: 2 }}
-                        className="p-3.5"
+                        className="p-3.5 min-h-[44px]"
                         style={{
                           borderLeft: budget.spentPct >= 95
                             ? '3px solid var(--destructive)'
@@ -992,24 +993,24 @@ export default function BusinessBudget() {
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-0.5 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 rounded-md"
+                              className="h-9 w-9 p-0 rounded-lg"
                               style={{ color: c.muted }}
                               onClick={() => openEditDialog(budget)}
                             >
-                              <Pencil className="h-3 w-3" />
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 rounded-md"
+                              className="h-9 w-9 p-0 rounded-lg"
                               style={{ color: c.destructive }}
                               onClick={() => setDeleteId(budget.id)}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -1051,16 +1052,16 @@ export default function BusinessBudget() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 rounded-md"
+                              className="h-8 w-8 p-0 rounded-lg"
                               style={{ color: c.muted }}
                               onClick={() => toggleExpand(budget.id)}
                             >
                               {expandLoading === budget.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : isExpanded ? (
-                                <ChevronUp className="h-3 w-3" />
+                                <ChevronUp className="h-3.5 w-3.5" />
                               ) : (
-                                <ChevronDown className="h-3 w-3" />
+                                <ChevronDown className="h-3.5 w-3.5" />
                               )}
                             </Button>
                           </div>
@@ -1427,7 +1428,7 @@ export default function BusinessBudget() {
       {/* ═══ ADD / EDIT BUDGET DIALOG ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="biz-dialog-content bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
+          className="biz-dialog-content bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[calc(100%-1.5rem)] sm:max-w-[500px] max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
           style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
           <div className="h-px bg-white/[0.06]" />
@@ -1760,7 +1761,7 @@ export default function BusinessBudget() {
       {/* ═══ DELETE CONFIRMATION ═══ */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent
-          className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[400px]"
+          className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[calc(100%-1.5rem)] sm:max-w-[400px]"
           style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
           <div className="h-px bg-white/[0.06]" />

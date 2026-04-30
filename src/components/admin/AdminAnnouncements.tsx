@@ -307,7 +307,7 @@ export function AdminAnnouncements() {
             <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70 adm-form-input">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-white/[0.03] border-white/[0.08]">
+            <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
               <SelectItem value="info">
                 <div className="flex items-center gap-2">
                   <Info className="h-3.5 w-3.5 text-[#03DAC6]" />

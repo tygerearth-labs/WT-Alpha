@@ -90,7 +90,7 @@ export function AdminAnalytics() {
       <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-[#BB86FC] adm-section-header-icon" />
+            <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(187,134,252,0.1)' }}><BarChart3 className="h-4 w-4 text-[#BB86FC]" /></div>
             <h3 className="text-base font-bold text-white/80 adm-section-header">Financial Analytics</h3>
           </div>
           <Button variant="ghost" size="sm"
@@ -159,7 +159,7 @@ export function AdminAnalytics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-[#BB86FC] adm-section-header-icon" />
+          <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(187,134,252,0.1)' }}><BarChart3 className="h-4 w-4 text-[#BB86FC]" /></div>
           <h3 className="text-base font-bold text-white/80 adm-section-header">Financial Analytics</h3>
           <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]/50 adm-badge adm-badge-info">
             Platform-wide
@@ -218,7 +218,7 @@ export function AdminAnalytics() {
         <Card className="lg:col-span-2 bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
+              <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(3,218,198,0.1)' }}><BarChart3 className="h-4 w-4 text-[#03DAC6]" /></div>
               <CardTitle className="text-sm font-semibold text-white/70 adm-section-header">Monthly Revenue Trends</CardTitle>
               <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/25 adm-badge adm-badge-info">
                 6 months
@@ -275,7 +275,7 @@ export function AdminAnalytics() {
         <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
-              <PieChartIcon className="h-4 w-4 text-[#BB86FC] adm-section-header-icon" />
+              <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(187,134,252,0.1)' }}><PieChartIcon className="h-4 w-4 text-[#BB86FC]" /></div>
               Top Spending Categories
             </CardTitle>
           </CardHeader>
@@ -309,7 +309,7 @@ export function AdminAnalytics() {
         <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
-              <Target className="h-4 w-4 text-[#FFD700] adm-section-header-icon" />
+              <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(255,215,0,0.1)' }}><Target className="h-4 w-4 text-[#FFD700]" /></div>
               Platform Health
             </CardTitle>
           </CardHeader>
@@ -344,7 +344,7 @@ export function AdminAnalytics() {
         <Card className="bg-[#0D0D0D] border-white/[0.06] adm-content-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2 adm-section-header">
-              <Activity className="h-4 w-4 text-[#03DAC6] adm-section-header-icon" />
+              <div className="adm-section-header-icon" style={{ backgroundColor: 'rgba(3,218,198,0.1)' }}><Activity className="h-4 w-4 text-[#03DAC6]" /></div>
               Recent Platform Activity
             </CardTitle>
           </CardHeader>
