@@ -294,7 +294,7 @@ export function AdminSettings() {
   const originalValuesRef = useRef<string>('');
   const [hasChanges, setHasChanges] = useState(false);
 
-  /* ── Serialize current values ── */
+  /* ── Serialize current values (for dirty tracking only) ── */
   const currentValues = useMemo(() => {
     return JSON.stringify({
       defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
@@ -310,7 +310,7 @@ export function AdminSettings() {
     });
   }, [
     defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
-    emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
+ emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
     basicPlanPrice, proPlanPrice, ultimatePlanPrice,
     basicPlanFeatures, proPlanFeatures, ultimatePlanFeatures,
     trialEnabled, trialDurationDays, trialPlan,
@@ -318,7 +318,6 @@ export function AdminSettings() {
     basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
     ultimatePlanDiscount, ultimatePlanDiscountLabel,
     basicPurchaseUrl, proPurchaseUrl, ultimatePurchaseUrl,
-    emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
     landingPageConfig, landingStats, sectionVisibility, exportEnabled,
   ]);
 
@@ -333,102 +332,113 @@ export function AdminSettings() {
   }, [configLoaded, currentValues]);
 
   /* ═══════════════════════════════════════════════════════════════
-     AUTO-SAVE ON TOGGLE CHANGES
+     AUTO-SAVE — SINGLE unified system, no race conditions
      ═══════════════════════════════════════════════════════════════ */
-  const doSaveRef = useRef<() => Promise<void>>(async () => {});
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSavingRef = useRef(false);
 
-  const doSave = useCallback(async () => {
+  const doSave = useCallback(async (toastMessage?: string) => {
+    if (isSavingRef.current) return; // prevent concurrent saves
+    isSavingRef.current = true;
     setSaveStatus('saving');
     try {
+      const payload = {
+        defaultPlan,
+        defaultMaxCategories: parseInt(defaultCategoryLimit, 10) || 10,
+        defaultMaxSavings: parseInt(defaultSavingsLimit, 10) || 3,
+        autoSuspendExpired: autoSuspend,
+        basicPlanPrice, proPlanPrice, ultimatePlanPrice,
+        basicPlanFeatures: JSON.stringify(basicPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+        proPlanFeatures: JSON.stringify(proPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+        ultimatePlanFeatures: JSON.stringify(ultimatePlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+        trialEnabled,
+        trialDurationDays: parseInt(trialDurationDays, 10) || 30,
+        trialPlan,
+        whatsappNumber, registrationOpen, registrationMessage,
+        availablePlans: JSON.stringify(availablePlans),
+        basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
+        ultimatePlanDiscount, ultimatePlanDiscountLabel,
+        basicPurchaseUrl, proPurchaseUrl, ultimatePurchaseUrl,
+        sectionVisibility: JSON.stringify(sectionVisibility),
+        exportEnabled: JSON.stringify(exportEnabled),
+        landingPageConfig: JSON.stringify(landingPageConfig),
+        landingPageStats: JSON.stringify(landingStats),
+        emailNotifications: JSON.stringify({ newUser: emailNotifNewUser, expiry: emailNotifExpiry, inviteUsage: emailNotifInviteUsage, dailySummary: emailNotifDailySummary }),
+      };
+
       const res = await fetch('/api/admin/platform-config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          defaultPlan,
-          defaultMaxCategories: parseInt(defaultCategoryLimit, 10) || 10,
-          defaultMaxSavings: parseInt(defaultSavingsLimit, 10) || 3,
-          autoSuspendExpired: autoSuspend,
-          basicPlanPrice, proPlanPrice,
-          basicPlanFeatures: JSON.stringify(basicPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-          proPlanFeatures: JSON.stringify(proPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-          trialEnabled,
-          trialDurationDays: parseInt(trialDurationDays, 10) || 30,
-          trialPlan,
-          whatsappNumber, registrationOpen, registrationMessage,
-          availablePlans: JSON.stringify(availablePlans),
-          basicPlanDiscount, proPlanDiscount,
-          basicPlanDiscountLabel, proPlanDiscountLabel,
-          ultimatePlanPrice,
-          ultimatePlanFeatures: JSON.stringify(ultimatePlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-          ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl,
-          basicPurchaseUrl, proPurchaseUrl,
-          sectionVisibility: JSON.stringify(sectionVisibility),
-          exportEnabled: JSON.stringify(exportEnabled),
-          landingPageConfig: JSON.stringify(landingPageConfig),
-          landingPageStats: JSON.stringify(landingStats),
-          emailNotifications: JSON.stringify({ newUser: emailNotifNewUser, expiry: emailNotifExpiry, inviteUsage: emailNotifInviteUsage, dailySummary: emailNotifDailySummary }),
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         originalValuesRef.current = currentValues;
         setHasChanges(false);
         setSaveStatus('success');
-        toast.success('Pengaturan berhasil disimpan');
+        toast.success(toastMessage || 'Pengaturan berhasil disimpan');
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
+        const errData = await res.json().catch(() => null);
+        console.error('[AdminSettings] Save failed:', res.status, errData);
         setSaveStatus('error');
-        toast.error('Gagal menyimpan');
+        toast.error(errData?.error || 'Gagal menyimpan', { description: `HTTP ${res.status}` });
         setTimeout(() => setSaveStatus('idle'), 3000);
       }
-    } catch {
+    } catch (err) {
+      console.error('[AdminSettings] Save error:', err);
       setSaveStatus('error');
-      toast.error('Gagal menyimpan');
+      toast.error('Gagal menyimpan', { description: 'Network error' });
       setTimeout(() => setSaveStatus('idle'), 3000);
+    } finally {
+      isSavingRef.current = false;
     }
   }, [
     defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
-    basicPlanPrice, proPlanPrice, basicPlanFeatures, proPlanFeatures, trialEnabled,
-    trialDurationDays, trialPlan, whatsappNumber, registrationOpen, registrationMessage,
-    availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
+    basicPlanPrice, proPlanPrice, ultimatePlanPrice,
+    basicPlanFeatures, proPlanFeatures, ultimatePlanFeatures,
+    trialEnabled, trialDurationDays, trialPlan,
+    whatsappNumber, registrationOpen, registrationMessage, availablePlans,
+    basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
     basicPurchaseUrl, proPurchaseUrl, ultimatePlanPrice, ultimatePlanFeatures,
     ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl,
     sectionVisibility, exportEnabled, landingPageConfig, landingStats, currentValues,
     emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
   ]);
 
-  // Keep ref in sync
+  const doSaveRef = useRef(doSave);
   doSaveRef.current = doSave;
 
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleToggleWithAutoSave = useCallback((setter: (v: boolean) => void, value: boolean) => {
-    setter(value);
+  /* ── Schedule auto-save (debounced, single entry point) ── */
+  const scheduleAutoSave = useCallback((delay = 800) => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       doSaveRef.current();
-    }, 400);
+    }, delay);
   }, []);
 
-  /* ── Auto-save for text/select inputs (debounced) ── */
+  /* ── Unified auto-save effect: triggers on ANY form change ── */
+  useEffect(() => {
+    if (!configLoaded || !hasChanges) return;
+    scheduleAutoSave(1000);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [configLoaded, hasChanges, currentValues, scheduleAutoSave]);
+
+  /* ── Toggle handler — sets state, unified effect handles save ── */
+  const handleToggleWithAutoSave = useCallback((setter: (v: boolean) => void, value: boolean) => {
+    setter(value);
+  }, []);
+
+  /* ── Input handler — sets state, unified effect handles save ── */
   const handleInputWithAutoSave = useCallback((setter: (v: string) => void, value: string) => {
     setter(value);
   }, []);
 
-  /* ── Unified auto-save: triggers on ANY form change ── */
-  useEffect(() => {
-    if (!configLoaded || !hasChanges) return;
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(() => {
-      doSaveRef.current();
-    }, 800);
-    return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    };
-  }, [configLoaded, hasChanges, currentValues]);
-
   /* ── Manual save (button click) ── */
   const handleSave = useCallback(async () => {
     if (!hasChanges) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     await doSave();
   }, [hasChanges, doSave]);
 
@@ -590,39 +600,8 @@ export function AdminSettings() {
   };
 
   const handleSyncPlanLimits = async () => {
-    setSaveStatus('saving');
-    try {
-      const res = await fetch('/api/admin/platform-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-        defaultPlan, defaultMaxCategories: parseInt(defaultCategoryLimit, 10) || 10, defaultMaxSavings: parseInt(defaultSavingsLimit, 10) || 3,
-        autoSuspendExpired: autoSuspend,
-        basicPlanPrice, proPlanPrice,
-        basicPlanFeatures: JSON.stringify(basicPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-        proPlanFeatures: JSON.stringify(proPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-        trialEnabled, trialDurationDays: parseInt(trialDurationDays, 10) || 30, trialPlan,
-        whatsappNumber, registrationOpen, registrationMessage, availablePlans: JSON.stringify(availablePlans),
-        basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
-        ultimatePlanPrice, ultimatePlanFeatures: JSON.stringify(ultimatePlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-        ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl, basicPurchaseUrl, proPurchaseUrl,
-        sectionVisibility: JSON.stringify(sectionVisibility), exportEnabled: JSON.stringify(exportEnabled),
-        landingPageConfig: JSON.stringify(landingPageConfig), landingPageStats: JSON.stringify(landingStats),
-        emailNotifications: JSON.stringify({ newUser: emailNotifNewUser, expiry: emailNotifExpiry, inviteUsage: emailNotifInviteUsage, dailySummary: emailNotifDailySummary }),
-      }) });
-      if (res.ok) {
-        originalValuesRef.current = currentValues;
-        setHasChanges(false);
-        setSaveStatus('success');
-        toast.success('Plan limits synced successfully');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } else {
-        setSaveStatus('error');
-        toast.error('Failed to sync plan limits');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      }
-    } catch {
-      setSaveStatus('error');
-      toast.error('Failed to sync plan limits');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    }
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    await doSave('Plan limits synced successfully');
   };
 
   const formatUptime = (seconds: number) => {

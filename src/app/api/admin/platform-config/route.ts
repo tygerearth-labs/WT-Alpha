@@ -139,10 +139,43 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    const config = await db.platformConfig.update({
-      where: { id: CONFIG_ID },
-      data: updateData,
-    });
+    // Try the main update
+    try {
+      await db.platformConfig.update({
+        where: { id: CONFIG_ID },
+        data: updateData,
+      });
+    } catch (updateError) {
+      // If emailNotifications field doesn't exist in DB yet, try without it
+      const errMsg = updateError instanceof Error ? updateError.message : String(updateError);
+      console.error('PlatformConfig update error:', errMsg);
+      
+      if (errMsg.includes('emailNotifications') || errMsg.includes('column')) {
+        // Remove emailNotifications and retry
+        const fallbackData = { ...updateData };
+        delete fallbackData.emailNotifications;
+        try {
+          await db.platformConfig.update({
+            where: { id: CONFIG_ID },
+            data: fallbackData,
+          });
+          // Field will be added on next prisma db push
+        } catch (retryError) {
+          console.error('PlatformConfig retry error:', retryError);
+          return NextResponse.json(
+            { error: 'Failed to update platform config. Please run prisma db push to sync schema.', details: errMsg },
+            { status: 500 },
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Failed to update platform config', details: errMsg },
+          { status: 500 },
+        );
+      }
+    }
+
+    const config = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
 
     // If defaults changed, update existing basic users who haven't been customized
     if (defaultMaxCategories !== undefined || defaultMaxSavings !== undefined) {

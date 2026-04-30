@@ -101,3 +101,93 @@ export async function GET() {
     }, { status: 500 });
   }
 }
+
+// DELETE /api/admin/system-health — Reset demo data (clears transactions, categories, savings, etc.)
+// Preserves: Users, PlatformConfig, AdminActivityLog
+export async function DELETE() {
+  const auth = await requireAdmin();
+  if (auth instanceof NextResponse) return auth;
+
+  try {
+    // Order matters — delete child records first to avoid foreign key violations
+    const deletionResults: Record<string, number> = {};
+
+    // Transactions
+    const txResult = await db.transaction.deleteMany({});
+    deletionResults.transactions = txResult.count;
+
+    // Savings targets + allocations
+    const allocResult = await db.allocation.deleteMany({});
+    deletionResults.allocations = allocResult.count;
+    const savingsResult = await db.savingsTarget.deleteMany({});
+    deletionResults.savingsTargets = savingsResult.count;
+
+    // Categories (reset to defaults — don't delete all, keep some defaults)
+    const catResult = await db.category.deleteMany({});
+    deletionResults.categories = catResult.count;
+
+    // Budgets
+    const budgetResult = await db.budget.deleteMany({});
+    deletionResults.budgets = budgetResult.count;
+
+    // Business-related demo data
+    const businessCashResult = await db.businessCash.deleteMany({});
+    deletionResults.businessCash = businessCashResult.count;
+    const businessSaleResult = await db.businessSale.deleteMany({});
+    deletionResults.businessSales = businessSaleResult.count;
+    const businessInvoiceResult = await db.businessInvoice.deleteMany({});
+    deletionResults.businessInvoices = businessInvoiceResult.count;
+    const businessCustomerResult = await db.businessCustomer.deleteMany({});
+    deletionResults.businessCustomers = businessCustomerResult.count;
+    const businessInvestorResult = await db.businessInvestor.deleteMany({});
+    deletionResults.businessInvestors = businessInvestorResult.count;
+    const businessDebtPaymentResult = await db.businessDebtPayment.deleteMany({});
+    deletionResults.businessDebtPayments = businessDebtPaymentResult.count;
+    const businessDebtResult = await db.businessDebt.deleteMany({});
+    deletionResults.businessDebts = businessDebtResult.count;
+    const businessCategoryResult = await db.businessCategory.deleteMany({});
+    deletionResults.businessCategories = businessCategoryResult.count;
+    const productResult = await db.product.deleteMany({});
+    deletionResults.products = productResult.count;
+
+    // Announcements
+    const announcementResult = await db.announcement.deleteMany({});
+    deletionResults.announcements = announcementResult.count;
+
+    // Invite tokens (non-used)
+    const inviteResult = await db.inviteToken.deleteMany({});
+    deletionResults.inviteTokens = inviteResult.count;
+
+    // Notifications
+    const notifResult = await db.notification.deleteMany({});
+    deletionResults.notifications = notifResult.count;
+
+    // Bill reminders
+    const billResult = await db.billReminder.deleteMany({});
+    deletionResults.billReminders = billResult.count;
+
+    // Investment portfolios
+    const portfolioResult = await db.investmentPortfolio.deleteMany({});
+    deletionResults.investmentPortfolios = portfolioResult.count;
+
+    // Trading journals
+    const journalResult = await db.tradingJournal.deleteMany({});
+    deletionResults.tradingJournals = journalResult.count;
+
+    // Clear activity logs too (fresh start)
+    const logResult = await db.adminActivityLog.deleteMany({});
+    deletionResults.activityLogs = logResult.count;
+
+    return NextResponse.json({
+      success: true,
+      deleted: deletionResults,
+      totalDeleted: Object.values(deletionResults).reduce((sum, n) => sum + n, 0),
+    });
+  } catch (error) {
+    console.error('System health DELETE (reset) error:', error);
+    return NextResponse.json(
+      { error: 'Failed to reset demo data', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}

@@ -34,3 +34,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
   }
 }
+
+// DELETE /api/admin/activity-log — Clear all activity logs
+export async function DELETE() {
+  const adminId = await requireAdmin();
+  if (adminId instanceof NextResponse) return adminId;
+
+  try {
+    const result = await db.adminActivityLog.deleteMany({});
+    return NextResponse.json({
+      success: true,
+      deleted: result.count,
+    });
+  } catch (error) {
+    console.error('Activity log DELETE error:', error);
+    return NextResponse.json(
+      { error: 'Failed to clear activity logs' },
+      { status: 500 }
+    );
+  }
+}
