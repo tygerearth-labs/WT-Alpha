@@ -2,16 +2,41 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
+const TZ = 'Asia/Jakarta';
+
+/** Format a Date to YYYY-MM-DD in Jakarta timezone */
+function toDateStr(d: Date): string {
+  return d.toLocaleDateString('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+/** Format a Date to YYYY-MM in Jakarta timezone */
+function toMonthStr(d: Date): string {
+  return d.toLocaleDateString('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit' }).slice(0, 7);
+}
+
+/** Get the start of today in Jakarta timezone as a JS Date */
+function startOfTodayInTZ(): Date {
+  const now = new Date();
+  const jakartaStr = now.toLocaleString('en-US', { timeZone: TZ });
+  const jakartaDate = new Date(jakartaStr);
+  return jakartaDate;
+}
+
 export async function GET() {
   const adminId = await requireAdmin();
   if (adminId instanceof NextResponse) return adminId;
 
   try {
-    const thirtyDaysAgo = new Date();
+    const now = startOfTodayInTZ();
+    const thirtyDaysAgo = new Date(now);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
 
-    const sixMonthsAgo = new Date();
+    const sixMonthsAgo = new Date(now);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [totalIncome, totalExpense, allTransactions, categoryMetrics, recentPlatformActivity] = await Promise.all([
       db.transaction.aggregate({
@@ -45,10 +70,10 @@ export async function GET() {
       }),
     ]);
 
-    // Group daily stats from transaction data (SQLite compatible)
+    // Group daily stats from transaction data (timezone-aware)
     const dailyMap = new Map<string, { date: string; type: string; total: number; count: number }>();
     for (const tx of allTransactions) {
-      const dateStr = tx.date.toISOString().split('T')[0];
+      const dateStr = toDateStr(tx.date);
       const key = `${dateStr}-${tx.type}`;
       const existing = dailyMap.get(key);
       if (existing) {
@@ -68,7 +93,7 @@ export async function GET() {
 
     const monthlyMap = new Map<string, { month: string; income: number; expense: number }>();
     for (const tx of allRecentTx) {
-      const month = tx.date.toISOString().slice(0, 7); // YYYY-MM
+      const month = toMonthStr(tx.date);
       const existing = monthlyMap.get(month);
       if (existing) {
         if (tx.type === 'income') existing.income += tx.amount;
@@ -88,7 +113,7 @@ export async function GET() {
         role: 'user',
         transactions: {
           some: {
-            date: { gte: new Date(new Date().setDate(1)).toISOString() },
+            date: { gte: firstOfMonth },
           },
         },
       },

@@ -85,19 +85,20 @@ export async function POST(request: NextRequest) {
 
     const token = randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
 
-    const inviteData: Record<string, unknown> = {
-      token,
-      createdBy: adminId as string,
-      plan: invitePlan,
-      maxUses: inviteMaxUses
-    };
+    const numExpiresInHours = typeof expiresInHours === 'string' ? parseFloat(expiresInHours) : (expiresInHours ?? undefined);
 
-    if (email && email.trim() !== '') inviteData.email = email;
-    if (expiresInHours) {
-      inviteData.expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
-    }
-
-    const invite = await db.inviteToken.create({ data: inviteData as any });
+    const invite = await db.inviteToken.create({
+      data: {
+        token,
+        createdBy: adminId as string,
+        plan: invitePlan,
+        maxUses: inviteMaxUses,
+        ...(email && email.trim() !== '' ? { email: email.trim() } : {}),
+        ...(numExpiresInHours && !isNaN(numExpiresInHours) && numExpiresInHours > 0
+          ? { expiresAt: new Date(Date.now() + numExpiresInHours * 60 * 60 * 1000) }
+          : {}),
+      },
+    });
 
     const requestUrl = new URL(request.url);
     const inviteUrl = `${requestUrl.origin}/?invite=${token}`;

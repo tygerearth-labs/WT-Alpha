@@ -56,7 +56,7 @@ export async function GET() {
       const nextDay = new Date(day);
       nextDay.setDate(nextDay.getDate() + 1);
 
-      const dateStr = day.toISOString().split('T')[0];
+      const dateStr = day.toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' });
       const count = recentRegistrations.filter(
         (r) => r.createdAt >= day && r.createdAt < nextDay
       ).length;

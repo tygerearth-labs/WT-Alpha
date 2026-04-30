@@ -75,7 +75,7 @@ export async function PUT(request: NextRequest) {
     const userId = authResult;
 
     const body = await request.json();
-    const { username, currentPassword, newPassword, image, locale, currency } = body;
+    const { username, email, currentPassword, newPassword, image, locale, currency } = body;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -114,6 +114,45 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Validate email if provided
+    let finalEmail = user.email;
+    if (email !== undefined && email !== user.email) {
+      if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return NextResponse.json(
+          { error: 'Invalid email format' },
+          { status: 400 }
+        );
+      }
+      // Email change requires password confirmation
+      if (!currentPassword) {
+        return NextResponse.json(
+          { error: 'Current password is required to change email' },
+          { status: 400 }
+        );
+      }
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPassword) {
+        return NextResponse.json(
+          { error: 'Current password is incorrect' },
+          { status: 401 }
+        );
+      }
+      // Check email uniqueness
+      const existingEmail = await db.user.findFirst({
+        where: {
+          email: email.trim().toLowerCase(),
+          id: { not: userId },
+        },
+      });
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: 'Email is already in use' },
+          { status: 409 }
+        );
+      }
+      finalEmail = email.trim().toLowerCase();
+    }
+
     let hashedPassword: string | undefined;
     let passwordChanged = false;
 
@@ -132,8 +171,8 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
-      if (!isValidPassword) {
+      const isValidPw = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPw) {
         return NextResponse.json(
           { error: 'Current password is incorrect' },
           { status: 401 }
@@ -189,6 +228,7 @@ export async function PUT(request: NextRequest) {
       where: { id: userId },
       data: {
         ...(username !== undefined && { username: username.trim() }),
+        ...(finalEmail !== user.email && { email: finalEmail }),
         ...(newPassword ? { password: hashedPassword } : {}),
         ...(finalImage !== undefined && { image: finalImage }),
         ...(finalLocale !== undefined && { locale: finalLocale }),

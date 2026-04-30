@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invite token usage limit reached' }, { status: 400 });
       }
 
-      assignedPlan = (tokenResult as any).plan;
+      assignedPlan = typeof tokenResult === 'object' && tokenResult !== null ? tokenResult.plan : 'basic';
     }
 
     // Check if user already exists
@@ -190,23 +190,23 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userData: Record<string, unknown> = {
-      email,
-      username,
-      password: hashedPassword,
-      plan: assignedPlan
-    };
-
     // Set limits based on platform config (already fetched at top of function)
     if (!config) {
       config = await db.platformConfig.create({ data: { id: 'platform' } });
     }
 
     const planMultiplier = assignedPlan === 'ultimate' ? 10 : assignedPlan === 'pro' ? 5 : 1;
-    userData.maxCategories = config.defaultMaxCategories * planMultiplier;
-    userData.maxSavings = config.defaultMaxSavings * planMultiplier;
 
-    const user = await db.user.create({ data: userData as any });
+    const user = await db.user.create({
+      data: {
+        email,
+        username,
+        password: hashedPassword,
+        plan: assignedPlan,
+        maxCategories: config.defaultMaxCategories * planMultiplier,
+        maxSavings: config.defaultMaxSavings * planMultiplier,
+      },
+    });
 
     // After user creation, check for trial if no invite token was used
     if (!inviteToken) {

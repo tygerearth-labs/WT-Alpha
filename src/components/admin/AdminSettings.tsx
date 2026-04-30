@@ -140,6 +140,9 @@ export function AdminSettings() {
   /* ── All state variables (unchanged) ── */
   const [profileName, setProfileName] = useState('Admin');
   const [profileEmail, setProfileEmail] = useState('admin@wealthtracker.com');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [showEmailPasswordDialog, setShowEmailPasswordDialog] = useState(false);
+  const [emailConfirmPassword, setEmailConfirmPassword] = useState('');
 
   const [defaultPlan, setDefaultPlan] = useState('basic');
   const [defaultCategoryLimit, setDefaultCategoryLimit] = useState('10');
@@ -477,21 +480,59 @@ export function AdminSettings() {
     emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
   ]);
 
-  const handleSaveProfile = async () => {
+  /* ── Fetch user profile on mount ── */
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setProfileName(data.user.username || 'Admin');
+            setProfileEmail(data.user.email || 'admin@wealthtracker.com');
+            localStorage.setItem('wt-admin-original-email', data.user.email || 'admin@wealthtracker.com');
+          }
+        }
+      } catch {}
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSaveProfile = async (password?: string) => {
+    setProfileSaving(true);
     try {
+      const body: Record<string, string> = { username: profileName };
+      if (password) {
+        body.currentPassword = password;
+        body.email = profileEmail;
+      }
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: profileName, email: profileEmail }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         toast.success('Profile updated', { description: 'Name and email saved successfully.' });
+        setShowEmailPasswordDialog(false);
+        setEmailConfirmPassword('');
       } else {
         const data = await res.json();
         toast.error('Failed to update profile', { description: data.error || 'Server error.' });
       }
     } catch {
       toast.error('Failed to update profile', { description: 'Network error.' });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleProfileSaveClick = () => {
+    // Check if email has changed from the initially fetched value
+    const initiallyFetched = localStorage.getItem('wt-admin-original-email');
+    if (profileEmail !== (initiallyFetched || 'admin@wealthtracker.com')) {
+      setShowEmailPasswordDialog(true);
+    } else {
+      handleSaveProfile();
     }
   };
 
@@ -606,10 +647,11 @@ export function AdminSettings() {
               <Input value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className={inputCls} placeholder="admin@wealthtracker.com" type="email" />
             </div>
           </div>
-          <Button onClick={handleSaveProfile} className="adm-action-btn h-9 px-4 text-[12px] font-semibold rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 border border-[#03DAC6]/20 transition-all">
-            <Check className="h-3.5 w-3.5 mr-1.5" />
+          <Button onClick={handleProfileSaveClick} disabled={profileSaving} className="adm-action-btn h-9 px-4 text-[12px] font-semibold rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 border border-[#03DAC6]/20 transition-all disabled:opacity-50">
+            {profileSaving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1.5" />}
             Save Profile
           </Button>
+          <p className="text-[10px] text-white/20">Changing email requires password confirmation</p>
         </CardContent>
       </Card>
 
@@ -1453,6 +1495,45 @@ export function AdminSettings() {
             <Button onClick={handleResetDemoData} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90 h-9">
               <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
               Reset to Demo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Email Change Password Confirmation Dialog */}
+      <Dialog open={showEmailPasswordDialog} onOpenChange={(open) => { if (!open) { setShowEmailPasswordDialog(false); setEmailConfirmPassword(''); } }}>
+        <DialogContent className="adm-dialog-content bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white/90 flex items-center gap-2">
+              <Lock className="h-4 w-4 text-[#FFD700]" />
+              Confirm Password to Change Email
+            </DialogTitle>
+            <DialogDescription className="text-white/40">
+              Changing your email address requires password verification for security.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/10">
+              <p className="text-[11px] text-[#FFD700]/70">
+                Your email will be changed to: <span className="font-semibold">{profileEmail}</span>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Current Password</Label>
+              <Input
+                type="password"
+                value={emailConfirmPassword}
+                onChange={(e) => setEmailConfirmPassword(e.target.value)}
+                className={inputCls}
+                placeholder="Enter your current password"
+                onKeyDown={(e) => { if (e.key === 'Enter' && emailConfirmPassword) handleSaveProfile(emailConfirmPassword); }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => { setShowEmailPasswordDialog(false); setEmailConfirmPassword(''); }} className="text-white/50 hover:text-white/70 hover:bg-white/[0.04]">Cancel</Button>
+            <Button onClick={() => handleSaveProfile(emailConfirmPassword)} disabled={!emailConfirmPassword || profileSaving} className="bg-[#FFD700] text-black hover:bg-[#FFD700]/90 h-9 font-semibold disabled:opacity-50">
+              {profileSaving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1.5" />}
+              Confirm Email Change
             </Button>
           </DialogFooter>
         </DialogContent>
