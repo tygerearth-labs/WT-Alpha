@@ -218,6 +218,7 @@ model PlatformConfig {
   sectionVisibility    String?
   exportEnabled        String?
   landingPageConfig    String?
+  landingPageStats     String?
   updatedAt            DateTime @updatedAt
 }
 
