@@ -37,18 +37,22 @@ export async function GET() {
     });
 
     if (!config) {
-      config = await db.platformConfig.create({
-        data: { id: CONFIG_ID },
-      });
+      try {
+        config = await db.platformConfig.create({
+          data: { id: CONFIG_ID },
+        });
+      } catch (createError) {
+        // If create fails (e.g. schema mismatch), return safe defaults
+        console.error('PlatformConfig create error:', createError);
+        return NextResponse.json({ config: null });
+      }
     }
 
     return NextResponse.json({ config });
   } catch (error) {
     console.error('PlatformConfig GET error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch platform config' },
-      { status: 500 },
-    );
+    // Return null config instead of 500 — frontend will use defaults
+    return NextResponse.json({ config: null });
   }
 }
 
@@ -131,51 +135,82 @@ export async function PUT(request: NextRequest) {
     }
 
     // Ensure the config row exists, then update with all fields
-    // Using separate create + update avoids TypeScript issues with upsert's create type
-    const existing = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
-    if (!existing) {
-      await db.platformConfig.create({
-        data: { id: CONFIG_ID },
-      });
-    }
-
-    // Try the main update
+    let config: any = null;
     try {
-      await db.platformConfig.update({
-        where: { id: CONFIG_ID },
-        data: updateData,
-      });
-    } catch (updateError) {
-      // If emailNotifications field doesn't exist in DB yet, try without it
-      const errMsg = updateError instanceof Error ? updateError.message : String(updateError);
-      console.error('PlatformConfig update error:', errMsg);
-      
-      if (errMsg.includes('emailNotifications') || errMsg.includes('column')) {
-        // Remove emailNotifications and retry
-        const fallbackData = { ...updateData };
-        delete fallbackData.emailNotifications;
+      const existing = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
+      if (!existing) {
+        try {
+          config = await db.platformConfig.create({
+            data: { id: CONFIG_ID },
+          });
+        } catch (createErr) {
+          console.error('PlatformConfig create error:', createErr);
+          // If table or column missing, try to find existing anyway
+          try {
+            config = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
+          } catch { /* ignore */ }
+        }
+      } else {
+        config = existing;
+      }
+
+      if (config) {
+        // Try the main update
         try {
           await db.platformConfig.update({
             where: { id: CONFIG_ID },
-            data: fallbackData,
+            data: updateData,
           });
-          // Field will be added on next prisma db push
-        } catch (retryError) {
-          console.error('PlatformConfig retry error:', retryError);
-          return NextResponse.json(
-            { error: 'Failed to update platform config. Please run prisma db push to sync schema.', details: errMsg },
-            { status: 500 },
-          );
+        } catch (updateError) {
+          const errMsg = updateError instanceof Error ? updateError.message : String(updateError);
+          console.error('PlatformConfig update error:', errMsg);
+          
+          // Strategy: remove fields one by one until update succeeds
+          const problematicFields: string[] = [];
+          for (const key of Object.keys(updateData)) {
+            try {
+              const testUpdate: Record<string, unknown> = {};
+              for (const k of Object.keys(updateData)) {
+                if (k !== key && !problematicFields.includes(k)) testUpdate[k] = updateData[k];
+              }
+              await db.platformConfig.update({
+                where: { id: CONFIG_ID },
+                data: testUpdate,
+              });
+              break; // success
+            } catch {
+              problematicFields.push(key);
+            }
+          }
+          
+          // Final attempt: update only known-safe fields
+          const safeUpdate: Record<string, unknown> = {};
+          for (const k of Object.keys(updateData)) {
+            if (!problematicFields.includes(k)) safeUpdate[k] = updateData[k];
+          }
+          try {
+            await db.platformConfig.update({
+              where: { id: CONFIG_ID },
+              data: safeUpdate,
+            });
+          } catch (retryError) {
+            console.error('PlatformConfig final retry error:', retryError);
+            return NextResponse.json(
+              { error: 'Failed to update platform config. Run prisma db push on your database.', skippedFields: problematicFields },
+              { status: 500 },
+            );
+          }
         }
-      } else {
-        return NextResponse.json(
-          { error: 'Failed to update platform config', details: errMsg },
-          { status: 500 },
-        );
+        
+        config = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
       }
+    } catch (dbError) {
+      console.error('PlatformConfig DB error:', dbError);
+      return NextResponse.json(
+        { error: 'Database error. Please run prisma db push to sync schema.' },
+        { status: 500 },
+      );
     }
-
-    const config = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
 
     // If defaults changed, update existing basic users who haven't been customized
     if (defaultMaxCategories !== undefined || defaultMaxSavings !== undefined) {

@@ -393,7 +393,7 @@ export function AdminAnnouncements() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px] adm-quick-action"
+            className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px] h-9 px-4 rounded-lg shadow-[0_2px_12px_rgba(3,218,198,0.25)] hover:shadow-[0_4px_20px_rgba(3,218,198,0.35)] transition-all duration-200"
             onClick={() => { resetForm(); setShowCreate(true); }}
           >
             <Plus className="h-4 w-4" /> Create Announcement

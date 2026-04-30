@@ -336,7 +336,7 @@ export function AdminLayout() {
           style={{ background: 'linear-gradient(to right, transparent, rgba(3,218,198,0.15), transparent)' }} />
 
         <div className={cn(
-          'relative flex items-center justify-between px-4 h-14 transition-all duration-300 ease-in-out',
+          'relative flex items-center justify-between px-4 sm:px-6 h-14 transition-all duration-300 ease-in-out',
           sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[240px] xl:pl-[272px]',
         )}>
           <div className="flex items-center gap-3">
@@ -592,7 +592,7 @@ export function AdminLayout() {
         <main className={cn(
           'flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-scroll w-full min-w-0 max-w-full transition-all duration-300 ease-in-out adm-content-card',
           'pb-[76px] lg:pb-8',
-          sidebarCollapsed ? 'lg:ml-[64px]' : 'lg:ml-56 xl:ml-64',
+          sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[232px] xl:ml-[264px]',
         )}>
           <div className="max-w-7xl mx-auto">
             <div key={currentPage} className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">

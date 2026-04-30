@@ -203,7 +203,7 @@ export function AdminInvites() {
           <h2 className="text-xl font-bold text-white/90 adm-section-header">Registration Invites</h2>
           <p className="text-sm text-white/40 mt-1">Generate temporary registration links for new users</p>
         </div>
-        <Button className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px] adm-quick-action"
+        <Button className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px] h-9 px-4 rounded-lg shadow-[0_2px_12px_rgba(3,218,198,0.25)] hover:shadow-[0_4px_20px_rgba(3,218,198,0.35)] transition-all duration-200"
           onClick={() => setShowCreate(true)}>
           <UserPlus className="h-4 w-4" /> Create Invite
         </Button>
