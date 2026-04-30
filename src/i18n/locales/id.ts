@@ -77,6 +77,7 @@ export const translations = {
     showAll: 'Tampilkan Semua',
     showMore: 'Lihat Semua',
     showLess: 'Tampilkan Lebih Sedikit',
+    loadMore: 'Lihat Selebihnya',
     transactionCount: '{count} transaksi',
   },
   kas: {

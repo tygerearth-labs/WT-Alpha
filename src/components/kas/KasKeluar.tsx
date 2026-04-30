@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, TrendingDown, Calendar, ArrowDownRight, CreditCard, Activity, ArrowUp } from 'lucide-react';
+import { Plus, TrendingDown, Calendar, ArrowDownRight, CreditCard, Activity, ArrowUp, ChevronDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TransactionForm } from '@/components/transaction/TransactionForm';
 import { CategoryDialog } from '@/components/transaction/CategoryDialog';
@@ -168,32 +168,46 @@ export function KasKeluar() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilter>('month');
-  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchData = useCallback(async (filter: DateFilter) => {
+  const PAGE_SIZE = 20;
+
+  const buildParams = useCallback((filter: DateFilter, pageNum: number) => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('type', 'expense');
+    searchParams.append('page', pageNum.toString());
+    searchParams.append('pageSize', PAGE_SIZE.toString());
+
+    if (filter === 'month') {
+      const now = new Date();
+      searchParams.append('year', now.getFullYear().toString());
+      searchParams.append('month', (now.getMonth() + 1).toString());
+    } else if (filter === 'today') {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      searchParams.append('startDate', start.toISOString());
+      searchParams.append('endDate', end.toISOString());
+    } else if (filter === 'week') {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      searchParams.append('startDate', start.toISOString());
+      searchParams.append('endDate', end.toISOString());
+    }
+    return searchParams;
+  }, []);
+
+  const fetchData = useCallback(async (filter: DateFilter, pageNum = 1, append = false) => {
     try {
-      const searchParams = new URLSearchParams();
-      searchParams.append('type', 'expense');
+      if (append) setLoadingMore(true);
+      else setIsLoading(true);
 
-      if (filter === 'month') {
-        const now = new Date();
-        searchParams.append('year', now.getFullYear().toString());
-        searchParams.append('month', (now.getMonth() + 1).toString());
-      } else if (filter === 'today') {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        searchParams.append('startDate', start.toISOString());
-        searchParams.append('endDate', end.toISOString());
-      } else if (filter === 'week') {
-        const now = new Date();
-        const dayOfWeek = now.getDay();
-        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
-        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        searchParams.append('startDate', start.toISOString());
-        searchParams.append('endDate', end.toISOString());
-      }
+      const searchParams = buildParams(filter, pageNum);
 
       const [transRes, catRes, savingsRes] = await Promise.all([
         fetch(`/api/transactions?${searchParams.toString()}`),
@@ -206,23 +220,34 @@ export function KasKeluar() {
         const catData = await catRes.json();
         const savingsData = await savingsRes.json();
 
-        const transactions = transData.transactions || [];
-        setTransactions(transactions);
+        const newTransactions = transData.transactions || [];
+        setTransactions(prev => append ? [...prev, ...newTransactions] : newTransactions);
         setServerTotalAmount(transData.totalAmount || 0);
-        setCategories(catData.categories);
-        setSavingsTargets(savingsData.savingsTargets);
+        setHasMore(transData.pagination?.hasMore ?? false);
+        setPage(pageNum);
+        if (!append) {
+          setCategories(catData.categories);
+          setSavingsTargets(savingsData.savingsTargets);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error(t('kas.loadError'));
     } finally {
       setIsLoading(false);
+      setLoadingMore(false);
     }
-  }, [t]);
+  }, [t, buildParams]);
 
   useEffect(() => {
-    fetchData(dateFilter);
+    setPage(1);
+    setHasMore(false);
+    fetchData(dateFilter, 1, false);
   }, [dateFilter, fetchData]);
+
+  const handleLoadMore = () => {
+    fetchData(dateFilter, page + 1, true);
+  };
 
   const handleAddTransaction = async (data: TransactionFormData) => {
     try {
@@ -403,7 +428,7 @@ export function KasKeluar() {
     return <TransactionPageSkeleton />;
   }
 
-  const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 6);
+  const displayedTransactions = transactions;
 
   return (
     <div className="w-full max-w-full px-4 md:px-6 space-y-4 md:space-y-5">
@@ -833,7 +858,7 @@ export function KasKeluar() {
               {FILTERS.map((f) => (
                 <button
                   key={f.key}
-                  onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
+                  onClick={() => { setDateFilter(f.key); setHasMore(false); }}
                   className="text-xs font-semibold px-4 py-1.5 rounded-full shrink-0 transition-all duration-200 hover:scale-105"
                   style={{
                     background: dateFilter === f.key ? `${T.accent}18` : 'rgba(255,255,255,0.04)',
@@ -892,13 +917,15 @@ export function KasKeluar() {
             )}
           </div>
 
-          {transactions.length > 6 && (
+          {hasMore && (
             <button
-              onClick={() => setShowAllTransactions(!showAllTransactions)}
-              className="w-full text-center py-3 text-sm font-medium rounded-xl transition-all hover:scale-[1.01]"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full text-center py-3 text-sm font-medium rounded-xl transition-all hover:scale-[1.01] disabled:opacity-50"
               style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
-              {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}
+              {loadingMore ? <Loader2 className="h-4 w-4 animate-spin inline mr-1.5" /> : <ChevronDown className="h-4 w-4 inline mr-1.5" />}
+              {t('filter.loadMore')}
             </button>
           )}
 
@@ -1029,7 +1056,7 @@ export function KasKeluar() {
               {FILTERS.map((f) => (
                 <button
                   key={f.key}
-                  onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
+                  onClick={() => { setDateFilter(f.key); setHasMore(false); }}
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
                   style={{
                     background: dateFilter === f.key ? `${T.accent}18` : 'rgba(255,255,255,0.04)',
@@ -1052,13 +1079,15 @@ export function KasKeluar() {
             />
           </div>
 
-          {transactions.length > 6 && (
+          {hasMore && (
             <button
-              onClick={() => setShowAllTransactions(!showAllTransactions)}
-              className="w-full text-center py-2.5 text-xs font-medium rounded-xl transition-all"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full text-center py-2.5 text-xs font-medium rounded-xl transition-all disabled:opacity-50"
               style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
-              {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}
+              {loadingMore ? <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1" /> : <ChevronDown className="h-3.5 w-3.5 inline mr-1" />}
+              {t('filter.loadMore')}
             </button>
           )}
         </div>
@@ -1141,7 +1170,7 @@ export function KasKeluar() {
                 {FILTERS.map((f) => (
                   <button
                     key={f.key}
-                    onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
+                    onClick={() => { setDateFilter(f.key); setHasMore(false); }}
                     className="h-8 text-[10px] sm:text-[11px] font-semibold px-3.5 rounded-full shrink-0 transition-all active:scale-95"
                     style={{
                       background: dateFilter === f.key ? `${T.accent}18` : 'transparent',
@@ -1165,13 +1194,15 @@ export function KasKeluar() {
             type="expense"
           />
 
-          {transactions.length > 6 && (
+          {hasMore && (
             <button
-              onClick={() => setShowAllTransactions(!showAllTransactions)}
-              className="w-full text-center py-3 text-[11px] font-semibold rounded-2xl active:scale-[0.98] transition-all"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full text-center py-3 text-[11px] font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50"
               style={{ color: T.primary, background: `${T.primary}08`, border: `1px solid ${T.primary}15` }}
             >
-              {showAllTransactions ? t('filter.showLess') : `${t('filter.showAll')} (${transactions.length})`}
+              {loadingMore ? <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1" /> : <ChevronDown className="h-3.5 w-3.5 inline mr-1" />}
+              {t('filter.loadMore')}
             </button>
           )}
         </div>

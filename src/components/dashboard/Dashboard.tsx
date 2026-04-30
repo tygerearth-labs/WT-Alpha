@@ -968,7 +968,10 @@ export function Dashboard() {
   const { user } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState({ month: 'all', year: 'all' });
+  const [filter, setFilter] = useState(() => {
+    const now = new Date();
+    return { month: String(now.getMonth() + 1), year: String(now.getFullYear()) };
+  });
 
   // Section visibility helper: default to showing all sections if no config
   const isSectionVisible = (key: string): boolean => {

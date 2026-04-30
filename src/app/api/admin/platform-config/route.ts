@@ -17,7 +17,7 @@ const JSON_FIELDS = [
 ] as const;
 
 function validateJsonField(value: unknown, fieldName: string): string | null {
-  if (value === undefined || value === null) return null; // null/undefined is fine
+  if (value === undefined || value === null) return null;
   if (typeof value !== 'string') return `${fieldName} must be a JSON string`;
   try {
     JSON.parse(value);
@@ -36,7 +36,6 @@ export async function GET() {
       where: { id: CONFIG_ID },
     });
 
-    // Create defaults if not exists
     if (!config) {
       config = await db.platformConfig.create({
         data: { id: CONFIG_ID },
@@ -91,73 +90,51 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const config = await db.platformConfig.upsert({
+    // Build update data object — only include fields that are provided
+    const updateData: Record<string, unknown> = {};
+    if (defaultPlan !== undefined) updateData.defaultPlan = defaultPlan;
+    if (defaultMaxCategories !== undefined) updateData.defaultMaxCategories = defaultMaxCategories;
+    if (defaultMaxSavings !== undefined) updateData.defaultMaxSavings = defaultMaxSavings;
+    if (autoSuspendExpired !== undefined) updateData.autoSuspendExpired = autoSuspendExpired;
+    if (basicPlanFeatures !== undefined) updateData.basicPlanFeatures = basicPlanFeatures;
+    if (proPlanFeatures !== undefined) updateData.proPlanFeatures = proPlanFeatures;
+    if (ultimatePlanFeatures !== undefined) updateData.ultimatePlanFeatures = ultimatePlanFeatures;
+    if (basicPlanPrice !== undefined) updateData.basicPlanPrice = basicPlanPrice;
+    if (proPlanPrice !== undefined) updateData.proPlanPrice = proPlanPrice;
+    if (ultimatePlanPrice !== undefined) updateData.ultimatePlanPrice = ultimatePlanPrice;
+    if (basicPlanDiscount !== undefined) updateData.basicPlanDiscount = basicPlanDiscount;
+    if (proPlanDiscount !== undefined) updateData.proPlanDiscount = proPlanDiscount;
+    if (ultimatePlanDiscount !== undefined) updateData.ultimatePlanDiscount = ultimatePlanDiscount;
+    if (basicPlanDiscountLabel !== undefined) updateData.basicPlanDiscountLabel = basicPlanDiscountLabel;
+    if (proPlanDiscountLabel !== undefined) updateData.proPlanDiscountLabel = proPlanDiscountLabel;
+    if (ultimatePlanDiscountLabel !== undefined) updateData.ultimatePlanDiscountLabel = ultimatePlanDiscountLabel;
+    if (basicPurchaseUrl !== undefined) updateData.basicPurchaseUrl = basicPurchaseUrl;
+    if (proPurchaseUrl !== undefined) updateData.proPurchaseUrl = proPurchaseUrl;
+    if (ultimatePurchaseUrl !== undefined) updateData.ultimatePurchaseUrl = ultimatePurchaseUrl;
+    if (trialEnabled !== undefined) updateData.trialEnabled = trialEnabled;
+    if (trialDurationDays !== undefined) updateData.trialDurationDays = trialDurationDays;
+    if (trialPlan !== undefined) updateData.trialPlan = trialPlan;
+    if (whatsappNumber !== undefined) updateData.whatsappNumber = whatsappNumber;
+    if (registrationOpen !== undefined) updateData.registrationOpen = registrationOpen;
+    if (registrationMessage !== undefined) updateData.registrationMessage = registrationMessage;
+    if (availablePlans !== undefined) updateData.availablePlans = availablePlans;
+    if (sectionVisibility !== undefined) updateData.sectionVisibility = sectionVisibility;
+    if (exportEnabled !== undefined) updateData.exportEnabled = exportEnabled;
+    if (landingPageConfig !== undefined) updateData.landingPageConfig = landingPageConfig;
+    if (landingPageStats !== undefined) updateData.landingPageStats = landingPageStats;
+
+    // Ensure the config row exists, then update with all fields
+    // Using separate create + update avoids TypeScript issues with upsert's create type
+    const existing = await db.platformConfig.findUnique({ where: { id: CONFIG_ID } });
+    if (!existing) {
+      await db.platformConfig.create({
+        data: { id: CONFIG_ID },
+      });
+    }
+
+    const config = await db.platformConfig.update({
       where: { id: CONFIG_ID },
-      create: {
-        id: CONFIG_ID,
-        defaultPlan: defaultPlan ?? 'basic',
-        defaultMaxCategories: defaultMaxCategories ?? 10,
-        defaultMaxSavings: defaultMaxSavings ?? 3,
-        autoSuspendExpired: autoSuspendExpired ?? true,
-        basicPlanFeatures: basicPlanFeatures ?? null,
-        proPlanFeatures: proPlanFeatures ?? null,
-        basicPlanPrice: basicPlanPrice ?? 'Gratis',
-        proPlanPrice: proPlanPrice ?? 'Rp 99.000',
-        ultimatePlanPrice: ultimatePlanPrice ?? 'Rp 199.000',
-        ultimatePlanFeatures: ultimatePlanFeatures ?? null,
-        basicPlanDiscount: basicPlanDiscount ?? null,
-        proPlanDiscount: proPlanDiscount ?? null,
-        ultimatePlanDiscount: ultimatePlanDiscount ?? null,
-        basicPlanDiscountLabel: basicPlanDiscountLabel ?? null,
-        proPlanDiscountLabel: proPlanDiscountLabel ?? null,
-        ultimatePlanDiscountLabel: ultimatePlanDiscountLabel ?? null,
-        basicPurchaseUrl: basicPurchaseUrl ?? null,
-        proPurchaseUrl: proPurchaseUrl ?? null,
-        ultimatePurchaseUrl: ultimatePurchaseUrl ?? null,
-        trialEnabled: trialEnabled ?? true,
-        trialDurationDays: trialDurationDays ?? 30,
-        trialPlan: trialPlan ?? 'basic',
-        whatsappNumber: whatsappNumber ?? null,
-        registrationOpen: registrationOpen ?? true,
-        registrationMessage: registrationMessage ?? null,
-        availablePlans: availablePlans ?? '["basic","pro","ultimate"]',
-        sectionVisibility: sectionVisibility ?? null,
-        exportEnabled: exportEnabled ?? null,
-        landingPageConfig: landingPageConfig ?? null,
-        landingPageStats: landingPageStats ?? null,
-      },
-      update: {
-        ...(defaultPlan !== undefined && { defaultPlan }),
-        ...(defaultMaxCategories !== undefined && { defaultMaxCategories }),
-        ...(defaultMaxSavings !== undefined && { defaultMaxSavings }),
-        ...(autoSuspendExpired !== undefined && { autoSuspendExpired }),
-        ...(basicPlanFeatures !== undefined && { basicPlanFeatures }),
-        ...(proPlanFeatures !== undefined && { proPlanFeatures }),
-        ...(basicPlanPrice !== undefined && { basicPlanPrice }),
-        ...(proPlanPrice !== undefined && { proPlanPrice }),
-        ...(ultimatePlanPrice !== undefined && { ultimatePlanPrice }),
-        ...(ultimatePlanFeatures !== undefined && { ultimatePlanFeatures }),
-        ...(basicPlanDiscount !== undefined && { basicPlanDiscount }),
-        ...(proPlanDiscount !== undefined && { proPlanDiscount }),
-        ...(ultimatePlanDiscount !== undefined && { ultimatePlanDiscount }),
-        ...(basicPlanDiscountLabel !== undefined && { basicPlanDiscountLabel }),
-        ...(proPlanDiscountLabel !== undefined && { proPlanDiscountLabel }),
-        ...(ultimatePlanDiscountLabel !== undefined && { ultimatePlanDiscountLabel }),
-        ...(basicPurchaseUrl !== undefined && { basicPurchaseUrl }),
-        ...(proPurchaseUrl !== undefined && { proPurchaseUrl }),
-        ...(ultimatePurchaseUrl !== undefined && { ultimatePurchaseUrl }),
-        ...(trialEnabled !== undefined && { trialEnabled }),
-        ...(trialDurationDays !== undefined && { trialDurationDays }),
-        ...(trialPlan !== undefined && { trialPlan }),
-        ...(whatsappNumber !== undefined && { whatsappNumber }),
-        ...(registrationOpen !== undefined && { registrationOpen }),
-        ...(registrationMessage !== undefined && { registrationMessage }),
-        ...(availablePlans !== undefined && { availablePlans }),
-        ...(sectionVisibility !== undefined && { sectionVisibility }),
-        ...(exportEnabled !== undefined && { exportEnabled }),
-        ...(landingPageConfig !== undefined && { landingPageConfig }),
-        ...(landingPageStats !== undefined && { landingPageStats }),
-      },
+      data: updateData,
     });
 
     // If defaults changed, update existing basic users who haven't been customized
