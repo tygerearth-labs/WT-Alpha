@@ -619,7 +619,7 @@ export function AdminSettings() {
      TAB 1: UMUM (General)
      ═══════════════════════════════════════════════════════════════ */
   const TabUmum = () => (
-    <motion.div key="umum" className="space-y-6">
+    <div className="space-y-6">
       {/* Profile Card */}
       <GlassCard>
         <SectionHeader icon={User} title="Profile" color="#03DAC6" badge="Admin" />
@@ -714,14 +714,14 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-    </motion.div>
+    </div>
   );
 
   /* ═══════════════════════════════════════════════════════════════
      TAB 2: PLATFORM
      ═══════════════════════════════════════════════════════════════ */
   const TabPlatform = () => (
-    <motion.div key="platform" className="space-y-6">
+    <div className="space-y-6">
       <GlassCard>
         <SectionHeader icon={Globe} title="Platform Settings" color="#FFD700" badge="Configuration" />
         <CardContent className="pt-0 space-y-5">
@@ -843,7 +843,7 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-    </motion.div>
+    </div>
   );
 
   /* ═══════════════════════════════════════════════════════════════
@@ -932,7 +932,7 @@ export function AdminSettings() {
   };
 
   const TabPricing = () => (
-    <motion.div key="pricing" className="space-y-6">
+    <div className="space-y-6">
       <GlassCard>
         <SectionHeader icon={Crown} title="Plan Pricing & Features" color="#FFD700" badge="Pricing" />
         <CardContent className="pt-0">
@@ -1019,14 +1019,14 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-    </motion.div>
+    </div>
   );
 
   /* ═══════════════════════════════════════════════════════════════
      TAB 4: LANDING PAGE
      ═══════════════════════════════════════════════════════════════ */
   const TabLanding = () => (
-    <motion.div key="landing" className="space-y-6">
+    <div className="space-y-6">
       <GlassCard>
         <SectionHeader icon={Layout} title="Landing Page Sections" color="#03DAC6" badge="Visibility" />
         <CardContent className="pt-0 space-y-3">
@@ -1132,7 +1132,7 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-    </motion.div>
+    </div>
   );
 
   /* ═══════════════════════════════════════════════════════════════
@@ -1150,7 +1150,7 @@ export function AdminSettings() {
   ];
 
   const TabDashboard = () => (
-    <motion.div key="dashboard" className="space-y-6">
+    <div className="space-y-6">
       <GlassCard>
         <SectionHeader icon={BarChart3} title="Dashboard Section Visibility & Export" color="#BB86FC" badge="Per Plan" />
         <CardContent className="pt-0 space-y-5">
@@ -1237,14 +1237,14 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-    </motion.div>
+    </div>
   );
 
   /* ═══════════════════════════════════════════════════════════════
      TAB 6: SISTEM
      ═══════════════════════════════════════════════════════════════ */
   const TabSistem = () => (
-    <motion.div key="sistem" className="space-y-6">
+    <div className="space-y-6">
       {/* System Health */}
       <GlassCard>
         <SectionHeader icon={Heart} title="System Information" color="#03DAC6" />
@@ -1333,7 +1333,7 @@ export function AdminSettings() {
         </CardContent>
       </GlassCard>
 
-    </motion.div>
+    </div>
   );
 
   /* ── Tab content map ── */
@@ -1369,10 +1369,8 @@ export function AdminSettings() {
 
       {/* Tab Bar */}
       <div className="adm-tab-bar adm-scroll-mobile relative flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-6 overflow-x-auto">
-        <motion.div
-          layout
-          transition={{ type: 'spring' as const, stiffness: 350, damping: 30 }}
-          className="absolute top-1 bottom-1 rounded-lg z-0"
+        <div
+          className="absolute top-1 bottom-1 rounded-lg z-0 transition-all duration-300 ease-out"
           style={{
             width: `calc((100% - 4px) / ${TABS.length})`,
             left: `calc(${TABS.findIndex(t => t.id === activeTab)} * ((100% - 4px) / ${TABS.length}) + 2px)`,
@@ -1399,8 +1397,7 @@ export function AdminSettings() {
         })}
       </div>
 
-      {/* Tab Content — NO AnimatePresence here to prevent input focus loss on mobile.
-          Each tab's motion.div handles its own enter animation via key change. */}
+      {/* Tab Content — plain div wrappers (no framer-motion) to prevent input focus loss on mobile. */}
       <div className="adm-scroll-mobile flex-1 min-h-0 overflow-y-auto pb-4">
         {tabContent[activeTab]()}
       </div>
