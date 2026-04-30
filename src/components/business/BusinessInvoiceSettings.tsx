@@ -357,14 +357,31 @@ export default function BusinessInvoiceSettings() {
           };
           setForm(loaded);
           originalRef.current = loaded;
+          // Load extra settings that aren't part of InvoiceSettingsForm
+          if (data.ppnEnabled !== undefined) { setPpnEnabled(data.ppnEnabled); originalExtraRef.current.ppnEnabled = data.ppnEnabled; }
+          if (data.ppnPercentage !== undefined) { setPpnPercentage(data.ppnPercentage); originalExtraRef.current.ppnPercentage = data.ppnPercentage; }
+          if (data.defaultDueDays !== undefined) { setDefaultDueDays(data.defaultDueDays); originalExtraRef.current.defaultDueDays = data.defaultDueDays; }
+          if (data.fontSize !== undefined) { setFontSize(data.fontSize); originalExtraRef.current.fontSize = data.fontSize; }
         }
       })
       .catch(() => { setForm(DEFAULT_FORM); originalRef.current = DEFAULT_FORM; })
       .finally(() => setLoading(false));
   }, [businessId]);
 
+  // Track original extra settings for dirty detection
+  const originalExtraRef = useRef({ ppnEnabled: true, ppnPercentage: '11', defaultDueDays: '30', fontSize: 'medium' as string });
+
   useEffect(() => { if (businessId) fetchSettings(); else setLoading(false); }, [businessId, fetchSettings]);
-  useEffect(() => { setHasChanges(JSON.stringify(form) !== JSON.stringify(originalRef.current)); }, [form]);
+  useEffect(() => {
+    const formChanged = JSON.stringify(form) !== JSON.stringify(originalRef.current);
+    const extraChanged = (
+      ppnEnabled !== originalExtraRef.current.ppnEnabled ||
+      ppnPercentage !== originalExtraRef.current.ppnPercentage ||
+      defaultDueDays !== originalExtraRef.current.defaultDueDays ||
+      fontSize !== originalExtraRef.current.fontSize
+    );
+    setHasChanges(formChanged || extraChanged);
+  }, [form, ppnEnabled, ppnPercentage, defaultDueDays, fontSize]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'signatureUrl') => {
     const file = e.target.files?.[0];
@@ -390,10 +407,12 @@ export default function BusinessInvoiceSettings() {
           businessPhone: form.phone, businessEmail: form.email, businessWebsite: form.website, bankName: form.bankName,
           bankAccount: form.accountNumber, bankHolder: form.accountHolderName, footerText: form.footerText, termsText: form.paymentTerms,
           darkMode: form.darkMode,
+          ppnEnabled, ppnPercentage, defaultDueDays, fontSize,
         }),
       });
       if (!res.ok) throw new Error();
       originalRef.current = { ...form };
+      originalExtraRef.current = { ppnEnabled, ppnPercentage, defaultDueDays, fontSize };
       setHasChanges(false);
       toast.success(t('biz.businessUpdated'));
     } catch { toast.error(t('common.error')); } finally { setSaving(false); }
@@ -417,28 +436,14 @@ export default function BusinessInvoiceSettings() {
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
         {/* ═══ Header ═══ */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.primary, 15) }}>
-              <Settings className="h-4 w-4" style={{ color: c.primary }} />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-foreground">Invoice Settings</h2>
-              <p className="text-[10px] text-muted-foreground">Template, branding & pembayaran</p>
-            </div>
+        <motion.div variants={itemVariants} className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.primary, 15) }}>
+            <Settings className="h-4 w-4" style={{ color: c.primary }} />
           </div>
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-            <Button
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-              className={cn('rounded-lg transition-all', hasChanges ? 'shadow-lg hover:opacity-90' : 'bg-muted/40 text-muted-foreground/40 hover:bg-muted/50 shadow-none')}
-              style={hasChanges ? { backgroundColor: c.primary, color: '#000' } : {}}
-            >
-              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
-              {t('common.save')}
-              {hasChanges && <span className="ml-1.5 h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: c.secondary }} />}
-            </Button>
-          </motion.div>
+          <div>
+            <h2 className="text-sm font-bold text-foreground">Invoice Settings</h2>
+            <p className="text-[10px] text-muted-foreground">Template, branding & pembayaran</p>
+          </div>
         </motion.div>
 
         {/* ═══ Completion Summary Row ═══ */}
@@ -804,6 +809,53 @@ export default function BusinessInvoiceSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ═══ Floating Save Button ═══ */}
+      <AnimatePresence>
+        {(hasChanges || saving) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
+          >
+            {saving && (
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="px-3 py-1.5 rounded-lg border shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+                style={{ backgroundColor: alpha(c.primary, 8), borderColor: alpha(c.primary, 20) }}
+              >
+                <span className="text-[11px] font-medium" style={{ color: c.primary }}>Menyimpan...</span>
+              </motion.div>
+            )}
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={handleSave}
+              disabled={saving || !hasChanges}
+              className={cn(
+                'relative flex items-center gap-2 h-12 px-6 rounded-2xl font-semibold text-sm shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 backdrop-blur-sm',
+                saving
+                  ? 'opacity-70 cursor-wait'
+                  : 'hover:shadow-[0_8px_40px_rgba(0,0,0,0.5)] cursor-pointer',
+              )}
+              style={{ backgroundColor: c.primary, color: '#000' }}
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{saving ? 'Menyimpan...' : t('common.save')}</span>
+              {!saving && hasChanges && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full animate-pulse" style={{ backgroundColor: c.secondary, border: '2px solid var(--background)' }} />
+              )}
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

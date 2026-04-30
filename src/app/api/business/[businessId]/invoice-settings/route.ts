@@ -25,6 +25,11 @@ const DEFAULT_SETTINGS = {
   bankName: null,
   bankAccount: null,
   bankHolder: null,
+  darkMode: true,
+  ppnEnabled: true,
+  ppnPercentage: '11',
+  defaultDueDays: '30',
+  fontSize: 'medium',
 };
 
 export async function GET(
@@ -103,6 +108,11 @@ export async function POST(
       bankName,
       bankAccount,
       bankHolder,
+      darkMode,
+      ppnEnabled,
+      ppnPercentage,
+      defaultDueDays,
+      fontSize,
     } = body;
 
     // Build the data object, only including fields that were explicitly provided
@@ -123,6 +133,11 @@ export async function POST(
     if (bankName !== undefined) data.bankName = bankName;
     if (bankAccount !== undefined) data.bankAccount = bankAccount;
     if (bankHolder !== undefined) data.bankHolder = bankHolder;
+    if (darkMode !== undefined) data.darkMode = darkMode;
+    if (ppnEnabled !== undefined) data.ppnEnabled = ppnEnabled;
+    if (ppnPercentage !== undefined) data.ppnPercentage = ppnPercentage;
+    if (defaultDueDays !== undefined) data.defaultDueDays = defaultDueDays;
+    if (fontSize !== undefined) data.fontSize = fontSize;
 
     const settings = await db.invoiceSettings.upsert({
       where: { businessId },
@@ -188,6 +203,11 @@ export async function PUT(
       bankName,
       bankAccount,
       bankHolder,
+      darkMode,
+      ppnEnabled,
+      ppnPercentage,
+      defaultDueDays,
+      fontSize,
     } = body;
 
     // Build the update object, only including fields that were explicitly provided
@@ -208,6 +228,11 @@ export async function PUT(
     if (bankName !== undefined) updateData.bankName = bankName;
     if (bankAccount !== undefined) updateData.bankAccount = bankAccount;
     if (bankHolder !== undefined) updateData.bankHolder = bankHolder;
+    if (darkMode !== undefined) updateData.darkMode = darkMode;
+    if (ppnEnabled !== undefined) updateData.ppnEnabled = ppnEnabled;
+    if (ppnPercentage !== undefined) updateData.ppnPercentage = ppnPercentage;
+    if (defaultDueDays !== undefined) updateData.defaultDueDays = defaultDueDays;
+    if (fontSize !== undefined) updateData.fontSize = fontSize;
 
     const settings = await db.invoiceSettings.update({
       where: { businessId },

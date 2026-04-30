@@ -25,7 +25,6 @@ import {
 import {
   User,
   Palette,
-  Monitor,
   Sun,
   Sparkles,
   Shield,
@@ -33,27 +32,29 @@ import {
   RotateCcw,
   AlertTriangle,
   Check,
-  ChevronRight,
   Globe,
-  Heart,
   Info,
   Mail,
   BellRing,
   BarChart3,
   Crown,
-  Gift,
-  Timer,
   Copy,
   MessageCircle,
   Lock,
   Unlock,
-  Phone,
   Settings,
   Layout,
   Server,
   Loader2,
+  Save,
+  Phone,
+  Timer,
+  Gift,
   Eye,
+  ChevronRight,
   RefreshCw,
+  Heart,
+  Monitor,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -332,13 +333,12 @@ export function AdminSettings() {
   }, [configLoaded, currentValues]);
 
   /* ═══════════════════════════════════════════════════════════════
-     AUTO-SAVE — SINGLE unified system, no race conditions
+     SAVE SYSTEM — Manual save with floating button
      ═══════════════════════════════════════════════════════════════ */
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
 
   const doSave = useCallback(async (toastMessage?: string) => {
-    if (isSavingRef.current) return; // prevent concurrent saves
+    if (isSavingRef.current) return;
     isSavingRef.current = true;
     setSaveStatus('saving');
     try {
@@ -405,42 +405,21 @@ export function AdminSettings() {
     emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
   ]);
 
-  const doSaveRef = useRef(doSave);
-  doSaveRef.current = doSave;
-
-  /* ── Schedule auto-save (debounced, single entry point) ── */
-  const scheduleAutoSave = useCallback((delay = 800) => {
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(() => {
-      doSaveRef.current();
-    }, delay);
-  }, []);
-
-  /* ── Unified auto-save effect: triggers on ANY form change ── */
-  useEffect(() => {
-    if (!configLoaded || !hasChanges) return;
-    scheduleAutoSave(1000);
-    return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    };
-  }, [configLoaded, hasChanges, currentValues, scheduleAutoSave]);
-
-  /* ── Toggle handler — sets state, unified effect handles save ── */
-  const handleToggleWithAutoSave = useCallback((setter: (v: boolean) => void, value: boolean) => {
-    setter(value);
-  }, []);
-
-  /* ── Input handler — sets state, unified effect handles save ── */
-  const handleInputWithAutoSave = useCallback((setter: (v: string) => void, value: string) => {
-    setter(value);
-  }, []);
-
-  /* ── Manual save (button click) ── */
+  /* ── Manual save (floating button click) ── */
   const handleSave = useCallback(async () => {
-    if (!hasChanges) return;
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    if (!hasChanges || isSavingRef.current) return;
     await doSave();
   }, [hasChanges, doSave]);
+
+  /* ── Toggle handler — just sets state, floating save button handles save ── */
+  const handleToggle = useCallback((setter: (v: boolean) => void, value: boolean) => {
+    setter(value);
+  }, []);
+
+  /* ── Input handler — just sets state, floating save button handles save ── */
+  const handleInput = useCallback((setter: (v: string) => void, value: string) => {
+    setter(value);
+  }, []);
 
   /* ── Fetch system health ── */
   useEffect(() => {
@@ -600,7 +579,6 @@ export function AdminSettings() {
   };
 
   const handleSyncPlanLimits = async () => {
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     await doSave('Plan limits synced successfully');
   };
 
@@ -693,35 +671,35 @@ export function AdminSettings() {
       <GlassCard>
         <SectionHeader icon={Mail} title={t('admin.settings.emailNotifications')} color="#03DAC6" badge="Alerts" />
         <CardContent className="pt-0 space-y-3">
-          <p className="text-[10px] text-white/25 mb-1">Configure which email notifications the admin receives. Changes are saved automatically.</p>
+          <p className="text-[10px] text-white/25 mb-1">Configure which email notifications the admin receives. Click Save to apply changes.</p>
           <ToggleRow
             icon={User} label="New User Registration" description="Receive an email when a new user joins the platform"
             checked={emailNotifNewUser}
-            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifNewUser, v)}
+            onCheckedChange={(v) => handleToggle(setEmailNotifNewUser, v)}
             color="#03DAC6"
           />
           <ToggleRow
             icon={AlertTriangle} label="Subscription Expiry Warnings" description="Get alerts 7 days before a user's Pro plan expires"
             checked={emailNotifExpiry}
-            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifExpiry, v)}
+            onCheckedChange={(v) => handleToggle(setEmailNotifExpiry, v)}
             color="#FFD700"
           />
           <ToggleRow
             icon={BellRing} label="Invite Token Usage Alerts" description="Notify when an invite token is used to register"
             checked={emailNotifInviteUsage}
-            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifInviteUsage, v)}
+            onCheckedChange={(v) => handleToggle(setEmailNotifInviteUsage, v)}
             color="#BB86FC"
           />
           <ToggleRow
             icon={BarChart3} label="Daily Activity Summary" description="Receive a daily digest of platform activity and metrics"
             checked={emailNotifDailySummary}
-            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifDailySummary, v)}
+            onCheckedChange={(v) => handleToggle(setEmailNotifDailySummary, v)}
             color="#CF6679"
           />
-          {isSaving && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10">
-              <Loader2 className="h-3 w-3 animate-spin text-[#03DAC6]" />
-              <span className="text-[11px] text-[#03DAC6]/70">Menyimpan perubahan notifikasi...</span>
+          {hasChanges && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FFD700]/[0.04] border border-[#FFD700]/10">
+              <AlertTriangle className="h-3 w-3 text-[#FFD700]" />
+              <span className="text-[11px] text-[#FFD700]/70">Ada perubahan belum disimpan</span>
             </div>
           )}
         </CardContent>
@@ -782,7 +760,7 @@ export function AdminSettings() {
             icon={AlertTriangle} label="Auto-Suspend Expired Subscriptions"
             description="Automatically downgrade users when their Pro subscription expires"
             checked={autoSuspend}
-            onCheckedChange={(v) => handleToggleWithAutoSave(setAutoSuspend, v)}
+            onCheckedChange={(v) => handleToggle(setAutoSuspend, v)}
             color="#FFD700"
           />
         </CardContent>
@@ -802,7 +780,7 @@ export function AdminSettings() {
                   <p className="text-[10px] text-white/30 mt-0.5 truncate">{registrationOpen ? 'New users can register through the sign-up form' : 'Registration is closed'}</p>
                 </div>
               </div>
-              <AnimatedSwitch checked={registrationOpen} onCheckedChange={(v) => handleToggleWithAutoSave(setRegistrationOpen, v)} activeColor={registrationOpen ? '#03DAC6' : '#CF6679'} />
+              <AnimatedSwitch checked={registrationOpen} onCheckedChange={(v) => handleToggle(setRegistrationOpen, v)} activeColor={registrationOpen ? '#03DAC6' : '#CF6679'} />
             </div>
             {!registrationOpen && (
               <div className="space-y-2 pt-2 border-t border-white/[0.04]">
@@ -1002,7 +980,7 @@ export function AdminSettings() {
             icon={Gift} label="Free Trial for New Users"
             description="Give new registrants a trial subscription without an invite"
             checked={trialEnabled}
-            onCheckedChange={(v) => handleToggleWithAutoSave(setTrialEnabled, v)}
+            onCheckedChange={(v) => handleToggle(setTrialEnabled, v)}
             color="#03DAC6"
           />
           {trialEnabled && (
@@ -1074,7 +1052,7 @@ export function AdminSettings() {
                 label={item.label}
                 description={item.desc}
                 checked={landingPageConfig[item.key]}
-                onCheckedChange={(val) => handleToggleWithAutoSave((v) => setLandingPageConfig((prev) => ({ ...prev, [item.key]: v })), val)}
+                onCheckedChange={(val) => handleToggle((v) => setLandingPageConfig((prev) => ({ ...prev, [item.key]: v })), val)}
                 color={item.color}
               />
             ))}
@@ -1204,7 +1182,7 @@ export function AdminSettings() {
                       label={section.label}
                       description=""
                       checked={planVis[section.key] ?? true}
-                      onCheckedChange={(val) => handleToggleWithAutoSave((v: boolean) => setSectionVisibility(prev => ({ ...prev, [plan]: { ...prev[plan], [section.key]: v } })), val)}
+                      onCheckedChange={(val) => handleToggle((v: boolean) => setSectionVisibility(prev => ({ ...prev, [plan]: { ...prev[plan], [section.key]: v } })), val)}
                       color={planColor}
                     />
                   ))}
@@ -1216,13 +1194,13 @@ export function AdminSettings() {
                     <ToggleRow
                       icon={Mail} label="Export PDF" description=""
                       checked={planExp.pdf ?? false}
-                      onCheckedChange={(val) => handleToggleWithAutoSave((v: boolean) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], pdf: v } })), val)}
+                      onCheckedChange={(val) => handleToggle((v: boolean) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], pdf: v } })), val)}
                       color="#CF6679"
                     />
                     <ToggleRow
                       icon={Layout} label="Export Excel" description=""
                       checked={planExp.excel ?? false}
-                      onCheckedChange={(val) => handleToggleWithAutoSave((v: boolean) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], excel: v } })), val)}
+                      onCheckedChange={(val) => handleToggle((v: boolean) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], excel: v } })), val)}
                       color="#03DAC6"
                     />
                   </div>
@@ -1434,63 +1412,76 @@ export function AdminSettings() {
         </AnimatePresence>
       </div>
 
-      {/* Auto-save Status Indicator */}
-      <div className="flex items-center justify-center py-3 mt-auto">
-        <AnimatePresence mode="wait">
-          {isSaving && (
-            <motion.div
-              key="saving"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#03DAC6]/[0.06] border border-[#03DAC6]/15"
+      {/* ═══ Floating Save Button ═══ */}
+      <AnimatePresence>
+        {(hasChanges || isSaving || isSuccess || saveStatus === 'error') && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
+          >
+            {/* Status label */}
+            {isSaving && (
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="px-3 py-1.5 rounded-lg bg-[#03DAC6]/[0.06] border border-[#03DAC6]/15 shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+              >
+                <span className="text-[11px] font-medium text-[#03DAC6]/80">Menyimpan...</span>
+              </motion.div>
+            )}
+            {isSuccess && !isSaving && (
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="px-3 py-1.5 rounded-lg bg-emerald-500/[0.08] border border-emerald-500/15 shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+              >
+                <span className="text-[11px] font-medium text-emerald-400/80">Berhasil disimpan!</span>
+              </motion.div>
+            )}
+            {saveStatus === 'error' && !isSaving && (
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="px-3 py-1.5 rounded-lg bg-red-500/[0.08] border border-red-500/15 shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
+              >
+                <span className="text-[11px] font-medium text-red-400/80">Gagal menyimpan</span>
+              </motion.div>
+            )}
+            {/* Save Button */}
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={handleSave}
+              disabled={isSaving || (!hasChanges && saveStatus !== 'error')}
+              className={cn(
+                'relative flex items-center gap-2 h-12 px-6 rounded-2xl font-semibold text-sm shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 backdrop-blur-sm',
+                isSaving
+                  ? 'bg-[#03DAC6]/20 border border-[#03DAC6]/30 text-[#03DAC6] cursor-wait'
+                  : saveStatus === 'error'
+                  ? 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 cursor-pointer'
+                  : 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-black hover:shadow-[0_8px_40px_rgba(3,218,198,0.3)] cursor-pointer',
+              )}
             >
-              <Loader2 className="h-3 w-3 animate-spin text-[#03DAC6]" />
-              <span className="text-[11px] font-medium text-[#03DAC6]/70">Menyimpan...</span>
-            </motion.div>
-          )}
-          {isSuccess && !isSaving && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/[0.08] border border-emerald-500/15"
-            >
-              <Check className="h-3 w-3 text-emerald-400" />
-              <span className="text-[11px] font-medium text-emerald-400/80">Tersimpan otomatis</span>
-            </motion.div>
-          )}
-          {saveStatus === 'error' && !isSaving && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/[0.08] border border-red-500/15"
-            >
-              <AlertTriangle className="h-3 w-3 text-red-400" />
-              <span className="text-[11px] font-medium text-red-400/80">Gagal menyimpan</span>
-              <button onClick={handleSave} className="ml-1 text-[10px] font-semibold text-red-400 underline hover:text-red-300">Coba lagi</button>
-            </motion.div>
-          )}
-          {isIdle && !hasChanges && !isSaving && (
-            <motion.div
-              key="idle"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center gap-1.5 text-[10px] text-white/15"
-            >
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-50" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500/50" />
-              </span>
-              Auto-save aktif
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : saveStatus === 'error' ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : isSuccess ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{isSaving ? 'Menyimpan...' : saveStatus === 'error' ? 'Coba Lagi' : isSuccess ? 'Tersimpan!' : 'Simpan Perubahan'}</span>
+              {!isSaving && hasChanges && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#FFD700] border-2 border-[#0D0D0D] animate-pulse" />
+              )}
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Clear Logs Dialog */}
       <Dialog open={showClearLogsDialog} onOpenChange={setShowClearLogsDialog}>

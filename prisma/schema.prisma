@@ -581,6 +581,10 @@ model InvoiceSettings {
   bankAccount   String?                      // bank account number
   bankHolder    String?                      // account holder name
   darkMode      Boolean  @default(true)       // dark/light theme for PDF
+  ppnEnabled    Boolean  @default(true)       // PPN/tax toggle
+  ppnPercentage String   @default("11")      // PPN percentage
+  defaultDueDays String  @default("30")      // default invoice due days
+  fontSize      String   @default("medium")  // invoice font size: small, medium, large
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

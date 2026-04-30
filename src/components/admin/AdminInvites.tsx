@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -203,10 +204,17 @@ export function AdminInvites() {
           <h2 className="text-xl font-bold text-white/90 adm-section-header">Registration Invites</h2>
           <p className="text-sm text-white/40 mt-1">Generate temporary registration links for new users</p>
         </div>
-        <Button className="gap-2 bg-[#03DAC6] text-black font-semibold hover:bg-[#03DAC6]/90 text-[12px] h-9 px-4 rounded-lg shadow-[0_2px_12px_rgba(3,218,198,0.25)] hover:shadow-[0_4px_20px_rgba(3,218,198,0.35)] transition-all duration-200"
-          onClick={() => setShowCreate(true)}>
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowCreate(true)}
+          className="inline-flex items-center gap-2 text-black font-semibold text-[12px] h-9 px-4 rounded-lg transition-all duration-200"
+          style={{ backgroundColor: '#03DAC6', boxShadow: '0 2px 12px rgba(3,218,198,0.25)' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(3,218,198,0.9)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(3,218,198,0.35)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#03DAC6'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(3,218,198,0.25)'; }}
+        >
           <UserPlus className="h-4 w-4" /> Create Invite
-        </Button>
+        </motion.button>
       </div>
 
       {/* Quick Stats */}
