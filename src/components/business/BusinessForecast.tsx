@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  LineChart,
   AreaChart,
   Area,
   Line,
@@ -207,17 +206,31 @@ function StatCard({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2, scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 400, damping: 20, delay }}
+      className="relative"
     >
-      <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
-        <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})` }} />
-        <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(iconColor, 6)}, transparent)` }}>
+      {/* Ambient glow behind card */}
+      <div
+        className="absolute -inset-1 rounded-2xl blur-3xl opacity-[0.05] pointer-events-none"
+        style={{ background: `radial-gradient(ellipse at 30% 20%, ${gradientFrom}, transparent 70%)` }}
+      />
+      <Card className="relative rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] transition-all duration-300 hover:border-white/[0.14]">
+        <CardContent className="p-4">
           <div className="flex items-center gap-1.5 mb-2">
-            <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(iconColor, 10) }}>
+            <div
+              className="h-7 w-7 rounded-lg flex items-center justify-center backdrop-blur-sm"
+              style={{ background: alpha(iconColor, 12), border: `1px solid ${alpha(iconColor, 15)}` }}
+            >
               <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
             </div>
             <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>{label}</span>
           </div>
-          <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: iconColor }}>
+          <p
+            className="text-base sm:text-lg font-bold tabular-nums"
+            style={{
+              color: iconColor,
+              textShadow: `0 0 20px ${alpha(iconColor, 25)}`,
+            }}
+          >
             {value}
           </p>
           {subValue && (
@@ -290,7 +303,11 @@ export default function BusinessForecast() {
   const chartData = data?.chartData ?? [];
 
   return (
-    <div className="space-y-3">
+    <div className="relative space-y-3">
+      {/* ── Ambient background orbs ── */}
+      <div className="absolute -top-20 -left-20 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${alpha(c.primary, 3)}, transparent 70%)`, filter: 'blur(120px)' }} />
+      <div className="absolute top-1/3 -right-20 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${alpha(c.secondary, 3)}, transparent 70%)`, filter: 'blur(120px)' }} />
+      <div className="absolute -bottom-20 left-1/3 w-[450px] h-[450px] rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${alpha(c.warning, 2)}, transparent 70%)`, filter: 'blur(120px)' }} />
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2.5">
@@ -299,7 +316,9 @@ export default function BusinessForecast() {
             <BarChart3 className="h-4 w-4" style={{ color: c.primary }} />
           </div>
           <div>
-            <h2 className="text-sm font-bold" style={{ color: c.foreground }}>Proyeksi Arus Kas</h2>
+            <h2 className="text-sm font-bold bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
+            Proyeksi Arus Kas
+          </h2>
             <p className="text-[10px]" style={{ color: c.muted }}>Cash Flow Forecast</p>
           </div>
         </div>
@@ -329,8 +348,8 @@ export default function BusinessForecast() {
 
       {/* ── Info Banner ── */}
       {data && (
-        <div className="flex items-start gap-2 p-3 rounded-xl"
-          style={{ background: alpha(c.primary, 5), border: `1px solid ${alpha(c.primary, 10)}` }}>
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-white/[0.02] backdrop-blur-sm"
+          style={{ border: `1px solid ${alpha(c.primary, 10)}` }}>
           <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: alpha(c.primary, 60) }} />
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <p className="text-[11px] leading-relaxed" style={{ color: alpha(c.foreground, 70) }}>
@@ -441,14 +460,20 @@ export default function BusinessForecast() {
       {loading ? (
         <Skeleton className="h-72 sm:h-80 rounded-xl" />
       ) : chartData.length > 0 ? (
-        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-4 sm:p-5">
+        <Card className="rounded-xl bg-[#0a0a0f] border border-white/[0.06] overflow-hidden relative">
+          {/* Gradient mesh background */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-0 w-1/2 h-full rounded-full" style={{ background: `radial-gradient(ellipse at 20% 30%, ${alpha(c.primary, 4)}, transparent 60%)` }} />
+            <div className="absolute bottom-0 right-0 w-1/2 h-full rounded-full" style={{ background: `radial-gradient(ellipse at 80% 70%, ${alpha(c.secondary, 3)}, transparent 60%)` }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/3 h-1/2 rounded-full" style={{ background: `radial-gradient(ellipse at 50% 50%, ${alpha(c.warning, 2)}, transparent 50%)` }} />
+          </div>
+          <CardContent className="relative p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
                 style={{ backgroundColor: alpha(c.primary, 8) }}>
                 <BarChart3 className="h-3 w-3" style={{ color: c.primary }} />
               </div>
-              <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
+              <h3 className="text-xs font-semibold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
                 Arus Kas — Riwayat &amp; Proyeksi
               </h3>
             </div>
@@ -607,14 +632,14 @@ export default function BusinessForecast() {
           ))}
         </div>
       ) : data && data.months.length > 0 ? (
-        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
+        <Card className="rounded-xl bg-white/[0.02] border border-white/[0.05]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
                 style={{ backgroundColor: alpha(c.warning, 10) }}>
                 <CircleDollarSign className="h-3 w-3" style={{ color: c.warning }} />
               </div>
-              <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
+              <h3 className="text-xs font-semibold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
                 Rincian Proyeksi Bulanan
               </h3>
               <Badge className="ml-auto text-[9px] font-medium rounded-full px-1.5 py-0"
@@ -636,11 +661,11 @@ export default function BusinessForecast() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: idx * 0.03 }}
-                    className="p-3 rounded-xl transition-all duration-200 hover:shadow-md"
+                    className="p-3 rounded-xl transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
                     style={{
-                      background: m.isForecast ? alpha(c.primary, 4) : alpha(c.muted, 3),
-                      border: `1px solid ${m.isForecast ? alpha(c.primary, 10) : alpha(c.border, 0.5)}`,
-                      borderLeft: `3px solid ${isPositive ? c.secondary : c.destructive}`,
+                      background: m.isForecast ? alpha(c.primary, 4) : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${m.isForecast ? alpha(c.primary, 10) : 'rgba(255,255,255,0.05)'}`,
+                      borderLeft: `2px solid ${isPositive ? c.secondary : c.destructive}`,
                     }}
                     whileHover={{ y: -1 }}
                   >
@@ -731,14 +756,14 @@ export default function BusinessForecast() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Expense Categories */}
           {expenseCategories.length > 0 && (
-            <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
+            <Card className="rounded-xl bg-white/[0.03] border border-white/[0.06]">
               <CardContent className="p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center"
                     style={{ backgroundColor: alpha(c.destructive, 10) }}>
                     <TrendingDown className="h-3 w-3" style={{ color: c.destructive }} />
                   </div>
-                  <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
+                  <h3 className="text-xs font-semibold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
                     Kategori Pengeluaran Teratas
                   </h3>
                 </div>
@@ -756,10 +781,10 @@ export default function BusinessForecast() {
                           </span>
                         </div>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.destructive, 8) }}>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.destructive, 6) }}>
                         <motion.div
                           className="h-full rounded-full"
-                          style={{ backgroundColor: c.destructive }}
+                          style={{ background: `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 60)})`, boxShadow: `0 0 8px ${alpha(c.destructive, 30)}` }}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(cat.percentage, 100)}%` }}
                           transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -774,14 +799,14 @@ export default function BusinessForecast() {
 
           {/* Income Categories */}
           {incomeCategories.length > 0 && (
-            <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
+            <Card className="rounded-xl bg-white/[0.03] border border-white/[0.06]">
               <CardContent className="p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-6 w-6 rounded-md flex items-center justify-center"
                     style={{ backgroundColor: alpha(c.secondary, 10) }}>
                     <TrendingUp className="h-3 w-3" style={{ color: c.secondary }} />
                   </div>
-                  <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
+                  <h3 className="text-xs font-semibold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
                     Kategori Pemasukan Teratas
                   </h3>
                 </div>
@@ -799,10 +824,10 @@ export default function BusinessForecast() {
                           </span>
                         </div>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.secondary, 8) }}>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.secondary, 6) }}>
                         <motion.div
                           className="h-full rounded-full"
-                          style={{ backgroundColor: c.secondary }}
+                          style={{ background: `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 60)})`, boxShadow: `0 0 8px ${alpha(c.secondary, 30)}` }}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(cat.percentage, 100)}%` }}
                           transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -821,14 +846,14 @@ export default function BusinessForecast() {
       {loading ? (
         <Skeleton className="h-20 rounded-xl" />
       ) : data ? (
-        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
+        <Card className="rounded-xl bg-white/[0.02] border border-white/[0.05]">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md flex items-center justify-center"
                 style={{ backgroundColor: alpha(c.primary, 8) }}>
                 <TrendingUp className="h-3 w-3" style={{ color: c.primary }} />
               </div>
-              <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
+              <h3 className="text-xs font-semibold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
                 Indikator Tren
               </h3>
             </div>
@@ -838,10 +863,13 @@ export default function BusinessForecast() {
               <motion.div
                 whileHover={{ y: -2, scale: 1.01 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                className="relative"
               >
-                <div className="p-3 rounded-xl" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 6)}, transparent)`, border: `1px solid ${alpha(c.secondary, 10)}` }}>
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: `radial-gradient(ellipse at top left, ${alpha(c.secondary, 5)}, transparent 70%)` }} />
+                <div className="relative p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${alpha(c.secondary, 8)}` }}>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.secondary, 10) }}>
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center backdrop-blur-sm" style={{ background: alpha(c.secondary, 10), border: `1px solid ${alpha(c.secondary, 15)}` }}>
                       {data.incomeTrend >= 0 ? (
                         <ArrowUpRight className="h-3 w-3" style={{ color: c.secondary }} />
                       ) : (
@@ -851,7 +879,7 @@ export default function BusinessForecast() {
                     <span className="text-[10px] font-medium" style={{ color: c.muted }}>Tren Pemasukan</span>
                   </div>
                   <p className="text-sm font-bold tabular-nums"
-                    style={{ color: data.incomeTrend >= 0 ? c.secondary : c.destructive }}>
+                    style={{ color: data.incomeTrend >= 0 ? c.secondary : c.destructive, textShadow: data.incomeTrend >= 0 ? `0 0 16px ${alpha(c.secondary, 30)}` : `0 0 16px ${alpha(c.destructive, 30)}` }}>
                     {data.incomeTrend >= 0 ? '+' : ''}{data.incomeTrend.toFixed(1)}% / bulan
                   </p>
                   <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
@@ -864,10 +892,12 @@ export default function BusinessForecast() {
               <motion.div
                 whileHover={{ y: -2, scale: 1.01 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                className="relative"
               >
-                <div className="p-3 rounded-xl" style={{ background: `linear-gradient(135deg, ${alpha(c.destructive, 6)}, transparent)`, border: `1px solid ${alpha(c.destructive, 10)}` }}>
+                <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: `radial-gradient(ellipse at top left, ${alpha(c.destructive, 5)}, transparent 70%)` }} />
+                <div className="relative p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${alpha(c.destructive, 8)}` }}>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.destructive, 10) }}>
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center backdrop-blur-sm" style={{ background: alpha(c.destructive, 10), border: `1px solid ${alpha(c.destructive, 15)}` }}>
                       {data.expenseTrend <= 0 ? (
                         <ArrowDownRight className="h-3 w-3" style={{ color: c.secondary }} />
                       ) : (
@@ -877,7 +907,7 @@ export default function BusinessForecast() {
                     <span className="text-[10px] font-medium" style={{ color: c.muted }}>Tren Pengeluaran</span>
                   </div>
                   <p className="text-sm font-bold tabular-nums"
-                    style={{ color: data.expenseTrend <= 0 ? c.secondary : c.destructive }}>
+                    style={{ color: data.expenseTrend <= 0 ? c.secondary : c.destructive, textShadow: data.expenseTrend <= 0 ? `0 0 16px ${alpha(c.secondary, 30)}` : `0 0 16px ${alpha(c.destructive, 30)}` }}>
                     {data.expenseTrend >= 0 ? '+' : ''}{data.expenseTrend.toFixed(1)}% / bulan
                   </p>
                   <p className="text-[9px] mt-0.5" style={{ color: c.muted }}>
@@ -890,14 +920,16 @@ export default function BusinessForecast() {
               <motion.div
                 whileHover={{ y: -2, scale: 1.01 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                className="relative"
               >
-                <div className="p-3 rounded-xl" style={{
-                  background: `linear-gradient(135deg, ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 6)}, transparent)`,
-                  border: `1px solid ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 10)}`,
-                  borderLeft: `3px solid ${data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive}`,
+                <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: `radial-gradient(ellipse at top left, ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 5)}, transparent 70%)` }} />
+                <div className="relative p-3 rounded-xl" style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 8)}`,
+                  borderLeft: `2px solid ${data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive}`,
                 }}>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 10) }}>
+                    <div className="h-6 w-6 rounded-md flex items-center justify-center backdrop-blur-sm" style={{ background: alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 10), border: `1px solid ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 15)}` }}>
                       <CircleDollarSign className="h-3 w-3" style={{
                         color: data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive,
                       }} />
@@ -906,6 +938,7 @@ export default function BusinessForecast() {
                   </div>
                   <p className="text-sm font-bold tabular-nums" style={{
                     color: data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive,
+                    textShadow: `0 0 16px ${alpha(data.avgMonthlyIncome >= data.avgMonthlyExpenses ? c.secondary : c.destructive, 30)}`,
                   }}>
                     {data.avgMonthlyIncome >= data.avgMonthlyExpenses ? 'Positif' : 'Negatif'}
                   </p>

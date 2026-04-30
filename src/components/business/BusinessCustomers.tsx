@@ -367,7 +367,11 @@ export default function BusinessCustomers() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
+      {/* Ambient background glow */}
+      <div className="absolute -top-20 -left-20 w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--primary) 5%, transparent) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div className="absolute -top-10 -right-20 w-[350px] h-[350px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--warning) 4%, transparent) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
       {/* Info Banner */}
       <motion.div variants={itemVariants}>
@@ -415,18 +419,21 @@ export default function BusinessCustomers() {
           const Icon = item.icon;
           return (
             <motion.div key={item.label} whileHover={{ y: -2, scale: 1.02 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-              <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06] overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
-                <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(item.color, 60)}, ${alpha(item.color, 15)})` }} />
-                <CardContent className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${alpha(item.color, 5)}, transparent)` }}>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(item.color, 10) }}>
-                      <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+              <div className="relative rounded-xl">
+                {/* Ambient glow behind stat card */}
+                <div className="absolute -inset-1 rounded-xl blur-xl pointer-events-none" style={{ background: alpha(item.color, 5) }} />
+                <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(item.color, 10) }}>
+                        <Icon className="h-3.5 w-3.5" style={{ color: item.color }} />
+                      </div>
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground" >{item.label}</span>
                     </div>
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground" >{item.label}</span>
-                  </div>
-                  <p className="text-lg font-bold tabular-nums text-foreground" >{item.value}</p>
-                </CardContent>
-              </Card>
+                    <p className="text-lg font-bold tabular-nums text-foreground" >{item.value}</p>
+                  </CardContent>
+                </Card>
+              </div>
             </motion.div>
           );
         })}
@@ -456,7 +463,7 @@ export default function BusinessCustomers() {
 
       {/* Mobile Card Grid / Desktop Table */}
       <motion.div variants={itemVariants}>
-      <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border border-white/[0.06] transition-shadow hover:shadow-lg">
+      <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] transition-all duration-200 hover:bg-white/[0.03] hover:border-white/[0.1]">
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-3">
@@ -513,14 +520,15 @@ export default function BusinessCustomers() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ delay: index * 0.03, duration: 0.2 }}
-                        className="p-3 border-b border-border cursor-pointer"
+                        className="relative p-3 border-b border-border cursor-pointer hover:bg-white/[0.03] transition-colors duration-150"
                         onClick={() => setDetailCustomer(customer)}
                         whileHover={{ x: 2 }}
+                        style={{ borderLeft: '2px solid transparent' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderLeftColor = alpha(c.primary, 25); e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
                       >
-                        {/* Gradient accent strip */}
-                        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l" style={{ background: `linear-gradient(180deg, ${alpha(c.primary, 50)}, ${alpha(c.secondary, 30)})` }} />
                         <div className="flex items-start gap-2.5 pl-1.5">
-                          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 20)}, ${alpha(c.primary, 8)})`, color: c.primary }}>
+                          <div className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 backdrop-blur-sm" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 18)}, ${alpha(c.secondary, 10)})`, color: c.primary, border: `1px solid ${alpha(c.primary, 10)}` }}>
                             {customer.name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -628,24 +636,22 @@ export default function BusinessCustomers() {
                       const statusBadge = getCustomerStatus(customer);
                       const piutangBalance = customerPiutang[customer.name] || 0;
                       const spending = customerSpending[customer.id];
-                      const isAlt = index % 2 === 1;
-
                       return (
                         <TableRow
                           key={customer.id}
                           className="group transition-colors duration-150 cursor-pointer"
                           onClick={() => setDetailCustomer(customer)}
                           style={{
-                            background: isAlt ? 'rgba(255,255,255,0.015)' : 'transparent',
+                            background: 'transparent',
                             borderBottom: '1px solid var(--border)',
-                            borderLeft: '3px solid transparent',
+                            borderLeft: '2px solid transparent',
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.borderLeftColor = `linear-gradient(180deg, ${alpha(c.primary, 50)}, ${alpha(c.secondary, 30)})`}
-                          onMouseLeave={(e) => e.currentTarget.style.borderLeftColor = 'transparent'}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderLeftColor = alpha(c.primary, 25); }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
                         >
                           <TableCell className="py-2 pl-2.5">
                             <div className="flex items-center gap-2">
-                              <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 bg-primary/12 text-primary">
+                              <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 backdrop-blur-sm" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 18)}, ${alpha(c.secondary, 10)})`, color: c.primary, border: `1px solid ${alpha(c.primary, 10)}` }}>
                                 {customer.name.charAt(0).toUpperCase()}
                               </div>
                               <div className="min-w-0">
@@ -733,8 +739,7 @@ export default function BusinessCustomers() {
       {/* Customer Detail Dialog */}
       <Dialog open={!!detailCustomer} onOpenChange={(open) => { if (!open) setDetailCustomer(null); }}>
         <DialogContent className="rounded-2xl w-[95vw] sm:max-w-[560px] bg-[#141414] border-white/[0.08] max-h-[85vh] overflow-y-auto">
-          {/* Gradient accent strip */}
-          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
+          <div className="h-px bg-white/[0.06]" />
           {detailCustomer && (() => {
             const spending = customerSpending[detailCustomer.id];
             const piutangBalance = customerPiutang[detailCustomer.name] || 0;
@@ -751,9 +756,9 @@ export default function BusinessCustomers() {
             return (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                    <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/12">
-                      <span className="text-sm font-bold text-primary">{detailCustomer.name.charAt(0).toUpperCase()}</span>
+                  <DialogTitle className="text-sm font-semibold flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center backdrop-blur-sm" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 18)}, ${alpha(c.secondary, 10)})`, border: `1px solid ${alpha(c.primary, 10)}` }}>
+                      <span className="text-sm font-bold" style={{ color: c.primary }}>{detailCustomer.name.charAt(0).toUpperCase()}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -771,8 +776,8 @@ export default function BusinessCustomers() {
 
                 <Separator className="bg-white/[0.06]" />
 
-                {/* Contact Info */}
-                <div className="space-y-1.5">
+                {/* Contact Info - glass section */}
+                <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 space-y-1.5">
                   {detailCustomer.phone && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Phone className="h-3.5 w-3.5 shrink-0" style={{ color: c.muted }} />
@@ -798,28 +803,21 @@ export default function BusinessCustomers() {
 
                 <Separator className="bg-white/[0.06]" />
 
-                {/* Stats Row */}
+                {/* Stats Row - glass items with colored glow */}
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl p-2.5 text-center" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 12)}, ${alpha(c.secondary, 3)})` }}>
-                    <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Total Belanja</p>
-                    <p className="text-xs font-bold tabular-nums" style={{ color: c.secondary }}>
-                      {spending?.total ? formatAmount(spending.total) : '-'}
-                    </p>
-                  </div>
-                  <div className="rounded-xl p-2.5 text-center" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 12)}, ${alpha(c.primary, 3)})` }}>
-                    <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Transaksi</p>
-                    <p className="text-xs font-bold tabular-nums" style={{ color: c.primary }}>
-                      {spending?.txCount || 0}x
-                    </p>
-                  </div>
-                  <div className="rounded-xl p-2.5 text-center" style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 12)}, ${alpha(c.warning, 3)})` }}>
-                    <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>Terakhir</p>
-                    <p className="text-[11px] font-bold" style={{ color: c.warning }}>
-                      {spending?.lastDate
-                        ? new Date(spending.lastDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-                        : '-'}
-                    </p>
-                  </div>
+                  {[
+                    { label: 'Total Belanja', value: spending?.total ? formatAmount(spending.total) : '-', color: c.secondary, sublabel: '' },
+                    { label: 'Transaksi', value: `${spending?.txCount || 0}x`, color: c.primary, sublabel: '' },
+                    { label: 'Terakhir', value: spending?.lastDate ? new Date(spending.lastDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-', color: c.warning, sublabel: '' },
+                  ].map((stat) => (
+                    <div key={stat.label} className="relative rounded-xl">
+                      <div className="absolute -inset-0.5 rounded-xl blur-lg pointer-events-none" style={{ background: alpha(stat.color, 4) }} />
+                      <div className="relative rounded-xl p-2.5 text-center bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
+                        <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: c.muted }}>{stat.label}</p>
+                        <p className="text-xs font-bold tabular-nums" style={{ color: stat.color }}>{stat.value}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Outstanding Balance */}
@@ -1385,18 +1383,17 @@ export default function BusinessCustomers() {
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="rounded-2xl w-[95vw] sm:max-w-[460px] bg-[#141414] border-white/[0.08] p-0">
-          {/* Gradient accent strip */}
-          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
+          <div className="h-px bg-white/[0.06]" />
           <DialogHeader className="p-4 sm:p-5 pb-0">
-            <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-foreground" >
-              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 20)}, ${alpha(c.primary, 8)})` }}>
+            <DialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ background: `linear-gradient(135deg, var(--foreground), var(--muted-foreground))`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} >
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center backdrop-blur-sm" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 18)}, ${alpha(c.secondary, 10)})`, border: `1px solid ${alpha(c.primary, 10)}` }}>
                 {editingCustomer ? <Pencil className="h-3.5 w-3.5" style={{ color: c.primary }} /> : <UserPlus className="h-3.5 w-3.5" style={{ color: c.primary }} />}
               </div>
               {editingCustomer ? t('common.edit') : t('biz.addCustomer')}
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground" >
-              {editingCustomer ? `Edit ${editingCustomer.name}` : t('biz.customerDesc')}
-            </DialogDescription>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    {editingCustomer ? `Edit ${editingCustomer.name}` : t('biz.customerDesc')}
+                  </DialogDescription>
           </DialogHeader>
 
           <div className="h-px bg-white/[0.06] mx-4" />
@@ -1448,11 +1445,11 @@ export default function BusinessCustomers() {
 
             <div className="space-y-1.5">
               <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground" >{t('biz.customerNotes')}</Label>
-              <Textarea
+                <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder={t('biz.customerNotes')}
-                className="text-sm rounded-lg resize-none min-h-[60px] bg-card border border-border text-foreground"
+                className="text-sm rounded-xl resize-none min-h-[60px] bg-white/[0.04] border border-white/[0.08] text-foreground focus:border-white/15 focus:ring-0"
               />
             </div>
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -51,17 +52,21 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
       <div>
         {/* Mobile: horizontal scrollable chip strip (< md / 768px) */}
         <div className="flex md:hidden gap-2 overflow-x-auto scrollbar-hide pb-1">
-          {categories.map((category) => {
+          {categories.map((category, index) => {
             const stats = categoryAmounts?.[category.id];
             const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
             const totalAmount = stats?.amount ?? 0;
             const pct = totalCategoryAmount > 0 ? (totalAmount / totalCategoryAmount) * 100 : 0;
             return (
-              <div
+              <motion.div
                 key={category.id}
                 onClick={() => onEdit(category)}
                 className="group flex flex-col gap-1.5 shrink-0 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] transition-all duration-150 cursor-pointer min-w-0 overflow-hidden"
                 style={{ minWidth: '120px' }}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: 2 }}
+                transition={{ duration: 0.2, delay: index * 0.04 }}
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -104,7 +109,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                 <span className="text-[9px] text-white/40">
                   {t('category.transactionCount', { count: transactionCount })}
                 </span>
-              </div>
+              </motion.div>
             );
           })}
           {categories.length === 0 && (
@@ -116,16 +121,20 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
 
         {/* Tablet: 2-column compact cards (md → lg / 768px–1024px) */}
         <div className="hidden md:grid lg:hidden grid-cols-2 gap-2">
-          {categories.map((category) => {
+          {categories.map((category, index) => {
             const stats = categoryAmounts?.[category.id];
             const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
             const totalAmount = stats?.amount ?? 0;
             const pct = totalCategoryAmount > 0 ? (totalAmount / totalCategoryAmount) * 100 : 0;
             return (
-              <div
+              <motion.div
                 key={category.id}
                 className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] hover:border-white/[0.1] transition-all duration-150 cursor-pointer overflow-hidden"
                 onClick={() => onEdit(category)}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: 2 }}
+                transition={{ duration: 0.2, delay: index * 0.04 }}
               >
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
                   <div
@@ -185,7 +194,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
           {categories.length === 0 && (
@@ -197,16 +206,20 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
 
         {/* Desktop: compact list rows (lg+ / ≥1024px) */}
         <div className="hidden lg:grid grid-cols-2 xl:grid-cols-3 gap-2">
-          {categories.map((category) => {
+          {categories.map((category, index) => {
             const stats = categoryAmounts?.[category.id];
             const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
             const totalAmount = stats?.amount ?? 0;
             const pct = totalCategoryAmount > 0 ? (totalAmount / totalCategoryAmount) * 100 : 0;
             return (
-              <div
+              <motion.div
                 key={category.id}
                 className="group flex items-center justify-between gap-3 px-3 py-3 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] hover:border-primary/20 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)] overflow-hidden"
                 onClick={() => onEdit(category)}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: 2 }}
+                transition={{ duration: 0.2, delay: index * 0.04 }}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div
@@ -268,7 +281,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
           {categories.length === 0 && (
@@ -291,16 +304,20 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
       </div>
 
       <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-        {categories.map((category) => {
+        {categories.map((category, index) => {
           const stats = categoryAmounts?.[category.id];
           const transactionCount = stats?.count ?? category._count?.transactions ?? 0;
           const totalAmount = stats?.amount ?? 0;
           const pct = totalCategoryAmount > 0 ? (totalAmount / totalCategoryAmount) * 100 : 0;
           return (
-            <div
+            <motion.div
               key={category.id}
               className="group flex items-center justify-between gap-3 px-3 py-3 rounded-xl border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] active:bg-white/[0.08] lg:hover:border-primary/20 transition-all duration-200 cursor-pointer lg:hover:-translate-y-0.5 lg:hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)] overflow-hidden"
               onClick={() => onEdit(category)}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              whileHover={{ x: 2 }}
+              transition={{ duration: 0.2, delay: index * 0.04 }}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div
@@ -362,7 +379,7 @@ export function CategoryList({ categories, onEdit, onDelete, type, compact, cate
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import {
@@ -47,6 +48,20 @@ const SEVERITY_COLORS = {
   warning: { color: '#F9A825', bg: 'rgba(249, 168, 37, 0.08)', border: 'rgba(249, 168, 37, 0.20)' },
   concern: { color: '#CF6679', bg: 'rgba(207, 102, 121, 0.08)', border: 'rgba(207, 102, 121, 0.20)' },
 } as const;
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const tipCardVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
 
 export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRate }: FinancialTipsProps) {
   const { t } = useTranslation();
@@ -208,16 +223,21 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
       </div>
 
       {/* Tips List */}
-      <div className="relative z-10 space-y-2.5">
-        {tips.map((tip, index) => (
-          <div
+      <motion.div
+        className="relative z-10 space-y-2.5"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        {tips.map((tip) => (
+          <motion.div
             key={tip.id}
-            className="rounded-lg p-3 animate-in fade-in-0 slide-in-from-bottom-2"
+            variants={tipCardVariants}
+            whileHover={{ y: -1, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
+            className="rounded-lg p-3"
             style={{
               background: tip.bg,
               border: `1px solid ${tip.border}`,
-              animationDelay: `${index * 80}ms`,
-              animationFillMode: 'backwards',
             }}
           >
             <div className="flex items-start gap-2.5">
@@ -246,9 +266,9 @@ export function FinancialTips({ expenseByCategory, monthlyComparison, savingsRat
                 }}
               />
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

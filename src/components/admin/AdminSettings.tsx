@@ -445,16 +445,31 @@ export function AdminSettings() {
 
   const handleClearLogs = async () => {
     setShowClearLogsDialog(false);
-    toast.info('Coming soon', {
-      description: 'Activity log clearing will be available in a future update.',
-    });
+    try {
+      const res = await fetch('/api/admin/activity-log', { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Activity logs cleared', { description: 'All activity logs have been deleted.' });
+      } else {
+        toast.error('Failed to clear logs', { description: 'Server returned an error.' });
+      }
+    } catch {
+      toast.error('Failed to clear logs', { description: 'Network error.' });
+    }
   };
 
   const handleResetDemoData = async () => {
     setShowResetDialog(false);
-    toast.info('Coming soon', {
-      description: 'Demo data reset will be available in a future update.',
-    });
+    try {
+      const res = await fetch('/api/admin/system-health', { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Demo data reset', { description: 'All demo data has been cleared.' });
+        window.location.reload();
+      } else {
+        toast.error('Failed to reset data', { description: 'Server returned an error.' });
+      }
+    } catch {
+      toast.error('Failed to reset data', { description: 'Network error.' });
+    }
   };
 
   const themeOptions = [
@@ -507,7 +522,7 @@ export function AdminSettings() {
   const TabUmum = () => (
     <motion.div key="umum" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* Profile Section */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <User className="h-4 w-4 text-[#03DAC6]" />
@@ -551,7 +566,7 @@ export function AdminSettings() {
       </Card>
 
       {/* Appearance Section */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Palette className="h-4 w-4 text-[#BB86FC]" />
@@ -620,7 +635,7 @@ export function AdminSettings() {
   const TabPlatform = () => (
     <motion.div key="platform" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* Platform Settings */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Globe className="h-4 w-4 text-[#FFD700]" />
@@ -675,7 +690,7 @@ export function AdminSettings() {
       </Card>
 
       {/* Registration & WhatsApp Configuration */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <MessageCircle className="h-4 w-4 text-[#25D366]" />
@@ -782,7 +797,7 @@ export function AdminSettings() {
   const TabPricing = () => (
     <motion.div key="pricing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* Plan & Trial Configuration */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Crown className="h-4 w-4 text-[#FFD700]" />
@@ -889,7 +904,7 @@ export function AdminSettings() {
       </Card>
 
       {/* Discount & Purchase Link Configuration */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Crown className="h-4 w-4 text-[#FFD700]" />
@@ -945,7 +960,7 @@ export function AdminSettings() {
   /* ── Tab 4: Landing Page ── */
   const TabLanding = () => (
     <motion.div key="landing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Layout className="h-4 w-4 text-[#03DAC6]" />
@@ -997,7 +1012,7 @@ export function AdminSettings() {
   /* ── Tab 5: Dashboard ── */
   const TabDashboard = () => (
     <motion.div key="dashboard" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-[#BB86FC]" />
@@ -1060,7 +1075,7 @@ export function AdminSettings() {
   const TabSistem = () => (
     <motion.div key="sistem" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
       {/* System Information */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Heart className="h-4 w-4 text-[#CF6679]" />
@@ -1104,7 +1119,7 @@ export function AdminSettings() {
       </Card>
 
       {/* Email Notification Settings */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Mail className="h-4 w-4 text-[#03DAC6]" />
@@ -1145,7 +1160,7 @@ export function AdminSettings() {
       </Card>
 
       {/* Danger Zone */}
-      <Card className="bg-[#1A1A2E] border-[#CF6679]/15 hover:border-[#CF6679]/25 transition-colors hover:shadow-[0_4px_20px_rgba(207,102,121,0.08)]">
+      <Card className="bg-white/[0.02] border-[#CF6679]/15 hover:border-[#CF6679]/25 transition-colors hover:shadow-[0_4px_20px_rgba(207,102,121,0.08)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-sm font-semibold text-[#CF6679]/80 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-[#CF6679]" />

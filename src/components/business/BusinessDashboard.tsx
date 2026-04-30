@@ -742,18 +742,18 @@ export default function BusinessDashboard() {
   const profitColor = data.profit >= 0 ? c.secondary : c.destructive;
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      {/* ══ Ambient background blobs ══ */}
+      <div className="pointer-events-none absolute -top-32 -left-20 h-[500px] w-[500px] rounded-full opacity-[0.07]" style={{ background: `radial-gradient(circle, ${c.secondary}, transparent 70%)`, filter: 'blur(80px)' }} />
+      <div className="pointer-events-none absolute top-60 -right-24 h-[400px] w-[400px] rounded-full opacity-[0.05]" style={{ background: `radial-gradient(circle, ${c.primary}, transparent 70%)`, filter: 'blur(70px)' }} />
+      <div className="pointer-events-none absolute bottom-0 left-1/3 h-[350px] w-[350px] rounded-full opacity-[0.04]" style={{ background: `radial-gradient(circle, ${c.warning}, transparent 70%)`, filter: 'blur(60px)' }} />
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1: HERO OVERVIEW CARD (Financial Command Center)
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="border-border overflow-hidden shadow-sm">
-        {/* Hero gradient accent strip */}
-        <div
-          className="h-0.5 w-full"
-          style={{
-            background: `linear-gradient(90deg, ${c.secondary}, ${alpha('#4CAF50', 50)}, ${alpha(c.warning, 50)}, transparent)`,
-          }}
-        />
+      {/* Ambient glow behind hero */}
+      <div className="relative">
+        <div className="pointer-events-none absolute -inset-1 rounded-2xl opacity-30" style={{ background: `radial-gradient(ellipse at 20% 50%, ${alpha(c.secondary, 15)}, transparent 60%), radial-gradient(ellipse at 80% 20%, ${alpha(c.primary, 10)}, transparent 50%)`, filter: 'blur(40px)' }} />
+        <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-none">
         <CardContent className="p-4 sm:p-5">
           {/* Header row: Title + Period selector */}
           <div className="flex items-center justify-between mb-4">
@@ -765,7 +765,7 @@ export default function BusinessDashboard() {
                 <Wallet className="h-4 w-4" style={{ color: c.secondary }} />
               </div>
               <div>
-                <h2 className="text-[15px] font-bold text-foreground leading-tight">Ringkasan Keuangan</h2>
+                <h2 className="text-[15px] font-bold leading-tight bg-gradient-to-r from-white/90 via-white/70 to-white/50 bg-clip-text text-transparent">Ringkasan Keuangan</h2>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {greeting.dateStr}
                 </p>
@@ -806,7 +806,7 @@ export default function BusinessDashboard() {
             <div className="flex items-end gap-3">
               <motion.span
                 className="text-3xl sm:text-4xl font-extrabold tabular-nums leading-none"
-                style={{ color: profitColor }}
+                style={{ color: profitColor, textShadow: `0 0 24px ${alpha(profitColor, 35)}` }}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -906,6 +906,7 @@ export default function BusinessDashboard() {
           </div>
         </CardContent>
       </Card>
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 2: QUICK STATS ROW (4 compact cards)
@@ -921,14 +922,10 @@ export default function BusinessDashboard() {
               whileHover={{ y: -2, scale: 1.02 }}
               transition={{ duration: 0.3, delay: idx * 0.06 }}
             >
-              <Card className="border-border cursor-default overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
-                {/* Gradient header strip */}
-                <div
-                  className="h-1 w-full"
-                  style={{
-                    background: `linear-gradient(90deg, ${stat.color}, ${alpha(stat.color, 30)})`,
-                  }}
-                />
+              {/* Per-card colored glow */}
+              <div className="relative">
+                <div className="pointer-events-none absolute -inset-0.5 rounded-xl opacity-20" style={{ background: `radial-gradient(circle at 30% 30%, ${alpha(stat.color, 25)}, transparent 70%)` }} />
+                <Card className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] cursor-default overflow-hidden transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05]">
                 <CardContent className="p-3 pt-2.5">
                   <div className="flex items-center gap-2 mb-2">
                     <div
@@ -947,6 +944,7 @@ export default function BusinessDashboard() {
                   <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{stat.subValue}</p>
                 </CardContent>
               </Card>
+              </div>
             </motion.div>
           );
         })}
@@ -955,7 +953,7 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 2.5: QUICK ACTIONS GRID
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="border-border">
+      <Card className="bg-white/[0.02] border border-white/[0.06]">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
@@ -979,7 +977,7 @@ export default function BusinessDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto flex-col gap-1.5 rounded-xl border border-border p-3 text-muted-foreground w-full"
+                    className="h-auto flex-col gap-1.5 rounded-xl border border-white/[0.06] p-3 text-muted-foreground w-full"
                     style={{ background: 'transparent' }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLElement).style.background = alpha(action.color, 7);
@@ -1008,7 +1006,7 @@ export default function BusinessDashboard() {
           SECTION 2.6: FINANCIAL HEALTH SCORE CARD
           ═══════════════════════════════════════════════════════════════ */}
       {financialHealth && (
-        <Card className="border-border">
+        <Card className="bg-white/[0.02] border border-white/[0.06]">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
@@ -1161,7 +1159,7 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 4: RECENT ACTIVITY (Unified Timeline)
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="border-border">
+      <Card className="bg-white/[0.02] border border-white/[0.06]">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
@@ -1294,7 +1292,7 @@ export default function BusinessDashboard() {
           ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Piutang Jatuh Tempo (2/3) */}
-        <Card className="md:col-span-2 border-border">
+        <Card className="md:col-span-2 bg-white/[0.02] border border-white/[0.06]">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
@@ -1382,7 +1380,7 @@ export default function BusinessDashboard() {
         <div className="space-y-3">
           {/* Top Customers */}
           {topCustomers.length > 0 && (
-            <Card className="border-border">
+            <Card className="bg-white/[0.02] border border-white/[0.06]">
               <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
                   <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.warning }} />
@@ -1416,7 +1414,7 @@ export default function BusinessDashboard() {
           )}
 
           {/* Piutang Summary */}
-          <Card className="border-border">
+          <Card className="bg-white/[0.02] border border-white/[0.06]">
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-xs font-semibold flex items-center gap-2 text-foreground">
                 <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
@@ -1460,7 +1458,7 @@ export default function BusinessDashboard() {
           ═══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Top Produk Terjual */}
-        <Card className="border-border">
+        <Card className="bg-white/[0.02] border border-white/[0.06]">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
@@ -1541,7 +1539,7 @@ export default function BusinessDashboard() {
 
         {/* Investor Summary (if any) */}
         {data.investorBreakdown && data.investorBreakdown.length > 0 && (
-          <Card className="border-border">
+          <Card className="bg-white/[0.02] border border-white/[0.06]">
             <CardHeader className="pb-2 pt-4 px-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[13px] font-bold flex items-center gap-2 text-foreground">
@@ -1623,7 +1621,7 @@ export default function BusinessDashboard() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 7: TIPS + INSIGHT
           ═══════════════════════════════════════════════════════════════ */}
-      <Card className="overflow-hidden border-border">
+      <Card className="overflow-hidden bg-white/[0.02] border border-white/[0.06]">
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center gap-3">
             {/* Tip icon + dots */}

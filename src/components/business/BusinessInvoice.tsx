@@ -444,14 +444,17 @@ export default function BusinessInvoice() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
+      {/* ── Ambient Background ── */}
+      <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-[0.04] blur-3xl pointer-events-none" style={{ backgroundColor: c.primary }} />
+      <div className="absolute top-40 -right-16 w-60 h-60 rounded-full opacity-[0.03] blur-3xl pointer-events-none" style={{ backgroundColor: c.secondary }} />
+      <div className="absolute bottom-20 left-1/3 w-56 h-56 rounded-full opacity-[0.025] blur-3xl pointer-events-none" style={{ backgroundColor: c.warning }} />
+
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
         {/* ═══ Invoice Overview Hero ═══ */}
         <motion.div variants={itemVariants}>
-          <Card className="rounded-xl overflow-hidden border border-border bg-card">
-            {/* Gradient accent strip */}
-            <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
+          <Card className="rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl">
             <CardContent className="p-4 sm:p-5">
               {/* Header row */}
               <div className="flex items-center justify-between mb-4">
@@ -460,7 +463,7 @@ export default function BusinessInvoice() {
                     <FileText className="h-4 w-4" style={{ color: c.primary }} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-foreground">{t('biz.invoices')}</h2>
+                    <h2 className="text-sm font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">{t('biz.invoices')}</h2>
                     <p className="text-[10px] text-muted-foreground">Kelola invoice & tagihan pelanggan</p>
                   </div>
                 </div>
@@ -512,45 +515,61 @@ export default function BusinessInvoice() {
               {/* Stats Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {/* Total Invoices */}
-                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 10)}, ${alpha(c.primary, 2)})` }}>
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.primary, 15) }}>
-                    <Receipt className="h-4 w-4" style={{ color: c.primary }} />
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: alpha(c.primary, 5) }} />
+                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.primary, 12) }}>
+                      <Receipt className="h-4 w-4" style={{ color: c.primary }} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Total Invoice</p>
+                      <p className="text-base font-bold tabular-nums text-foreground">{totalInvoices}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Total Invoice</p>
-                    <p className="text-base font-bold tabular-nums text-foreground">{totalInvoices}</p>
-                  </div>
-                </motion.div>
+                  <div className="absolute bottom-0 left-3 right-3 h-px rounded-full" style={{ background: `linear-gradient(90deg, ${alpha(c.primary, 40)}, transparent)` }} />
+                </div>
                 {/* Total Amount */}
-                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 10)}, ${alpha(c.secondary, 2)})` }}>
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.secondary, 15) }}>
-                    <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: alpha(c.secondary, 5) }} />
+                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.secondary, 12) }}>
+                      <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-muted-foreground">Total Amount</p>
+                      <p className="text-base font-bold tabular-nums truncate" style={{ color: c.secondary }}>{formatAmount(totalAmount)}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-muted-foreground">Total Amount</p>
-                    <p className="text-base font-bold tabular-nums truncate" style={{ color: c.secondary }}>{formatAmount(totalAmount)}</p>
-                  </div>
-                </motion.div>
+                  <div className="absolute bottom-0 left-3 right-3 h-px rounded-full" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 40)}, transparent)` }} />
+                </div>
                 {/* Paid % */}
-                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 10)}, ${alpha(c.warning, 2)})` }}>
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.warning, 15) }}>
-                    <CheckCircle2 className="h-4 w-4" style={{ color: c.warning }} />
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: alpha(c.warning, 5) }} />
+                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: alpha(c.warning, 12) }}>
+                      <CheckCircle2 className="h-4 w-4" style={{ color: c.warning }} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Lunas</p>
+                      <p className="text-base font-bold tabular-nums text-foreground">{paidPct}%</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Lunas</p>
-                    <p className="text-base font-bold tabular-nums text-foreground">{paidPct}%</p>
-                  </div>
-                </motion.div>
+                  <div className="absolute bottom-0 left-3 right-3 h-px rounded-full" style={{ background: `linear-gradient(90deg, ${alpha(c.warning, 40)}, transparent)` }} />
+                </div>
                 {/* Overdue */}
-                <motion.div whileHover={{ scale: 1.02, y: -1 }} className="flex items-center gap-3 rounded-xl p-2 -m-2 transition-shadow hover:shadow-lg" style={{ background: overdueCount > 0 ? `linear-gradient(135deg, ${alpha(c.destructive, 10)}, ${alpha(c.destructive, 2)})` : `linear-gradient(135deg, ${alpha(c.muted, 5)}, ${alpha(c.muted, 1)})` }}>
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 15) : alpha(c.muted, 8) }}>
-                    <AlertTriangle className="h-4 w-4" style={{ color: overdueCount > 0 ? c.destructive : c.muted }} />
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 5) : alpha(c.muted, 3) }} />
+                  <div className="relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: overdueCount > 0 ? alpha(c.destructive, 12) : alpha(c.muted, 6) }}>
+                      <AlertTriangle className="h-4 w-4" style={{ color: overdueCount > 0 ? c.destructive : c.muted }} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Jatuh Tempo</p>
+                      <p className="text-base font-bold tabular-nums" style={{ color: overdueCount > 0 ? c.destructive : 'var(--foreground)' }}>{overdueCount}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Jatuh Tempo</p>
-                    <p className="text-base font-bold tabular-nums" style={{ color: overdueCount > 0 ? c.destructive : 'var(--foreground)' }}>{overdueCount}</p>
-                  </div>
-                </motion.div>
+                  <div className="absolute bottom-0 left-3 right-3 h-px rounded-full" style={{ background: `linear-gradient(90deg, ${alpha(overdueCount > 0 ? c.destructive : c.muted, 40)}, transparent)` }} />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -594,7 +613,7 @@ export default function BusinessInvoice() {
 
         {/* ═══ Invoice List ═══ */}
         <motion.div variants={itemVariants}>
-          <Card className="rounded-xl overflow-hidden bg-card border border-border">
+          <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-2 p-4">
@@ -667,9 +686,8 @@ export default function BusinessInvoice() {
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ delay: index * 0.03, duration: 0.25 }}
                             whileHover={{ x: 2 }}
-                            className="p-3 cursor-pointer transition-colors hover:bg-white/[0.02]"
+                            className="p-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.03] border-l-[3px] border-l-transparent hover:border-l-white/[0.15]"
                             onClick={() => setViewInvoice(inv)}
-                            style={{ borderLeft: `3px solid ${sc.accentBorder}` }}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
@@ -695,7 +713,7 @@ export default function BusinessInvoice() {
                                 variant="outline"
                                 border-0
                                 className="text-[9px] font-medium gap-1 px-2 py-0.5 rounded-full"
-                                style={{ background: sc.gradient, color: sc.color, boxShadow: `0 0 8px ${alpha(sc.color, 15)}` }}
+                                style={{ background: alpha(sc.color, 8), color: sc.color, border: `1px solid ${alpha(sc.color, 15)}` }}
                               >
                                 <StatusIcon className="h-2.5 w-2.5" />
                                 {t(sc.label)}
@@ -763,9 +781,8 @@ export default function BusinessInvoice() {
                             return (
                               <tr
                                 key={inv.id}
-                                className="transition-colors duration-150 group cursor-pointer border-b border-border hover:bg-white/[0.02]"
+                                className="transition-all duration-200 group cursor-pointer border-b border-border border-l-[3px] border-l-transparent hover:bg-white/[0.03] hover:border-l-white/[0.15]"
                                 onClick={() => setViewInvoice(inv)}
-                                style={{ borderLeft: `3px solid ${sc.accentBorder}` }}
                               >
                                 <TableCell className="text-xs py-2.5 font-medium text-foreground">
                                   <div className="flex items-center gap-2">
@@ -781,7 +798,7 @@ export default function BusinessInvoice() {
                                     variant="outline"
                                     border-0
                                     className="text-[10px] font-medium gap-1 px-2 py-0.5 rounded-full"
-                                    style={{ background: sc.gradient, color: sc.color, boxShadow: `0 0 8px ${alpha(sc.color, 15)}` }}
+                                    style={{ background: alpha(sc.color, 8), color: sc.color, border: `1px solid ${alpha(sc.color, 15)}` }}
                                   >
                                     <StatusIcon className="h-2.5 w-2.5" />
                                     {t(sc.label)}
@@ -846,9 +863,8 @@ export default function BusinessInvoice() {
 
       {/* ═══ View Invoice Dialog (Responsive) ═══ */}
       <Dialog open={!!viewInvoice} onOpenChange={(open) => !open && setViewInvoice(null)}>
-        <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[92vh] overflow-y-auto rounded-2xl p-0 border border-border">
-          {/* Gradient accent strip */}
-          <div className="h-[3px] rounded-t-2xl shrink-0" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
+        <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[92vh] overflow-y-auto rounded-2xl p-0 border border-white/[0.08] bg-[#141414]">
+          <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.secondary, 30)}, ${alpha(c.primary, 30)}, transparent)` }} />
           {viewInvoice && (() => {
             const tmpl = invoiceSettings?.template || 'modern';
             const pColor = invoiceSettings?.primaryColor || '#1E293B';
@@ -944,7 +960,7 @@ export default function BusinessInvoice() {
                 <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4">
                   {/* Status + Due Date Row */}
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" border-0 className="text-[10px] gap-1 px-2 py-0.5 rounded-full shrink-0" style={{ background: statusStyle.gradient, color: statusStyle.color, boxShadow: `0 0 8px ${alpha(statusStyle.color, 15)}` }}>
+                    <Badge variant="outline" border-0 className="text-[10px] gap-1 px-2 py-0.5 rounded-full shrink-0" style={{ background: alpha(statusStyle.color, 8), color: statusStyle.color, border: `1px solid ${alpha(statusStyle.color, 15)}` }}>
                       <StatusIcon className="h-2.5 w-2.5" />
                       {t(statusStyle.label)}
                     </Badge>
@@ -1076,10 +1092,9 @@ export default function BusinessInvoice() {
       {/* ═══ Create/Edit Dialog ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 bg-[#141414] border-white/[0.08]">
-          {/* Gradient accent strip */}
-          <div className="h-[3px] rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${alpha(c.secondary, 60)}, ${alpha(c.primary, 60)}, ${alpha(c.warning, 60)})` }} />
+          <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.secondary, 30)}, ${alpha(c.primary, 30)}, transparent)` }} />
           <DialogHeader className="p-4 sm:p-5 pb-0">
-            <DialogTitle className="text-sm font-bold text-foreground">
+            <DialogTitle className="text-sm font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
               {editingInvoice ? 'Edit Invoice' : 'Buat Invoice Baru'}
             </DialogTitle>
             <DialogDescription className="text-[11px] text-muted-foreground">
@@ -1273,8 +1288,7 @@ export default function BusinessInvoice() {
       {/* ═══ Delete Confirmation ═══ */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent className="rounded-2xl bg-[#141414] border-white/[0.08] p-0 overflow-hidden">
-          {/* Gradient accent strip */}
-          <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${alpha(c.destructive, 50)}, ${alpha(c.warning, 40)})` }} />
+          <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.destructive, 30)}, transparent)` }} />
           <div className="p-4 sm:p-5 space-y-3">
             <AlertDialogHeader className="space-y-1.5">
               <AlertDialogTitle className="text-sm text-foreground">Hapus Invoice?</AlertDialogTitle>

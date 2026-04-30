@@ -37,7 +37,7 @@ import { EnhancedEmptyState } from '@/components/shared/EnhancedEmptyState';
 
 // ── framer-motion helpers ────────────────────────────────────────
 const springHover = { stiffness: 300, damping: 24 };
-const cardHover = { scale: 1.02, y: -2 };
+const cardHover = {}; // flat hover — no scale/translate
 
 // ── Theme Constants ──────────────────────────────────────────────
 const THEME = {
@@ -388,14 +388,14 @@ function AnalyticsCarousel({
       {/* Desktop: 3-column grid */}
       <div className="hidden lg:grid lg:grid-cols-3 gap-4 xl:gap-6">
         {/* Cash Flow Card */}
-        <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <Card className="overflow-hidden group/card relative bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200">
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top left, ${THEME.primary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}12` }}>
                 <BarChart3 className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
               </div>
-              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.cashFlow')}</CardTitle>
+              <CardTitle className="text-sm font-semibold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>{t('dashboard.cashFlow')}</CardTitle>
               <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full" style={{ color: THEME.muted, background: `${THEME.border}` }}>{t('dashboard.sixMonthsShort')}</span>
             </div>
           </CardHeader>
@@ -425,14 +425,14 @@ function AnalyticsCarousel({
         </Card>
 
         {/* Top Spending Card */}
-        <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <Card className="overflow-hidden group/card relative bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200">
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at top right, ${THEME.destructive}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}12` }}>
                 <PieChartIcon className="h-3.5 w-3.5" style={{ color: THEME.destructive }} />
               </div>
-              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.topSpending')}</CardTitle>
+              <CardTitle className="text-sm font-semibold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #CF6679, #F9A825)' }}>{t('dashboard.topSpending')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -488,14 +488,14 @@ function AnalyticsCarousel({
         </Card>
 
         {/* Financial Health Card */}
-        <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
+        <Card className="overflow-hidden group/card relative bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200">
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(ellipse at bottom center, ${THEME.secondary}06 0%, transparent 60%)` }} />
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}12` }}>
                 <Shield className="h-3.5 w-3.5" style={{ color: THEME.secondary }} />
               </div>
-              <CardTitle className="text-sm font-semibold" style={{ color: THEME.text }}>{t('dashboard.financialHealth')}</CardTitle>
+              <CardTitle className="text-sm font-semibold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #03DAC6, #BB86FC)' }}>{t('dashboard.financialHealth')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -544,11 +544,7 @@ function AnalyticsCarousel({
           {/* Slide 1: Cash Flow */}
           <div className="shrink-0" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
             <Card
-              className="overflow-hidden"
-              style={{
-                background: THEME.surface,
-                border: `1px solid ${THEME.border}`,
-              }}
+              className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
             >
               <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4">
                 <div className="flex items-center gap-2">
@@ -605,11 +601,7 @@ function AnalyticsCarousel({
           {/* Slide 2: Top Spending */}
           <div className="shrink-0" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
             <Card
-              className="overflow-hidden"
-              style={{
-                background: THEME.surface,
-                border: `1px solid ${THEME.border}`,
-              }}
+              className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
             >
               <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4">
                 <div className="flex items-center gap-2">
@@ -692,11 +684,7 @@ function AnalyticsCarousel({
           {/* Slide 3: Financial Health */}
           <div className="shrink-0" style={{ width: slideWidth || undefined, minWidth: slideWidth || '100%' }}>
             <Card
-              className="overflow-hidden"
-              style={{
-                background: THEME.surface,
-                border: `1px solid ${THEME.border}`,
-              }}
+              className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
             >
               <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4">
                 <div className="flex items-center gap-2">
@@ -800,17 +788,12 @@ function ConsultantCard({ insight }: { insight: {
   const priorityBg = insight.accent + '20';
 
   return (
-    <div
-      className="shrink-0 w-[260px] sm:w-[280px] lg:w-auto rounded-xl p-3.5 transition-all duration-200 relative overflow-hidden"
-      style={{
-        background: THEME.surface,
-        border: `1px solid ${THEME.border}`,
-        borderLeft: `3px solid ${insight.accent}`,
-      }}
-    >
-      {/* Subtle gradient glow */}
+        <div
+          className="shrink-0 w-[260px] sm:w-[280px] lg:w-auto rounded-xl p-3.5 transition-all duration-200 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]"
+        >
+      {/* Subtle colored glow */}
       <div
-        className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-20 pointer-events-none"
+        className="pointer-events-none absolute -top-6 -right-6 w-20 h-20 rounded-full blur-[40px] opacity-[0.08]"
         style={{ background: insight.accent }}
       />
       <div className="relative z-10 space-y-2.5">
@@ -917,12 +900,7 @@ function ConsultantCardCompact({ insight }: { insight: {
 
   return (
     <div
-      className="rounded-xl p-3 transition-all duration-200 relative overflow-hidden group/insight"
-      style={{
-        background: THEME.surface,
-        border: `1px solid ${THEME.border}`,
-        borderLeft: `3px solid ${insight.accent}`,
-      }}
+      className="rounded-xl p-3 transition-all duration-200 relative overflow-hidden group/insight bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]"
     >
       <div className="relative z-10 space-y-2">
         {/* Header row */}
@@ -1490,7 +1468,11 @@ export function Dashboard() {
   const GreetingIcon = getGreetingIcon();
 
   return (
-    <div className="space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full">
+    <div className="relative space-y-4 lg:space-y-5 xl:space-y-6 overflow-hidden w-full max-w-full">
+      {/* ═══ Ambient Background ═══ */}
+      <div aria-hidden="true" className="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-[0.07] blur-[120px]" style={{ background: 'radial-gradient(circle, #BB86FC, transparent 70%)' }} />
+      <div aria-hidden="true" className="pointer-events-none absolute top-1/3 -right-48 w-[600px] h-[600px] rounded-full opacity-[0.05] blur-[140px]" style={{ background: 'radial-gradient(circle, #03DAC6, transparent 70%)' }} />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 left-1/4 w-[400px] h-[400px] rounded-full opacity-[0.04] blur-[100px]" style={{ background: 'radial-gradient(circle, #CF6679, transparent 70%)' }} />
       {/* ═══ Greeting Section ═══ */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
         <div className="flex items-center gap-3">
@@ -1498,7 +1480,7 @@ export function Dashboard() {
             <GreetingIcon className="h-5 w-5" style={{ color: THEME.primary }} />
           </div>
           <div>
-            <h2 className="text-lg font-bold" style={{ color: THEME.text }}>
+            <h2 className="text-lg font-bold bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFFFFF, #B3B3B3)' }}>
               {getGreeting()}, {user?.username || 'User'}!
             </h2>
             <p className="text-[12px] mt-0.5" style={{ color: THEME.muted }}>
@@ -1514,7 +1496,7 @@ export function Dashboard() {
               background: 'linear-gradient(135deg, #1a1207, #1a0a14)',
               color: '#FFD700',
               border: '1px solid rgba(255,215,0,0.2)',
-              boxShadow: '0 0 10px rgba(255,215,0,0.06)',
+              boxShadow: 'none',
             }}
           >
             <Trophy className="h-3.5 w-3.5" />
@@ -1526,16 +1508,14 @@ export function Dashboard() {
       {/* ═══ Daily Tip Card ═══ */}
       <div className="animate-tip-card-enter">
         <div
-          className="rounded-xl p-4 relative overflow-hidden"
+          className="rounded-xl p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
           style={{
-            background: THEME.surface,
-            border: `1px solid ${THEME.border}`,
             borderLeft: `3px solid ${THEME.primary}`,
           }}
         >
-          {/* Subtle glow */}
+          {/* Subtle colored glow */}
           <div
-            className="absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl opacity-15 pointer-events-none"
+            className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full blur-[40px] opacity-[0.06]"
             style={{ background: THEME.primary }}
           />
           <div className="relative flex items-start gap-3">
@@ -1564,7 +1544,7 @@ export function Dashboard() {
 
       {/* ═══ Section 1: Filter Bar ═══ */}
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold shrink-0" style={{ color: THEME.text }}>{t('nav.dashboard')}</h2>
+        <h2 className="text-lg font-semibold shrink-0 bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>{t('nav.dashboard')}</h2>
         <div className="flex gap-1.5 shrink-0">
           <Select value={filter.month} onValueChange={(v) => setFilter({ ...filter, month: v })}>
             <SelectTrigger
@@ -1611,14 +1591,14 @@ export function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 xl:gap-4">
         {/* Net Worth */}
         <motion.div
-          className="rounded-xl overflow-hidden cursor-default relative"
-          style={{ border: `1px solid ${THEME.border}` }}
+          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
           whileHover={cardHover}
           transition={springHover}
         >
-          {/* Gradient accent strip */}
-          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary})` }} />
-          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.primary}05)` }}>
+          {/* Per-card colored glow */}
+          <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.primary }} />
+          <div className="relative z-10 p-3 sm:p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.primary}15` }}>
                 <Wallet className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
@@ -1631,7 +1611,7 @@ export function Dashboard() {
             <div className="flex items-center gap-1 mt-1 overflow-hidden">
               <span
                 className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
-                style={{ background: `linear-gradient(135deg, ${THEME.primary}25, ${THEME.primary}10)`, color: THEME.primary }}
+                style={{ background: `${THEME.primary}15`, color: THEME.primary }}
               >
                 {currentStage.name}
               </span>
@@ -1646,13 +1626,13 @@ export function Dashboard() {
 
         {/* Monthly Income */}
         <motion.div
-          className="rounded-xl overflow-hidden cursor-default relative"
-          style={{ border: `1px solid ${THEME.border}` }}
+          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
           whileHover={cardHover}
           transition={springHover}
         >
-          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.secondary}, ${THEME.secondary}80)` }} />
-          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.secondary}04)` }}>
+          <div className="pointer-events-none absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.secondary }} />
+          <div className="relative z-10 p-3 sm:p-4">
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.secondary}15` }}>
@@ -1675,13 +1655,13 @@ export function Dashboard() {
 
         {/* Monthly Expense */}
         <motion.div
-          className="rounded-xl overflow-hidden cursor-default relative"
-          style={{ border: `1px solid ${THEME.border}` }}
+          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
           whileHover={cardHover}
           transition={springHover}
         >
-          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.destructive}, ${THEME.destructive}80)` }} />
-          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.destructive}04)` }}>
+          <div className="pointer-events-none absolute -bottom-12 -right-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.destructive }} />
+          <div className="relative z-10 p-3 sm:p-4">
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.destructive}15` }}>
@@ -1704,13 +1684,13 @@ export function Dashboard() {
 
         {/* Savings Rate */}
         <motion.div
-          className="rounded-xl overflow-hidden cursor-default relative"
-          style={{ border: `1px solid ${THEME.border}` }}
+          className="rounded-xl backdrop-blur-xl cursor-default relative transition-colors duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
           whileHover={cardHover}
           transition={springHover}
         >
-          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.warning}, ${THEME.warning}80)` }} />
-          <div className="p-3 sm:p-4" style={{ background: `linear-gradient(135deg, ${THEME.surface}, ${THEME.warning}04)` }}>
+          <div className="pointer-events-none absolute -top-12 -left-12 w-32 h-32 rounded-full opacity-[0.08] blur-[40px]" style={{ background: THEME.warning }} />
+          <div className="relative z-10 p-3 sm:p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <div className="w-6 h-6 rounded-md grid place-items-center [&>*]:block leading-none" style={{ background: `${THEME.warning}15` }}>
                 <Activity className="h-3.5 w-3.5" style={{ color: THEME.warning }} />
@@ -1816,10 +1796,10 @@ export function Dashboard() {
       {insights.length > 0 && (
         <>
         <div className="h-px bg-white/[0.06]" />
-        <div className="space-y-2.5">
+      <div className="space-y-2.5">
           <div className="flex items-center gap-2">
             <Brain className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-            <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: THEME.muted }}>
+            <h3 className="text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
               {t('dashboard.consultantInsights')}
             </h3>
           </div>
@@ -1828,7 +1808,7 @@ export function Dashboard() {
             {insights.map((insight) => (
               <motion.div
                 key={insight.id}
-                whileHover={{ scale: 1.02, x: 2 }}
+                whileHover={cardHover}
                 transition={springHover}
               >
                 <ConsultantCard insight={insight} />
@@ -1840,7 +1820,7 @@ export function Dashboard() {
             {insights.map((insight) => (
               <motion.div
                 key={insight.id}
-                whileHover={{ scale: 1.02, y: -2 }}
+                whileHover={cardHover}
                 transition={springHover}
               >
                 <ConsultantCardCompact insight={insight} />
@@ -1855,11 +1835,11 @@ export function Dashboard() {
       {data.savingsTargets.length > 0 && (
         <>
         <div className="h-px bg-white/[0.06]" />
-        <div className="space-y-3">
+      <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-3.5 w-3.5" style={{ color: THEME.primary }} />
-              <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: THEME.muted }}>
+              <h3 className="text-[13px] font-bold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #BB86FC, #03DAC6)' }}>
                 {t('dashboard.savingsTargets')}
               </h3>
             </div>
@@ -1896,19 +1876,12 @@ export function Dashboard() {
               return (
                 <motion.div
                   key={target.id}
-                  className="shrink-0 w-[200px] sm:w-[220px] rounded-xl p-3.5 relative overflow-hidden"
-                  style={{
-                    background: THEME.surface,
-                    border: `1px solid ${THEME.border}`,
-                  }}
-                  whileHover={{ scale: 1.02, x: 2 }}
+                  className="rounded-xl p-4 relative overflow-hidden bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
+                  whileHover={cardHover}
                   transition={springHover}
                 >
-                  {/* subtle glow */}
-                  <div
-                    className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full blur-2xl opacity-10 pointer-events-none"
-                    style={{ background: progressColor }}
-                  />
+              {/* Per-card glow */}
+                  <div className="pointer-events-none absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-[0.06] blur-[30px]" style={{ background: progressColor }} />
                   <div className="relative z-10 flex items-start gap-3">
                     {/* Mini progress ring */}
                     <div className="relative shrink-0">
@@ -1988,17 +1961,12 @@ export function Dashboard() {
               return (
                 <motion.div
                   key={target.id}
-                  className="rounded-xl p-4 relative overflow-hidden"
-                  style={{
-                    background: `linear-gradient(135deg, ${THEME.surface}, ${progressColor}04)`,
-                    border: `1px solid ${THEME.border}`,
-                  }}
+                  className="rounded-xl p-4 relative overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
                   whileHover={cardHover}
                   transition={springHover}
                 >
-                  {/* Gradient accent strip at top */}
-                  <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${progressColor}, ${progressColor}60)` }} />
-                  <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full blur-2xl opacity-10 pointer-events-none" style={{ background: progressColor }} />
+                  {/* Per-card colored glow */}
+                  <div className="pointer-events-none absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-[0.06] blur-[30px]" style={{ background: progressColor }} />
                   <div className="relative z-10 flex items-start gap-3">
                     <div className="relative shrink-0">
                       <svg width={ringRadius * 2} height={ringRadius * 2} className="-rotate-90">
@@ -2044,24 +2012,17 @@ export function Dashboard() {
       {/* ═══ Section 7: Quick Stats Footer ═══ */}
       <div className="h-px bg-white/[0.06]" />
       <motion.div
-        whileHover={{ scale: 1.005 }}
+        whileHover={cardHover}
         transition={springHover}
       >
         <Card
-          className="overflow-hidden"
-          style={{
-            background: THEME.surface,
-            border: `1px solid ${THEME.border}`,
-          }}
+          className="overflow-hidden bg-white/[0.02] border border-white/[0.06]"
         >
-          {/* Gradient accent strip at top */}
-          <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${THEME.primary}, ${THEME.secondary}, ${THEME.warning})` }} />
           <CardContent className="p-4 lg:p-5">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <motion.div
-                className="text-center rounded-xl p-3"
-                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
-                whileHover={{ scale: 1.03, y: -1 }}
+                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                whileHover={cardHover}
                 transition={springHover}
               >
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
@@ -2072,9 +2033,8 @@ export function Dashboard() {
                 </p>
               </motion.div>
               <motion.div
-                className="text-center rounded-xl p-3"
-                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
-                whileHover={{ scale: 1.03, y: -1 }}
+                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                whileHover={cardHover}
                 transition={springHover}
               >
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
@@ -2085,9 +2045,8 @@ export function Dashboard() {
                 </p>
               </motion.div>
               <motion.div
-                className="text-center rounded-xl p-3"
-                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
-                whileHover={{ scale: 1.03, y: -1 }}
+                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                whileHover={cardHover}
                 transition={springHover}
               >
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>
@@ -2101,9 +2060,8 @@ export function Dashboard() {
                 )}
               </motion.div>
               <motion.div
-                className="text-center rounded-xl p-3"
-                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005))' }}
-                whileHover={{ scale: 1.03, y: -1 }}
+                className="text-center rounded-xl p-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors duration-200"
+                whileHover={cardHover}
                 transition={springHover}
               >
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: THEME.muted }}>

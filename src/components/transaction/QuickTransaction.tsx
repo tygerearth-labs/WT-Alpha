@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Plus, CheckCircle2, Loader2, TrendingUp, TrendingDown, ChevronDown, Search } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -175,7 +176,12 @@ export function QuickTransaction() {
           <div className="p-4 md:p-6 space-y-3 md:space-y-4">
             {/* Success Animation */}
             {showSuccess && (
-              <div className="flex flex-col items-center justify-center py-10 animate-in fade-in zoom-in duration-300">
+              <motion.div
+                className="flex flex-col items-center justify-center py-10"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
                 <div
                   className="w-16 h-16 md:w-20 md:h-20 rounded-full grid place-items-center mb-3"
                   style={{
@@ -188,11 +194,15 @@ export function QuickTransaction() {
                 <p className="text-sm font-semibold" style={{ color: THEME.secondary }}>
                   {t('quickEntry.saved')}
                 </p>
-              </div>
+              </motion.div>
             )}
 
             {!showSuccess && (
-              <>
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
                   <button
@@ -438,7 +448,7 @@ export function QuickTransaction() {
                     </>
                   )}
                 </Button>
-              </>
+              </motion.div>
             )}
           </div>
         </SheetContent>

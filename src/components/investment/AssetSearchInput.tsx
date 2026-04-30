@@ -253,7 +253,7 @@ export default function AssetSearchInput({
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0 bg-[#1A1A2E] border-white/[0.08] shadow-2xl shadow-black/40 rounded-xl"
+        className="w-[var(--radix-popover-trigger-width)] p-0 bg-white/[0.03] border-white/[0.08] shadow-2xl shadow-black/40 rounded-xl"
         sideOffset={8}
         align="start"
         style={{

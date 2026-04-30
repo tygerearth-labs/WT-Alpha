@@ -284,7 +284,7 @@ function TargetCard({
       }}
     >
       {/* Gradient accent strip */}
-      <div className="h-[3px]" style={{ background: 'linear-gradient(to right, #BB86FC, #03DAC6, #F9A825)' }} />
+      <div className="h-px bg-white/[0.06]" />
       {/* Clickable header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -490,7 +490,7 @@ function TargetFormDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[420px] lg:max-w-[520px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Gradient accent strip */}
-        <div className="h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(to right, #BB86FC, #03DAC6, #F9A825)' }} />
+        <div className="h-px bg-white/[0.06]" />
         <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white">{isEdit ? t('target.editTitle') : t('target.addTitle')}</DialogTitle>

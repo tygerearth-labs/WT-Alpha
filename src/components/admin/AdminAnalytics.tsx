@@ -11,6 +11,7 @@ import {
   Percent, AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface AnalyticsData {
   financials: {
@@ -173,8 +174,12 @@ export function AdminAnalytics() {
         {finCards.map((card, idx) => {
           const Icon = card.icon;
           return (
-            <div key={card.label} className="animate-in fade-in-0 slide-in-from-bottom-3 duration-500"
-              style={{ animationDelay: `${idx * 60}ms`, animationFillMode: 'backwards' }}>
+            <motion.div key={card.label}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
+              whileHover={{ y: -2 }}
+            >
               <Card className="border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
                 style={{ background: card.gradient }}>
                 <CardContent className="p-4">
@@ -198,7 +203,7 @@ export function AdminAnalytics() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -311,15 +316,21 @@ export function AdminAnalytics() {
                 { label: 'Categories Created', value: data.platformHealth.categories, sub: 'across all users', color: '#BB86FC' },
                 { label: 'Active Invites', value: data.platformHealth.activeInvites, sub: 'not yet used', color: '#FFD700' },
                 { label: 'Total Users', value: data.engagement.totalUsers, sub: `${data.engagement.activeUsersThisMonth} active`, color: '#64B5F6' },
-              ].map((item) => (
-                <div key={item.label} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.03] transition-colors">
+              ].map((item, idx) => (
+                <motion.div key={item.label}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
+                  whileHover={{ y: -2 }}
+                  className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.03] transition-colors"
+                >
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                     <span className="text-[10px] text-white/25 uppercase tracking-wide">{item.label}</span>
                   </div>
                   <p className="text-lg font-bold text-white/80 tabular-nums">{item.value}</p>
                   <p className="text-[9px] text-white/20 mt-0.5">{item.sub}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </CardContent>

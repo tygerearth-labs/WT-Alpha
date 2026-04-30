@@ -276,9 +276,6 @@ export function ProfileSettings() {
           ══════════════════════════════════════════════════════════ */}
       <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
         <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-          {/* Gradient accent strip */}
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--secondary), var(--primary), var(--warning))' }} />
-
           {/* Ambient glow */}
           <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none" style={{ background: `linear-gradient(135deg, ${T_THEME.primary}, ${T_THEME.secondary})` }} />
           <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full opacity-10 blur-3xl pointer-events-none" style={{ background: T_THEME.secondary }} />
@@ -384,9 +381,6 @@ export function ProfileSettings() {
           ══════════════════════════════════════════════════════════ */}
       <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
         <div id="account-settings" className="relative rounded-2xl overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-          {/* Gradient accent strip */}
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
-
           <div className="p-4 sm:p-5 pb-0">
             <div className="flex items-center gap-2">
               <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.primary}15` }}>
@@ -506,8 +500,6 @@ export function ProfileSettings() {
         {/* Language Selector */}
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
           <div className="relative rounded-2xl p-4 sm:p-5 overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-            {/* Gradient accent strip */}
-            <div className="h-[3px] w-full absolute top-0 left-0" style={{ background: 'linear-gradient(90deg, var(--primary), transparent)' }} />
             <div className="flex items-center gap-2 mb-3">
               <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.primary}15` }}>
                 <Globe className="h-4 w-4" style={{ color: T_THEME.primary }} />
@@ -542,8 +534,6 @@ export function ProfileSettings() {
         {/* Currency Selector */}
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
           <div className="relative rounded-2xl p-4 sm:p-5 overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-            {/* Gradient accent strip */}
-            <div className="h-[3px] w-full absolute top-0 left-0" style={{ background: 'linear-gradient(90deg, var(--secondary), transparent)' }} />
             <div className="flex items-center gap-2 mb-3">
               <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.secondary}15` }}>
                 <Coins className="h-4 w-4" style={{ color: T_THEME.secondary }} />
@@ -605,9 +595,6 @@ export function ProfileSettings() {
           ══════════════════════════════════════════════════════════ */}
       <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
         <div className="relative rounded-2xl p-4 sm:p-5 overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-          {/* Gradient accent strip */}
-          <div className="h-[3px] w-full absolute top-0 left-0" style={{ background: 'linear-gradient(90deg, var(--warning), transparent)' }} />
-
           <div className="flex items-center gap-2 mb-1">
             <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: `${T_THEME.warning}15` }}>
               <Shield className="h-4 w-4" style={{ color: T_THEME.warning }} />
@@ -666,9 +653,6 @@ export function ProfileSettings() {
           ══════════════════════════════════════════════════════════ */}
       <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
         <div className="relative rounded-2xl p-4 sm:p-5 overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
-          {/* Gradient accent strip */}
-          <div className="h-[3px] w-full absolute top-0 left-0" style={{ background: 'linear-gradient(90deg, var(--secondary), var(--primary))' }} />
-
           {/* Subtle gradient background overlay */}
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(3,218,198,0.02) 0%, rgba(187,134,252,0.02) 100%)' }} />
 
@@ -724,8 +708,6 @@ export function ProfileSettings() {
           ══════════════════════════════════════════════════════════ */}
       <AlertDialog open={deleteDialog} onOpenChange={(open) => { setDeleteDialog(open); if (!open) setDeletePassword(''); }}>
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl max-w-md">
-          {/* Gradient accent strip */}
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--destructive), var(--warning))' }} />
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="grid place-items-center w-10 h-10 rounded-xl shrink-0 [&>*]:block leading-none" style={{ background: `${T_THEME.destructive}15` }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { AssetType } from '@/lib/asset-catalogue';
@@ -377,11 +378,11 @@ export default function InvestmentPortfolio() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 rounded-xl bg-[#1A1A2E]" />
+            <Skeleton key={i} className="h-48 rounded-xl bg-white/[0.03]" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="bg-[#1A1A2E] border-white/[0.06]">
+        <Card className="bg-white/[0.03] border-white/[0.06]">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="h-10 w-10 text-white/20 mb-3" />
             <p className="text-white/40 text-sm">{t('inv.noInvData')}</p>
@@ -394,7 +395,14 @@ export default function InvestmentPortfolio() {
             const isPositive = item.unrealizedPnl >= 0;
 
             return (
-              <Card key={item.id} className="bg-[#1A1A2E] border-white/[0.06] hover:border-white/[0.1] transition-colors">
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -2 }}
+                transition={{ duration: 0.25 }}
+              >
+              <Card className="bg-white/[0.03] border-white/[0.06] hover:border-white/[0.1] transition-colors">
                 <CardContent className="p-4 space-y-3">
                   {/* Header */}
                   <div className="flex items-start justify-between">
@@ -517,6 +525,7 @@ export default function InvestmentPortfolio() {
                   </div>
                 </CardContent>
               </Card>
+              </motion.div>
             );
           })}
         </div>
@@ -528,7 +537,7 @@ export default function InvestmentPortfolio() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-[480px] bg-[#1A1A2E] border-white/[0.06] text-white overflow-y-auto p-0"
+          className="w-full sm:max-w-[480px] bg-white/[0.03] border-white/[0.06] text-white overflow-y-auto p-0"
         >
           <SheetHeader className="px-6 pt-8 pb-4">
             <SheetTitle className="text-white text-lg">
@@ -900,7 +909,7 @@ export default function InvestmentPortfolio() {
 
       {/* Delete Confirmation (kept as AlertDialog — fine for confirmation) */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent className="bg-[#1A1A2E] border-white/[0.06] text-white">
+        <AlertDialogContent className="bg-white/[0.03] border-white/[0.06] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription className="text-white/60">

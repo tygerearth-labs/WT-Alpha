@@ -14,6 +14,7 @@ import {
   Search, FileDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface ActivityLog {
@@ -130,7 +131,7 @@ export function AdminActivityLog() {
             <SelectTrigger className="h-8 w-[160px] rounded-lg bg-white/[0.03] border-white/[0.06] text-white/60 text-xs">
               <SelectValue placeholder="Filter action" />
             </SelectTrigger>
-            <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+            <SelectContent className="bg-white/[0.03] border-white/[0.08]">
               <SelectItem value="all">All Actions</SelectItem>
               {Object.entries(actionConfig).map(([key, config]) => (
                 <SelectItem key={key} value={key}>{config.label}</SelectItem>
@@ -182,11 +183,17 @@ export function AdminActivityLog() {
 
       {/* Activity Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {Object.entries(actionConfig).slice(0, 4).map(([key, config]) => {
+        {Object.entries(actionConfig).slice(0, 4).map(([key, config], idx) => {
           const Icon = config.icon;
           const count = logs.filter(l => l.action === key).length;
           return (
-            <div key={key} className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0D0D0D] border border-white/[0.06]">
+            <motion.div key={key}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
+              whileHover={{ y: -2 }}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0D0D0D] border border-white/[0.06]"
+            >
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ background: `${config.bgColor}12` }}>
                 <Icon className="h-3.5 w-3.5" style={{ color: config.bgColor }} />
@@ -195,7 +202,7 @@ export function AdminActivityLog() {
                 <p className="text-sm font-bold text-white/70 tabular-nums">{count}</p>
                 <p className="text-[9px] text-white/25 uppercase tracking-wider">{config.label}</p>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -259,10 +266,13 @@ export function AdminActivityLog() {
                         const config = actionConfig[log.action] || { label: log.action, icon: Activity, color: '#666', bgColor: '#666' };
                         const Icon = config.icon;
                         return (
-                          <div
+                          <motion.div
                             key={log.id}
-                            className="flex items-start gap-3 p-3.5 hover:bg-white/[0.02] transition-all duration-200 group/log animate-in fade-in-0 slide-in-from-left-1 duration-300"
-                            style={{ animationDelay: `${entryIdx * 40}ms`, animationFillMode: 'backwards' }}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: entryIdx * 0.03, type: 'spring', stiffness: 400, damping: 25 }}
+                            whileHover={{ x: 2 }}
+                            className="flex items-start gap-3 p-3.5 hover:bg-white/[0.02] transition-all duration-200 group/log"
                           >
                             {/* Timeline icon with connecting line */}
                             <div className="relative flex flex-col items-center shrink-0 z-[1]">
@@ -294,7 +304,7 @@ export function AdminActivityLog() {
                               <p className="text-[10px] text-white/30">{getRelativeTime(log.createdAt)}</p>
                               <p className="text-[9px] text-white/15">{new Date(log.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
                             </div>
-                          </div>
+                          </motion.div>
                         );
                       })}
                     </div>

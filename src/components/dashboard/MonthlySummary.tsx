@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wallet, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Minus, PiggyBank } from 'lucide-react';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -16,6 +17,20 @@ const THEME = {
   border: 'rgba(255,255,255,0.08)',
   text: '#FFFFFF',
   textSecondary: '#B3B3B3',
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const childVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
 // ── Animated Counter Hook ───────────────────────────────────────
@@ -213,6 +228,13 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
   const spendingCompareColor = mc.expenseChange > 0 ? THEME.warning : mc.expenseChange < 0 ? THEME.secondary : THEME.muted;
 
   return (
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      whileHover={{ y: -2, scale: 1.01 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+    >
     <Card className="overflow-hidden group/card relative" style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}>
       <div className="absolute inset-0 rounded-lg opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at bottom left, #FFD70008 0%, transparent 60%)' }}
@@ -230,14 +252,7 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
       <CardContent className="px-4 pb-4 space-y-4">
         {/* Income & Expense metrics */}
         <div className="space-y-3">
-          <div
-            className="transition-all duration-500"
-            style={{
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-              transitionDelay: '0ms',
-            }}
-          >
+          <motion.div variants={childVariants}>
             <MetricRow
               label={t('dashboard.income')}
               value={mc.currentMonthIncome}
@@ -246,16 +261,9 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
               color={THEME.secondary}
               isIncome={true}
             />
-          </div>
+          </motion.div>
 
-          <div
-            className="transition-all duration-500"
-            style={{
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-              transitionDelay: '80ms',
-            }}
-          >
+          <motion.div variants={childVariants}>
             <MetricRow
               label={t('dashboard.expense')}
               value={mc.currentMonthExpense}
@@ -264,21 +272,14 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
               color={THEME.destructive}
               isIncome={false}
             />
-          </div>
+          </motion.div>
         </div>
 
         {/* Divider */}
         <div style={{ borderTop: `1px solid ${THEME.border}` }} />
 
         {/* Net Savings Indicator */}
-        <div
-          className="transition-all duration-500"
-          style={{
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-            transitionDelay: '160ms',
-          }}
-        >
+        <motion.div variants={childVariants}>
           <div
             className="flex items-center gap-2.5 p-3 rounded-lg"
             style={{ background: `${savingsColor}08`, border: `1px solid ${savingsColor}20` }}
@@ -302,17 +303,10 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
               <Sparkline data={savingsSpark} color={savingsColor} width={50} height={20} />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Budget Utilization */}
-        <div
-          className="transition-all duration-500"
-          style={{
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-            transitionDelay: '240ms',
-          }}
-        >
+        <motion.div variants={childVariants}>
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1.5">
               <PiggyBank className="h-3 w-3" style={{ color: THEME.warning }} />
@@ -339,17 +333,10 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
               {t('dashboard.savingsRateLabel')} <span className="font-semibold" style={{ color: THEME.secondary }}>{(savingsRate ?? 0).toFixed(0)}%</span>
             </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Comparison with previous month */}
-        <div
-          className="transition-all duration-500"
-          style={{
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
-            transitionDelay: '320ms',
-          }}
-        >
+        <motion.div variants={childVariants}>
           <div
             className="flex items-center gap-1.5 text-[10px] font-medium px-2.5 py-2 rounded-lg"
             style={{ background: `${spendingCompareColor}10`, color: spendingCompareColor }}
@@ -363,8 +350,9 @@ export function MonthlySummary({ monthlyComparison, savingsRate, monthlyTrends }
             )}
             <span>{spendingCompareText}</span>
           </div>
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }

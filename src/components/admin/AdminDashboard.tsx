@@ -17,6 +17,7 @@ import {
   Clock, BarChart3, Star, Target, Bell, FileText, Link,
   ChevronRight, Loader2, History,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { AdminPage } from './AdminLayout';
@@ -438,8 +439,13 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         {statCards.map((card, idx) => {
           const Icon = card.icon;
           return (
-            <div key={card.label} className="group relative animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
-              style={{ animationDelay: `${100 + idx * 80}ms`, animationFillMode: 'backwards' }}>
+            <motion.div key={card.label}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
+              whileHover={{ y: -2, scale: 1.01 }}
+              className="group relative"
+            >
               {/* Gradient border effect */}
               <div className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: `linear-gradient(135deg, ${card.color}30, transparent 50%, ${card.color}15)` }} />
@@ -484,7 +490,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
           );
         })}
       </div>

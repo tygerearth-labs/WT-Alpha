@@ -943,16 +943,16 @@ export default function InvestmentDashboard() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-10 rounded-xl bg-[#1A1A2E]" />
-        <Skeleton className="h-10 rounded-xl bg-[#1A1A2E]" />
+        <Skeleton className="h-10 rounded-xl bg-white/[0.02]" />
+        <Skeleton className="h-10 rounded-xl bg-white/[0.02]" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-xl bg-[#1A1A2E]" />
+            <Skeleton key={i} className="h-24 rounded-xl bg-white/[0.02]" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Skeleton className="h-[420px] rounded-xl bg-[#1A1A2E] lg:col-span-2" />
-          <Skeleton className="h-[420px] rounded-xl bg-[#1A1A2E]" />
+          <Skeleton className="h-[420px] rounded-xl bg-white/[0.02] lg:col-span-2" />
+          <Skeleton className="h-[420px] rounded-xl bg-white/[0.02]" />
         </div>
       </div>
     );
@@ -967,7 +967,7 @@ export default function InvestmentDashboard() {
     >
       {/* ── WELCOME / FEATURE GUIDE ── */}
       <motion.div variants={cardVariants} custom={-1}>
-        <div className="rounded-xl bg-[#1A1A2E]/80 border border-white/[0.06] overflow-hidden">
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
           {/* Gradient header */}
           <button
             className="w-full flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-[#BB86FC]/20 via-[#03DAC6]/10 to-[#FFD700]/10 hover:from-[#BB86FC]/25 hover:via-[#03DAC6]/15 hover:to-[#FFD700]/15 transition-all"

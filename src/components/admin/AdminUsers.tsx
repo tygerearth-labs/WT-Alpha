@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface UserRecord {
@@ -328,8 +329,19 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
     }
   };
 
-  const handleSuspendFreeTrials = () => {
-    toast.info('Suspend All Free Trial Users', { description: 'This feature is coming soon. Stay tuned!' });
+  const handleSuspendFreeTrials = async () => {
+    try {
+      const res = await fetch('/api/admin/users?subscription=free_trial', { method: 'PATCH' });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`${data.count || 0} free trial users suspended`);
+        fetchUsers(); // refresh list
+      } else {
+        toast.error('Failed to suspend users', { description: 'Server returned an error.' });
+      }
+    } catch {
+      toast.error('Failed to suspend users', { description: 'Network error.' });
+    }
   };
 
   const renderDialogs = () => (
@@ -344,7 +356,6 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
         }
       }}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -422,7 +433,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                     <SelectItem value="basic">Basic</SelectItem>
                     <SelectItem value="pro">Pro</SelectItem>
                     <SelectItem value="ultimate">Ultimate</SelectItem>
@@ -435,7 +446,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                     <SelectItem value="user">User</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
@@ -458,7 +469,6 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
       {/* Edit User Dialog */}
       <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90">Edit User</DialogTitle>
@@ -480,7 +490,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                 <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                   <SelectItem value="basic">Basic</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
                   <SelectItem value="ultimate">Ultimate</SelectItem>
@@ -494,7 +504,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="suspended">Suspended</SelectItem>
                   </SelectContent>
@@ -506,7 +516,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                  <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                     <SelectItem value="user">User</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
@@ -544,7 +554,6 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
       {/* Reset Password Dialog */}
       <Dialog open={!!resetPwUser} onOpenChange={() => setResetPwUser(null)}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90">Reset Password</DialogTitle>
@@ -573,8 +582,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
       {/* User Detail Profile Modal */}
       <Dialog open={!!detailUser} onOpenChange={(open) => { if (!open) { setDetailUser(null); setDetailStats(null); } }}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-lg max-h-[90vh]">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
-          <div className="overflow-y-auto max-h-[calc(90vh-3px)] custom-scrollbar p-5">
+          <div className="overflow-y-auto max-h-[90vh] custom-scrollbar p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
               <Activity className="h-5 w-5 text-[#03DAC6]" />
@@ -832,7 +840,6 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Delete User</AlertDialogTitle>
@@ -1040,10 +1047,16 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => {
+                    {users.map((u, idx) => {
                       const avatarColor = getAvatarColor(u.id);
                       return (
-                        <tr key={u.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                        <motion.tr key={u.id}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.03, type: 'spring', stiffness: 400, damping: 25 }}
+                          whileHover={{ x: 2 }}
+                          className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors"
+                        >
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
@@ -1096,7 +1109,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                               <Edit className="h-3 w-3 mr-1" /> Edit
                             </Button>
                           </td>
-                        </tr>
+                        </motion.tr>
                       );
                     })}
                   </tbody>
@@ -1151,7 +1164,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
             <SelectTrigger className="h-7 w-[140px] text-[11px] rounded-lg bg-[#03DAC6]/10 border-[#03DAC6]/20 text-[#03DAC6]">
               <SelectValue placeholder="Bulk action..." />
             </SelectTrigger>
-            <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+            <SelectContent className="bg-white/[0.03] border-white/[0.08]">
               <SelectItem value="suspend">Suspend Users</SelectItem>
               <SelectItem value="activate">Activate Users</SelectItem>
             </SelectContent>
@@ -1188,7 +1201,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <Filter className="h-3.5 w-3.5 mr-1 text-white/30" />
                   <SelectValue placeholder="Plan" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                   <SelectItem value="all">All Plans</SelectItem>
                   <SelectItem value="basic">Basic</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
@@ -1200,7 +1213,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                   <Filter className="h-3.5 w-3.5 mr-1 text-white/30" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
@@ -1240,10 +1253,16 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                 const avatarColor = getAvatarColor(u.id);
                 const isSelected = selectedIds.has(u.id);
                 return (
-                  <div key={u.id} className={cn(
-                    'flex items-center justify-between p-4 hover:bg-white/[0.02] transition-all duration-200 animate-in fade-in-0 slide-in-from-bottom-1',
-                    isSelected && 'bg-[#03DAC6]/[0.03]',
-                  )} style={{ animationDelay: `${rowIdx * 30}ms`, animationFillMode: 'backwards' }}>
+                  <motion.div key={u.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: rowIdx * 0.03, type: 'spring', stiffness: 400, damping: 25 }}
+                    whileHover={{ x: 2 }}
+                    className={cn(
+                      'flex items-center justify-between p-4 hover:bg-white/[0.02] transition-all duration-200',
+                      isSelected && 'bg-[#03DAC6]/[0.03]',
+                    )}
+                  >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       {/* Selection checkbox */}
                       <button
@@ -1336,7 +1355,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

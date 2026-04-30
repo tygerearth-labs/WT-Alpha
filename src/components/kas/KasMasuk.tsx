@@ -406,7 +406,10 @@ export function KasMasuk() {
   const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 6);
 
   return (
-    <div className="w-full max-w-full space-y-3 sm:space-y-4">
+    <div className="w-full max-w-full space-y-3 sm:space-y-4 relative">
+      {/* Page-level ambient background */}
+      <div className="absolute -top-48 left-1/3 w-96 h-96 rounded-full opacity-[0.04] blur-[120px] pointer-events-none" style={{ background: T.accent }} />
+      <div className="absolute top-1/2 -right-32 w-80 h-80 rounded-full opacity-[0.03] blur-[100px] pointer-events-none" style={{ background: T.primary }} />
       <style>{`
         @keyframes heroGlow {
           0%, 100% { opacity: 0.3; }
@@ -429,14 +432,16 @@ export function KasMasuk() {
           100% { opacity: 1; transform: scale(1); }
         }
         @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 0px transparent; }
-          50% { box-shadow: 0 0 12px var(--glow-color, rgba(3,218,198,0.2)); }
+          0%, 100% { opacity: 0.04; }
+          50% { opacity: 0.08; }
         }
       `}</style>
       {/* ── Hero Strip ── */}
-      <div className="relative rounded-2xl">
-        {/* Gradient accent strip at top */}
-        <div className="h-[3px] w-full rounded-t-2xl" style={{ background: 'linear-gradient(to right, transparent, var(--secondary), var(--primary), transparent)' }} />
+      <div className="relative rounded-2xl overflow-hidden">
+        {/* Ambient background circles */}
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: T.accent }} />
+        <div className="absolute -bottom-32 -right-32 w-72 h-72 rounded-full opacity-[0.05] blur-[120px] pointer-events-none" style={{ background: T.primary }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full opacity-[0.03] blur-[100px] pointer-events-none" style={{ background: '#64B5F6' }} />
         {/* Desktop animated gradient border glow */}
         <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
           style={{
@@ -464,8 +469,13 @@ export function KasMasuk() {
         {/* Main content */}
         <div
           className="relative rounded-2xl p-4 sm:p-5 lg:p-8 overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${T.accent}15 0%, ${T.accent}08 50%, ${T.primary}05 100%)`, border: `1px solid ${T.accent}25` }}
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
         >
+          {/* Per-card colored glow */}
+          <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: T.accent }} />
+          <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full blur-3xl opacity-[0.04] pointer-events-none" style={{ background: T.primary }} />
+          {/* h-px gradient line at top */}
+          <div className="absolute top-0 left-4 right-4 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.accent}40, ${T.primary}40, transparent)` }} />
           {/* Desktop dot pattern overlay */}
           <div className="absolute inset-0 hidden lg:block pointer-events-none" style={{
             backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
@@ -474,11 +484,11 @@ export function KasMasuk() {
             WebkitMaskImage: 'linear-gradient(180deg, transparent 0%, black 25%, black 75%, transparent 100%)',
           }} />
 
-          {/* Decorative blurs */}
-          <div className="absolute top-0 right-0 w-32 h-32 lg:w-56 lg:h-56 rounded-full opacity-[0.08] blur-3xl pointer-events-none"
+          {/* Per-card colored glow */}
+          <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-[100px] opacity-[0.05] pointer-events-none"
             style={{ background: T.accent, transform: 'translate(30%, -30%)' }}
           />
-          <div className="absolute bottom-0 left-1/4 w-24 h-24 lg:w-40 lg:h-40 rounded-full opacity-[0.05] blur-3xl pointer-events-none hidden lg:block"
+          <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full blur-[100px] opacity-[0.04] pointer-events-none hidden lg:block"
             style={{ background: T.primary }}
           />
 
@@ -494,7 +504,7 @@ export function KasMasuk() {
                 </div>
                 <div>
                   <p className="text-[10px] lg:text-sm font-medium uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.totalIncome')}</p>
-                  <p className="text-xl sm:text-2xl lg:text-4xl font-bold tracking-tight" style={{ color: T.text }}>
+                  <p className="text-xl sm:text-2xl lg:text-4xl font-bold tracking-tight bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${T.text}, ${T.accent})` }}>
                     {formatAmount(totalIncome)}
                   </p>
                 </div>
@@ -601,17 +611,14 @@ export function KasMasuk() {
           <motion.div
             key={stat.label}
             className="rounded-xl p-3 lg:p-5 lg:py-6 text-center relative overflow-hidden group"
-            style={{ background: `linear-gradient(135deg, ${stat.color}06, ${stat.color}03)`, border: `1px solid ${T.border}` }}
-            whileHover={{ scale: 1.02, y: -1 }}
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
+            whileHover={{ scale: 1.01 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            {/* Desktop gradient border glow on hover */}
-            <div className="absolute inset-0 hidden lg:block rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-              style={{ boxShadow: `inset 0 0 0 1px ${stat.color}25, 0 0 24px ${stat.color}10` }}
-            />
+            {/* Per-card colored glow */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 h-16 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: stat.color }} />
             <div className="relative z-10">
               <div className="relative inline-block">
-                <div className="absolute inset-0 rounded-full blur-lg opacity-0 hidden lg:block group-hover:opacity-30 transition-opacity duration-300" style={{ background: stat.color }} />
                 <stat.icon className="relative h-3.5 w-3.5 lg:h-5 lg:w-5 mx-auto mb-1.5 lg:mb-2" style={{ color: stat.color, opacity: 0.7 }} />
               </div>
               <p className="text-[10px] lg:text-xs font-medium uppercase tracking-wider mb-0.5 lg:mb-1" style={{ color: T.muted }}>{stat.label}</p>
@@ -648,7 +655,7 @@ export function KasMasuk() {
         <div
           className="rounded-2xl p-5 space-y-5 overflow-hidden"
           style={{
-            background: 'rgba(18, 18, 18, 0.6)',
+            background: 'rgba(255,255,255,0.02)',
             border: '1px solid rgba(255,255,255,0.06)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
@@ -693,7 +700,7 @@ export function KasMasuk() {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.topCategories')}</p>
+                <p className="text-sm font-semibold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${T.text}, ${T.accent})` }}>{t('kas.topCategories')}</p>
               </div>
               <div className="space-y-2.5">
                 {[...incomeByCategory].sort((a, b) => b.amount - a.amount).slice(0, 3).map((cat, i) => {
@@ -702,7 +709,7 @@ export function KasMasuk() {
                   return (
                     <motion.div
                       key={cat.name}
-                      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.01] cursor-default overflow-hidden"
+                      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:bg-white/[0.03] cursor-default overflow-hidden"
                       style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}` }}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -777,7 +784,7 @@ export function KasMasuk() {
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.distribution')}</p>
+                <p className="text-sm font-semibold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${T.text}, ${T.primary})` }}>{t('kas.distribution')}</p>
               </div>
               <div className="space-y-3.5">
                 {incomeByCategory.slice(0, 5).map((cat) => {
@@ -811,7 +818,7 @@ export function KasMasuk() {
         <div
           className="rounded-2xl p-5 space-y-4"
           style={{
-            background: 'rgba(18, 18, 18, 0.6)',
+            background: 'rgba(255,255,255,0.02)',
             border: '1px solid rgba(255,255,255,0.06)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
@@ -821,7 +828,7 @@ export function KasMasuk() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.history')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${T.text}, ${T.accent})` }}>{t('kas.history')}</p>
             </div>
             <div className="flex gap-1.5">
               {FILTERS.map((f) => (
@@ -831,11 +838,10 @@ export function KasMasuk() {
                   className="text-xs font-semibold px-4 py-1.5 rounded-full shrink-0 transition-all duration-200 hover:scale-105"
                   style={{
                     background: dateFilter === f.key
-                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
+                      ? 'rgba(3,218,198,0.1)'
                       : 'rgba(255,255,255,0.04)',
-                    color: dateFilter === f.key ? '#000' : T.muted,
-                    boxShadow: dateFilter === f.key ? `0 0 16px ${T.accent}40` : 'none',
-                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    color: dateFilter === f.key ? T.accent : T.muted,
+                    border: dateFilter === f.key ? '1px solid rgba(3,218,198,0.15)' : '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
                   {f.label}
@@ -851,7 +857,7 @@ export function KasMasuk() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center text-center py-12 relative rounded-xl"
-                style={{ background: T.surface, border: `1px solid ${T.border}` }}
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
               >
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: 'var(--secondary)' }} />
@@ -951,7 +957,7 @@ export function KasMasuk() {
         <div
           className="rounded-2xl p-4 space-y-4"
           style={{
-            background: 'rgba(18, 18, 18, 0.6)',
+            background: 'rgba(255,255,255,0.02)',
             border: '1px solid rgba(255,255,255,0.06)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
@@ -1021,7 +1027,7 @@ export function KasMasuk() {
         <div
           className="rounded-2xl p-4 space-y-3"
           style={{
-            background: 'rgba(18, 18, 18, 0.6)',
+            background: 'rgba(255,255,255,0.02)',
             border: '1px solid rgba(255,255,255,0.06)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
@@ -1040,11 +1046,10 @@ export function KasMasuk() {
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
                   style={{
                     background: dateFilter === f.key
-                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
+                      ? 'rgba(3,218,198,0.1)'
                       : 'rgba(255,255,255,0.04)',
-                    color: dateFilter === f.key ? '#000' : T.muted,
-                    boxShadow: dateFilter === f.key ? `0 0 12px ${T.accent}25` : 'none',
-                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    color: dateFilter === f.key ? T.accent : T.muted,
+                    border: dateFilter === f.key ? '1px solid rgba(3,218,198,0.15)' : '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
                   {f.label}
@@ -1080,7 +1085,7 @@ export function KasMasuk() {
         {incomeByCategory.length > 0 && (
           <div
             className="rounded-xl p-3 sm:p-4"
-            style={{ background: T.surface, border: `1px solid ${T.border}` }}
+            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>{t('kas.distribution')}</p>
             <div className="space-y-2">
@@ -1145,11 +1150,10 @@ export function KasMasuk() {
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
                   style={{
                     background: dateFilter === f.key
-                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
+                      ? 'rgba(3,218,198,0.1)'
                       : 'transparent',
-                    color: dateFilter === f.key ? '#000' : T.muted,
-                    boxShadow: dateFilter === f.key ? `0 0 12px ${T.accent}25` : 'none',
-                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    color: dateFilter === f.key ? T.accent : T.muted,
+                    border: dateFilter === f.key ? '1px solid rgba(3,218,198,0.15)' : '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
                   {f.label}
@@ -1203,27 +1207,32 @@ export function KasMasuk() {
         onSubmit={selectedCategory ? handleEditCategory : handleAddCategory}
       />
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
-        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: T.text }}>
-              {deleteDialog.type === 'transaction' ? t('kas.deleteIncome') : t('kas.deleteCategory')}
-            </AlertDialogTitle>
-            <AlertDialogDescription style={{ color: T.textSub }}>
-              {deleteDialog.type === 'transaction'
-                ? t('kas.deleteIncomeDesc')
-                : t('kas.deleteCategoryDesc')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/[0.06] text-white/70 hover:bg-white/[0.1] hover:text-white border-0">{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="border-0"
-              style={{ background: '#CF6679', color: '#fff' }}
-            >
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+        <AlertDialogContent className="bg-[#141414] border-white/[0.06] rounded-2xl overflow-hidden">
+          <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(3,218,198,0.3), transparent)' }} />
+          <div className="pt-6">
+            <AlertDialogHeader>
+              <AlertDialogTitle style={{ color: T.text }}>
+                {deleteDialog.type === 'transaction' ? t('kas.deleteIncome') : t('kas.deleteCategory')}
+              </AlertDialogTitle>
+              <AlertDialogDescription style={{ color: T.textSub }}>
+                {deleteDialog.type === 'transaction'
+                  ? t('kas.deleteIncomeDesc')
+                  : t('kas.deleteCategoryDesc')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </div>
+          <div className="pb-6">
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-white/[0.06] text-white/70 hover:bg-white/[0.1] hover:text-white border-0">{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="border-0"
+                style={{ background: '#CF6679', color: '#fff' }}
+              >
+                {t('common.delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </div>

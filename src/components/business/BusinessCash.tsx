@@ -1415,9 +1415,14 @@ export default function BusinessCash() {
   const CurrentTabIcon = currentTabInfo.icon;
 
   return (
-    <div className="space-y-3">
+    <div className="relative space-y-3 overflow-hidden">
+      {/* ── Ambient Background Blobs ── */}
+      <div className="pointer-events-none absolute -top-32 -left-32 w-80 h-80 rounded-full opacity-[0.07] blur-[100px]" style={{ background: c.secondary }} />
+      <div className="pointer-events-none absolute top-48 -right-20 w-64 h-64 rounded-full opacity-[0.05] blur-[90px]" style={{ background: c.primary }} />
+      <div className="pointer-events-none absolute bottom-32 left-1/4 w-72 h-72 rounded-full opacity-[0.04] blur-[80px]" style={{ background: c.warning }} />
+
       {/* ── Floating Tab Switcher Button ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
           <motion.button
             onClick={() => setTabSwitcherOpen(true)}
@@ -1442,7 +1447,7 @@ export default function BusinessCash() {
       {/* ── Tab Switcher Dialog ── */}
       <Dialog open={tabSwitcherOpen} onOpenChange={setTabSwitcherOpen}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-sm">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="h-px w-full bg-white/[0.06]" />
           <DialogTitle className="sr-only">Pilih Halaman</DialogTitle>
           <DialogDescription className="sr-only">Pilih halaman cashflow yang ingin ditampilkan</DialogDescription>
           <div className="px-5 pt-5 pb-3">
@@ -1512,21 +1517,22 @@ export default function BusinessCash() {
         {/* ── TAB 1: ARUS KAS ─────────────────────────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
         {mainTab === 'arus_kas' && (
-          <div key="arus_kas" className="space-y-3 p-3 sm:p-4">
+          <div key="arus_kas" className="space-y-3 p-3 sm:p-4 relative z-10">
             {/* ══════════════════════════════════════════════ */}
             {/* SECTION 1: SALDO OVERVIEW (Accountant Hero)    */}
             {/* ══════════════════════════════════════════════ */}
-            <Card className="rounded-xl overflow-hidden border border-border/50">
-              {/* Gradient accent strip at top */}
-              <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${c.secondary}, ${c.warning}, ${c.primary})` }} />
-              <CardContent className="p-4 sm:p-5">
+            <Card className="rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] relative">
+              {/* Ambient glow behind hero */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full opacity-[0.08] blur-[80px]" style={{ background: `linear-gradient(135deg, ${c.secondary}, ${c.primary})` }} />
+              </div>
+              <CardContent className="p-4 sm:p-5 relative z-10">
                 {/* Header: title + period filter */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-primary" />
-                    <h2 className="text-sm font-bold text-foreground">Saldo Dana</h2>
-                  </div>
-                  <div className="flex gap-0.5 rounded-full p-0.5 bg-white/[0.03] border border-border/30">
+                  <h2 className="text-sm font-bold bg-gradient-to-r from-secondary via-foreground to-primary bg-clip-text text-transparent">
+                    Saldo Dana
+                  </h2>
+                  <div className="flex gap-0.5 rounded-full p-0.5 bg-white/[0.03] border border-white/[0.06]">
                     {PERIOD_OPTIONS.map((opt) => {
                       const isActive = cashPeriod === opt.value;
                       return (
@@ -1535,9 +1541,8 @@ export default function BusinessCash() {
                           onClick={() => setCashPeriod(opt.value)}
                           className="px-2.5 py-1 rounded-full text-[10px] font-medium transition-all duration-200"
                           style={isActive ? {
-                            background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.primary, 8)})`,
+                            background: alpha(c.primary, 10),
                             color: c.primary,
-                            boxShadow: `0 1px 4px ${alpha(c.primary, 12)}`,
                           } : { color: c.muted }}
                         >
                           {opt.label}
@@ -1547,7 +1552,7 @@ export default function BusinessCash() {
                   </div>
                 </div>
 
-                {/* Total Saldo — big number */}
+                {/* Total Saldo — big number with glow */}
                 <div className="text-center mb-4">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Total Saldo Saat Ini</p>
                   <motion.p
@@ -1556,6 +1561,7 @@ export default function BusinessCash() {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.4, ease: 'easeOut' }}
                     className="text-2xl sm:text-3xl font-extrabold tabular-nums text-foreground"
+                    style={{ textShadow: `0 0 40px ${alpha(c.secondary, 25)}, 0 0 80px ${alpha(c.secondary, 10)}` }}
                   >
                     {formatAmount(animSaldo)}
                   </motion.p>
@@ -1566,46 +1572,55 @@ export default function BusinessCash() {
                   <motion.div
                     whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ duration: 0.15 }}
-                    className="rounded-xl p-2.5 text-center border border-secondary/10"
-                    style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 8)}, ${alpha(c.secondary, 2)})` }}
+                    className="rounded-xl p-2.5 text-center border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm relative overflow-hidden"
                   >
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <ArrowUpRight className="h-3 w-3 text-secondary" />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Masuk</span>
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full opacity-[0.15] blur-[20px]" style={{ background: c.secondary }} />
                     </div>
-                    <p className="text-[11px] sm:text-xs font-bold tabular-nums text-secondary">{formatAmount(animIncome)}</p>
-                    <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <ArrowUpRight className="h-3 w-3 text-secondary" />
+                        <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Masuk</span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs font-bold tabular-nums text-secondary">{formatAmount(animIncome)}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                    </div>
                   </motion.div>
                   <motion.div
                     whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ duration: 0.15 }}
-                    className="rounded-xl p-2.5 text-center border border-destructive/10"
-                    style={{ background: `linear-gradient(135deg, ${alpha(c.destructive, 8)}, ${alpha(c.destructive, 2)})` }}
+                    className="rounded-xl p-2.5 text-center border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm relative overflow-hidden"
                   >
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <ArrowDownRight className="h-3 w-3 text-destructive" />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Keluar</span>
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full opacity-[0.15] blur-[20px]" style={{ background: c.destructive }} />
                     </div>
-                    <p className="text-[11px] sm:text-xs font-bold tabular-nums text-destructive">{formatAmount(animExpense)}</p>
-                    <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <ArrowDownRight className="h-3 w-3 text-destructive" />
+                        <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Keluar</span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs font-bold tabular-nums text-destructive">{formatAmount(animExpense)}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                    </div>
                   </motion.div>
                   <motion.div
                     whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ duration: 0.15 }}
-                    className="rounded-xl p-2.5 text-center border"
-                    style={{
-                      background: `linear-gradient(135deg, ${animNet >= 0 ? alpha(c.secondary, 8) : alpha(c.destructive, 8)}, ${animNet >= 0 ? alpha(c.secondary, 2) : alpha(c.destructive, 2)})`,
-                      borderColor: animNet >= 0 ? alpha(c.secondary, 10) : alpha(c.destructive, 10),
-                    }}
+                    className="rounded-xl p-2.5 text-center border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm relative overflow-hidden"
                   >
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <CircleDollarSign className={cn("h-3 w-3", animNet >= 0 ? "text-secondary" : "text-destructive")} />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Bersih</span>
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full opacity-[0.15] blur-[20px]" style={{ background: animNet >= 0 ? c.secondary : c.destructive }} />
                     </div>
-                    <p className={cn("text-[11px] sm:text-xs font-bold tabular-nums", animNet >= 0 ? "text-secondary" : "text-destructive")}>
-                      {animNet >= 0 ? '+' : '-'}{formatAmount(Math.abs(animNet))}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <CircleDollarSign className={cn("h-3 w-3", animNet >= 0 ? "text-secondary" : "text-destructive")} />
+                        <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Bersih</span>
+                      </div>
+                      <p className={cn("text-[11px] sm:text-xs font-bold tabular-nums", animNet >= 0 ? "text-secondary" : "text-destructive")}>
+                        {animNet >= 0 ? '+' : '-'}{formatAmount(Math.abs(animNet))}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
+                    </div>
                   </motion.div>
                 </div>
 
@@ -1651,9 +1666,8 @@ export default function BusinessCash() {
                         style={
                           isActive
                             ? {
-                                background: `linear-gradient(135deg, ${alpha(f.color, 14)}, ${alpha(f.color, 6)})`,
+                                background: alpha(f.color, 10),
                                 color: f.color,
-                                boxShadow: `0 1px 4px ${alpha(f.color, 10)}`,
                               }
                             : { color: c.muted }
                         }
@@ -1706,7 +1720,7 @@ export default function BusinessCash() {
             {/* ══════════════════════════════════════════════ */}
             {/* SECTION 3: UNIFIED TRANSACTION LIST             */}
             {/* ══════════════════════════════════════════════ */}
-            <Card className="rounded-xl overflow-hidden border border-border/50">
+            <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
               <CardContent className="p-0">
                 {cashLoading ? (
                   <div className="space-y-2 p-3 sm:p-4">
@@ -1777,8 +1791,7 @@ export default function BusinessCash() {
                               initial="hidden"
                               animate="show"
                               layout
-                              className="rounded-lg p-2.5 border border-border/30 bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-200 cursor-pointer"
-                              style={{ borderLeftWidth: '3px', borderLeftColor: borderAccent }}
+                              className="rounded-lg p-2.5 border border-white/[0.06] bg-white/[0.01] hover:bg-white/[0.04] transition-all duration-200 cursor-pointer"
                               whileHover={{ x: 2 }}
                               onClick={() => setTransactionDetail(entry)}
                             >
@@ -1859,8 +1872,7 @@ export default function BusinessCash() {
                                   initial="hidden"
                                   animate="show"
                                   layout
-                                  className="border-b border-border/20 transition-all duration-150 hover:bg-white/[0.03] cursor-pointer"
-                                  style={{ borderLeftWidth: '3px', borderLeftColor: borderAccent }}
+                                  className="border-b border-border/20 transition-all duration-150 hover:bg-white/[0.04] cursor-pointer"
                                   onClick={() => setTransactionDetail(entry)}
                                 >
                                   <TableCell className="text-xs py-2.5 font-mono text-muted-foreground">{formatDate(entry.date)}</TableCell>
@@ -1947,7 +1959,7 @@ export default function BusinessCash() {
             {/* ══════════════════════════════════════════════ */}
             <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
               <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md">
-                <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+                <div className="h-px w-full bg-white/[0.06]" />
                 <DialogTitle className="sr-only">Tambah Kategori</DialogTitle>
                 <DialogDescription className="sr-only">Tambah kategori pengeluaran baru</DialogDescription>
                 <div className="px-5 pt-5 pb-4">
@@ -2050,7 +2062,7 @@ export default function BusinessCash() {
             {/* ══════════════════════════════════════════════ */}
             <motion.button
               onClick={() => setQuickAddOpen(!quickAddOpen)}
-              className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-30 h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
+              className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-30 h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300"
               style={{
                 background: `linear-gradient(135deg, ${c.primary}, ${alpha(c.primary, 60)})`,
               }}
@@ -2079,7 +2091,7 @@ export default function BusinessCash() {
                     className="fixed bottom-0 left-0 right-0 z-50 sm:bottom-auto sm:right-6 sm:left-auto sm:top-auto sm:z-50 sm:w-[360px]"
                     style={{ bottom: 0 }}
                   >
-                    <div className="bg-[#1a1a1a] border-t border-white/[0.08] sm:border sm:border-white/[0.08] sm:rounded-2xl sm:shadow-2xl p-4 sm:p-5 max-h-[85vh] overflow-y-auto">
+                    <div className="bg-[#141414] border-t border-white/[0.08] sm:border sm:border-white/[0.08] sm:rounded-2xl p-4 sm:p-5 max-h-[85vh] overflow-y-auto">
                       <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mb-3 sm:hidden" />
 
                       {/* Header */}
@@ -2296,39 +2308,54 @@ export default function BusinessCash() {
         {/* ── TAB 2: INVESTOR ─────────────────────────────────── */}
         {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'investor' && (
-          <div key="investor" className="space-y-3 p-3 sm:p-4">
+          <div key="investor" className="space-y-3 p-3 sm:p-4 relative z-10">
             {/* ── Investor Summary — Merged Compact Card ── */}
-            <Card className="rounded-xl overflow-hidden border border-border">
+            <Card className="rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08]">
               <CardContent className="p-3 sm:p-4">
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {/* Total Modal Investor */}
-                  <div className="rounded-lg bg-primary/5 p-2.5 text-center sm:text-left">
-                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
-                      <HandCoins className="h-3 w-3 text-primary" />
-                      <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Modal</span>
+                  <div className="rounded-lg bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-2.5 text-center sm:text-left relative overflow-hidden">
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full opacity-[0.12] blur-[16px]" style={{ background: c.primary }} />
                     </div>
-                    <p className="text-[11px] sm:text-sm font-bold tabular-nums text-primary leading-tight">
-                      {formatAmount(animTotalInvestment)}
-                    </p>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                        <HandCoins className="h-3 w-3 text-primary" />
+                        <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Modal</span>
+                      </div>
+                      <p className="text-[11px] sm:text-sm font-bold tabular-nums text-primary leading-tight">
+                        {formatAmount(animTotalInvestment)}
+                      </p>
+                    </div>
                   </div>
                   {/* Jumlah Investor */}
-                  <div className="rounded-lg bg-secondary/5 p-2.5 text-center sm:text-left">
-                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
-                      <Users className="h-3 w-3 text-secondary" />
-                      <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Investor</span>
+                  <div className="rounded-lg bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-2.5 text-center sm:text-left relative overflow-hidden">
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full opacity-[0.12] blur-[16px]" style={{ background: c.secondary }} />
                     </div>
-                    <p className="text-xs sm:text-sm font-bold text-secondary leading-tight">
-                      {investorSummary.activeCount}
-                      <span className="text-[10px] font-normal ml-0.5 text-muted-foreground">aktif</span>
-                    </p>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                        <Users className="h-3 w-3 text-secondary" />
+                        <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Investor</span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-bold text-secondary leading-tight">
+                        {investorSummary.activeCount}
+                        <span className="text-[10px] font-normal ml-0.5 text-muted-foreground">aktif</span>
+                      </p>
+                    </div>
                   </div>
                   {/* Rata-rata Bagi Hasil */}
-                  <div className="rounded-lg bg-warning/5 p-2.5 text-center sm:text-left">
-                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
-                      <Percent className="h-3 w-3 text-warning" />
-                      <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Bagi Hasil</span>
+                  <div className="rounded-lg bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-2.5 text-center sm:text-left relative overflow-hidden">
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full opacity-[0.12] blur-[16px]" style={{ background: c.warning }} />
                     </div>
-                    <p className="text-xs sm:text-sm font-bold text-warning leading-tight">{animAvgShare.toFixed(1)}%</p>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
+                        <Percent className="h-3 w-3 text-warning" />
+                        <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Bagi Hasil</span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-bold text-warning leading-tight">{animAvgShare.toFixed(1)}%</p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -2336,8 +2363,7 @@ export default function BusinessCash() {
 
             {/* ── Header with Add Button ── */}
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
-                <Users className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold flex items-center gap-2 bg-gradient-to-r from-primary to-foreground bg-clip-text text-transparent">
                 Daftar Investor
               </h2>
               <Button
@@ -2352,7 +2378,7 @@ export default function BusinessCash() {
 
             {/* ── Investor Cards ── */}
             {investorLoading ? (
-              <Card className="rounded-xl border border-border">
+              <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
                 <CardContent className="p-3 space-y-2">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Skeleton key={i} className="h-14 rounded-lg bg-card" />
@@ -2360,7 +2386,7 @@ export default function BusinessCash() {
                 </CardContent>
               </Card>
             ) : investors.length === 0 ? (
-              <Card className="rounded-xl border border-border">
+              <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
                 <CardContent className="p-0">
                   <EmptyState
                     icon={<Users className="h-8 w-8 text-muted-foreground" />}
@@ -2375,7 +2401,7 @@ export default function BusinessCash() {
             ) : (
               <>
                 {/* Mobile: compact list inside single card */}
-                <Card className="rounded-xl overflow-hidden border border-border sm:hidden">
+                <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] sm:hidden">
                   <CardContent className="p-2">
                     <AnimatePresence mode="popLayout">
                       {investors.map((inv) => (
@@ -2438,15 +2464,13 @@ export default function BusinessCash() {
                         layout
                         exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
                       >
-                        <Card className="rounded-xl overflow-hidden transition-all duration-200 border border-primary/10 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5">
-                          {/* Gradient header strip */}
-                          <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${c.primary}, ${alpha(c.primary, 30)})` }} />
+                        <Card className="rounded-xl overflow-hidden transition-all duration-200 bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] hover:border-white/[0.12]">
                           <CardContent className="p-2.5 sm:p-3">
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 <div
                                   className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
-                                  style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 15)}, ${alpha(c.primary, 5)})`, color: c.primary }}
+                                  style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 20)}, ${alpha(c.primary, 8)})`, color: c.primary }}
                                 >
                                   {inv.name.charAt(0).toUpperCase()}
                                 </div>
@@ -2527,7 +2551,7 @@ export default function BusinessCash() {
 
             {/* ── Riwayat Investor — 3 Filter Tabs ── */}
             {(investorHistory.length > 0 || investorExpenses.length > 0) && (
-              <Card className="rounded-xl overflow-hidden border border-border">
+              <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="h-6 w-6 rounded-md flex items-center justify-center bg-secondary/8">
@@ -2999,7 +3023,7 @@ export default function BusinessCash() {
         )}
         {/* ══════════════════════════════════════════════════════════ */}
         {mainTab === 'piutang' && (
-          <div key="piutang" className="space-y-3 p-3 sm:p-4">
+          <div key="piutang" className="space-y-3 p-3 sm:p-4 relative z-10">
             {/* ── Piutang Info Banner ── */}
             <div className="rounded-xl p-3 flex items-start gap-2.5 bg-muted-foreground/3 border border-border">
               <Info className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -3011,7 +3035,7 @@ export default function BusinessCash() {
             {/* ── Piutang Summary Cards (Detailed) ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* Cicilan Berjalan */}
-              <Card className="rounded-xl overflow-hidden border border-secondary/15">
+              <Card className="rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="h-6 w-6 rounded-md flex items-center justify-center bg-secondary/8">
@@ -3046,7 +3070,7 @@ export default function BusinessCash() {
               </Card>
 
               {/* Total Cicilan Menunggak */}
-              <Card className="rounded-xl overflow-hidden border border-destructive/15">
+              <Card className="rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="h-6 w-6 rounded-md flex items-center justify-center bg-destructive/8">
@@ -3074,7 +3098,7 @@ export default function BusinessCash() {
               </Card>
 
               {/* Cicilan Selesai */}
-              <Card className="rounded-xl overflow-hidden border border-primary/15">
+              <Card className="rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="h-6 w-6 rounded-md flex items-center justify-center bg-primary/8">
@@ -3112,9 +3136,8 @@ export default function BusinessCash() {
                       onClick={() => setPiutangSubTab(key)}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200"
                       style={isActive ? {
-                        background: `linear-gradient(135deg, ${alpha(cfg.color, 14)}, ${alpha(cfg.color, 6)})`,
+                        background: alpha(cfg.color, 10),
                         color: cfg.color,
-                        boxShadow: `0 1px 4px ${alpha(cfg.color, 10)}`,
                       } : { color: c.muted }}
                     >
                       <Icon className="h-3 w-3" />
@@ -3146,7 +3169,7 @@ export default function BusinessCash() {
             </div>
 
             {/* ── Piutang Table ── */}
-            <Card className="rounded-xl overflow-hidden border border-border">
+            <Card className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
               <CardContent className="p-0">
                 {piutangLoading ? (
                   <div className="space-y-2 p-3 sm:p-4">
@@ -3395,8 +3418,7 @@ export default function BusinessCash() {
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={cashDialogOpen} onOpenChange={setCashDialogOpen}>
         <DialogContent className="w-[95vw] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden">
-          {/* Gradient accent strip */}
-          <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${subTypeConfig.color}, ${alpha(subTypeConfig.color, 30)})` }} />
+          <div className="h-px w-full bg-white/[0.06]" />
           <div className="p-5">
             <DialogHeader className="mb-4">
               <DialogTitle className="text-sm font-semibold flex items-center gap-2.5 text-foreground">
@@ -3466,7 +3488,7 @@ export default function BusinessCash() {
                       className="py-2.5 px-2 rounded-xl text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
                       style={
                         cashForm.source === opt.value
-                          ? { backgroundColor: alpha(opt.color, 10), color: opt.color, borderColor: alpha(opt.color, 25), boxShadow: `0 1px 4px ${alpha(opt.color, 10)}` }
+                          ? { backgroundColor: alpha(opt.color, 10), color: opt.color, borderColor: alpha(opt.color, 25) }
                           : { borderColor: 'rgba(255,255,255,0.06)', color: c.muted, backgroundColor: 'rgba(255,255,255,0.02)' }
                       }
                     >
@@ -3521,7 +3543,7 @@ export default function BusinessCash() {
                       className="py-2.5 px-2 rounded-xl text-[11px] font-medium border transition-all duration-200 flex flex-col items-center gap-0.5"
                       style={
                         cashForm.source === opt.value
-                          ? { backgroundColor: alpha(opt.color, 10), color: opt.color, borderColor: alpha(opt.color, 25), boxShadow: `0 1px 4px ${alpha(opt.color, 10)}` }
+                          ? { backgroundColor: alpha(opt.color, 10), color: opt.color, borderColor: alpha(opt.color, 25) }
                           : { borderColor: 'rgba(255,255,255,0.06)', color: c.muted, backgroundColor: 'rgba(255,255,255,0.02)' }
                       }
                     >
@@ -3706,8 +3728,7 @@ export default function BusinessCash() {
       {/* ════════════════════════════════════════════════════════════ */}
       <Dialog open={investorDialogOpen} onOpenChange={setInvestorDialogOpen}>
         <DialogContent className="w-[95vw] sm:max-w-lg rounded-2xl bg-[#141414] border-white/[0.08] overflow-hidden">
-          {/* Gradient accent strip */}
-          <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${c.primary}, ${alpha(c.primary, 30)})` }} />
+          <div className="h-px w-full bg-white/[0.06]" />
           <div className="p-5">
             <DialogHeader className="mb-4">
               <DialogTitle className="text-sm font-semibold flex items-center gap-2.5 text-foreground">
@@ -4205,8 +4226,8 @@ export default function BusinessCash() {
       {/* ── TRANSACTION DETAIL DIALOG ────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════ */}
       <Dialog open={!!transactionDetail} onOpenChange={(open) => { if (!open) setTransactionDetail(null); }}>
-        <DialogContent className="bg-[#1a1a1a] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md" aria-label="Detail Transaksi">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+        <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-md" aria-label="Detail Transaksi">
+          <div className="h-px w-full bg-white/[0.06]" />
           <DialogDescription className="sr-only">Detail transaksi kas</DialogDescription>
           {transactionDetail && (
             <motion.div

@@ -307,7 +307,7 @@ export function AdminAnnouncements() {
             <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+            <SelectContent className="bg-white/[0.03] border-white/[0.08]">
               <SelectItem value="info">
                 <div className="flex items-center gap-2">
                   <Info className="h-3.5 w-3.5 text-[#03DAC6]" />
@@ -721,7 +721,6 @@ export function AdminAnnouncements() {
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } }}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -756,7 +755,6 @@ export function AdminAnnouncements() {
       {/* Edit Dialog */}
       <Dialog open={!!editItem} onOpenChange={(open) => { if (!open) { setEditItem(null); resetForm(); } }}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -791,7 +789,6 @@ export function AdminAnnouncements() {
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Delete Announcement</AlertDialogTitle>
@@ -818,7 +815,6 @@ export function AdminAnnouncements() {
       {/* Preview Dialog */}
       <Dialog open={!!previewItem} onOpenChange={() => setPreviewItem(null)}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">

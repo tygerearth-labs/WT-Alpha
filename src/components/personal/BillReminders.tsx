@@ -206,9 +206,9 @@ function StatCard({
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      className="bg-[#1A1A2E] border-white/[0.06] rounded-xl overflow-hidden"
+      className="bg-white/[0.03] border-white/[0.06] rounded-xl overflow-hidden"
     >
-      <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${color}, ${color}50)` }} />
+      <div className="h-px bg-white/[0.06]" />
       <div className="p-4 flex items-center gap-3">
         <div
           className="w-9 h-9 rounded-lg grid place-items-center shrink-0 [&>*]:block leading-none"
@@ -438,11 +438,6 @@ function BillFormDialog({
         className="sm:max-w-[440px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Gradient accent strip */}
-        <div
-          className="h-[3px] rounded-t-2xl"
-          style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }}
-        />
         <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white">
@@ -868,7 +863,6 @@ export function BillReminders() {
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
       >
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Hapus tagihan?</AlertDialogTitle>
             <AlertDialogDescription className="text-[#9E9E9E]">

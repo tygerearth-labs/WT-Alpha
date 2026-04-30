@@ -379,8 +379,8 @@ export default function TradingJournal() {
       {/* Stats Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
-            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+          <Card className="bg-white/[0.03] border-white/[0.06]">
+            <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.totalTrades')}</p>
               <p className="text-lg font-bold text-white mt-1">{stats.totalTrades}</p>
@@ -388,8 +388,8 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
-            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+          <Card className="bg-white/[0.03] border-white/[0.06]">
+            <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.winRate')}</p>
               <p className="text-lg font-bold text-[#BB86FC] mt-1">{(stats.winRate ?? 0).toFixed(1)}%</p>
@@ -397,8 +397,8 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
-            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+          <Card className="bg-white/[0.03] border-white/[0.06]">
+            <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.avgPnL')}</p>
               <p className={cn('text-lg font-bold mt-1', pnlColor(stats.avgPnl))}>
@@ -408,8 +408,8 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
-            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+          <Card className="bg-white/[0.03] border-white/[0.06]">
+            <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.bestTrade')}</p>
               <p className="text-lg font-bold text-[#03DAC6] mt-1">{formatAmount(stats.best)}</p>
@@ -417,8 +417,8 @@ export default function TradingJournal() {
           </Card>
         </motion.div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-          <Card className="bg-[#1A1A2E] border-white/[0.06]">
-            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+          <Card className="bg-white/[0.03] border-white/[0.06]">
+            <div className="h-px bg-white/[0.06]" />
             <CardContent className="p-3">
               <p className="text-[13px] font-bold uppercase tracking-wider text-white/40">{t('inv.worstTrade')}</p>
               <p className="text-lg font-bold text-[#CF6679] mt-1">{formatAmount(stats.worst)}</p>
@@ -509,8 +509,8 @@ export default function TradingJournal() {
       </div>
 
       {/* Journal Table */}
-      <Card className="bg-[#1A1A2E] border-white/[0.06]">
-        <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+      <Card className="bg-white/[0.03] border-white/[0.06]">
+        <div className="h-px bg-white/[0.06]" />
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-3 p-4">
@@ -633,7 +633,7 @@ export default function TradingJournal() {
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden text-white sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
-          <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #BB86FC, #03DAC6, #FFD54F)' }} />
+          <div className="h-px bg-white/[0.06]" />
           <div className="p-5">
             <DialogHeader>
               <DialogTitle className="text-white">
@@ -818,7 +818,7 @@ export default function TradingJournal() {
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl text-white">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
+          <div className="h-px bg-white/[0.06]" />
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">{t('common.delete')}</AlertDialogTitle>
             <AlertDialogDescription className="text-white/60">

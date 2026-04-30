@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Wallet, TrendingDown, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -38,6 +39,20 @@ const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const budgetItemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
 
 export function BudgetTracker() {
   const { t } = useTranslation();
@@ -352,7 +367,12 @@ export function BudgetTracker() {
         )}
 
         {/* Budget Bars */}
-        <div className="space-y-3 max-h-64 overflow-y-auto">
+        <motion.div
+          className="space-y-3 max-h-64 overflow-y-auto"
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
           {budgets.length === 0 && (
             <div className="text-center py-6">
               <Wallet className="h-8 w-8 mx-auto mb-2" style={{ color: THEME.muted, opacity: 0.4 }} />
@@ -371,7 +391,12 @@ export function BudgetTracker() {
             const barColor = getBarColor(spent, b.budget);
 
             return (
-              <div key={b.categoryId} className="group relative">
+              <motion.div
+                key={b.categoryId}
+                variants={budgetItemVariants}
+                whileHover={{ x: 2, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
+                className="group relative"
+              >
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-5 h-5 rounded-md grid place-items-center shrink-0 [&>*]:block leading-none" style={{ background: `${category.color}18` }}>
                     <DynamicIcon name={category.icon} className="h-2.5 w-2.5" style={{ color: category.color }} />
@@ -418,10 +443,10 @@ export function BudgetTracker() {
                     </span>
                   )}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Add Budget */}
         {unbudgetedCategories.length > 0 && (

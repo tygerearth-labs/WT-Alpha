@@ -404,14 +404,6 @@ export function KasKeluar() {
   return (
     <div className="w-full max-w-full space-y-3 sm:space-y-4">
       <style>{`
-        @keyframes heroGlow {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.6; }
-        }
-        @keyframes shimmer {
-          0% { transform: translateX(-150%); }
-          100% { transform: translateX(250%); }
-        }
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
@@ -424,43 +416,29 @@ export function KasKeluar() {
           70% { transform: scale(1.08); }
           100% { opacity: 1; transform: scale(1); }
         }
-        @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 0px transparent; }
-          50% { box-shadow: 0 0 12px var(--glow-color, rgba(207,102,121,0.2)); }
+        @keyframes ambientDrift {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(10px, -15px) scale(1.05); }
+          66% { transform: translate(-8px, 8px) scale(0.97); }
         }
       `}</style>
+      {/* ── Ambient Background ── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-[0.03] blur-[120px]" style={{ background: T.accent, animation: 'ambientDrift 20s ease-in-out infinite' }} />
+        <div className="absolute top-1/3 -right-24 w-80 h-80 rounded-full opacity-[0.025] blur-[100px]" style={{ background: T.primary, animation: 'ambientDrift 25s ease-in-out infinite 5s' }} />
+        <div className="absolute bottom-0 left-1/3 w-72 h-72 rounded-full opacity-[0.02] blur-[100px]" style={{ background: T.accent, animation: 'ambientDrift 22s ease-in-out infinite 10s' }} />
+      </div>
+
       {/* ── Hero Strip ── */}
       <div className="relative rounded-2xl">
-        {/* Gradient accent strip at top */}
-        <div className="h-[3px] w-full rounded-t-2xl" style={{ background: 'linear-gradient(to right, transparent, var(--destructive), var(--warning), transparent)' }} />
-        {/* Desktop animated gradient border glow */}
-        <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
-          style={{
-            background: `linear-gradient(135deg, ${T.accent}50, ${T.primary}30, ${T.accent}50)`,
-            filter: 'blur(2px)',
-            opacity: 0.4,
-            animation: 'heroGlow 4s ease-in-out infinite',
-          }}
-        />
-        <div className="absolute -inset-[1px] rounded-[18px] hidden lg:block overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${T.accent}80, ${T.primary}50, ${T.accent}80)`,
-          }}
-        >
-          {/* Shimmer overlay on border */}
-          <div
-            className="absolute inset-y-0 w-1/3"
-            style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(207,102,121,0.2) 50%, transparent 100%)',
-              animation: 'shimmer 3.5s ease-in-out infinite',
-            }}
-          />
-        </div>
+        {/* Per-card colored glow */}
+        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: T.accent }} />
+        <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full blur-3xl opacity-[0.03] pointer-events-none hidden lg:block" style={{ background: T.primary }} />
 
         {/* Main content */}
         <div
-          className="relative rounded-2xl p-4 sm:p-5 lg:p-8 overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${T.accent}15 0%, ${T.accent}08 50%, ${T.primary}05 100%)`, border: `1px solid ${T.accent}25` }}
+          className="relative rounded-2xl p-4 sm:p-5 lg:p-8 overflow-hidden bg-white/[0.03] backdrop-blur-xl"
+          style={{ border: '1px solid rgba(255,255,255,0.08)' }}
         >
           {/* Desktop dot pattern overlay */}
           <div className="absolute inset-0 hidden lg:block pointer-events-none" style={{
@@ -490,7 +468,7 @@ export function KasKeluar() {
                 </div>
                 <div>
                   <p className="text-[10px] lg:text-sm font-medium uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.totalExpense')}</p>
-                  <p className="text-xl sm:text-2xl lg:text-4xl font-bold tracking-tight" style={{ color: T.text }}>
+                  <p className="text-xl sm:text-2xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                     {formatAmount(totalExpense)}
                   </p>
                 </div>
@@ -596,15 +574,12 @@ export function KasKeluar() {
         ].map((stat) => (
           <motion.div
             key={stat.label}
-            className="rounded-xl p-3 lg:p-5 lg:py-6 text-center relative overflow-hidden group"
-            style={{ background: `linear-gradient(135deg, ${stat.color}06, ${stat.color}03)`, border: `1px solid ${T.border}` }}
+            className="rounded-xl p-3 lg:p-5 lg:py-6 text-center relative overflow-hidden group bg-white/[0.03] backdrop-blur-xl border border-white/[0.08]"
             whileHover={{ scale: 1.02, y: -1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            {/* Desktop gradient border glow on hover */}
-            <div className="absolute inset-0 hidden lg:block rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-              style={{ boxShadow: `inset 0 0 0 1px ${stat.color}25, 0 0 24px ${stat.color}10` }}
-            />
+            {/* Per-card colored glow */}
+            <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: stat.color }} />
             <div className="relative z-10">
               <div className="relative inline-block">
                 <div className="absolute inset-0 rounded-full blur-lg opacity-0 hidden lg:block group-hover:opacity-30 transition-opacity duration-300" style={{ background: stat.color }} />
@@ -642,13 +617,8 @@ export function KasKeluar() {
       <div className="hidden lg:grid lg:grid-cols-[380px_1fr] xl:grid-cols-[440px_1fr] lg:gap-5 xl:gap-6">
         {/* Left column: Categories + Distribution — Glass card */}
         <div
-          className="rounded-2xl p-5 space-y-5 overflow-hidden"
-          style={{
-            background: 'rgba(18, 18, 18, 0.6)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-          }}
+          className="rounded-2xl p-5 space-y-5 overflow-hidden bg-white/[0.02] backdrop-blur-xl"
+          style={{ border: '1px solid rgba(255,255,255,0.06)' }}
         >
           {/* Donut Ring — Desktop only */}
           {expenseByCategory.length > 0 && (
@@ -689,7 +659,7 @@ export function KasKeluar() {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.topCategories')}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{t('kas.topCategories')}</p>
               </div>
               <div className="space-y-2">
                 {[...expenseByCategory].sort((a, b) => b.amount - a.amount).slice(0, 3).map((cat, i) => {
@@ -698,7 +668,7 @@ export function KasKeluar() {
                   return (
                     <motion.div
                       key={cat.name}
-                      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.01] cursor-default overflow-hidden"
+                      className="flex items-center gap-3 p-3 rounded-xl transition-colors duration-200 hover:bg-white/[0.03] cursor-default overflow-hidden"
                       style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}` }}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -747,7 +717,7 @@ export function KasKeluar() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.primary}, ${T.accent})` }} />
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.categories')}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{t('kas.categories')}</p>
               </div>
               <Button
                 size="icon"
@@ -773,7 +743,7 @@ export function KasKeluar() {
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.distribution')}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{t('kas.distribution')}</p>
               </div>
               <div className="space-y-3">
                 {expenseByCategory.slice(0, 5).map((cat) => {
@@ -805,19 +775,14 @@ export function KasKeluar() {
 
         {/* Right column: Transactions — Glass card */}
         <div
-          className="rounded-2xl p-5 space-y-4"
-          style={{
-            background: 'rgba(18, 18, 18, 0.6)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-          }}
+          className="rounded-2xl p-5 space-y-4 bg-white/[0.02] backdrop-blur-xl"
+          style={{ border: '1px solid rgba(255,255,255,0.06)' }}
         >
           {/* Transactions header with filter pills */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-1 h-4 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.history')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{t('kas.history')}</p>
             </div>
             <div className="flex gap-1.5">
               {FILTERS.map((f) => (
@@ -826,12 +791,9 @@ export function KasKeluar() {
                   onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
                   className="text-xs font-semibold px-4 py-1.5 rounded-full shrink-0 transition-all duration-200 hover:scale-105"
                   style={{
-                    background: dateFilter === f.key
-                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
-                      : 'rgba(255,255,255,0.04)',
+                    background: dateFilter === f.key ? `${T.accent}18` : 'rgba(255,255,255,0.04)',
                     color: dateFilter === f.key ? '#000' : T.muted,
-                    boxShadow: dateFilter === f.key ? `0 0 16px ${T.accent}40` : 'none',
-                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    border: 'none',
                   }}
                 >
                   {f.label}
@@ -846,8 +808,8 @@ export function KasKeluar() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center text-center py-12 relative rounded-xl"
-                style={{ background: T.surface, border: `1px solid ${T.border}` }}
+                className="flex flex-col items-center justify-center text-center py-12 relative rounded-xl bg-white/[0.02]"
+                style={{ border: `1px solid ${T.border}` }}
               >
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: 'var(--destructive)' }} />
@@ -945,19 +907,14 @@ export function KasKeluar() {
       <div className="hidden md:grid lg:hidden md:grid-cols-[240px_1fr] md:gap-4">
         {/* Left column: Categories — Glass card */}
         <div
-          className="rounded-2xl p-4 space-y-4"
-          style={{
-            background: 'rgba(18, 18, 18, 0.6)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-          }}
+          className="rounded-2xl p-4 space-y-4 bg-white/[0.02] backdrop-blur-xl"
+          style={{ border: '1px solid rgba(255,255,255,0.06)' }}
         >
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.primary}, ${T.accent})` }} />
-                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.categories')}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{t('kas.categories')}</p>
               </div>
               <Button
                 size="icon"
@@ -983,7 +940,7 @@ export function KasKeluar() {
             <div>
               <div className="flex items-center gap-2 mb-2.5">
                 <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-                <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.distribution')}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{t('kas.distribution')}</p>
               </div>
               <div className="space-y-2">
                 {expenseByCategory.slice(0, 5).map((cat) => {
@@ -1015,18 +972,13 @@ export function KasKeluar() {
 
         {/* Right column: Transactions — Glass card */}
         <div
-          className="rounded-2xl p-4 space-y-3"
-          style={{
-            background: 'rgba(18, 18, 18, 0.6)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-          }}
+          className="rounded-2xl p-4 space-y-3 bg-white/[0.02] backdrop-blur-xl"
+          style={{ border: '1px solid rgba(255,255,255,0.06)' }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-1 h-3.5 rounded-full" style={{ background: `linear-gradient(180deg, ${T.accent}, ${T.primary})` }} />
-              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: T.text }}>{t('kas.history')}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{t('kas.history')}</p>
             </div>
             <div className="flex gap-1">
               {FILTERS.map((f) => (
@@ -1035,12 +987,9 @@ export function KasKeluar() {
                   onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
                   style={{
-                    background: dateFilter === f.key
-                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
-                      : 'rgba(255,255,255,0.04)',
+                    background: dateFilter === f.key ? `${T.accent}18` : 'rgba(255,255,255,0.04)',
                     color: dateFilter === f.key ? '#000' : T.muted,
-                    boxShadow: dateFilter === f.key ? `0 0 12px ${T.accent}25` : 'none',
-                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    border: 'none',
                   }}
                 >
                   {f.label}
@@ -1075,10 +1024,10 @@ export function KasKeluar() {
         {/* Category Distribution */}
         {expenseByCategory.length > 0 && (
           <div
-            className="rounded-xl p-3 sm:p-4"
-            style={{ background: T.surface, border: `1px solid ${T.border}` }}
+            className="rounded-xl p-3 sm:p-4 bg-white/[0.02]"
+            style={{ border: '1px solid rgba(255,255,255,0.06)' }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>{t('kas.distribution')}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2.5 bg-gradient-to-r from-white/80 to-white/50 bg-clip-text text-transparent">{t('kas.distribution')}</p>
             <div className="space-y-2">
               {expenseByCategory.slice(0, 5).map((cat) => {
                 const pct = totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0;
@@ -1109,7 +1058,7 @@ export function KasKeluar() {
         {/* Categories */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.categories')}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider bg-gradient-to-r from-white/80 to-white/50 bg-clip-text text-transparent">{t('kas.categories')}</p>
             <Button
               size="icon"
               className="h-7 w-7 rounded-lg"
@@ -1132,7 +1081,7 @@ export function KasKeluar() {
         {/* Transactions */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.history')}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider bg-gradient-to-r from-white/80 to-white/50 bg-clip-text text-transparent">{t('kas.history')}</p>
             <div className="flex gap-1 overflow-x-auto scrollbar-hide">
               {FILTERS.map((f) => (
                 <button
@@ -1140,12 +1089,9 @@ export function KasKeluar() {
                   onClick={() => { setDateFilter(f.key); setShowAllTransactions(false); }}
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 transition-all"
                   style={{
-                    background: dateFilter === f.key
-                      ? `linear-gradient(135deg, ${T.accent}25, ${T.accent}10)`
-                      : 'transparent',
+                    background: dateFilter === f.key ? `${T.accent}18` : 'transparent',
                     color: dateFilter === f.key ? '#000' : T.muted,
-                    boxShadow: dateFilter === f.key ? `0 0 12px ${T.accent}25` : 'none',
-                    border: dateFilter === f.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    border: 'none',
                   }}
                 >
                   {f.label}
@@ -1198,6 +1144,7 @@ export function KasKeluar() {
       />
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl">
+          <div className="h-px bg-white/[0.08] -mt-2 mb-4" />
           <AlertDialogHeader>
             <AlertDialogTitle style={{ color: T.text }}>
               {deleteDialog.type === 'transaction' ? t('kas.deleteExpense') : t('kas.deleteCategory')}

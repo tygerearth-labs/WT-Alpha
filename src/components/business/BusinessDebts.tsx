@@ -953,7 +953,7 @@ export default function BusinessDebts() {
           className="w-[95vw] sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
           style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
         >
-          <div className="h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(to right, var(--primary), var(--secondary), var(--warning))' }} />
+          <div className="h-px bg-white/[0.06]" />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
@@ -1241,7 +1241,7 @@ export default function BusinessDebts() {
           className="w-[95vw] sm:max-w-[420px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 text-foreground"
           style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
         >
-          <div className="h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(to right, var(--secondary), var(--primary))' }} />
+          <div className="h-px bg-white/[0.06]" />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">

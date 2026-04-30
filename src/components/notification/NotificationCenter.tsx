@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
   Bell,
   BellRing,
@@ -354,13 +355,13 @@ export function NotificationCenter() {
               </p>
             </div>
           ) : (
-            visibleNotifications.map((notification) => {
+            visibleNotifications.map((notification, index) => {
               const isRead = notification.isRead;
               const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
               const isExpanded = expandedId === notification.id;
 
               return (
-                <button
+                <motion.button
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
                   className={cn(
@@ -371,6 +372,9 @@ export function NotificationCenter() {
                   style={{
                     borderBottom: '1px solid rgba(255,255,255,0.04)',
                   }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.03 }}
                 >
                   {/* Type Icon */}
                   <div
@@ -451,7 +455,7 @@ export function NotificationCenter() {
                       </p>
                     )}
                   </div>
-                </button>
+                </motion.button>
               );
             })
           )}

@@ -114,10 +114,6 @@ export function TransactionForm({
   const accentColor = type === 'income' ? T.accent : T.destructive;
   const placeholderText = type === 'income' ? t('form.placeholderIncome') : t('form.placeholderExpense');
 
-  const gradientStrip = type === 'income'
-    ? 'linear-gradient(to right, transparent, var(--secondary), var(--primary), transparent)'
-    : 'linear-gradient(to right, transparent, var(--destructive), var(--warning), transparent)';
-
   const saveButtonGradient = type === 'income'
     ? 'linear-gradient(135deg, var(--secondary), var(--primary))'
     : 'linear-gradient(135deg, var(--destructive), var(--warning))';
@@ -129,9 +125,6 @@ export function TransactionForm({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#141414] border-white/[0.08] sm:max-w-md rounded-2xl p-0 gap-0 overflow-hidden">
-        {/* Gradient accent strip at top */}
-        <div className="h-[3px] w-full" style={{ background: gradientStrip }} />
-
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-sm font-semibold" style={{ color: '#E6E1E5' }}>
             <span className="inline-flex items-center gap-2">

@@ -168,10 +168,10 @@ const PERIOD_OPTIONS = [
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; gradient: string }> = {
-  all: { label: 'Semua', color: c.foreground, gradient: `linear-gradient(135deg, ${alpha(c.foreground, 18)}, ${alpha(c.foreground, 8)})` },
-  lunas: { label: 'Lunas', color: c.secondary, gradient: `linear-gradient(135deg, ${alpha(c.secondary, 18)}, ${alpha(c.secondary, 6)})` },
-  cicilan: { label: 'Cicilan', color: c.warning, gradient: `linear-gradient(135deg, ${alpha(c.warning, 18)}, ${alpha(c.warning, 6)})` },
-  pending: { label: 'Pending', color: c.destructive, gradient: `linear-gradient(135deg, ${alpha(c.destructive, 18)}, ${alpha(c.destructive, 6)})` },
+  all: { label: 'Semua', color: c.foreground, gradient: `linear-gradient(135deg, ${alpha(c.foreground, 12)}, ${alpha(c.foreground, 4)})` },
+  lunas: { label: 'Lunas', color: c.secondary, gradient: `linear-gradient(135deg, ${alpha(c.secondary, 12)}, ${alpha(c.secondary, 3)})` },
+  cicilan: { label: 'Cicilan', color: c.warning, gradient: `linear-gradient(135deg, ${alpha(c.warning, 12)}, ${alpha(c.warning, 3)})` },
+  pending: { label: 'Pending', color: c.destructive, gradient: `linear-gradient(135deg, ${alpha(c.destructive, 12)}, ${alpha(c.destructive, 3)})` },
 };
 
 /** Accent border color per status for left-side stripe */
@@ -718,16 +718,20 @@ export default function BusinessSales() {
           <ProductList />
         </div>
       ) : (
-        <div key="sales">
+        <div key="sales" className="relative">
+          {/* Ambient background glows */}
+          <div className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-[0.07] blur-3xl" style={{ background: c.primary }} />
+          <div className="pointer-events-none absolute top-40 -right-16 w-56 h-56 rounded-full opacity-[0.05] blur-3xl" style={{ background: c.secondary }} />
+          <div className="pointer-events-none absolute top-96 left-1/3 w-48 h-48 rounded-full opacity-[0.04] blur-3xl" style={{ background: c.warning }} />
           {/* ═══ HERO CARD — Sales Overview ═══ */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            <Card className="rounded-xl overflow-hidden border" style={{ background: c.card, borderColor: c.border }}>
-              {/* Top gradient accent line */}
-              <div className="h-px" style={{ background: `linear-gradient(to right, transparent, ${c.secondary}, ${c.primary}, transparent)` }} />
+            <div className="relative">
+              <div className="absolute -inset-3 -z-10 rounded-2xl blur-3xl opacity-[0.05]" style={{ background: c.secondary }} />
+              <Card className="rounded-xl overflow-hidden border backdrop-blur-xl relative" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
               <CardContent className="p-4 sm:p-5">
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3 mb-4">
@@ -736,7 +740,7 @@ export default function BusinessSales() {
                       <ShoppingBag className="h-4.5 w-4.5" style={{ color: c.secondary }} />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold" style={{ color: c.foreground }}>Total Penjualan</h2>
+                      <h2 className="text-sm font-bold" style={{ background: `linear-gradient(135deg, ${c.secondary}, ${c.primary})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Total Penjualan</h2>
                       <p className="text-[10px] mt-0.5" style={{ color: c.muted }}>
                         {filteredSales.length} transaksi · rata-rata {formatAmount(avgPerTransaction)}
                       </p>
@@ -762,7 +766,7 @@ export default function BusinessSales() {
                 </div>
 
                 {/* Main total */}
-                <p className="text-2xl sm:text-3xl font-bold tabular-nums mb-4" style={{ color: c.foreground }}>
+                <p className="text-2xl sm:text-3xl font-bold tabular-nums mb-4" style={{ color: c.foreground, textShadow: `0 0 40px ${alpha(c.secondary, 20)}` }}>
                   {formatAmount(animTotal)}
                 </p>
 
@@ -772,9 +776,9 @@ export default function BusinessSales() {
                   <motion.div
                     whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl border"
-                    style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 10)}, ${alpha(c.secondary, 4)})`, borderColor: alpha(c.secondary, 15) }}
+                    className="relative flex items-center gap-2 px-3 py-2 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
                   >
+                    <div className="absolute -inset-1 -z-10 rounded-xl blur-2xl opacity-[0.05]" style={{ background: c.secondary }} />
                     <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.secondary, 15) }}>
                       <Banknote className="h-3 w-3" style={{ color: c.secondary }} />
                     </div>
@@ -791,9 +795,9 @@ export default function BusinessSales() {
                   <motion.div
                     whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl border"
-                    style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 10)}, ${alpha(c.warning, 4)})`, borderColor: alpha(c.warning, 15) }}
+                    className="relative flex items-center gap-2 px-3 py-2 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
                   >
+                    <div className="absolute -inset-1 -z-10 rounded-xl blur-2xl opacity-[0.05]" style={{ background: c.warning }} />
                     <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.warning, 15) }}>
                       <Repeat className="h-3 w-3" style={{ color: c.warning }} />
                     </div>
@@ -810,9 +814,9 @@ export default function BusinessSales() {
                   <motion.div
                     whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ type: 'spring' as const, stiffness: 400, damping: 20 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl border"
-                    style={{ background: `linear-gradient(135deg, ${alpha(c.primary, 10)}, ${alpha(c.primary, 4)})`, borderColor: alpha(c.primary, 15) }}
+                    className="relative flex items-center gap-2 px-3 py-2 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.04] hover:border-white/[0.1] transition-colors duration-200"
                   >
+                    <div className="absolute -inset-1 -z-10 rounded-xl blur-2xl opacity-[0.05]" style={{ background: c.primary }} />
                     <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: alpha(c.primary, 15) }}>
                       <Calculator className="h-3 w-3" style={{ color: c.primary }} />
                     </div>
@@ -825,7 +829,8 @@ export default function BusinessSales() {
                   </motion.div>
                 </div>
               </CardContent>
-            </Card>
+              </Card>
+            </div>
           </motion.div>
 
           {/* ═══ STATUS FILTER CHIPS + SEARCH + ADD ═══ */}
@@ -887,7 +892,7 @@ export default function BusinessSales() {
           </div>
 
           {/* ═══ SALES LIST ═══ */}
-          <Card className="rounded-xl overflow-hidden border mt-2" style={{ background: c.card, borderColor: c.border }}>
+          <Card className="rounded-xl overflow-hidden border mt-2" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
             <CardContent className="p-0">
               {loading ? (
                 <div className="space-y-2 p-4">
@@ -945,8 +950,7 @@ export default function BusinessSales() {
                             layout
                             onClick={() => openEditDialog(sale)}
                             whileHover={{ x: 2 }}
-                            className="p-3.5 cursor-pointer active:bg-white/[0.02] transition-colors duration-150 border-l-[3px]"
-                            style={{ borderLeftColor: statusAccentBorder[status] || alpha(c.border, 40) }}
+                            className="p-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors duration-150"
                           >
                             {/* Row 1: Description + Amount */}
                             <div className="flex items-start justify-between gap-2 mb-2">
@@ -1007,7 +1011,7 @@ export default function BusinessSales() {
                               </div>
 
                               {/* Status gradient pill badge */}
-                              <span className="inline-flex items-center text-[9px] font-bold rounded-full px-2 py-0 shrink-0" style={{ background: statusCfg.gradient, color: statusCfg.color, boxShadow: `0 0 8px ${alpha(statusCfg.color, 10)}` }}>
+                              <span className="inline-flex items-center text-[9px] font-bold rounded-full px-2 py-0 shrink-0" style={{ background: statusCfg.gradient, color: statusCfg.color, boxShadow: `0 0 8px ${alpha(statusCfg.color, 5)}` }}>
                                 {isInstallment && hasDP ? `${statusCfg.label} ${Math.round(((sale.realizedAmount ?? sale.downPayment ?? 0) / sale.amount) * 100)}%` : statusCfg.label}
                               </span>
                             </div>
@@ -1095,11 +1099,10 @@ export default function BusinessSales() {
                                 animate="visible"
                                 exit="exit"
                                 layout
-                                className="group cursor-pointer transition-colors duration-150 hover:bg-white/[0.02]"
-                                style={i % 2 === 1 ? { background: alpha(c.border, 30) } : undefined}
+                                className="group cursor-pointer transition-colors duration-150 hover:bg-white/[0.03]"
                                 onClick={() => openEditDialog(sale)}
                               >
-                                <TableCell className="text-[11px] py-2.5 font-mono border-l-[3px]" style={{ color: c.muted, borderLeftColor: statusAccentBorder[status] || alpha(c.border, 40) }}>
+                                <TableCell className="text-[11px] py-2.5 font-mono" style={{ color: c.muted }}>
                                   {new Date(sale.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </TableCell>
                                 <TableCell className="py-2.5">
@@ -1141,7 +1144,7 @@ export default function BusinessSales() {
                                 {/* Status column */}
                                 <TableCell className="py-2.5">
                                   <div className="flex items-center gap-1 flex-wrap">
-                                    <span className="inline-flex items-center text-[9px] font-bold rounded-full px-2 py-0" style={{ background: statusCfg.gradient, color: statusCfg.color, boxShadow: `0 0 8px ${alpha(statusCfg.color, 10)}` }}>
+                                    <span className="inline-flex items-center text-[9px] font-bold rounded-full px-2 py-0" style={{ background: statusCfg.gradient, color: statusCfg.color, boxShadow: `0 0 8px ${alpha(statusCfg.color, 5)}` }}>
                                       {statusCfg.label}
                                     </span>
                                     {isInstallment && hasDP && (
@@ -1267,7 +1270,7 @@ export default function BusinessSales() {
               className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col w-[95vw] sm:max-w-lg"
             >
               {/* Gradient accent strip at top */}
-              <div className="h-[3px] shrink-0" style={{ background: `linear-gradient(to right, ${c.secondary}, ${c.primary}, ${c.warning})` }} />
+              <div className="h-px shrink-0" style={{ background: `linear-gradient(to right, transparent, ${alpha(c.primary, 30)}, transparent)` }} />
               <div className="px-5 pt-4 pb-1 shrink-0">
                 <DialogHeader>
                   <DialogTitle className="text-base font-semibold flex items-center gap-2 text-foreground">

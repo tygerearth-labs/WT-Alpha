@@ -170,6 +170,28 @@ function ChangeIndicator({ value, label }: { value: number | null; label: string
   );
 }
 
+// ─── Section Title ─────────────────────────────────────────────
+function SectionTitle({ children, icon: Icon, color }: { children: React.ReactNode; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; color: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+      <div className="h-7 w-7 rounded-lg flex items-center justify-center"
+        style={{ backgroundColor: alpha(color, 10) }}>
+        <Icon className="h-3.5 w-3.5" style={{ color }} />
+      </div>
+      <h3
+        className="text-xs font-bold tracking-tight"
+        style={{
+          background: `linear-gradient(135deg, ${c.foreground}, ${alpha(c.foreground, 65)})`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+        }}
+      >
+        {children}
+      </h3>
+    </div>
+  );
+}
+
 // ─── Period Navigator ──────────────────────────────────────────
 function PeriodNavigator({
   period,
@@ -199,7 +221,7 @@ function PeriodNavigator({
   const months = MONTH_NAMES.map((name, i) => ({ value: i + 1, label: name }));
 
   return (
-    <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
+    <Card className="rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] transition-colors duration-300 hover:bg-white/[0.05]">
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="flex items-center gap-2 shrink-0">
@@ -505,16 +527,24 @@ export default function BusinessPnL() {
   const chartData = data?.chartData ?? [];
 
   return (
-    <div className="space-y-3 print:space-y-2">
+    <div className="relative space-y-4 print:space-y-2">
+      {/* ── Ambient Background Effects ── */}
+      <div className="pointer-events-none absolute -top-40 -left-40 h-[400px] w-[400px] rounded-full blur-[100px]"
+        style={{ backgroundColor: alpha(c.secondary, 3) }} aria-hidden="true" />
+      <div className="pointer-events-none absolute top-1/3 -right-40 h-[350px] w-[350px] rounded-full blur-[100px]"
+        style={{ backgroundColor: alpha(c.destructive, 2.5) }} aria-hidden="true" />
+      <div className="pointer-events-none absolute -bottom-24 left-1/4 h-[300px] w-[300px] rounded-full blur-[100px]"
+        style={{ backgroundColor: alpha(c.warning, 2) }} aria-hidden="true" />
+
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: alpha(c.secondary, 10) }}>
+      <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: alpha(c.secondary, 10), boxShadow: `0 0 20px ${alpha(c.secondary, 8)}` }}>
             <BarChart3 className="h-4 w-4" style={{ color: c.secondary }} />
           </div>
           <div>
-            <h2 className="text-sm font-bold" style={{ color: c.foreground }}>Laporan Laba Rugi</h2>
+            <h2 className="text-sm font-extrabold tracking-tight" style={{ color: c.foreground }}>Laporan Laba Rugi</h2>
             <p className="text-[10px]" style={{ color: c.muted }}>Profit & Loss Statement</p>
           </div>
         </div>
@@ -523,7 +553,7 @@ export default function BusinessPnL() {
             onClick={handleExportCSV}
             size="sm"
             variant="outline"
-            className="rounded-lg text-xs h-8"
+            className="rounded-lg text-xs h-8 transition-colors duration-200 hover:bg-white/[0.05]"
             style={{ borderColor: alpha(c.secondary, 15), color: c.secondary }}
           >
             <FileSpreadsheet className="mr-1 h-3 w-3" />
@@ -533,7 +563,7 @@ export default function BusinessPnL() {
             onClick={handlePrint}
             size="sm"
             variant="outline"
-            className="rounded-lg text-xs h-8"
+            className="rounded-lg text-xs h-8 transition-colors duration-200 hover:bg-white/[0.05]"
             style={{ borderColor: alpha(c.warning, 15), color: c.warning }}
           >
             <Printer className="mr-1 h-3 w-3" />
@@ -543,7 +573,7 @@ export default function BusinessPnL() {
       </div>
 
       {/* ── Period Selector ── */}
-      <div className="print:hidden">
+      <div className="relative print:hidden">
         <PeriodNavigator
           period={period}
           year={year}
@@ -568,121 +598,147 @@ export default function BusinessPnL() {
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Total Revenue */}
+          {/* Total Revenue — Emerald glow */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2, scale: 1.02 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3 }}
+            whileHover={{ scale: 1.005 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3 }}
           >
-            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
-              <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 30)})` }} />
-              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(c.secondary, 6)}, transparent)` }}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.secondary, 10) }}>
-                    <TrendingUp className="h-3.5 w-3.5" style={{ color: c.secondary }} />
+            <div className="relative">
+              {/* Ambient glow behind card */}
+              <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
+                style={{ backgroundColor: alpha(c.secondary, 15) }} />
+              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
+                {/* Bottom accent glow line */}
+                <div className="absolute bottom-0 left-6 right-6 h-px"
+                  style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.secondary, 35)}, transparent)` }} />
+                <CardContent className="relative p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center"
+                      style={{ background: alpha(c.secondary, 10) }}>
+                      <TrendingUp className="h-4 w-4" style={{ color: c.secondary }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Total Pendapatan</span>
                   </div>
-                  <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Total Pendapatan</span>
-                </div>
-                <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.secondary }}>
-                  {formatAmount(animRevenue)}
-                </p>
-                {comparison && (
-                  <ChangeIndicator value={comparison.revenueChange} label="vs sebelumnya" />
-                )}
-              </CardContent>
-            </Card>
+                  <p className="text-lg sm:text-xl font-extrabold tabular-nums tracking-tight"
+                    style={{ color: c.secondary, textShadow: `0 0 24px ${alpha(c.secondary, 20)}` }}>
+                    {formatAmount(animRevenue)}
+                  </p>
+                  {comparison && (
+                    <ChangeIndicator value={comparison.revenueChange} label="vs sebelumnya" />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
 
-          {/* Total Expenses */}
+          {/* Total Expenses — Rose glow */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2, scale: 1.02 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3, delay: 0.05 }}
+            whileHover={{ scale: 1.005 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3, delay: 0.05 }}
           >
-            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
-              <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 30)})` }} />
-              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(c.destructive, 6)}, transparent)` }}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.destructive, 10) }}>
-                    <TrendingDown className="h-3.5 w-3.5" style={{ color: c.destructive }} />
+            <div className="relative">
+              <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
+                style={{ backgroundColor: alpha(c.destructive, 15) }} />
+              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
+                <div className="absolute bottom-0 left-6 right-6 h-px"
+                  style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.destructive, 35)}, transparent)` }} />
+                <CardContent className="relative p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center"
+                      style={{ background: alpha(c.destructive, 10) }}>
+                      <TrendingDown className="h-4 w-4" style={{ color: c.destructive }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Total Pengeluaran</span>
                   </div>
-                  <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Total Pengeluaran</span>
-                </div>
-                <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.destructive }}>
-                  {formatAmount(animExpenses)}
-                </p>
-                {comparison && (
-                  <ChangeIndicator value={comparison.expensesChange} label="vs sebelumnya" />
-                )}
-              </CardContent>
-            </Card>
+                  <p className="text-lg sm:text-xl font-extrabold tabular-nums tracking-tight"
+                    style={{ color: c.destructive, textShadow: `0 0 24px ${alpha(c.destructive, 20)}` }}>
+                    {formatAmount(animExpenses)}
+                  </p>
+                  {comparison && (
+                    <ChangeIndicator value={comparison.expensesChange} label="vs sebelumnya" />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
 
-          {/* Net Profit */}
+          {/* Net Profit — Contextual glow */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2, scale: 1.02 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3, delay: 0.1 }}
+            whileHover={{ scale: 1.005 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3, delay: 0.1 }}
           >
-            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15"
-              style={{
-                borderColor: isProfit ? alpha(c.secondary, 20) : alpha(c.destructive, 20),
-              }}>
-              <div className="h-[3px]" style={{
-                background: isProfit
-                  ? `linear-gradient(90deg, ${c.secondary}, ${alpha(c.secondary, 30)})`
-                  : `linear-gradient(90deg, ${c.destructive}, ${alpha(c.destructive, 30)})`,
-              }} />
-              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(isProfit ? c.secondary : c.destructive, 6)}, transparent)` }}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(isProfit ? c.secondary : c.destructive, 10) }}>
-                    <DollarSign className="h-3.5 w-3.5" style={{ color: isProfit ? c.secondary : c.destructive }} />
+            <div className="relative">
+              <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
+                style={{ backgroundColor: alpha(isProfit ? c.secondary : c.destructive, 15) }} />
+              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]"
+                style={{ borderColor: alpha(isProfit ? c.secondary : c.destructive, 12) }}>
+                <div className="absolute bottom-0 left-6 right-6 h-px"
+                  style={{ background: `linear-gradient(90deg, transparent, ${alpha(isProfit ? c.secondary : c.destructive, 40)}, transparent)` }} />
+                <CardContent className="relative p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center"
+                      style={{ background: alpha(isProfit ? c.secondary : c.destructive, 10) }}>
+                      <DollarSign className="h-4 w-4" style={{ color: isProfit ? c.secondary : c.destructive }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Laba Bersih</span>
                   </div>
-                  <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Laba Bersih</span>
-                </div>
-                <p className="text-base sm:text-lg font-bold tabular-nums"
-                  style={{ color: isProfit ? c.secondary : c.destructive }}>
-                  {isProfit ? '+' : ''}{formatAmount(animNetProfit)}
-                </p>
-                {comparison && (
-                  <ChangeIndicator value={comparison.netProfitChange} label="vs sebelumnya" />
-                )}
-              </CardContent>
-            </Card>
+                  <p className="text-lg sm:text-xl font-extrabold tabular-nums tracking-tight"
+                    style={{
+                      color: isProfit ? c.secondary : c.destructive,
+                      textShadow: `0 0 24px ${alpha(isProfit ? c.secondary : c.destructive, 20)}`,
+                    }}>
+                    {isProfit ? '+' : ''}{formatAmount(animNetProfit)}
+                  </p>
+                  {comparison && (
+                    <ChangeIndicator value={comparison.netProfitChange} label="vs sebelumnya" />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
 
-          {/* Profit Margin */}
+          {/* Profit Margin — Amber glow */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2, scale: 1.02 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20, duration: 0.3, delay: 0.15 }}
+            whileHover={{ scale: 1.005 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25, duration: 0.3, delay: 0.15 }}
           >
-            <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06] transition-all duration-200 hover:shadow-lg hover:border-foreground/15">
-              <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${c.warning}, ${alpha(c.warning, 30)})` }} />
-              <CardContent className="p-4" style={{ background: `linear-gradient(135deg, ${alpha(c.warning, 6)}, transparent)` }}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: alpha(c.warning, 10) }}>
-                    <Percent className="h-3.5 w-3.5" style={{ color: c.warning }} />
+            <div className="relative">
+              <div className="absolute -bottom-3 -left-2 h-16 w-16 rounded-full blur-3xl"
+                style={{ backgroundColor: alpha(c.warning, 15) }} />
+              <Card className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] overflow-hidden transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.12]">
+                <div className="absolute bottom-0 left-6 right-6 h-px"
+                  style={{ background: `linear-gradient(90deg, transparent, ${alpha(c.warning, 35)}, transparent)` }} />
+                <CardContent className="relative p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center"
+                      style={{ background: alpha(c.warning, 10) }}>
+                      <Percent className="h-4 w-4" style={{ color: c.warning }} />
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.muted }}>Margin Laba</span>
                   </div>
-                  <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: c.muted }}>Margin Laba</span>
-                </div>
-                <p className="text-base sm:text-lg font-bold tabular-nums" style={{ color: c.warning }}>
-                  {animMargin.toFixed(1)}%
-                </p>
-                {comparison && (
-                  <ChangeIndicator value={comparison.profitMarginChange} label="vs sebelumnya" />
-                )}
-              </CardContent>
-            </Card>
+                  <p className="text-lg sm:text-xl font-extrabold tabular-nums tracking-tight"
+                    style={{ color: c.warning, textShadow: `0 0 24px ${alpha(c.warning, 20)}` }}>
+                    {animMargin.toFixed(1)}%
+                  </p>
+                  {comparison && (
+                    <ChangeIndicator value={comparison.profitMarginChange} label="vs sebelumnya" />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
         </div>
       )}
@@ -691,17 +747,12 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-64 sm:h-72 rounded-xl" />
       ) : chartData.length > 0 ? (
-        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-6 w-6 rounded-md flex items-center justify-center"
-                style={{ backgroundColor: alpha(c.primary, 8) }}>
-                <BarChart3 className="h-3 w-3" style={{ color: c.primary }} />
-              </div>
-              <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
-                Perbandingan Pendapatan & Pengeluaran
-              </h3>
-            </div>
+        <Card className="rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
+          style={{ background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)' }}>
+          <CardContent className="p-5 sm:p-6">
+            <SectionTitle icon={BarChart3} color={c.primary}>
+              Perbandingan Pendapatan & Pengeluaran
+            </SectionTitle>
             <div className="h-56 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -753,14 +804,20 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-48 rounded-xl" />
       ) : (
-        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-4 sm:p-5">
+        <Card className="rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
+          style={{ background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)' }}>
+          <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-md flex items-center justify-center"
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: alpha(c.secondary, 10) }}>
-                <Wallet className="h-3 w-3" style={{ color: c.secondary }} />
+                <Wallet className="h-3.5 w-3.5" style={{ color: c.secondary }} />
               </div>
-              <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
+              <h3 className="text-xs font-bold tracking-tight"
+                style={{
+                  background: `linear-gradient(135deg, ${c.foreground}, ${alpha(c.foreground, 65)})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
                 Rincian Pendapatan
               </h3>
               {data && data.revenueCategories.length > 0 && (
@@ -833,10 +890,11 @@ export default function BusinessPnL() {
                   </Table>
                 </div>
                 {/* Total */}
-                <div className="flex items-center justify-between mt-3 pt-3"
-                  style={{ borderTop: `1px solid ${c.border}` }}>
+                <div className="flex items-center justify-between mt-4 pt-3"
+                  style={{ borderTop: `1px solid ${alpha(c.border, 40)}` }}>
                   <span className="text-xs font-bold" style={{ color: c.foreground }}>Total Pendapatan</span>
-                  <span className="text-sm font-bold tabular-nums" style={{ color: c.secondary }}>
+                  <span className="text-sm font-bold tabular-nums"
+                    style={{ color: c.secondary, textShadow: `0 0 16px ${alpha(c.secondary, 15)}` }}>
                     {formatAmount(data.summary.totalRevenue)}
                   </span>
                 </div>
@@ -855,14 +913,20 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-48 rounded-xl" />
       ) : (
-        <Card className="rounded-xl bg-[#1A1A2E] border-white/[0.06]">
-          <CardContent className="p-4 sm:p-5">
+        <Card className="rounded-xl border border-white/[0.05] transition-colors duration-300 hover:border-white/[0.08]"
+          style={{ background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)' }}>
+          <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-md flex items-center justify-center"
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: alpha(c.destructive, 10) }}>
-                <Receipt className="h-3 w-3" style={{ color: c.destructive }} />
+                <Receipt className="h-3.5 w-3.5" style={{ color: c.destructive }} />
               </div>
-              <h3 className="text-xs font-semibold" style={{ color: c.foreground }}>
+              <h3 className="text-xs font-bold tracking-tight"
+                style={{
+                  background: `linear-gradient(135deg, ${c.foreground}, ${alpha(c.foreground, 65)})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
                 Rincian Pengeluaran
               </h3>
               {data && data.expenseCategories.length > 0 && (
@@ -935,10 +999,11 @@ export default function BusinessPnL() {
                   </Table>
                 </div>
                 {/* Total */}
-                <div className="flex items-center justify-between mt-3 pt-3"
-                  style={{ borderTop: `1px solid ${c.border}` }}>
+                <div className="flex items-center justify-between mt-4 pt-3"
+                  style={{ borderTop: `1px solid ${alpha(c.border, 40)}` }}>
                   <span className="text-xs font-bold" style={{ color: c.foreground }}>Total Pengeluaran</span>
-                  <span className="text-sm font-bold tabular-nums" style={{ color: c.destructive }}>
+                  <span className="text-sm font-bold tabular-nums"
+                    style={{ color: c.destructive, textShadow: `0 0 16px ${alpha(c.destructive, 15)}` }}>
                     {formatAmount(data.summary.totalExpenses)}
                   </span>
                 </div>
@@ -957,19 +1022,24 @@ export default function BusinessPnL() {
       {loading ? (
         <Skeleton className="h-36 rounded-xl" />
       ) : data ? (
-        <Card className="rounded-xl overflow-hidden bg-[#1A1A2E] border-white/[0.06]"
+        <Card className="rounded-xl border overflow-hidden transition-colors duration-300 hover:border-white/[0.08]"
           style={{
-            borderColor: isProfit ? alpha(c.secondary, 15) : alpha(c.destructive, 15),
+            background: 'linear-gradient(180deg, #0f0f14 0%, #13131a 100%)',
+            borderColor: alpha(isProfit ? c.secondary : c.destructive, 10),
           }}>
-          <div className="h-[3px]" style={{
-            background: isProfit
-              ? `linear-gradient(90deg, ${c.secondary}, ${c.warning})`
-              : `linear-gradient(90deg, ${c.destructive}, ${c.warning})`,
-          }} />
-          <CardContent className="p-4 sm:p-5">
-            <h3 className="text-xs font-bold mb-4 flex items-center gap-2" style={{ color: c.foreground }}>
-              <DollarSign className="h-3.5 w-3.5" style={{ color: isProfit ? c.secondary : c.destructive }} />
-              Ringkasan Laba Rugi — {data.period.label}
+          {/* Subtle side accent glow — left edge */}
+          <div className="absolute top-0 left-0 bottom-0 w-px"
+            style={{ background: `linear-gradient(180deg, ${alpha(isProfit ? c.secondary : c.destructive, 30)}, transparent 60%, ${alpha(c.warning, 20)})` }} />
+          <CardContent className="relative p-5 sm:p-6">
+            <h3 className="text-xs font-bold mb-4 flex items-center gap-2 tracking-tight"
+              style={{
+                background: `linear-gradient(135deg, ${c.foreground}, ${alpha(c.foreground, 65)})`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+              <DollarSign className="h-3.5 w-3.5"
+                style={{ color: isProfit ? c.secondary : c.destructive, WebkitTextFillColor: undefined }} />
+              <span>Ringkasan Laba Rugi — {data.period.label}</span>
             </h3>
 
             <div className="space-y-3">
@@ -991,14 +1061,18 @@ export default function BusinessPnL() {
                 </span>
               </div>
 
-              <div className="h-px" style={{ backgroundColor: c.border }} />
+              <div className="h-px" style={{ backgroundColor: alpha(c.border, 40) }} />
 
               {/* Net Profit */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold" style={{ color: c.foreground }}>Laba Bersih</span>
                 <span className={cn('text-base font-bold tabular-nums',
                   isProfit ? 'text-emerald-400' : 'text-red-400'
-                )}>
+                )}
+                  style={isProfit
+                    ? { textShadow: '0 0 20px rgba(16,185,129,0.2)' }
+                    : { textShadow: '0 0 20px rgba(244,63,94,0.2)' }
+                  }>
                   {isProfit ? '+' : ''}{formatAmount(data.summary.netProfit)}
                 </span>
               </div>
@@ -1006,13 +1080,14 @@ export default function BusinessPnL() {
               {/* Margin */}
               <div className="flex items-center justify-between">
                 <span className="text-xs" style={{ color: c.muted }}>Margin Laba</span>
-                <span className="text-xs font-bold tabular-nums" style={{ color: c.warning }}>
+                <span className="text-xs font-bold tabular-nums"
+                  style={{ color: c.warning, textShadow: `0 0 16px ${alpha(c.warning, 15)}` }}>
                   {data.summary.profitMargin.toFixed(1)}%
                 </span>
               </div>
 
               {/* Margin bar */}
-              <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.border, 20) }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: alpha(c.border, 20) }}>
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{
@@ -1020,6 +1095,9 @@ export default function BusinessPnL() {
                     background: isProfit
                       ? `linear-gradient(90deg, ${c.secondary}, ${c.warning})`
                       : c.destructive,
+                    boxShadow: isProfit
+                      ? `0 0 12px ${alpha(c.secondary, 20)}`
+                      : `0 0 12px ${alpha(c.destructive, 20)}`,
                   }}
                 />
               </div>
@@ -1027,27 +1105,30 @@ export default function BusinessPnL() {
 
             {/* Comparison section */}
             {data.comparison && (
-              <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${c.border}` }}>
-                <div className="flex items-center gap-1.5 mb-2">
+              <div className="mt-5 pt-4" style={{ borderTop: `1px dashed ${alpha(c.border, 40)}` }}>
+                <div className="flex items-center gap-1.5 mb-3">
                   <Info className="h-3 w-3" style={{ color: c.primary }} />
                   <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.muted }}>
                     Perbandingan Periode Sebelumnya
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-lg" style={{ background: alpha(c.secondary, 4) }}>
+                  <div className="p-3 rounded-lg transition-colors duration-200"
+                    style={{ background: alpha(c.secondary, 4), border: `1px solid ${alpha(c.secondary, 6)}` }}>
                     <p className="text-[10px]" style={{ color: c.muted }}>Pendapatan</p>
                     <p className="text-xs font-bold tabular-nums" style={{ color: c.secondary }}>
                       {formatAmount(data.comparison.prevRevenue)}
                     </p>
                   </div>
-                  <div className="p-2.5 rounded-lg" style={{ background: alpha(c.destructive, 4) }}>
+                  <div className="p-3 rounded-lg transition-colors duration-200"
+                    style={{ background: alpha(c.destructive, 4), border: `1px solid ${alpha(c.destructive, 6)}` }}>
                     <p className="text-[10px]" style={{ color: c.muted }}>Pengeluaran</p>
                     <p className="text-xs font-bold tabular-nums" style={{ color: c.destructive }}>
                       {formatAmount(data.comparison.prevExpenses)}
                     </p>
                   </div>
-                  <div className="p-2.5 rounded-lg" style={{ background: alpha(c.primary, 4) }}>
+                  <div className="p-3 rounded-lg transition-colors duration-200"
+                    style={{ background: alpha(c.primary, 4), border: `1px solid ${alpha(c.primary, 6)}` }}>
                     <p className="text-[10px]" style={{ color: c.muted }}>Laba Bersih</p>
                     <p className={cn('text-xs font-bold tabular-nums',
                       data.comparison.prevNetProfit >= 0 ? 'text-emerald-400' : 'text-red-400'
@@ -1055,7 +1136,8 @@ export default function BusinessPnL() {
                       {formatAmount(data.comparison.prevNetProfit)}
                     </p>
                   </div>
-                  <div className="p-2.5 rounded-lg" style={{ background: alpha(c.warning, 4) }}>
+                  <div className="p-3 rounded-lg transition-colors duration-200"
+                    style={{ background: alpha(c.warning, 4), border: `1px solid ${alpha(c.warning, 6)}` }}>
                     <p className="text-[10px]" style={{ color: c.muted }}>Margin</p>
                     <p className="text-xs font-bold tabular-nums" style={{ color: c.warning }}>
                       {data.comparison.prevProfitMargin.toFixed(1)}%

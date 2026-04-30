@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -142,7 +143,12 @@ export default function InvestmentRegisterDialog({
           <DialogTitle>{t('inv.createInvestment')}</DialogTitle>
         </VisuallyHidden>
         {/* Visual Header */}
-        <div className="relative bg-gradient-to-br from-[#FFD700]/20 via-[#FFD700]/5 to-transparent p-6 pb-5">
+        <motion.div
+          className="relative bg-gradient-to-br from-[#FFD700]/20 via-[#FFD700]/5 to-transparent p-6 pb-5"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/[0.03] to-transparent rounded-bl-full" />
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-white/[0.02] to-transparent rounded-tr-full" />
@@ -188,10 +194,15 @@ export default function InvestmentRegisterDialog({
               <span className="text-xs text-white/50">PnL</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Scrollable Form Body */}
-        <div className="p-6 pt-5 space-y-4 max-h-[55vh] overflow-y-auto">
+        <motion.div
+          className="p-6 pt-5 space-y-4 max-h-[55vh] overflow-y-auto"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
           {/* Investment Name */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white/70 flex items-center gap-2">
@@ -256,7 +267,7 @@ export default function InvestmentRegisterDialog({
               {t('inv.trackInvestmentsDesc')}
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Footer Buttons - fixed at bottom */}
         <DialogFooter className="gap-3 p-6 pt-3 sm:gap-3 border-t border-white/[0.06]">

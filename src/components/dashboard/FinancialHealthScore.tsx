@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -216,7 +217,11 @@ export function FinancialHealthScore() {
 
   return (
     <>
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        whileHover={{ scale: 1.02, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
         className="rounded-xl overflow-hidden relative group"
         style={{ background: THEME.surface, border: `1px solid ${THEME.border}` }}
       >
@@ -323,9 +328,7 @@ export function FinancialHealthScore() {
             {t('dashboard.healthScoreViewTips')}
           </Button>
         </div>
-      </div>
-
-      {/* Tips Dialog Carousel */}
+      </motion.div>
       <Dialog open={showTipsDialog} onOpenChange={setShowTipsDialog}>
         <DialogContent
           showCloseButton={false}

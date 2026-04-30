@@ -1421,11 +1421,7 @@ export default function BusinessBudget() {
           className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
           style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
-          {/* Gradient accent strip */}
-          <div
-            className="h-[3px]"
-            style={{ background: 'linear-gradient(to right, var(--primary), var(--secondary), var(--warning))' }}
-          />
+          <div className="h-px bg-white/[0.06]" />
           <DialogHeader className="px-5 pt-5">
             <DialogTitle
               className="text-sm font-semibold flex items-center gap-2"
@@ -1758,10 +1754,7 @@ export default function BusinessBudget() {
           className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden w-[95vw] sm:max-w-[400px]"
           style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
         >
-          <div
-            className="h-[3px]"
-            style={{ background: 'linear-gradient(to right, var(--destructive), var(--warning))' }}
-          />
+          <div className="h-px bg-white/[0.06]" />
           <AlertDialogHeader className="p-5 pb-0">
             <AlertDialogTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: c.foreground }}>
               <AlertTriangle className="h-4 w-4" style={{ color: c.destructive }} />

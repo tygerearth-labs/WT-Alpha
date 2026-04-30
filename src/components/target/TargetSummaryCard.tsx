@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { SavingsTarget } from '@/types/transaction.types';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
@@ -47,12 +48,16 @@ export function TargetSummaryCard({ savingsTargets }: Props) {
   const ringColor = overallPct >= 80 ? T.secondary : overallPct >= 50 ? T.primary : overallPct >= 25 ? T.warning : T.destructive;
 
   return (
-    <div
+    <motion.div
       className="rounded-2xl p-4 sm:p-5 relative overflow-hidden"
       style={{
         background: `linear-gradient(135deg, ${T.primary}08 0%, ${T.bg} 50%, ${T.secondary}06 100%)`,
         border: `1px solid ${T.border}`,
       }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ y: -2 }}
     >
       {/* Subtle glow */}
       <div
@@ -131,6 +136,6 @@ export function TargetSummaryCard({ savingsTargets }: Props) {
           <p className="text-[9px]" style={{ color: T.muted }}>{t('target.activeCount', { count: activeTargets.length })}</p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

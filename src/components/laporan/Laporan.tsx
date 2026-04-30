@@ -196,7 +196,7 @@ export function Laporan() {
             className="p-3 lg:p-4 rounded-xl relative overflow-hidden"
             style={{ background: T.bg, border: `1px solid ${T.border}` }}
           >
-            <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: `linear-gradient(to right, transparent, ${item.color}, transparent)` }} />
+
             <div className="flex items-center gap-1.5 mb-1">
               <item.icon className="h-3 w-3" style={{ color: item.color }} />
               <span className="text-[9px] uppercase tracking-wider font-medium" style={{ color: T.muted }}>{item.label}</span>
@@ -219,7 +219,7 @@ export function Laporan() {
         className="rounded-xl overflow-hidden relative"
         style={{ background: `linear-gradient(135deg, ${T.bg}, #141418)`, border: `1px solid ${T.border}` }}
       >
-        <div className="h-[3px]" style={{ background: 'linear-gradient(to right, #03DAC6, #BB86FC, #F9A825)' }} />
+        <div className="h-px bg-white/[0.06]" />
         <div className="p-3 sm:p-4 lg:p-5 grid grid-cols-3 gap-3 lg:gap-6">
           <div className="text-center">
             <p className="text-[9px] uppercase tracking-wider" style={{ color: T.muted }}>{t('laporan.savingsRate')}</p>

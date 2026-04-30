@@ -446,7 +446,7 @@ export function AdminInvites() {
                     side="left"
                     align="start"
                     sideOffset={8}
-                    className="bg-[#1A1A2E] border-white/[0.08] p-3 max-w-[260px] shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+                    className="bg-white/[0.03] border-white/[0.08] p-3 max-w-[260px] shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
                   >
                     <div className="space-y-2">
                       <p className="text-[11px] font-semibold text-white/70">{invite.token}</p>
@@ -501,7 +501,6 @@ export function AdminInvites() {
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -527,7 +526,7 @@ export function AdminInvites() {
                 <SelectTrigger className="bg-white/[0.03] border-white/[0.06] text-white/70">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-white/[0.08]">
+                <SelectContent className="bg-white/[0.03] border-white/[0.08]">
                   <SelectItem value="basic">
                     <div className="flex items-center gap-2">
                       <Sparkles className="h-3.5 w-3.5 text-white/40" />
@@ -604,7 +603,6 @@ export function AdminInvites() {
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteInvite} onOpenChange={() => setDeleteInvite(null)}>
         <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white/90">Revoke Invite</AlertDialogTitle>

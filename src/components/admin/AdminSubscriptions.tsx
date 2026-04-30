@@ -462,7 +462,6 @@ export function AdminSubscriptions() {
       {/* Assign Subscription Dialog */}
       <Dialog open={showAssign} onOpenChange={setShowAssign}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90 flex items-center gap-2">
@@ -527,7 +526,6 @@ export function AdminSubscriptions() {
       {/* Extend Dialog */}
       <Dialog open={!!extendSub} onOpenChange={() => setExtendSub(null)}>
         <DialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden max-w-md">
-          <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))' }} />
           <div className="p-5">
           <DialogHeader>
             <DialogTitle className="text-white/90">Extend Subscription</DialogTitle>

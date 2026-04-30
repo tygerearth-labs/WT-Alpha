@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag, ChevronRight } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -18,6 +19,20 @@ const THEME = {
   border: 'rgba(255,255,255,0.08)',
   text: '#FFFFFF',
   textSecondary: '#B3B3B3',
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const categoryItemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5 } },
 };
 
 interface CategoryItem {
@@ -87,16 +102,17 @@ export function TopCategories({ expenseByCategory }: TopCategoriesProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-3.5">
+          <motion.div
+            className="space-y-3.5"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+          >
             {categories.map((cat, i) => (
-              <div
+              <motion.div
                 key={cat.name}
-                className="group/cat transition-all duration-500"
-                style={{
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
-                  transitionDelay: `${i * 80}ms`,
-                }}
+                variants={categoryItemVariants}
+                whileHover={{ scale: 1.02, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
               >
                 {/* Category header row */}
                 <div className="flex items-center gap-2.5 mb-1.5">
@@ -136,9 +152,9 @@ export function TopCategories({ expenseByCategory }: TopCategoriesProps) {
                     }}
                   />
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* View All link */}

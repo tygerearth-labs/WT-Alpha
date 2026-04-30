@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { PiggyBank, Plus, Calendar, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -199,7 +200,7 @@ export function SavingsOverview() {
 
             {/* Target List */}
             <div className="space-y-2.5 max-h-64 overflow-y-auto">
-              {targets.map((target) => {
+              {targets.map((target, index) => {
                 const status = getTargetStatus(target);
                 const statusConfig = getStatusConfig(status);
                 const progress = target.targetAmount > 0 ? Math.min((target.currentAmount / target.targetAmount) * 100, 100) : 0;
@@ -211,10 +212,13 @@ export function SavingsOverview() {
                 );
 
                 return (
-                  <div
+                  <motion.div
                     key={target.id}
                     className="p-3 rounded-lg transition-all duration-200 group relative overflow-hidden"
                     style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${THEME.border}` }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, delay: index * 0.05 }}
                   >
                     {/* Status indicator bar */}
                     <div
@@ -280,7 +284,7 @@ export function SavingsOverview() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

@@ -1126,10 +1126,7 @@ export default function BusinessLaporan() {
                 whileHover={springHover}
               >
                 <Card className="rounded-xl overflow-hidden" style={cardStyle}>
-                  <div
-                    className="h-[3px]"
-                    style={{ background: `linear-gradient(to right, ${card.color}, color-mix(in srgb, ${card.color} 40%, transparent))` }}
-                  />
+                  <div className="h-px bg-white/[0.06]" />
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${card.color}15` }}>
@@ -1325,10 +1322,7 @@ export default function BusinessLaporan() {
                 transition={{ type: 'spring' as const, stiffness: 200, damping: 22 }}
               >
                 <Card className="rounded-xl overflow-hidden" style={cardStyle}>
-                  <div
-                    className="h-[3px]"
-                    style={{ background: 'linear-gradient(to right, var(--secondary), color-mix(in srgb, var(--secondary) 30%, transparent))' }}
-                  />
+                  <div className="h-px bg-white/[0.06]" />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={TrendingUp} color="var(--secondary)" title="Pendapatan per Sumber" badge={labaRugiDetail.income.filter((i) => i.amount > 0).length} />
                   <div className="space-y-2">
@@ -1372,10 +1366,7 @@ export default function BusinessLaporan() {
                 transition={{ delay: 0.05, type: 'spring' as const, stiffness: 200, damping: 22 }}
               >
               <Card className="rounded-xl overflow-hidden" style={cardStyle}>
-                <div
-                  className="h-[3px]"
-                  style={{ background: 'linear-gradient(to right, var(--destructive), color-mix(in srgb, var(--destructive) 30%, transparent))' }}
-                />
+                <div className="h-px bg-white/[0.06]" />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={TrendingDown} color="var(--destructive)" title="Pengeluaran per Kategori" badge={expenseCategories.length} />
                   {expenseCategories.length === 0 ? (
@@ -1429,10 +1420,7 @@ export default function BusinessLaporan() {
                 whileHover={springHover}
               >
               <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: `1px solid color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 20%, transparent)` }}>
-                <div
-                  className="h-[3px]"
-                  style={{ background: `linear-gradient(to right, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'}, color-mix(in srgb, ${labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} 30%, transparent))` }}
-                />
+                <div className="h-px bg-white/[0.06]" />
                 <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={DollarSign} color={labaRugiDetail.labaKotor >= 0 ? 'var(--secondary)' : 'var(--destructive)'} title="Laba / Rugi Bersih" />
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2160,7 +2148,7 @@ export default function BusinessLaporan() {
                   transition={{ delay: 0.2, type: 'spring' as const, stiffness: 200, damping: 22 }}
                 >
                   <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-                    <div className="h-[3px]" style={{ background: 'linear-gradient(to right, var(--primary), color-mix(in srgb, var(--primary) 30%, transparent))' }} />
+                    <div className="h-px bg-white/[0.06]" />
                     <CardContent className="p-0">
                       <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
                         {data.investorSummary.investors.map((inv) => (
@@ -2245,7 +2233,7 @@ export default function BusinessLaporan() {
                 transition={{ type: 'spring' as const, stiffness: 200, damping: 22 }}
               >
                 <Card className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-                  <div className="h-[3px]" style={{ background: 'linear-gradient(to right, var(--warning), color-mix(in srgb, var(--warning) 30%, transparent))' }} />
+                  <div className="h-px bg-white/[0.06]" />
                   <CardContent className="p-3 sm:p-4">
                     <SectionHeader icon={Target} color="var(--warning)" title={`Anggaran Bulan Ini`} badge={`${data.budgetUtilization.period}/${data.budgetUtilization.year}`} />
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
