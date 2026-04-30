@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useBusinessStore } from '@/store/useBusinessStore';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
   Loader2,
