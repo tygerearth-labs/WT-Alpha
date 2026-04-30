@@ -69,7 +69,7 @@ import BusinessForecast from '@/components/business/BusinessForecast';
 import BusinessInvoiceSettings from '@/components/business/BusinessInvoiceSettings';
 import InvestmentDashboard from '@/components/investment/InvestmentDashboard';
 import InvestmentPortfolio from '@/components/investment/InvestmentPortfolio';
-import TradingJournal from '@/components/investment/TradingJournal';
+import UltimateTradingJournal from '@/components/investment/UltimateTradingJournal';
 import InvestmentRegisterDialog from '@/components/investment/InvestmentRegisterDialog';
 import QuantMacroPanel from '@/components/investment/QuantMacroPanel';
 import { toast } from 'sonner';
@@ -93,7 +93,8 @@ interface NavItem {
 
 export function MainLayout() {
   const { user, logout } = useAuthStore();
-  const { mode, setMode, businesses, setBusinesses, setActiveBusiness, setLoading: setBizLoading } = useBusinessStore();
+  const { mode, setMode, businesses, setBusinesses, setActiveBusiness, activeBusiness, setLoading: setBizLoading } = useBusinessStore();
+  const activeBusinessId = activeBusiness?.id || '';
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false);
@@ -320,7 +321,7 @@ export function MainLayout() {
         case 'inv-portfolio': return <InvestmentPortfolio />;
         case 'inv-quant': return <QuantMacroPanel />;
         case 'inv-macro': return <QuantMacroPanel />;
-        case 'inv-journal': return <TradingJournal />;
+        case 'inv-journal': return <UltimateTradingJournal businessId={activeBusinessId} />;
         default: return <InvestmentDashboard />;
       }
     }
