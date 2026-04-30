@@ -469,7 +469,7 @@ export function KasMasuk() {
         {/* Main content */}
         <div
           className="relative rounded-2xl p-4 sm:p-5 lg:p-8 overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
+          style={{ background: 'linear-gradient(135deg, rgba(3,218,198,0.12) 0%, rgba(3,218,198,0.04) 40%, rgba(187,134,252,0.06) 100%)', border: '1px solid rgba(3,218,198,0.15)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
         >
           {/* Per-card colored glow */}
           <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: T.accent }} />

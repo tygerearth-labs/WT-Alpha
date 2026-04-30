@@ -425,6 +425,14 @@ export function KasKeluar() {
           33% { transform: translate(10px, -15px) scale(1.05); }
           66% { transform: translate(-8px, 8px) scale(0.97); }
         }
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
       `}</style>
       {/* ── Ambient Background ── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -434,16 +442,45 @@ export function KasKeluar() {
       </div>
 
       {/* ── Hero Strip ── */}
-      <div className="relative rounded-2xl">
+      <div className="relative rounded-2xl overflow-hidden">
         {/* Per-card colored glow */}
-        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: T.accent }} />
-        <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full blur-3xl opacity-[0.03] pointer-events-none hidden lg:block" style={{ background: T.primary }} />
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: T.accent }} />
+        <div className="absolute -bottom-32 -right-32 w-72 h-72 rounded-full opacity-[0.05] blur-[120px] pointer-events-none" style={{ background: T.primary }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full opacity-[0.03] blur-[100px] pointer-events-none" style={{ background: '#FF8A80' }} />
+        {/* Desktop animated gradient border glow */}
+        <div className="absolute -inset-[1.5px] rounded-[18px] hidden lg:block"
+          style={{
+            background: `linear-gradient(135deg, ${T.accent}50, ${T.primary}30, ${T.accent}50)`,
+            filter: 'blur(2px)',
+            opacity: 0.4,
+            animation: 'heroGlow 4s ease-in-out infinite',
+          }}
+        />
+        <div className="absolute -inset-[1px] rounded-[18px] hidden lg:block overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${T.accent}80, ${T.primary}50, ${T.accent}80)`,
+          }}
+        >
+          {/* Shimmer overlay on border */}
+          <div
+            className="absolute inset-y-0 w-1/3"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(207,102,121,0.2) 50%, transparent 100%)',
+              animation: 'shimmer 3.5s ease-in-out infinite',
+            }}
+          />
+        </div>
 
         {/* Main content */}
         <div
-          className="relative rounded-2xl p-4 sm:p-5 lg:p-8 overflow-hidden bg-white/[0.03] backdrop-blur-xl"
-          style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+          className="relative rounded-2xl p-4 sm:p-5 lg:p-8 overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, rgba(207,102,121,0.12) 0%, rgba(207,102,121,0.04) 40%, rgba(187,134,252,0.06) 100%)', border: '1px solid rgba(207,102,121,0.15)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
         >
+          {/* Per-card colored glow */}
+          <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-[0.05] pointer-events-none" style={{ background: T.accent }} />
+          <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full blur-3xl opacity-[0.04] pointer-events-none" style={{ background: T.primary }} />
+          {/* h-px gradient line at top */}
+          <div className="absolute top-0 left-4 right-4 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.accent}40, ${T.primary}40, transparent)` }} />
           {/* Desktop dot pattern overlay */}
           <div className="absolute inset-0 hidden lg:block pointer-events-none" style={{
             backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
@@ -452,11 +489,11 @@ export function KasKeluar() {
             WebkitMaskImage: 'linear-gradient(180deg, transparent 0%, black 25%, black 75%, transparent 100%)',
           }} />
 
-          {/* Decorative blurs */}
-          <div className="absolute top-0 right-0 w-32 h-32 lg:w-56 lg:h-56 rounded-full opacity-[0.08] blur-3xl pointer-events-none"
+          {/* Per-card colored glow */}
+          <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-[100px] opacity-[0.05] pointer-events-none"
             style={{ background: T.accent, transform: 'translate(30%, -30%)' }}
           />
-          <div className="absolute bottom-0 left-1/4 w-24 h-24 lg:w-40 lg:h-40 rounded-full opacity-[0.05] blur-3xl pointer-events-none hidden lg:block"
+          <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full blur-[100px] opacity-[0.04] pointer-events-none hidden lg:block"
             style={{ background: T.primary }}
           />
 
