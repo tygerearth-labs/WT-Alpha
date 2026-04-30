@@ -26,7 +26,6 @@ import {
   User,
   Palette,
   Monitor,
-  Moon,
   Sun,
   Sparkles,
   Shield,
@@ -53,11 +52,14 @@ import {
   Layout,
   Server,
   Loader2,
+  Eye,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 
+/* ── Types ── */
 interface SystemHealth {
   status: string;
   database: { size: string; tables: number };
@@ -79,14 +81,11 @@ function AnimatedSwitch({
   className?: string;
 }) {
   const [animating, setAnimating] = useState(false);
-
-  // Handle toggle click with animation
   const handleClick = () => {
     onCheckedChange(!checked);
     setAnimating(true);
     setTimeout(() => setAnimating(false), 300);
   };
-
   return (
     <button
       type="button"
@@ -97,9 +96,7 @@ function AnimatedSwitch({
         'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BB86FC]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0D0D0D] disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
-      style={{
-        backgroundColor: checked ? activeColor : 'rgba(255,255,255,0.1)',
-      }}
+      style={{ backgroundColor: checked ? activeColor : 'rgba(255,255,255,0.1)' }}
     >
       <span
         className="pointer-events-none inline-block h-5 w-5 rounded-full shadow-lg ring-0"
@@ -128,16 +125,109 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-/* ── Framer-motion variants ── */
 const contentVariants = {
   enter: { opacity: 0, y: 12, transition: { duration: 0.25, ease: 'easeOut' as const } },
   center: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.2, ease: 'easeIn' as const } },
 };
 
+/* ═══════════════════════════════════════════════════════════════
+   GLASS CARD WRAPPER — premium dark glassmorphism card
+   ═══════════════════════════════════════════════════════════════ */
+function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <Card
+      className={cn(
+        'adm-content-card relative overflow-hidden bg-white/[0.02] border-white/[0.06]',
+        'backdrop-blur-sm hover:border-white/[0.1] transition-all duration-300',
+        'hover:shadow-[0_4px_24px_rgba(0,0,0,0.2)]',
+        'before:pointer-events-none before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-br before:from-white/[0.03] before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity',
+        className,
+      )}
+    >
+      {children}
+    </Card>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION HEADER — icon + title + optional badge
+   ═══════════════════════════════════════════════════════════════ */
+function SectionHeader({
+  icon: Icon,
+  title,
+  color,
+  badge,
+}: {
+  icon: React.ElementType;
+  title: string;
+  color: string;
+  badge?: string;
+}) {
+  return (
+    <CardHeader className="pb-4">
+      <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+        <Icon className="adm-section-header-icon h-4 w-4" style={{ color }} />
+        {title}
+        {badge && (
+          <Badge
+            variant="outline"
+            className="adm-badge text-[9px] font-semibold px-1.5 py-0 ml-auto"
+            style={{
+              backgroundColor: `${color}08`,
+              borderColor: `${color}20`,
+              color: `${color}A0`,
+            }}
+          >
+            {badge}
+          </Badge>
+        )}
+      </CardTitle>
+    </CardHeader>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOGGLE ROW — glass card with icon, label, desc, toggle
+   ═══════════════════════════════════════════════════════════════ */
+function ToggleRow({
+  icon: Icon,
+  label,
+  description,
+  checked,
+  onCheckedChange,
+  color = '#03DAC6',
+}: {
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (val: boolean) => void;
+  color?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 group">
+      <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors" style={{ backgroundColor: `${color}10` }}>
+          <Icon className="h-4 w-4 transition-colors" style={{ color }} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[12px] font-semibold text-white/70 group-hover:text-white/85 transition-colors">{label}</p>
+          <p className="text-[10px] text-white/30 mt-0.5 leading-relaxed">{description}</p>
+        </div>
+      </div>
+      <AnimatedSwitch checked={checked} onCheckedChange={onCheckedChange} activeColor={color} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
 export function AdminSettings() {
   const { t } = useTranslation();
-  /* ── All state variables (unchanged) ── */
+
+  /* ── State ── */
   const [profileName, setProfileName] = useState('Admin');
   const [profileEmail, setProfileEmail] = useState('admin@wealthtracker.com');
   const [profileSaving, setProfileSaving] = useState(false);
@@ -197,53 +287,24 @@ export function AdminSettings() {
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
   const [exportEnabled, setExportEnabled] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
 
-  /* ── Tab state ── */
   const [activeTab, setActiveTab] = useState<TabId>('umum');
-
-  /* ── Save status: idle | saving | success | error ── */
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-
-  /* ── Ref to store original values for dirty tracking ── */
   const originalValuesRef = useRef<string>('');
   const [hasChanges, setHasChanges] = useState(false);
 
-  /* ── Serialize current values for comparison ── */
+  /* ── Serialize current values ── */
   const currentValues = useMemo(() => {
     return JSON.stringify({
-      defaultPlan,
-      defaultCategoryLimit,
-      defaultSavingsLimit,
-      autoSuspend,
-      basicPlanPrice,
-      proPlanPrice,
-      ultimatePlanPrice,
-      basicPlanFeatures,
-      proPlanFeatures,
-      ultimatePlanFeatures,
-      trialEnabled,
-      trialDurationDays,
-      trialPlan,
-      whatsappNumber,
-      registrationOpen,
-      registrationMessage,
-      availablePlans,
-      basicPlanDiscount,
-      proPlanDiscount,
-      basicPlanDiscountLabel,
-      proPlanDiscountLabel,
-      ultimatePlanDiscount,
-      ultimatePlanDiscountLabel,
-      basicPurchaseUrl,
-      proPurchaseUrl,
-      ultimatePurchaseUrl,
-      emailNotifNewUser,
-      emailNotifExpiry,
-      emailNotifInviteUsage,
-      emailNotifDailySummary,
-      landingPageConfig,
-      landingStats,
-      sectionVisibility,
-      exportEnabled,
+      defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
+      basicPlanPrice, proPlanPrice, ultimatePlanPrice,
+      basicPlanFeatures, proPlanFeatures, ultimatePlanFeatures,
+      trialEnabled, trialDurationDays, trialPlan,
+      whatsappNumber, registrationOpen, registrationMessage, availablePlans,
+      basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
+      ultimatePlanDiscount, ultimatePlanDiscountLabel,
+      basicPurchaseUrl, proPurchaseUrl, ultimatePurchaseUrl,
+      emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
+      landingPageConfig, landingStats, sectionVisibility, exportEnabled,
     });
   }, [
     defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
@@ -251,16 +312,15 @@ export function AdminSettings() {
     basicPlanPrice, proPlanPrice, ultimatePlanPrice,
     basicPlanFeatures, proPlanFeatures, ultimatePlanFeatures,
     trialEnabled, trialDurationDays, trialPlan,
-    whatsappNumber, registrationOpen, registrationMessage,
-    availablePlans, basicPlanDiscount, proPlanDiscount,
-    basicPlanDiscountLabel, proPlanDiscountLabel,
+    whatsappNumber, registrationOpen, registrationMessage, availablePlans,
+    basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
     ultimatePlanDiscount, ultimatePlanDiscountLabel,
     basicPurchaseUrl, proPurchaseUrl, ultimatePurchaseUrl,
     emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
     landingPageConfig, landingStats, sectionVisibility, exportEnabled,
   ]);
 
-  /* ── Track dirty state via effect (ref access is safe in effects) ── */
+  /* ── Dirty tracking ── */
   useEffect(() => {
     if (configLoaded && originalValuesRef.current === '') {
       originalValuesRef.current = currentValues;
@@ -270,22 +330,102 @@ export function AdminSettings() {
     }
   }, [configLoaded, currentValues]);
 
+  /* ═══════════════════════════════════════════════════════════════
+     AUTO-SAVE ON TOGGLE CHANGES
+     ═══════════════════════════════════════════════════════════════ */
+  const doSaveRef = useRef<() => Promise<void>>(async () => {});
+
+  const doSave = useCallback(async () => {
+    setSaveStatus('saving');
+    try {
+      const res = await fetch('/api/admin/platform-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          defaultPlan,
+          defaultMaxCategories: parseInt(defaultCategoryLimit, 10) || 10,
+          defaultMaxSavings: parseInt(defaultSavingsLimit, 10) || 3,
+          autoSuspendExpired: autoSuspend,
+          basicPlanPrice, proPlanPrice,
+          basicPlanFeatures: JSON.stringify(basicPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+          proPlanFeatures: JSON.stringify(proPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+          trialEnabled,
+          trialDurationDays: parseInt(trialDurationDays, 10) || 30,
+          trialPlan,
+          whatsappNumber, registrationOpen, registrationMessage,
+          availablePlans: JSON.stringify(availablePlans),
+          basicPlanDiscount, proPlanDiscount,
+          basicPlanDiscountLabel, proPlanDiscountLabel,
+          ultimatePlanPrice,
+          ultimatePlanFeatures: JSON.stringify(ultimatePlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+          ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl,
+          basicPurchaseUrl, proPurchaseUrl,
+          sectionVisibility: JSON.stringify(sectionVisibility),
+          exportEnabled: JSON.stringify(exportEnabled),
+          landingPageConfig: JSON.stringify(landingPageConfig),
+          landingPageStats: JSON.stringify(landingStats),
+          emailNotifications: JSON.stringify({ newUser: emailNotifNewUser, expiry: emailNotifExpiry, inviteUsage: emailNotifInviteUsage, dailySummary: emailNotifDailySummary }),
+        }),
+      });
+      if (res.ok) {
+        originalValuesRef.current = currentValues;
+        setHasChanges(false);
+        setSaveStatus('success');
+        toast.success('Pengaturan berhasil disimpan');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('error');
+        toast.error('Gagal menyimpan');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    } catch {
+      setSaveStatus('error');
+      toast.error('Gagal menyimpan');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  }, [
+    defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
+    basicPlanPrice, proPlanPrice, basicPlanFeatures, proPlanFeatures, trialEnabled,
+    trialDurationDays, trialPlan, whatsappNumber, registrationOpen, registrationMessage,
+    availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
+    basicPurchaseUrl, proPurchaseUrl, ultimatePlanPrice, ultimatePlanFeatures,
+    ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl,
+    sectionVisibility, exportEnabled, landingPageConfig, landingStats, currentValues,
+    emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
+  ]);
+
+  // Keep ref in sync
+  doSaveRef.current = doSave;
+
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleToggleWithAutoSave = useCallback((setter: (v: boolean) => void, value: boolean) => {
+    setter(value);
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      doSaveRef.current();
+    }, 400);
+  }, []);
+
+  /* ── Manual save (button click) ── */
+  const handleSave = useCallback(async () => {
+    if (!hasChanges) return;
+    await doSave();
+  }, [hasChanges, doSave]);
+
   /* ── Fetch system health ── */
   useEffect(() => {
     const fetchHealth = async () => {
       try {
         const res = await fetch('/api/admin/system-health');
-        if (res.ok) {
-          const data = await res.json();
-          setSystemHealth(data);
-        }
+        if (res.ok) setSystemHealth(await res.json());
       } catch {}
       setLoadingHealth(false);
     };
     fetchHealth();
   }, []);
 
-  /* ── Fetch platform config on mount ── */
+  /* ── Fetch platform config ── */
   useEffect(() => {
     const fetchConfig = async () => {
       try {
@@ -300,18 +440,17 @@ export function AdminSettings() {
             setBasicPlanPrice(data.config.basicPlanPrice || 'Gratis');
             setProPlanPrice(data.config.proPlanPrice || 'Rp 99.000');
             setUltimatePlanPrice(data.config.ultimatePlanPrice || 'Rp 199.000');
-            // Parse JSON features to newline-separated text
             try {
-              const basicFeats = data.config.basicPlanFeatures ? JSON.parse(data.config.basicPlanFeatures) : [];
-              setBasicPlanFeatures(Array.isArray(basicFeats) ? basicFeats.join('\n') : '');
+              const b = data.config.basicPlanFeatures ? JSON.parse(data.config.basicPlanFeatures) : [];
+              setBasicPlanFeatures(Array.isArray(b) ? b.join('\n') : '');
             } catch { setBasicPlanFeatures(''); }
             try {
-              const proFeats = data.config.proPlanFeatures ? JSON.parse(data.config.proPlanFeatures) : [];
-              setProPlanFeatures(Array.isArray(proFeats) ? proFeats.join('\n') : '');
+              const p = data.config.proPlanFeatures ? JSON.parse(data.config.proPlanFeatures) : [];
+              setProPlanFeatures(Array.isArray(p) ? p.join('\n') : '');
             } catch { setProPlanFeatures(''); }
             try {
-              const ultimateFeats = data.config.ultimatePlanFeatures ? JSON.parse(data.config.ultimatePlanFeatures) : [];
-              setUltimatePlanFeatures(Array.isArray(ultimateFeats) ? ultimateFeats.join('\n') : '');
+              const u = data.config.ultimatePlanFeatures ? JSON.parse(data.config.ultimatePlanFeatures) : [];
+              setUltimatePlanFeatures(Array.isArray(u) ? u.join('\n') : '');
             } catch { setUltimatePlanFeatures(''); }
             setTrialEnabled(data.config.trialEnabled ?? true);
             setTrialDurationDays(String(data.config.trialDurationDays ?? 30));
@@ -320,8 +459,8 @@ export function AdminSettings() {
             setRegistrationOpen(data.config.registrationOpen ?? true);
             setRegistrationMessage(data.config.registrationMessage || '');
             try {
-              const parsed = data.config.availablePlans ? JSON.parse(data.config.availablePlans) : ['basic', 'pro', 'ultimate'];
-              setAvailablePlans(Array.isArray(parsed) ? parsed : ['basic', 'pro', 'ultimate']);
+              const ap = data.config.availablePlans ? JSON.parse(data.config.availablePlans) : ['basic', 'pro', 'ultimate'];
+              setAvailablePlans(Array.isArray(ap) ? ap : ['basic', 'pro', 'ultimate']);
             } catch { setAvailablePlans(['basic', 'pro', 'ultimate']); }
             setBasicPlanDiscount(data.config.basicPlanDiscount || '');
             setProPlanDiscount(data.config.proPlanDiscount || '');
@@ -332,62 +471,28 @@ export function AdminSettings() {
             setUltimatePlanDiscount(data.config.ultimatePlanDiscount || '');
             setUltimatePlanDiscountLabel(data.config.ultimatePlanDiscountLabel || '');
             setUltimatePurchaseUrl(data.config.ultimatePurchaseUrl || '');
-            const defaultSectionVisibility = {
-              basic: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: false, exportPdf: false, exportExcel: false },
-              pro: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true, exportPdf: true, exportExcel: true },
-              ultimate: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true, exportPdf: true, exportExcel: true },
+            const defaultSV = {
+              basic: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: false },
+              pro: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true },
+              ultimate: { budget: true, healthScore: true, tips: true, spendingTrend: true, topCategories: true, monthlySummary: true, savingsOverview: true, quickTransaction: true },
             };
             try {
               const sv = data.config.sectionVisibility ? JSON.parse(data.config.sectionVisibility) : null;
-              const merged = sv && typeof sv === 'object' ? { ...defaultSectionVisibility, ...sv, ultimate: sv.ultimate || defaultSectionVisibility.ultimate } : defaultSectionVisibility;
-              setSectionVisibility(merged);
-            } catch {
-              setSectionVisibility(defaultSectionVisibility);
-            }
-            const defaultExportEnabled = {
-              basic: { pdf: false, excel: false },
-              pro: { pdf: true, excel: true },
-              ultimate: { pdf: true, excel: true },
-            };
+              setSectionVisibility(sv && typeof sv === 'object' ? { ...defaultSV, ...sv, ultimate: sv.ultimate || defaultSV.ultimate } : defaultSV);
+            } catch { setSectionVisibility(defaultSV); }
+            const defaultEE = { basic: { pdf: false, excel: false }, pro: { pdf: true, excel: true }, ultimate: { pdf: true, excel: true } };
             try {
               const ee = data.config.exportEnabled ? JSON.parse(data.config.exportEnabled) : null;
-              const mergedEe = ee && typeof ee === 'object' ? { ...defaultExportEnabled, ...ee, ultimate: ee.ultimate || defaultExportEnabled.ultimate } : defaultExportEnabled;
-              setExportEnabled(mergedEe);
-            } catch {
-              setExportEnabled(defaultExportEnabled);
-            }
-            // Parse landingPageStats
-            let parsedLandingStats = [
-              { value: '73%', label: 'Accuracy Rate' },
-              { value: '2x', label: 'Faster Tracking' },
-              { value: '30%', label: 'Time Saved' },
-            ];
-            try {
-              if (data.config.landingPageStats) {
-                parsedLandingStats = JSON.parse(data.config.landingPageStats);
-              }
-            } catch {}
-            setLandingStats(parsedLandingStats);
-            // Parse landingPageConfig
-            const defaultLandingPageConfig = {
-              showStory: true,
-              showFeatures: true,
-              showTestimonials: true,
-              showPricing: true,
-              showFaq: true,
-              showStats: true,
-              heroSubtitle: '',
-              customFooterText: '',
-            };
+              setExportEnabled(ee && typeof ee === 'object' ? { ...defaultEE, ...ee, ultimate: ee.ultimate || defaultEE.ultimate } : defaultEE);
+            } catch { setExportEnabled(defaultEE); }
+            let parsedLS = [{ value: '73%', label: 'Accuracy Rate' }, { value: '2x', label: 'Faster Tracking' }, { value: '30%', label: 'Time Saved' }];
+            try { if (data.config.landingPageStats) parsedLS = JSON.parse(data.config.landingPageStats); } catch {}
+            setLandingStats(parsedLS);
+            const defaultLPC = { showStory: true, showFeatures: true, showTestimonials: true, showPricing: true, showFaq: true, showStats: true, heroSubtitle: '', customFooterText: '' };
             try {
               const lpc = data.config.landingPageConfig ? JSON.parse(data.config.landingPageConfig) : null;
-              if (lpc && typeof lpc === 'object') {
-                setLandingPageConfig({ ...defaultLandingPageConfig, ...lpc });
-              }
-            } catch {
-              // keep defaults
-            }
-            // Parse email notifications
+              if (lpc && typeof lpc === 'object') setLandingPageConfig({ ...defaultLPC, ...lpc });
+            } catch {}
             try {
               const en = data.config.emailNotifications ? JSON.parse(data.config.emailNotifications) : null;
               if (en && typeof en === 'object') {
@@ -396,93 +501,18 @@ export function AdminSettings() {
                 setEmailNotifInviteUsage(en.inviteUsage ?? false);
                 setEmailNotifDailySummary(en.dailySummary ?? false);
               }
-            } catch {
-              // keep defaults
-            }
+            } catch {}
             setConfigLoaded(true);
           }
         }
-      } catch {
-        setConfigLoaded(true);
-      }
+      } catch { setConfigLoaded(true); }
     };
     fetchConfig();
   }, []);
 
-
-
-  /* ── Manual save function ── */
-  const handleSave = useCallback(async () => {
-    if (!hasChanges) return;
-    setSaveStatus('saving');
-    try {
-      const res = await fetch('/api/admin/platform-config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          defaultPlan,
-          defaultMaxCategories: parseInt(defaultCategoryLimit, 10) || 10,
-          defaultMaxSavings: parseInt(defaultSavingsLimit, 10) || 3,
-          autoSuspendExpired: autoSuspend,
-          basicPlanPrice,
-          proPlanPrice,
-          basicPlanFeatures: JSON.stringify(basicPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-          proPlanFeatures: JSON.stringify(proPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-          trialEnabled,
-          trialDurationDays: parseInt(trialDurationDays, 10) || 30,
-          trialPlan,
-          whatsappNumber,
-          registrationOpen,
-          registrationMessage,
-          availablePlans: JSON.stringify(availablePlans),
-          basicPlanDiscount,
-          proPlanDiscount,
-          basicPlanDiscountLabel,
-          proPlanDiscountLabel,
-          ultimatePlanPrice,
-          ultimatePlanFeatures: JSON.stringify(ultimatePlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
-          ultimatePlanDiscount,
-          ultimatePlanDiscountLabel,
-          ultimatePurchaseUrl,
-          basicPurchaseUrl,
-          proPurchaseUrl,
-          sectionVisibility: JSON.stringify(sectionVisibility),
-          exportEnabled: JSON.stringify(exportEnabled),
-          landingPageConfig: JSON.stringify(landingPageConfig),
-          landingPageStats: JSON.stringify(landingStats),
-          emailNotifications: JSON.stringify({ newUser: emailNotifNewUser, expiry: emailNotifExpiry, inviteUsage: emailNotifInviteUsage, dailySummary: emailNotifDailySummary }),
-        }),
-      });
-      if (res.ok) {
-        setSaveStatus('success');
-        originalValuesRef.current = currentValues;
-        toast.success('Pengaturan tersimpan', { duration: 2000 });
-        setHasChanges(false);
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } else {
-        setSaveStatus('error');
-        toast.error('Gagal menyimpan pengaturan');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      }
-    } catch {
-      setSaveStatus('error');
-      toast.error('Gagal menyimpan pengaturan');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    }
-  }, [
-    hasChanges, currentValues, defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
-    basicPlanPrice, proPlanPrice, basicPlanFeatures, proPlanFeatures, trialEnabled,
-    trialDurationDays, trialPlan, whatsappNumber, registrationOpen, registrationMessage,
-    availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
-    basicPurchaseUrl, proPurchaseUrl, ultimatePlanPrice, ultimatePlanFeatures,
-    ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl,
-    sectionVisibility, exportEnabled, landingPageConfig, landingStats,
-    emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
-  ]);
-
-  /* ── Fetch user profile on mount ── */
+  /* ── Fetch user profile ── */
   useEffect(() => {
-    const fetchProfile = async () => {
+    (async () => {
       try {
         const res = await fetch('/api/profile');
         if (res.ok) {
@@ -494,23 +524,16 @@ export function AdminSettings() {
           }
         }
       } catch {}
-    };
-    fetchProfile();
+    })();
   }, []);
 
+  /* ── Profile save ── */
   const handleSaveProfile = async (password?: string) => {
     setProfileSaving(true);
     try {
       const body: Record<string, string> = { username: profileName };
-      if (password) {
-        body.currentPassword = password;
-        body.email = profileEmail;
-      }
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      if (password) { body.currentPassword = password; body.email = profileEmail; }
+      const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (res.ok) {
         toast.success('Profile updated', { description: 'Name and email saved successfully.' });
         setShowEmailPasswordDialog(false);
@@ -519,53 +542,69 @@ export function AdminSettings() {
         const data = await res.json();
         toast.error('Failed to update profile', { description: data.error || 'Server error.' });
       }
-    } catch {
-      toast.error('Failed to update profile', { description: 'Network error.' });
-    } finally {
-      setProfileSaving(false);
-    }
+    } catch { toast.error('Failed to update profile', { description: 'Network error.' }); }
+    finally { setProfileSaving(false); }
   };
 
   const handleProfileSaveClick = () => {
-    // Check if email has changed from the initially fetched value
     const initiallyFetched = localStorage.getItem('wt-admin-original-email');
-    if (profileEmail !== (initiallyFetched || 'admin@wealthtracker.com')) {
-      setShowEmailPasswordDialog(true);
-    } else {
-      handleSaveProfile();
-    }
+    if (profileEmail !== (initiallyFetched || 'admin@wealthtracker.com')) setShowEmailPasswordDialog(true);
+    else handleSaveProfile();
   };
 
   const handleClearLogs = async () => {
     setShowClearLogsDialog(false);
     try {
       const res = await fetch('/api/admin/activity-log', { method: 'DELETE' });
-      if (res.ok) {
-        toast.success('Activity logs cleared', { description: 'All activity logs have been deleted.' });
-      } else {
-        toast.error('Failed to clear logs', { description: 'Server returned an error.' });
-      }
-    } catch {
-      toast.error('Failed to clear logs', { description: 'Network error.' });
-    }
+      if (res.ok) toast.success('Activity logs cleared', { description: 'All activity logs have been deleted.' });
+      else toast.error('Failed to clear logs', { description: 'Server returned an error.' });
+    } catch { toast.error('Failed to clear logs', { description: 'Network error.' }); }
   };
 
   const handleResetDemoData = async () => {
     setShowResetDialog(false);
     try {
       const res = await fetch('/api/admin/system-health', { method: 'DELETE' });
-      if (res.ok) {
-        toast.success('Demo data reset', { description: 'All demo data has been cleared.' });
-        window.location.reload();
-      } else {
-        toast.error('Failed to reset data', { description: 'Server returned an error.' });
-      }
-    } catch {
-      toast.error('Failed to reset data', { description: 'Network error.' });
-    }
+      if (res.ok) { toast.success('Demo data reset', { description: 'All demo data has been cleared.' }); window.location.reload(); }
+      else toast.error('Failed to reset data', { description: 'Server returned an error.' });
+    } catch { toast.error('Failed to reset data', { description: 'Network error.' }); }
   };
 
-
+  const handleSyncPlanLimits = async () => {
+    setSaveStatus('saving');
+    try {
+      const res = await fetch('/api/admin/platform-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        defaultPlan, defaultMaxCategories: parseInt(defaultCategoryLimit, 10) || 10, defaultMaxSavings: parseInt(defaultSavingsLimit, 10) || 3,
+        autoSuspendExpired: autoSuspend,
+        basicPlanPrice, proPlanPrice,
+        basicPlanFeatures: JSON.stringify(basicPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+        proPlanFeatures: JSON.stringify(proPlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+        trialEnabled, trialDurationDays: parseInt(trialDurationDays, 10) || 30, trialPlan,
+        whatsappNumber, registrationOpen, registrationMessage, availablePlans: JSON.stringify(availablePlans),
+        basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
+        ultimatePlanPrice, ultimatePlanFeatures: JSON.stringify(ultimatePlanFeatures.split('\n').map(f => f.trim()).filter(Boolean)),
+        ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl, basicPurchaseUrl, proPurchaseUrl,
+        sectionVisibility: JSON.stringify(sectionVisibility), exportEnabled: JSON.stringify(exportEnabled),
+        landingPageConfig: JSON.stringify(landingPageConfig), landingPageStats: JSON.stringify(landingStats),
+        emailNotifications: JSON.stringify({ newUser: emailNotifNewUser, expiry: emailNotifExpiry, inviteUsage: emailNotifInviteUsage, dailySummary: emailNotifDailySummary }),
+      }) });
+      if (res.ok) {
+        originalValuesRef.current = currentValues;
+        setHasChanges(false);
+        setSaveStatus('success');
+        toast.success('Plan limits synced successfully');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('error');
+        toast.error('Failed to sync plan limits');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    } catch {
+      setSaveStatus('error');
+      toast.error('Failed to sync plan limits');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
 
   const formatUptime = (seconds: number) => {
     const d = Math.floor(seconds / 86400);
@@ -576,59 +615,81 @@ export function AdminSettings() {
     return `${m}m`;
   };
 
-  /* ──────────────────────────────────────────────────────────────
-     SHARED JSX HELPERS
-  ────────────────────────────────────────────────────────────── */
+  /* ── Shared helpers ── */
+  const inputCls = 'adm-form-input bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15';
+  const textareaCls = 'w-full rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/80 text-sm px-3 py-2 focus:border-[#03DAC6]/30 focus:ring-1 focus:ring-[#03DAC6]/10 focus:outline-none placeholder:text-white/15 resize-none';
 
-  /* Plan selector dropdown (used in Platform and Pricing tabs) */
-  const PlanSelector = ({ value, onChange, label, className }: { value: string; onChange: (v: string) => void; label?: string; className?: string }) => (
+  const PlanSelector = ({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) => (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={cn('bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:ring-[#03DAC6]/10 focus:border-[#03DAC6]/30', className)}>
         <SelectValue placeholder="Select plan" />
       </SelectTrigger>
       <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
         <SelectItem value="basic" className="text-white/70 focus:bg-white/[0.06] focus:text-white">
-          <div className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-white/40" />Basic Plan</div>
+          <div className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-white/40" />Basic</div>
         </SelectItem>
         <SelectItem value="pro" className="text-white/70 focus:bg-white/[0.06] focus:text-white">
-          <div className="flex items-center gap-2"><Sun className="h-3 w-3 text-[#FFD700]" />Pro Plan</div>
+          <div className="flex items-center gap-2"><Sun className="h-3 w-3 text-[#FFD700]" />Pro</div>
         </SelectItem>
         <SelectItem value="ultimate" className="text-white/70 focus:bg-white/[0.06] focus:text-white">
-          <div className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-[#03DAC6]" />Ultimate Plan</div>
+          <div className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-[#03DAC6]" />Ultimate</div>
         </SelectItem>
       </SelectContent>
     </Select>
   );
 
-  const inputCls = 'adm-form-input bg-white/[0.03] border-white/[0.08] text-white/80 h-10 text-sm focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15';
-  const textareaCls = 'w-full rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/80 text-sm px-3 py-2 focus:border-[#03DAC6]/30 focus:ring-1 focus:ring-[#03DAC6]/10 focus:outline-none placeholder:text-white/15 resize-none';
+  /* ═══════════════════════════════════════════════════════════════
+     SAVE BUTTON — used at bottom of each tab
+     ═══════════════════════════════════════════════════════════════ */
+  const isSaving = saveStatus === 'saving';
 
-  /* ──────────────────────────────────────────────────────────────
-     TAB CONTENT COMPONENTS
-  ────────────────────────────────────────────────────────────── */
+  const SaveButtonBar = () => (
+    <div className="pt-8 pb-2">
+      <motion.button
+        type="button"
+        disabled={!hasChanges || isSaving}
+        onClick={handleSave}
+        animate={saveStatus === 'error' ? { x: [0, -6, 6, -4, 4, -2, 2, 0] } : saveStatus === 'success' ? { scale: [1, 1.02, 1] } : {}}
+        transition={{ duration: 0.4 }}
+        className={cn(
+          'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2',
+          !hasChanges && saveStatus === 'idle'
+            ? 'bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.06]'
+            : saveStatus === 'saving'
+            ? 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white cursor-wait shadow-[0_0_24px_rgba(3,218,198,0.2)]'
+            : saveStatus === 'success'
+            ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-[0_0_24px_rgba(16,185,129,0.3)]'
+            : saveStatus === 'error'
+            ? 'bg-gradient-to-r from-red-500/80 to-red-400/80 text-white'
+            : 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white hover:shadow-[0_4px_24px_rgba(3,218,198,0.3)] hover:scale-[1.01] active:scale-[0.99]',
+        )}
+      >
+        {saveStatus === 'saving' && <><Loader2 className="h-4 w-4 animate-spin" />Menyimpan...</>}
+        {saveStatus === 'success' && <><Check className="h-4 w-4" />Tersimpan!</>}
+        {saveStatus === 'error' && <><AlertTriangle className="h-4 w-4" />Gagal! Coba lagi</>}
+        {saveStatus === 'idle' && !hasChanges && <>Tidak ada perubahan</>}
+        {saveStatus === 'idle' && hasChanges && <><Check className="h-4 w-4" />Simpan Perubahan</>}
+      </motion.button>
+    </div>
+  );
 
-  /* ── Tab 1: Umum ── */
+  /* ═══════════════════════════════════════════════════════════════
+     TAB 1: UMUM (General)
+     ═══════════════════════════════════════════════════════════════ */
   const TabUmum = () => (
     <motion.div key="umum" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      {/* Profile Section */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <User className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
-            Profile
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30 ml-auto">
-              Admin
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-4">
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#03DAC6]/20 to-[#BB86FC]/20 flex items-center justify-center text-[#03DAC6] text-lg font-bold border border-white/[0.06] shrink-0">
-              AD
+      {/* Profile Card */}
+      <GlassCard>
+        <SectionHeader icon={User} title="Profile" color="#03DAC6" badge="Admin" />
+        <CardContent className="pt-0 space-y-5">
+          {/* Avatar + Info */}
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-white/[0.02] to-transparent border border-white/[0.04]">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#03DAC6]/20 via-[#BB86FC]/15 to-[#03DAC6]/10 flex items-center justify-center text-[#03DAC6] text-xl font-bold border border-white/[0.08] shrink-0 shadow-[0_4px_16px_rgba(3,218,198,0.1)]">
+              {profileName?.charAt(0)?.toUpperCase() || 'A'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-semibold text-white/85">Admin</p>
-              <p className="text-[12px] text-white/35 truncate">admin@wealthtracker.com</p>
+              <p className="text-base font-semibold text-white/85">{profileName}</p>
+              <p className="text-[12px] text-white/35 truncate">{profileEmail}</p>
               <div className="flex items-center gap-2 mt-1.5">
                 <Badge variant="outline" className="adm-badge text-[8px] font-bold uppercase px-1.5 py-0 border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5">
                   <Shield className="h-2 w-2 mr-0.5 inline" />Admin
@@ -637,6 +698,7 @@ export function AdminSettings() {
               </div>
             </div>
           </div>
+          {/* Edit fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Display Name</Label>
@@ -647,22 +709,57 @@ export function AdminSettings() {
               <Input value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className={inputCls} placeholder="admin@wealthtracker.com" type="email" />
             </div>
           </div>
-          <Button onClick={handleProfileSaveClick} disabled={profileSaving} className="adm-action-btn h-9 px-4 text-[12px] font-semibold rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 border border-[#03DAC6]/20 transition-all disabled:opacity-50">
-            {profileSaving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1.5" />}
-            Save Profile
-          </Button>
-          <p className="text-[10px] text-white/20">Changing email requires password confirmation</p>
+          <div className="flex items-center justify-between">
+            <Button onClick={handleProfileSaveClick} disabled={profileSaving} className="adm-action-btn h-9 px-5 text-[12px] font-semibold rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 border border-[#03DAC6]/20 transition-all disabled:opacity-50">
+              {profileSaving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1.5" />}
+              Save Profile
+            </Button>
+            <p className="text-[10px] text-white/20">Changing email requires password confirmation</p>
+          </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
-      {/* Appearance Section */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Palette className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
-            {t('admin.settings.appearance')}
-          </CardTitle>
-        </CardHeader>
+      {/* Email Notifications */}
+      <GlassCard>
+        <SectionHeader icon={Mail} title={t('admin.settings.emailNotifications')} color="#03DAC6" badge="Alerts" />
+        <CardContent className="pt-0 space-y-3">
+          <p className="text-[10px] text-white/25 mb-1">Configure which email notifications the admin receives. Changes are saved automatically.</p>
+          <ToggleRow
+            icon={User} label="New User Registration" description="Receive an email when a new user joins the platform"
+            checked={emailNotifNewUser}
+            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifNewUser, v)}
+            color="#03DAC6"
+          />
+          <ToggleRow
+            icon={AlertTriangle} label="Subscription Expiry Warnings" description="Get alerts 7 days before a user's Pro plan expires"
+            checked={emailNotifExpiry}
+            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifExpiry, v)}
+            color="#FFD700"
+          />
+          <ToggleRow
+            icon={BellRing} label="Invite Token Usage Alerts" description="Notify when an invite token is used to register"
+            checked={emailNotifInviteUsage}
+            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifInviteUsage, v)}
+            color="#BB86FC"
+          />
+          <ToggleRow
+            icon={BarChart3} label="Daily Activity Summary" description="Receive a daily digest of platform activity and metrics"
+            checked={emailNotifDailySummary}
+            onCheckedChange={(v) => handleToggleWithAutoSave(setEmailNotifDailySummary, v)}
+            color="#CF6679"
+          />
+          {isSaving && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#03DAC6]/[0.04] border border-[#03DAC6]/10">
+              <Loader2 className="h-3 w-3 animate-spin text-[#03DAC6]" />
+              <span className="text-[11px] text-[#03DAC6]/70">Menyimpan perubahan notifikasi...</span>
+            </div>
+          )}
+        </CardContent>
+      </GlassCard>
+
+      {/* Appearance */}
+      <GlassCard>
+        <SectionHeader icon={Palette} title={t('admin.settings.appearance')} color="#BB86FC" />
         <CardContent className="pt-0">
           <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
             <div className="w-9 h-9 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center shrink-0"><Info className="h-4 w-4 text-[#BB86FC]" /></div>
@@ -673,39 +770,32 @@ export function AdminSettings() {
             <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto shrink-0">Default</Badge>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
+
+      <SaveButtonBar />
     </motion.div>
   );
 
-  /* ── Tab 2: Platform ── */
+  /* ═══════════════════════════════════════════════════════════════
+     TAB 2: PLATFORM
+     ═══════════════════════════════════════════════════════════════ */
   const TabPlatform = () => (
     <motion.div key="platform" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      {/* Platform Settings */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Globe className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
-            Platform Settings
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Configuration</Badge>
-          </CardTitle>
-        </CardHeader>
+      <GlassCard>
+        <SectionHeader icon={Globe} title="Platform Settings" color="#FFD700" badge="Configuration" />
         <CardContent className="pt-0 space-y-5">
-          {/* Default User Plan */}
           <div className="space-y-2">
             <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Default User Plan</Label>
             <PlanSelector value={defaultPlan} onChange={setDefaultPlan} className="w-full sm:w-64" />
             <p className="text-[10px] text-white/20">Plan assigned to new users who register without an invite</p>
           </div>
-          {/* Default Limits */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Default Category Limit</Label>
               <Select value={defaultCategoryLimit} onValueChange={setDefaultCategoryLimit}>
                 <SelectTrigger className={cn('w-full', inputCls)}><SelectValue placeholder="Select limit" /></SelectTrigger>
                 <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
-                  {[5, 10, 15, 20, 25, 30].map((v) => (
-                    <SelectItem key={v} value={String(v)} className="text-white/70 focus:bg-white/[0.06] focus:text-white">{v} categories</SelectItem>
-                  ))}
+                  {[5, 10, 15, 20, 25, 30].map((v) => (<SelectItem key={v} value={String(v)} className="text-white/70 focus:bg-white/[0.06] focus:text-white">{v} categories</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
@@ -714,79 +804,59 @@ export function AdminSettings() {
               <Select value={defaultSavingsLimit} onValueChange={setDefaultSavingsLimit}>
                 <SelectTrigger className={cn('w-full', inputCls)}><SelectValue placeholder="Select limit" /></SelectTrigger>
                 <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
-                  {[1, 3, 5, 10, 15].map((v) => (
-                    <SelectItem key={v} value={String(v)} className="text-white/70 focus:bg-white/[0.06] focus:text-white">{v} savings targets</SelectItem>
-                  ))}
+                  {[1, 3, 5, 10, 15].map((v) => (<SelectItem key={v} value={String(v)} className="text-white/70 focus:bg-white/[0.06] focus:text-white">{v} savings targets</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          {/* Auto Suspend Toggle */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#FFD700]/10 flex items-center justify-center"><AlertTriangle className="h-4 w-4 text-[#FFD700]" /></div>
-              <div>
-                <p className="text-[12px] font-semibold text-white/70">Auto-Suspend Expired Subscriptions</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Automatically downgrade users when their Pro subscription expires</p>
-              </div>
-            </div>
-            <AnimatedSwitch checked={autoSuspend} onCheckedChange={setAutoSuspend} activeColor="#FFD700" />
-          </div>
+          <ToggleRow
+            icon={AlertTriangle} label="Auto-Suspend Expired Subscriptions"
+            description="Automatically downgrade users when their Pro subscription expires"
+            checked={autoSuspend}
+            onCheckedChange={(v) => handleToggleWithAutoSave(setAutoSuspend, v)}
+            color="#FFD700"
+          />
         </CardContent>
-      </Card>
+      </GlassCard>
 
-      {/* Registration & WhatsApp Configuration */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <MessageCircle className="adm-section-header-icon h-4 w-4 text-[#25D366]" />
-            Registration & WhatsApp
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#25D366]/5 border-[#25D366]/15 text-[#25D366]/70 ml-auto">Contact & Access</Badge>
-          </CardTitle>
-        </CardHeader>
+      <GlassCard>
+        <SectionHeader icon={MessageCircle} title="Registration & WhatsApp" color="#25D366" badge="Contact & Access" />
         <CardContent className="pt-0 space-y-5">
-          {/* Registration Open/Close */}
           <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center shrink-0">
                   {registrationOpen ? <Unlock className="h-4 w-4 text-[#03DAC6]" /> : <Lock className="h-4 w-4 text-[#CF6679]" />}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[12px] font-semibold text-white/70">Registration Open</p>
-                  <p className="text-[10px] text-white/30 mt-0.5">
-                    {registrationOpen ? 'New users can register through the sign-up form' : 'Registration is closed — new users cannot sign up'}
-                  </p>
+                  <p className="text-[10px] text-white/30 mt-0.5 truncate">{registrationOpen ? 'New users can register through the sign-up form' : 'Registration is closed'}</p>
                 </div>
               </div>
-              <AnimatedSwitch checked={registrationOpen} onCheckedChange={setRegistrationOpen} activeColor={registrationOpen ? '#03DAC6' : '#CF6679'} />
+              <AnimatedSwitch checked={registrationOpen} onCheckedChange={(v) => handleToggleWithAutoSave(setRegistrationOpen, v)} activeColor={registrationOpen ? '#03DAC6' : '#CF6679'} />
             </div>
             {!registrationOpen && (
               <div className="space-y-2 pt-2 border-t border-white/[0.04]">
                 <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Closed Registration Message</Label>
-                <textarea value={registrationMessage} onChange={(e) => setRegistrationMessage(e.target.value)} rows={2} className={cn(textareaCls, 'focus:border-[#CF6679]/30 focus:ring-[#CF6679]/10')} placeholder="Registration is currently closed. Please contact the administrator." />
-                <p className="text-[10px] text-white/20">Message shown to users when they try to register</p>
+                <textarea value={registrationMessage} onChange={(e) => setRegistrationMessage(e.target.value)} rows={2} className={cn(textareaCls, 'focus:border-[#CF6679]/30 focus:ring-[#CF6679]/10')} placeholder="Registration is currently closed." />
               </div>
             )}
           </div>
-          {/* WhatsApp Number */}
           <div className="space-y-2">
             <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-              <Phone className="h-3 w-3 text-[#25D366]/50" /> WhatsApp Number for Registration
+              <Phone className="h-3 w-3 text-[#25D366]/50" /> WhatsApp Number
             </Label>
             <Input value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} className={cn(inputCls, 'focus:border-[#25D366]/30 focus:ring-[#25D366]/10')} placeholder="6281234567890" />
-            <p className="text-[10px] text-white/20">
-              WhatsApp number shown on landing page for users who want to subscribe. Include country code without + (e.g., 6281234567890)
-            </p>
+            <p className="text-[10px] text-white/20">Include country code without + (e.g., 6281234567890)</p>
             {whatsappNumber && (
               <div className="p-3 rounded-xl bg-[#25D366]/5 border border-[#25D366]/10 space-y-2">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="h-3.5 w-3.5 text-[#25D366]" />
-                  <p className="text-[11px] font-semibold text-white/70">Preview — WhatsApp Contact</p>
+                  <p className="text-[11px] font-semibold text-white/70">Preview</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 px-3 py-2 rounded-lg bg-black/20 border border-white/[0.06] text-[11px] text-white/50 font-mono truncate">
-                    {typeof window !== 'undefined' ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}` : `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`}
+                    https://wa.me/{whatsappNumber.replace(/[^0-9]/g, '')}
                   </div>
                   <Button variant="outline" size="sm" className="adm-action-btn h-8 text-[10px] gap-1.5 bg-[#25D366]/10 border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 shrink-0" onClick={() => {
                     const url = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`;
@@ -798,13 +868,12 @@ export function AdminSettings() {
               </div>
             )}
           </div>
-          {/* Available Plans Toggle */}
+          {/* Available Plans */}
           <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-3">
             <div className="flex items-center gap-2">
               <Crown className="h-3.5 w-3.5 text-[#FFD700]/60" />
               <p className="text-[11px] font-semibold text-white/70">Available Plans on Landing Page</p>
             </div>
-            <p className="text-[10px] text-white/25">Select which plans are displayed and available for subscription on the landing page</p>
             <div className="flex items-center gap-3 flex-wrap">
               {['basic', 'pro', 'ultimate'].map((plan) => {
                 const isActive = availablePlans.includes(plan);
@@ -812,11 +881,8 @@ export function AdminSettings() {
                   <button
                     key={plan}
                     onClick={() => {
-                      if (isActive && availablePlans.length > 1) {
-                        setAvailablePlans(availablePlans.filter(p => p !== plan));
-                      } else if (!isActive) {
-                        setAvailablePlans([...availablePlans, plan]);
-                      }
+                      if (isActive && availablePlans.length > 1) setAvailablePlans(availablePlans.filter(p => p !== plan));
+                      else if (!isActive) setAvailablePlans([...availablePlans, plan]);
                     }}
                     className={cn(
                       'flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 text-left',
@@ -826,7 +892,6 @@ export function AdminSettings() {
                     {plan === 'basic' ? <Sparkles className={cn('h-4 w-4', isActive ? 'text-white/60' : 'text-white/30')} /> : <Crown className={cn('h-4 w-4', isActive ? 'text-[#FFD700]' : 'text-white/30')} />}
                     <div>
                       <p className={cn('text-[12px] font-semibold transition-colors capitalize', isActive ? 'text-white/80' : 'text-white/40')}>{plan} Plan</p>
-                      <p className="text-[9px] text-white/20">{plan === 'basic' ? 'Free tier' : 'Premium tier'}</p>
                     </div>
                     {isActive && <Check className="h-3.5 w-3.5 text-[#FFD700] ml-1" />}
                   </button>
@@ -835,247 +900,269 @@ export function AdminSettings() {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
+
+      <SaveButtonBar />
     </motion.div>
   );
 
-  /* ── Tab 3: Pricing ── */
-  const TabPricing = () => (
-    <motion.div key="pricing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      {/* Plan & Trial Configuration */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Crown className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
-            Plan & Trial Configuration
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Pricing & Trial</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-5">
-          {/* Plan Pricing */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="h-3 w-3 text-white/30" /> Basic Plan Price</Label>
-              <Input value={basicPlanPrice} onChange={(e) => setBasicPlanPrice(e.target.value)} className={inputCls} placeholder="Gratis" />
-              <p className="text-[10px] text-white/20">Display price for basic plan on landing page</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Crown className="h-3 w-3 text-[#FFD700]/50" /> Pro Plan Price</Label>
-              <Input value={proPlanPrice} onChange={(e) => setProPlanPrice(e.target.value)} className={inputCls} placeholder="Rp 99.000" />
-              <p className="text-[10px] text-white/20">Display price for pro plan on landing page</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="h-3 w-3 text-[#03DAC6]/50" /> Ultimate Plan Price</Label>
-              <Input value={ultimatePlanPrice} onChange={(e) => setUltimatePlanPrice(e.target.value)} className={inputCls} placeholder="Rp 199.000" />
-              <p className="text-[10px] text-white/20">Display price for ultimate plan on landing page</p>
-            </div>
+  /* ═══════════════════════════════════════════════════════════════
+     TAB 3: PRICING
+     ═══════════════════════════════════════════════════════════════ */
+  const PlanCard = ({
+    planKey,
+    planLabel,
+    icon: PlanIcon,
+    color,
+    price,
+    priceSetter,
+    features,
+    featuresSetter,
+    discount,
+    discountSetter,
+    discountLabel,
+    discountLabelSetter,
+    purchaseUrl,
+    purchaseUrlSetter,
+  }: {
+    planKey: string;
+    planLabel: string;
+    icon: React.ElementType;
+    color: string;
+    price: string;
+    priceSetter: (v: string) => void;
+    features: string;
+    featuresSetter: (v: string) => void;
+    discount: string;
+    discountSetter: (v: string) => void;
+    discountLabel: string;
+    discountLabelSetter: (v: string) => void;
+    purchaseUrl: string;
+    purchaseUrlSetter: (v: string) => void;
+  }) => {
+    const featureList = features.split('\n').filter(Boolean);
+    return (
+      <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 space-y-4 relative overflow-hidden">
+        {/* Gradient accent top */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: `${color}10`, borderColor: `${color}20` }}>
+            <PlanIcon className="h-5 w-5" style={{ color }} />
           </div>
-          {/* Plan Features */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Basic Plan Features</Label>
-              <textarea value={basicPlanFeatures} onChange={(e) => setBasicPlanFeatures(e.target.value)} rows={5} className={textareaCls} placeholder="Track expenses\nCategory management\n3 savings targets" />
-              <p className="text-[10px] text-white/20">One feature per line. Shown on landing page.</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Pro Plan Features</Label>
-              <textarea value={proPlanFeatures} onChange={(e) => setProPlanFeatures(e.target.value)} rows={5} className={textareaCls} placeholder="Everything in Basic\nUnlimited categories\n15 savings targets\nPriority support" />
-              <p className="text-[10px] text-white/20">One feature per line. Shown on landing page.</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Ultimate Plan Features</Label>
-              <textarea value={ultimatePlanFeatures} onChange={(e) => setUltimatePlanFeatures(e.target.value)} rows={5} className={textareaCls} placeholder="Everything in Pro\nBusiness module\nInvestment module\nLive charts\nTrading journal" />
-              <p className="text-[10px] text-white/20">One feature per line. Shown on landing page.</p>
-            </div>
+          <div>
+            <h3 className="text-sm font-bold text-white/85">{planLabel}</h3>
+            <p className="text-[10px] text-white/30 uppercase tracking-wider">Plan</p>
           </div>
-          {/* Trial Settings */}
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center"><Gift className="h-4 w-4 text-[#03DAC6]" /></div>
-                <div>
-                  <p className="text-[12px] font-semibold text-white/70">Free Trial for New Users</p>
-                  <p className="text-[10px] text-white/30 mt-0.5">Give new registrants a trial subscription without an invite</p>
-                </div>
-              </div>
-              <AnimatedSwitch checked={trialEnabled} onCheckedChange={setTrialEnabled} activeColor="#03DAC6" />
-            </div>
-            {trialEnabled && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/[0.04]">
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Timer className="h-3 w-3 text-[#BB86FC]/50" /> Trial Duration</Label>
-                  <Select value={trialDurationDays} onValueChange={setTrialDurationDays}>
-                    <SelectTrigger className={cn('w-full', inputCls)}><SelectValue placeholder="Select duration" /></SelectTrigger>
-                    <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
-                      {[7, 14, 30, 60, 90].map((d) => (
-                        <SelectItem key={d} value={String(d)} className="text-white/70 focus:bg-white/[0.06] focus:text-white">{d} days</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-white/20">How long the trial lasts from registration</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Trial Plan</Label>
-                  <PlanSelector value={trialPlan} onChange={setTrialPlan} />
-                  <p className="text-[10px] text-white/20">Which plan the trial gives access to</p>
-                </div>
-              </div>
-            )}
-            {/* Free Trial Registration Link */}
-            {trialEnabled && (
-              <div className="p-3 rounded-xl bg-[#03DAC6]/5 border border-[#03DAC6]/10 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-3.5 w-3.5 text-[#03DAC6]" />
-                  <p className="text-[11px] font-semibold text-white/70">Free Trial Registration Link</p>
-                </div>
-                <p className="text-[10px] text-white/30">
-                  Share this link to let users register with a {trialDurationDays}-day free {trialPlan} trial.
-                  No invite code required — anyone who registers through the normal sign-up form will automatically receive the trial.
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 px-3 py-2 rounded-lg bg-black/20 border border-white/[0.06] text-[11px] text-white/50 font-mono truncate">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/?trial=true` : '/?trial=true'}
-                  </div>
-                  <Button variant="outline" size="sm" className="adm-action-btn h-8 text-[10px] gap-1.5 bg-[#03DAC6]/10 border-[#03DAC6]/20 text-[#03DAC6] hover:bg-[#03DAC6]/20 shrink-0" onClick={() => {
-                    const url = `${window.location.origin}/?trial=true`;
-                    navigator.clipboard.writeText(url).then(() => toast.success('Trial registration link copied!')).catch(() => toast.info(`Link: ${url}`));
-                  }}>
-                    <Copy className="h-3 w-3" /> Copy
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Discount & Purchase Link Configuration */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Crown className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
-            Discount & Purchase Links
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#FFD700]/5 border-[#FFD700]/15 text-[#FFD700]/70 ml-auto">Pricing</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-5">
-          {/* Discount Fields */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="h-3 w-3 text-white/30" /> Basic Plan Discount</Label>
-              <Input value={basicPlanDiscount} onChange={(e) => setBasicPlanDiscount(e.target.value)} className={inputCls} placeholder="20% or Rp 20.000" />
-              <Input value={basicPlanDiscountLabel} onChange={(e) => setBasicPlanDiscountLabel(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Diskon Early Bird" />
-              <p className="text-[10px] text-white/20">Discount amount + label for basic plan</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Crown className="h-3 w-3 text-[#FFD700]/50" /> Pro Plan Discount</Label>
-              <Input value={proPlanDiscount} onChange={(e) => setProPlanDiscount(e.target.value)} className={inputCls} placeholder="30% or Rp 30.000" />
-              <Input value={proPlanDiscountLabel} onChange={(e) => setProPlanDiscountLabel(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Diskon Launching" />
-              <p className="text-[10px] text-white/20">Discount amount + label for pro plan</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="h-3 w-3 text-[#03DAC6]/50" /> Ultimate Plan Discount</Label>
-              <Input value={ultimatePlanDiscount} onChange={(e) => setUltimatePlanDiscount(e.target.value)} className={inputCls} placeholder="40% or Rp 40.000" />
-              <Input value={ultimatePlanDiscountLabel} onChange={(e) => setUltimatePlanDiscountLabel(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Diskon Premium" />
-              <p className="text-[10px] text-white/20">Discount amount + label for ultimate plan</p>
-            </div>
-          </div>
-          {/* External Purchase URLs */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="h-3 w-3 text-white/30" /> Basic Plan Purchase URL</Label>
-              <Input value={basicPurchaseUrl} onChange={(e) => setBasicPurchaseUrl(e.target.value)} className={inputCls} placeholder="https://example.com/basic" />
-              <p className="text-[10px] text-white/20">External link for purchasing basic plan (shown on landing page)</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Crown className="h-3 w-3 text-[#FFD700]/50" /> Pro Plan Purchase URL</Label>
-              <Input value={proPurchaseUrl} onChange={(e) => setProPurchaseUrl(e.target.value)} className={inputCls} placeholder="https://example.com/pro" />
-              <p className="text-[10px] text-white/20">External link for purchasing pro plan (shown on landing page)</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Sparkles className="h-3 w-3 text-[#03DAC6]/50" /> Ultimate Plan Purchase URL</Label>
-              <Input value={ultimatePurchaseUrl} onChange={(e) => setUltimatePurchaseUrl(e.target.value)} className={inputCls} placeholder="https://example.com/ultimate" />
-              <p className="text-[10px] text-white/20">External link for purchasing ultimate plan (shown on landing page)</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-
-  /* ── Tab 4: Landing Page ── */
-  const TabLanding = () => (
-    <motion.div key="landing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Layout className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
-            Landing Page
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">Visibility</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-5">
-          {/* Section Visibility Toggles */}
-          <div className="space-y-2">
-            <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Section Visibility</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { key: 'showStory' as const, label: 'Story Section', desc: 'Show the story/brand narrative section', color: '#BB86FC' },
-                { key: 'showFeatures' as const, label: 'Features Section', desc: 'Show the feature highlights grid', color: '#03DAC6' },
-                { key: 'showTestimonials' as const, label: 'Testimonials Section', desc: 'Show user reviews/testimonials', color: '#FFD700' },
-                { key: 'showPricing' as const, label: 'Pricing Section', desc: 'Show plan pricing cards', color: '#03DAC6' },
-                { key: 'showFaq' as const, label: 'FAQ Section', desc: 'Show frequently asked questions', color: '#BB86FC' },
-                { key: 'showStats' as const, label: 'Statistics Section', desc: 'Show the animated statistics counters', color: '#CF6679' },
-              ].map((item) => (
-                <div key={item.key} className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                  <div>
-                    <p className="text-[12px] font-semibold text-white/70">{item.label}</p>
-                    <p className="text-[10px] text-white/30 mt-0.5">{item.desc}</p>
-                  </div>
-                  <AnimatedSwitch checked={landingPageConfig[item.key]} onCheckedChange={(val) => setLandingPageConfig((prev) => ({ ...prev, [item.key]: val }))} activeColor={item.color} />
-                </div>
+        </div>
+        {/* Price */}
+        <div className="space-y-2">
+          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Price</Label>
+          <Input value={price} onChange={(e) => priceSetter(e.target.value)} className={cn(inputCls, 'text-center font-semibold text-base')} placeholder="Gratis" />
+        </div>
+        {/* Features */}
+        <div className="space-y-2">
+          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Features</Label>
+          <textarea value={features} onChange={(e) => featuresSetter(e.target.value)} rows={5} className={textareaCls} placeholder="One feature per line" />
+          {featureList.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+              {featureList.map((f, i) => (
+                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ backgroundColor: `${color}08`, color: `${color}C0`, border: `1px solid ${color}15` }}>
+                  {f}
+                </span>
               ))}
             </div>
+          )}
+        </div>
+        {/* Discount */}
+        <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Discount</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input value={discount} onChange={(e) => discountSetter(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="20%" />
+            <Input value={discountLabel} onChange={(e) => discountLabelSetter(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="Label" />
           </div>
-          {/* Custom Text Fields */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Hero Subtitle</Label>
-              <Input value={landingPageConfig.heroSubtitle} onChange={(e) => setLandingPageConfig((prev) => ({ ...prev, heroSubtitle: e.target.value }))} className={inputCls} placeholder="Custom subtitle text below the hero title" />
-              <p className="text-[10px] text-white/20">Custom subtitle text below the hero title</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Custom Footer Text</Label>
-              <Input value={landingPageConfig.customFooterText} onChange={(e) => setLandingPageConfig((prev) => ({ ...prev, customFooterText: e.target.value }))} className={inputCls} placeholder="Custom text displayed in the footer area" />
-              <p className="text-[10px] text-white/20">Custom text displayed in the footer area</p>
-            </div>
+        </div>
+        {/* Purchase URL */}
+        <div className="space-y-2">
+          <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Purchase URL</Label>
+          <Input value={purchaseUrl} onChange={(e) => purchaseUrlSetter(e.target.value)} className="bg-white/[0.03] border-white/[0.08] text-white/80 h-8 text-xs focus:border-[#03DAC6]/30 focus:ring-[#03DAC6]/10 placeholder:text-white/15" placeholder="https://..." />
+        </div>
+      </div>
+    );
+  };
+
+  const TabPricing = () => (
+    <motion.div key="pricing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
+      <GlassCard>
+        <SectionHeader icon={Crown} title="Plan Pricing & Features" color="#FFD700" badge="Pricing" />
+        <CardContent className="pt-0">
+          <p className="text-[10px] text-white/25 mb-4">Configure pricing, features, discounts and purchase links for each plan.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <PlanCard
+              planKey="basic" planLabel="Basic" icon={Sparkles} color="#03DAC6"
+              price={basicPlanPrice} priceSetter={setBasicPlanPrice}
+              features={basicPlanFeatures} featuresSetter={setBasicPlanFeatures}
+              discount={basicPlanDiscount} discountSetter={setBasicPlanDiscount}
+              discountLabel={basicPlanDiscountLabel} discountLabelSetter={setBasicPlanDiscountLabel}
+              purchaseUrl={basicPurchaseUrl} purchaseUrlSetter={setBasicPurchaseUrl}
+            />
+            <PlanCard
+              planKey="pro" planLabel="Pro" icon={Crown} color="#FFD700"
+              price={proPlanPrice} priceSetter={setProPlanPrice}
+              features={proPlanFeatures} featuresSetter={setProPlanFeatures}
+              discount={proPlanDiscount} discountSetter={setProPlanDiscount}
+              discountLabel={proPlanDiscountLabel} discountLabelSetter={setProPlanDiscountLabel}
+              purchaseUrl={proPurchaseUrl} purchaseUrlSetter={setProPurchaseUrl}
+            />
+            <PlanCard
+              planKey="ultimate" planLabel="Ultimate" icon={Sparkles} color="#BB86FC"
+              price={ultimatePlanPrice} priceSetter={setUltimatePlanPrice}
+              features={ultimatePlanFeatures} featuresSetter={setUltimatePlanFeatures}
+              discount={ultimatePlanDiscount} discountSetter={setUltimatePlanDiscount}
+              discountLabel={ultimatePlanDiscountLabel} discountLabelSetter={setUltimatePlanDiscountLabel}
+              purchaseUrl={ultimatePurchaseUrl} purchaseUrlSetter={setUltimatePurchaseUrl}
+            />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
-      {/* Landing Page Stats */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#CF6679]" />
-            Statistics Section
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#CF6679]/5 border-[#CF6679]/15 text-[#CF6679]/70 ml-auto">Stats Config</Badge>
-          </CardTitle>
-        </CardHeader>
+      {/* Trial Settings */}
+      <GlassCard>
+        <SectionHeader icon={Gift} title="Free Trial Settings" color="#03DAC6" badge="Trial" />
         <CardContent className="pt-0 space-y-4">
-          <p className="text-[10px] text-white/25">Configure the stat items displayed in the landing page statistics section.</p>
+          <ToggleRow
+            icon={Gift} label="Free Trial for New Users"
+            description="Give new registrants a trial subscription without an invite"
+            checked={trialEnabled}
+            onCheckedChange={(v) => handleToggleWithAutoSave(setTrialEnabled, v)}
+            color="#03DAC6"
+          />
+          {trialEnabled && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/[0.04]">
+              <div className="space-y-2">
+                <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5"><Timer className="h-3 w-3 text-[#BB86FC]/50" /> Trial Duration</Label>
+                <Select value={trialDurationDays} onValueChange={setTrialDurationDays}>
+                  <SelectTrigger className={cn('w-full', inputCls)}><SelectValue placeholder="Select duration" /></SelectTrigger>
+                  <SelectContent className="bg-[#0D0D0D] border-white/[0.08]">
+                    {[7, 14, 30, 60, 90].map((d) => (<SelectItem key={d} value={String(d)} className="text-white/70 focus:bg-white/[0.06] focus:text-white">{d} days</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Trial Plan</Label>
+                <PlanSelector value={trialPlan} onChange={setTrialPlan} />
+              </div>
+            </div>
+          )}
+          {trialEnabled && (
+            <div className="p-3 rounded-xl bg-[#03DAC6]/5 border border-[#03DAC6]/10 space-y-2">
+              <div className="flex items-center gap-2">
+                <Gift className="h-3.5 w-3.5 text-[#03DAC6]" />
+                <p className="text-[11px] font-semibold text-white/70">Free Trial Registration Link</p>
+              </div>
+              <p className="text-[10px] text-white/30">
+                Share this link to let users register with a {trialDurationDays}-day free {trialPlan} trial.
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-2 rounded-lg bg-black/20 border border-white/[0.06] text-[11px] text-white/50 font-mono truncate">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/?trial=true` : '/?trial=true'}
+                </div>
+                <Button variant="outline" size="sm" className="adm-action-btn h-8 text-[10px] gap-1.5 bg-[#03DAC6]/10 border-[#03DAC6]/20 text-[#03DAC6] hover:bg-[#03DAC6]/20 shrink-0" onClick={() => {
+                  const url = `${window.location.origin}/?trial=true`;
+                  navigator.clipboard.writeText(url).then(() => toast.success('Trial link copied!')).catch(() => toast.info(`Link: ${url}`));
+                }}>
+                  <Copy className="h-3 w-3" /> Copy
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </GlassCard>
+
+      <SaveButtonBar />
+    </motion.div>
+  );
+
+  /* ═══════════════════════════════════════════════════════════════
+     TAB 4: LANDING PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  const TabLanding = () => (
+    <motion.div key="landing" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
+      <GlassCard>
+        <SectionHeader icon={Layout} title="Landing Page Sections" color="#03DAC6" badge="Visibility" />
+        <CardContent className="pt-0 space-y-3">
+          <p className="text-[10px] text-white/25 mb-1">Toggle sections on/off. Changes are saved automatically.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { key: 'showStory' as const, label: 'Story Section', desc: 'Brand narrative section', color: '#BB86FC', icon: Heart },
+              { key: 'showFeatures' as const, label: 'Features Section', desc: 'Feature highlights grid', color: '#03DAC6', icon: Sparkles },
+              { key: 'showTestimonials' as const, label: 'Testimonials', desc: 'User reviews/testimonials', color: '#FFD700', icon: User },
+              { key: 'showPricing' as const, label: 'Pricing Section', desc: 'Plan pricing cards', color: '#03DAC6', icon: Crown },
+              { key: 'showFaq' as const, label: 'FAQ Section', desc: 'Frequently asked questions', color: '#BB86FC', icon: Info },
+              { key: 'showStats' as const, label: 'Statistics', desc: 'Animated stat counters', color: '#CF6679', icon: BarChart3 },
+            ].map((item) => (
+              <ToggleRow
+                key={item.key}
+                icon={item.icon}
+                label={item.label}
+                description={item.desc}
+                checked={landingPageConfig[item.key]}
+                onCheckedChange={(val) => handleToggleWithAutoSave((v) => setLandingPageConfig((prev) => ({ ...prev, [item.key]: v })), val)}
+                color={item.color}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </GlassCard>
+
+      <GlassCard>
+        <SectionHeader icon={Settings} title="Content & Text" color="#BB86FC" />
+        <CardContent className="pt-0 space-y-4">
+          <div className="space-y-2">
+            <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Hero Subtitle</Label>
+            <textarea
+              value={landingPageConfig.heroSubtitle}
+              onChange={(e) => setLandingPageConfig((prev) => ({ ...prev, heroSubtitle: e.target.value }))}
+              rows={2} className={textareaCls}
+              placeholder="Custom subtitle text below the hero title"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Custom Footer Text</Label>
+            <textarea
+              value={landingPageConfig.customFooterText}
+              onChange={(e) => setLandingPageConfig((prev) => ({ ...prev, customFooterText: e.target.value }))}
+              rows={2} className={textareaCls}
+              placeholder="Custom text displayed in the footer area"
+            />
+          </div>
+          <Button
+            variant="outline"
+            className="adm-action-btn h-9 text-[11px] font-semibold rounded-lg bg-white/[0.03] border-white/[0.08] text-white/50 hover:text-white/70 hover:bg-white/[0.06]"
+            onClick={() => {
+              const url = typeof window !== 'undefined' ? `${window.location.origin}/` : '/';
+              window.open(url, '_blank');
+            }}
+          >
+            <Eye className="h-3.5 w-3.5 mr-1.5" />
+            Preview Landing Page
+          </Button>
+        </CardContent>
+      </GlassCard>
+
+      {/* Stats Editor */}
+      <GlassCard>
+        <SectionHeader icon={BarChart3} title="Statistics Section" color="#CF6679" badge="Stats Config" />
+        <CardContent className="pt-0 space-y-4">
+          <p className="text-[10px] text-white/25">Configure stat items displayed in the landing page statistics section.</p>
           <div className="space-y-3">
             {landingStats.map((stat, idx) => (
-              <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+              <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-colors">
                 <div className="flex flex-col items-center gap-1 pt-1">
                   <button
                     type="button"
-                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] text-white/30 hover:text-white/60 transition-colors"
-                    onClick={() => {
-                      if (landingStats.length > 1) {
-                        setLandingStats(prev => prev.filter((_, i) => i !== idx));
-                      }
-                    }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] hover:bg-[#CF6679]/10 text-white/30 hover:text-[#CF6679] transition-colors"
+                    onClick={() => { if (landingStats.length > 1) setLandingStats(prev => prev.filter((_, i) => i !== idx)); }}
                     disabled={landingStats.length <= 1}
                     aria-label="Remove stat"
                   >
@@ -1086,234 +1173,234 @@ export function AdminSettings() {
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Value</Label>
-                    <Input
-                      value={stat.value}
-                      onChange={(e) => {
-                        const updated = [...landingStats];
-                        updated[idx] = { ...updated[idx], value: e.target.value };
-                        setLandingStats(updated);
-                      }}
-                      className={inputCls}
-                      placeholder="e.g. 73%"
-                    />
+                    <Input value={stat.value} onChange={(e) => { const u = [...landingStats]; u[idx] = { ...u[idx], value: e.target.value }; setLandingStats(u); }} className={inputCls} placeholder="73%" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Label</Label>
-                    <Input
-                      value={stat.label}
-                      onChange={(e) => {
-                        const updated = [...landingStats];
-                        updated[idx] = { ...updated[idx], label: e.target.value };
-                        setLandingStats(updated);
-                      }}
-                      className={inputCls}
-                      placeholder="e.g. Accuracy Rate"
-                    />
+                    <Input value={stat.label} onChange={(e) => { const u = [...landingStats]; u[idx] = { ...u[idx], label: e.target.value }; setLandingStats(u); }} className={inputCls} placeholder="Accuracy Rate" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
           <Button
-            type="button"
-            variant="outline"
+            type="button" variant="outline"
             className="h-9 text-[11px] font-medium rounded-lg border-dashed border-white/[0.1] text-white/40 hover:text-white/70 hover:border-white/[0.2] hover:bg-white/[0.02]"
-            onClick={() => {
-              setLandingStats(prev => [...prev, { value: '', label: '' }]);
-            }}
+            onClick={() => setLandingStats(prev => [...prev, { value: '', label: '' }])}
           >
-            <ChevronRight className="h-3 w-3 mr-1" />
-            Add Stat Item
+            <ChevronRight className="h-3 w-3 mr-1" />Add Stat Item
           </Button>
         </CardContent>
-      </Card>
+      </GlassCard>
+
+      <SaveButtonBar />
     </motion.div>
   );
 
-  /* ── Tab 5: Dashboard ── */
+  /* ═══════════════════════════════════════════════════════════════
+     TAB 5: DASHBOARD
+     ═══════════════════════════════════════════════════════════════ */
+  const dashboardSections = [
+    { key: 'budget', label: 'Budget Tracker' },
+    { key: 'healthScore', label: 'Financial Health Score' },
+    { key: 'tips', label: 'Financial Tips' },
+    { key: 'spendingTrend', label: 'Spending Trend' },
+    { key: 'topCategories', label: 'Top Categories' },
+    { key: 'monthlySummary', label: 'Monthly Summary' },
+    { key: 'savingsOverview', label: 'Savings Overview' },
+    { key: 'quickTransaction', label: 'Quick Transaction' },
+  ];
+
   const TabDashboard = () => (
     <motion.div key="dashboard" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
-            Dashboard Section Visibility & Export
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]/70 ml-auto">Per Plan</Badge>
-          </CardTitle>
-        </CardHeader>
+      <GlassCard>
+        <SectionHeader icon={BarChart3} title="Dashboard Section Visibility & Export" color="#BB86FC" badge="Per Plan" />
         <CardContent className="pt-0 space-y-5">
-          <p className="text-[10px] text-white/25">Control which dashboard sections and export features are visible to users based on their plan.</p>
+          <p className="text-[10px] text-white/25">Control which dashboard sections and export features are visible per plan. Toggle changes are saved automatically.</p>
           {['basic', 'pro', 'ultimate'].map((plan) => {
             const planVis = sectionVisibility[plan] || {};
             const planExp = exportEnabled[plan] || {};
+            const planColor = plan === 'ultimate' ? '#03DAC6' : plan === 'pro' ? '#FFD700' : '#BB86FC';
+            const PlanIcon = plan === 'ultimate' ? Sparkles : plan === 'pro' ? Crown : Sparkles;
             return (
-              <div key={plan} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-4">
+              <div key={plan} className="p-4 rounded-2xl bg-white/[0.015] border border-white/[0.04] space-y-4 hover:border-white/[0.08] transition-colors">
                 <div className="flex items-center gap-2">
-                  {plan === 'ultimate' ? <Sparkles className="h-3.5 w-3.5 text-[#03DAC6]/60" /> : plan === 'pro' ? <Crown className="h-3.5 w-3.5 text-[#FFD700]/60" /> : <Sparkles className="h-3.5 w-3.5 text-white/30" />}
-                  <p className="text-[11px] font-semibold text-white/70 uppercase">{plan} Plan</p>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${planColor}10` }}>
+                    <PlanIcon className="h-4 w-4" style={{ color: planColor }} />
+                  </div>
+                  <p className="text-[12px] font-bold text-white/70 uppercase tracking-wider">{plan} Plan</p>
                 </div>
-                {/* Dashboard Sections */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {[
-                    { key: 'budget', label: 'Budget Tracker' },
-                    { key: 'healthScore', label: 'Financial Health Score' },
-                    { key: 'tips', label: 'Financial Tips' },
-                    { key: 'spendingTrend', label: 'Spending Trend' },
-                    { key: 'topCategories', label: 'Top Categories' },
-                    { key: 'monthlySummary', label: 'Monthly Summary' },
-                    { key: 'savingsOverview', label: 'Savings Overview' },
-                    { key: 'quickTransaction', label: 'Quick Transaction' },
-                  ].map((section) => (
-                    <div key={section.key} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.01] border border-white/[0.03]">
-                      <span className="text-[11px] font-medium text-white/50">{section.label}</span>
-                      <AnimatedSwitch checked={planVis[section.key] ?? true} onCheckedChange={(val) => setSectionVisibility(prev => ({ ...prev, [plan]: { ...prev[plan], [section.key]: val } }))} activeColor={plan === 'ultimate' ? '#03DAC6' : plan === 'pro' ? '#FFD700' : '#03DAC6'} />
-                    </div>
+                  {dashboardSections.map((section) => (
+                    <ToggleRow
+                      key={section.key}
+                      icon={BarChart3}
+                      label={section.label}
+                      description=""
+                      checked={planVis[section.key] ?? true}
+                      onCheckedChange={(val) => handleToggleWithAutoSave((v: boolean) => setSectionVisibility(prev => ({ ...prev, [plan]: { ...prev[plan], [section.key]: v } })), val)}
+                      color={planColor}
+                    />
                   ))}
                 </div>
                 {/* Export Features */}
-                <div className="pt-2 border-t border-white/[0.04]">
-                  <p className="text-[10px] font-medium text-white/30 mb-2 uppercase tracking-wider">Export Features</p>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-between flex-1 px-3 py-2 rounded-lg bg-white/[0.01] border border-white/[0.03]">
-                      <span className="text-[11px] font-medium text-white/50">Export PDF</span>
-                      <AnimatedSwitch checked={planExp.pdf ?? false} onCheckedChange={(val) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], pdf: val } }))} activeColor="#CF6679" />
-                    </div>
-                    <div className="flex items-center justify-between flex-1 px-3 py-2 rounded-lg bg-white/[0.01] border border-white/[0.03]">
-                      <span className="text-[11px] font-medium text-white/50">Export Excel</span>
-                      <AnimatedSwitch checked={planExp.excel ?? false} onCheckedChange={(val) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], excel: val } }))} activeColor="#03DAC6" />
-                    </div>
+                <div className="pt-3 border-t border-white/[0.04]">
+                  <p className="text-[10px] font-bold text-white/30 mb-2 uppercase tracking-wider">Export Features</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <ToggleRow
+                      icon={Mail} label="Export PDF" description=""
+                      checked={planExp.pdf ?? false}
+                      onCheckedChange={(val) => handleToggleWithAutoSave((v: boolean) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], pdf: v } })), val)}
+                      color="#CF6679"
+                    />
+                    <ToggleRow
+                      icon={Layout} label="Export Excel" description=""
+                      checked={planExp.excel ?? false}
+                      onCheckedChange={(val) => handleToggleWithAutoSave((v: boolean) => setExportEnabled(prev => ({ ...prev, [plan]: { ...prev[plan], excel: v } })), val)}
+                      color="#03DAC6"
+                    />
                   </div>
                 </div>
               </div>
             );
           })}
         </CardContent>
-      </Card>
+      </GlassCard>
+
+      {/* Available Plans (from Platform tab - also here for convenience) */}
+      <GlassCard>
+        <SectionHeader icon={Crown} title="Available Plans Toggle" color="#FFD700" />
+        <CardContent className="pt-0">
+          <p className="text-[10px] text-white/25 mb-3">Toggle changes are saved automatically.</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            {['basic', 'pro', 'ultimate'].map((plan) => {
+              const isActive = availablePlans.includes(plan);
+              const color = plan === 'ultimate' ? '#03DAC6' : plan === 'pro' ? '#FFD700' : '#BB86FC';
+              return (
+                <button
+                  key={plan}
+                  onClick={() => {
+                    if (isActive && availablePlans.length > 1) setAvailablePlans(availablePlans.filter(p => p !== plan));
+                    else if (!isActive) setAvailablePlans([...availablePlans, plan]);
+                  }}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 text-left',
+                    isActive ? 'border-white/[0.15]' : 'bg-white/[0.015] border-white/[0.06] hover:border-white/[0.12] opacity-40',
+                  )}
+                  style={isActive ? { backgroundColor: `${color}08`, borderColor: `${color}25` } : undefined}
+                >
+                  {plan === 'basic' ? <Sparkles className="h-4 w-4" style={{ color: isActive ? '#BB86FC' : 'rgba(255,255,255,0.3)' }} /> : <Crown className="h-4 w-4" style={{ color: isActive ? color : 'rgba(255,255,255,0.3)' }} />}
+                  <p className={cn('text-[12px] font-semibold transition-colors capitalize', isActive ? 'text-white/80' : 'text-white/40')}>{plan} Plan</p>
+                  {isActive && <Check className="h-3.5 w-3.5 ml-1" style={{ color }} />}
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </GlassCard>
+
+      <SaveButtonBar />
     </motion.div>
   );
 
-  /* ── Tab 6: Sistem ── */
+  /* ═══════════════════════════════════════════════════════════════
+     TAB 6: SISTEM
+     ═══════════════════════════════════════════════════════════════ */
   const TabSistem = () => (
     <motion.div key="sistem" variants={contentVariants} initial="enter" animate="center" exit="exit" className="space-y-6">
-      {/* System Information */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Heart className="adm-section-header-icon h-4 w-4 text-[#CF6679]" />
-            System Information
-          </CardTitle>
-        </CardHeader>
+      {/* System Health */}
+      <GlassCard>
+        <SectionHeader icon={Heart} title="System Information" color="#03DAC6" />
         <CardContent className="pt-0">
           {loadingHealth ? (
-            <div className="space-y-3">{[1, 2, 3, 4].map((i) => (<div key={i} className="h-12 rounded-xl bg-white/[0.03] animate-pulse" />))}</div>
+            <div className="space-y-3">{[1, 2, 3, 4].map((i) => (<div key={i} className="h-14 rounded-xl bg-white/[0.03] animate-pulse" />))}</div>
           ) : systemHealth ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center"><Heart className="h-4 w-4 text-[#03DAC6]" /></div>
-                <div className="flex-1"><p className="text-[10px] text-white/30 uppercase tracking-wider">Status</p><p className="text-sm font-semibold text-[#03DAC6] capitalize">{systemHealth.status}</p></div>
-              </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center"><Info className="h-4 w-4 text-[#BB86FC]" /></div>
-                <div className="flex-1"><p className="text-[10px] text-white/30 uppercase tracking-wider">Version</p><p className="text-sm font-semibold text-white/70">v{systemHealth.version}</p></div>
-              </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#FFD700]/10 flex items-center justify-center"><Globe className="h-4 w-4 text-[#FFD700]" /></div>
-                <div className="flex-1"><p className="text-[10px] text-white/30 uppercase tracking-wider">Database Size</p><p className="text-sm font-semibold text-white/70">{systemHealth.database.size}</p></div>
-              </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center"><Monitor className="h-4 w-4 text-[#03DAC6]" /></div>
-                <div className="flex-1"><p className="text-[10px] text-white/30 uppercase tracking-wider">Uptime</p><p className="text-sm font-semibold text-white/70">{formatUptime(systemHealth.uptime)}</p></div>
-              </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center"><Globe className="h-4 w-4 text-[#BB86FC]" /></div>
-                <div className="flex-1"><p className="text-[10px] text-white/30 uppercase tracking-wider">DB Tables</p><p className="text-sm font-semibold text-white/70">{systemHealth.database.tables} tables</p></div>
-              </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#FFD700]/10 flex items-center justify-center"><Monitor className="h-4 w-4 text-[#FFD700]" /></div>
-                <div className="flex-1"><p className="text-[10px] text-white/30 uppercase tracking-wider">Memory</p><p className="text-sm font-semibold text-white/70">{systemHealth.memory.used} / {systemHealth.memory.total}</p></div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[
+                { icon: Heart, label: 'Status', value: systemHealth.status, color: '#03DAC6' },
+                { icon: Info, label: 'Version', value: `v${systemHealth.version}`, color: '#BB86FC' },
+                { icon: Globe, label: 'Database Size', value: systemHealth.database.size, color: '#FFD700' },
+                { icon: Monitor, label: 'Uptime', value: formatUptime(systemHealth.uptime), color: '#03DAC6' },
+                { icon: Globe, label: 'DB Tables', value: `${systemHealth.database.tables} tables`, color: '#BB86FC' },
+                { icon: Monitor, label: 'Memory', value: `${systemHealth.memory.used} / ${systemHealth.memory.total}`, color: '#FFD700' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-colors">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${item.color}10` }}>
+                    <item.icon className="h-4 w-4" style={{ color: item.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-white/30 uppercase tracking-wider">{item.label}</p>
+                    <p className="text-sm font-semibold text-white/70 capitalize truncate">{item.value}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <p className="text-center text-white/30 text-[12px] py-6">Unable to load system information</p>
           )}
         </CardContent>
-      </Card>
+      </GlassCard>
 
-      {/* Email Notification Settings */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Mail className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
-            {t('admin.settings.emailNotifications')}
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">Alerts</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center shrink-0"><User className="h-4 w-4 text-[#03DAC6]" /></div>
-              <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">New User Registration</p><p className="text-[10px] text-white/30 mt-0.5">Receive an email when a new user joins the platform</p></div>
+      {/* Sync Plan Limits */}
+      <GlassCard>
+        <SectionHeader icon={RefreshCw} title="Plan Limits Sync" color="#03DAC6" badge="Maintenance" />
+        <CardContent className="pt-0">
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center shrink-0"><RefreshCw className="h-4 w-4 text-[#03DAC6]" /></div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-semibold text-white/70">Sync Plan Limits</p>
+                <p className="text-[10px] text-white/30 mt-0.5">Re-sync plan limits and configuration to ensure consistency across all users</p>
+              </div>
+              <Button
+                onClick={handleSyncPlanLimits}
+                disabled={isSaving}
+                className="adm-action-btn shrink-0 h-9 px-4 text-[11px] font-semibold rounded-lg bg-[#03DAC6]/15 text-[#03DAC6] hover:bg-[#03DAC6]/25 border border-[#03DAC6]/20 transition-all disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                Sync Now
+              </Button>
             </div>
-            <AnimatedSwitch checked={emailNotifNewUser} onCheckedChange={setEmailNotifNewUser} activeColor="#03DAC6" />
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-[#FFD700]/10 flex items-center justify-center shrink-0"><AlertTriangle className="h-4 w-4 text-[#FFD700]" /></div>
-              <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">Subscription Expiry Warnings</p><p className="text-[10px] text-white/30 mt-0.5">Get alerts 7 days before a user's Pro plan expires</p></div>
-            </div>
-            <AnimatedSwitch checked={emailNotifExpiry} onCheckedChange={setEmailNotifExpiry} activeColor="#FFD700" />
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center shrink-0"><BellRing className="h-4 w-4 text-[#BB86FC]" /></div>
-              <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">Invite Token Usage Alerts</p><p className="text-[10px] text-white/30 mt-0.5">Notify when an invite token is used to register</p></div>
-            </div>
-            <AnimatedSwitch checked={emailNotifInviteUsage} onCheckedChange={setEmailNotifInviteUsage} activeColor="#BB86FC" />
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-[#CF6679]/10 flex items-center justify-center shrink-0"><BarChart3 className="h-4 w-4 text-[#CF6679]" /></div>
-              <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">Daily Activity Summary</p><p className="text-[10px] text-white/30 mt-0.5">Receive a daily digest of platform activity and metrics</p></div>
-            </div>
-            <AnimatedSwitch checked={emailNotifDailySummary} onCheckedChange={setEmailNotifDailySummary} activeColor="#CF6679" />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Danger Zone */}
-      <Card className="adm-content-card bg-white/[0.02] border-[#CF6679]/15 hover:border-[#CF6679]/25 transition-colors hover:shadow-[0_4px_20px_rgba(207,102,121,0.08)]">
-        <CardHeader className="pb-4">
-          <CardTitle className="adm-section-header text-sm font-semibold text-[#CF6679]/80 flex items-center gap-2">
-            <AlertTriangle className="adm-section-header-icon h-4 w-4 text-[#CF6679]" />
-            Danger Zone
-            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#CF6679]/5 border-[#CF6679]/15 text-[#CF6679]/70 ml-auto">Irreversible</Badge>
-          </CardTitle>
-        </CardHeader>
+      <GlassCard className="border-[#CF6679]/15 hover:border-[#CF6679]/25">
+        <SectionHeader icon={AlertTriangle} title="Danger Zone" color="#CF6679" badge="Irreversible" />
         <CardContent className="pt-0 space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-[#CF6679]/[0.03] border border-[#CF6679]/10">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[#CF6679]/[0.03] border border-[#CF6679]/10 hover:bg-[#CF6679]/[0.06] transition-colors">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-[#CF6679]/10 flex items-center justify-center shrink-0"><Trash2 className="h-4 w-4 text-[#CF6679]" /></div>
-              <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">Clear All Activity Logs</p><p className="text-[10px] text-white/30 mt-0.5">Permanently delete all admin activity audit trail entries</p></div>
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-white/70">Clear All Activity Logs</p>
+                <p className="text-[10px] text-white/30 mt-0.5">Permanently delete all admin activity audit trail entries</p>
+              </div>
             </div>
             <Button variant="ghost" onClick={() => setShowClearLogsDialog(true)} className="adm-action-btn shrink-0 h-8 px-3 text-[11px] font-semibold rounded-lg text-[#CF6679] hover:text-[#CF6679] hover:bg-[#CF6679]/10 border border-[#CF6679]/15 transition-all">
               Clear Logs <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
           </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-[#CF6679]/[0.03] border border-[#CF6679]/10">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[#CF6679]/[0.03] border border-[#CF6679]/10 hover:bg-[#CF6679]/[0.06] transition-colors">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-[#CF6679]/10 flex items-center justify-center shrink-0"><RotateCcw className="h-4 w-4 text-[#CF6679]" /></div>
-              <div className="min-w-0"><p className="text-[12px] font-semibold text-white/70">Reset Demo Data</p><p className="text-[10px] text-white/30 mt-0.5">Reset platform to default state with sample data</p></div>
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-white/70">Reset Demo Data</p>
+                <p className="text-[10px] text-white/30 mt-0.5">Reset platform to default state with sample data</p>
+              </div>
             </div>
             <Button variant="ghost" onClick={() => setShowResetDialog(true)} className="adm-action-btn shrink-0 h-8 px-3 text-[11px] font-semibold rounded-lg text-[#CF6679] hover:text-[#CF6679] hover:bg-[#CF6679]/10 border border-[#CF6679]/15 transition-all">
               Reset <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
+
+      <SaveButtonBar />
     </motion.div>
   );
 
-  /* ── Map tab id to component ── */
+  /* ── Tab content map ── */
   const tabContent: Record<TabId, () => React.JSX.Element> = {
     umum: TabUmum,
     platform: TabPlatform,
@@ -1327,25 +1414,25 @@ export function AdminSettings() {
 
   return (
     <div className="relative flex flex-col min-h-0">
-      {/* Ambient glow effects */}
+      {/* Ambient glow */}
       <div className="adm-ambient-glow adm-ambient-glow-purple pointer-events-none" />
       <div className="adm-ambient-glow adm-ambient-glow-teal pointer-events-none" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-              <User className="h-4 w-4 text-[#03DAC6]" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#03DAC6]/15 to-[#BB86FC]/15 flex items-center justify-center border border-white/[0.06]">
+              <Settings className="h-4 w-4 text-[#03DAC6]" />
             </div>
-            <h2 className="text-xl font-bold text-white/90">Settings</h2>
+            <h2 className="text-xl font-bold text-white/90 tracking-tight">Settings</h2>
           </div>
-          <p className="text-sm text-white/40">Manage your admin profile and platform configuration</p>
+          <p className="text-sm text-white/40 ml-[46px]">Manage admin profile and platform configuration</p>
         </div>
       </div>
 
       {/* Tab Bar */}
       <div className="adm-tab-bar adm-scroll-mobile relative flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-6 overflow-x-auto">
-        {/* Animated slide indicator */}
         <motion.div
           layout
           transition={{ type: 'spring' as const, stiffness: 350, damping: 30 }}
@@ -1369,7 +1456,7 @@ export function AdminSettings() {
                 isActive ? 'text-white adm-tab-item-active' : 'text-white/40 hover:text-white/60',
               )}
             >
-              <Icon className={cn('h-4 w-4 shrink-0', isActive ? '' : '')} style={{ color: isActive ? tab.color : undefined }} />
+              <Icon className={cn('h-4 w-4 shrink-0')} style={{ color: isActive ? tab.color : undefined }} />
               <span className="hidden sm:inline truncate">{tab.label}</span>
             </button>
           );
@@ -1377,156 +1464,97 @@ export function AdminSettings() {
       </div>
 
       {/* Tab Content */}
-      <div className="adm-scroll-mobile flex-1 min-h-0 overflow-y-auto pb-24">
+      <div className="adm-scroll-mobile flex-1 min-h-0 overflow-y-auto pb-28">
         <AnimatePresence mode="wait">
           {tabContent[activeTab]()}
         </AnimatePresence>
       </div>
 
-      {/* Sticky Save Button */}
-      <div className="sticky bottom-0 left-0 right-0 pt-4 pb-2 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D] to-transparent z-20">
-        <motion.button
-          type="button"
-          disabled={!hasChanges || saveStatus === 'saving'}
-          onClick={handleSave}
-          animate={
-            saveStatus === 'error'
-              ? { x: [0, -6, 6, -4, 4, -2, 2, 0] }
-              : saveStatus === 'success'
-              ? { scale: [1, 1.02, 1] }
-              : {}
-          }
-          transition={{ duration: 0.4 }}
-          className={cn(
-            'adm-action-btn w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2',
-            !hasChanges && saveStatus === 'idle'
-              ? 'bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.06]'
-              : saveStatus === 'saving'
-              ? 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white cursor-wait'
-              : saveStatus === 'success'
-              ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white'
-              : saveStatus === 'error'
-              ? 'bg-gradient-to-r from-red-500/80 to-red-400/80 text-white'
-              : 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white hover:shadow-[0_4px_20px_rgba(3,218,198,0.3)] hover:scale-[1.01] active:scale-[0.99]',
-          )}
-        >
-          {saveStatus === 'saving' && (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Menyimpan...
-            </>
-          )}
-          {saveStatus === 'success' && (
-            <>
-              <Check className="h-4 w-4" />
-              Tersimpan!
-            </>
-          )}
-          {saveStatus === 'error' && (
-            <>
-              <AlertTriangle className="h-4 w-4" />
-              Gagal! Coba lagi
-            </>
-          )}
-          {saveStatus === 'idle' && !hasChanges && (
-            <>Tidak ada perubahan</>
-          )}
-          {saveStatus === 'idle' && hasChanges && (
-            <>
-              <Check className="h-4 w-4" />
-              Simpan Perubahan
-            </>
-          )}
-        </motion.button>
+      {/* Sticky Save Button (always visible) */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 sm:sticky sm:bottom-0 sm:z-20">
+        <div className="pt-3 pb-4 sm:pb-3 px-0 sm:px-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/95 to-transparent sm:via-[#0D0D0D] sm:to-transparent">
+          <motion.button
+            type="button"
+            disabled={!hasChanges || isSaving}
+            onClick={handleSave}
+            animate={saveStatus === 'error' ? { x: [0, -6, 6, -4, 4, -2, 2, 0] } : saveStatus === 'success' ? { scale: [1, 1.02, 1] } : {}}
+            transition={{ duration: 0.4 }}
+            className={cn(
+              'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 max-w-2xl mx-auto',
+              !hasChanges && saveStatus === 'idle'
+                ? 'bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.06]'
+                : saveStatus === 'saving'
+                ? 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white cursor-wait shadow-[0_0_24px_rgba(3,218,198,0.2)]'
+                : saveStatus === 'success'
+                ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-[0_0_24px_rgba(16,185,129,0.3)]'
+                : saveStatus === 'error'
+                ? 'bg-gradient-to-r from-red-500/80 to-red-400/80 text-white'
+                : 'bg-gradient-to-r from-[#03DAC6] to-[#BB86FC] text-white hover:shadow-[0_4px_24px_rgba(3,218,198,0.3)] hover:scale-[1.01] active:scale-[0.99] shadow-[0_2px_16px_rgba(3,218,198,0.15)]',
+            )}
+          >
+            {saveStatus === 'saving' && <><Loader2 className="h-4 w-4 animate-spin" />Menyimpan...</>}
+            {saveStatus === 'success' && <><Check className="h-4 w-4" />Tersimpan!</>}
+            {saveStatus === 'error' && <><AlertTriangle className="h-4 w-4" />Gagal! Coba lagi</>}
+            {saveStatus === 'idle' && !hasChanges && <>Tidak ada perubahan</>}
+            {saveStatus === 'idle' && hasChanges && <><Check className="h-4 w-4" />Simpan Perubahan</>}
+          </motion.button>
+        </div>
       </div>
 
       {/* Clear Logs Dialog */}
       <Dialog open={showClearLogsDialog} onOpenChange={setShowClearLogsDialog}>
         <DialogContent className="adm-dialog-content bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white/90 flex items-center gap-2">
-              <Trash2 className="h-4 w-4 text-[#CF6679]" />
-              Clear Activity Logs
-            </DialogTitle>
-            <DialogDescription className="text-white/40">
-              This action will permanently delete all admin activity log entries. This cannot be undone.
-            </DialogDescription>
+            <DialogTitle className="text-white/90 flex items-center gap-2"><Trash2 className="h-4 w-4 text-[#CF6679]" />Clear Activity Logs</DialogTitle>
+            <DialogDescription className="text-white/40">This action will permanently delete all admin activity log entries. This cannot be undone.</DialogDescription>
           </DialogHeader>
           <div className="py-4 px-3 rounded-xl bg-[#CF6679]/[0.04] border border-[#CF6679]/10">
             <div className="flex items-start gap-2.5">
               <AlertTriangle className="h-4 w-4 text-[#CF6679] mt-0.5 shrink-0" />
-              <p className="text-[12px] text-[#CF6679]/70">
-                All activity history including user actions, invite creation, and subscription changes will be lost.
-              </p>
+              <p className="text-[12px] text-[#CF6679]/70">All activity history including user actions, invite creation, and subscription changes will be lost.</p>
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={() => setShowClearLogsDialog(false)} className="text-white/50 hover:text-white/70 hover:bg-white/[0.04]">Cancel</Button>
-            <Button onClick={handleClearLogs} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90 h-9">
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Clear All Logs
-            </Button>
+            <Button onClick={handleClearLogs} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90 h-9"><Trash2 className="h-3.5 w-3.5 mr-1.5" />Clear All Logs</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Reset Demo Data Dialog */}
+      {/* Reset Dialog */}
       <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
         <DialogContent className="adm-dialog-content bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white/90 flex items-center gap-2">
-              <RotateCcw className="h-4 w-4 text-[#CF6679]" />
-              Reset Demo Data
-            </DialogTitle>
-            <DialogDescription className="text-white/40">
-              This will reset the platform to its default state and create fresh demo data.
-            </DialogDescription>
+            <DialogTitle className="text-white/90 flex items-center gap-2"><RotateCcw className="h-4 w-4 text-[#CF6679]" />Reset Demo Data</DialogTitle>
+            <DialogDescription className="text-white/40">This will reset the platform to its default state and create fresh demo data.</DialogDescription>
           </DialogHeader>
           <div className="py-4 px-3 rounded-xl bg-[#CF6679]/[0.04] border border-[#CF6679]/10">
             <div className="flex items-start gap-2.5">
               <AlertTriangle className="h-4 w-4 text-[#CF6679] mt-0.5 shrink-0" />
-              <p className="text-[12px] text-[#CF6679]/70">
-                All current data including users, transactions, and settings will be replaced with demo data. This cannot be undone.
-              </p>
+              <p className="text-[12px] text-[#CF6679]/70">All current data including users, transactions, and settings will be replaced with demo data. This cannot be undone.</p>
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={() => setShowResetDialog(false)} className="text-white/50 hover:text-white/70 hover:bg-white/[0.04]">Cancel</Button>
-            <Button onClick={handleResetDemoData} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90 h-9">
-              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-              Reset to Demo
-            </Button>
+            <Button onClick={handleResetDemoData} className="bg-[#CF6679] text-white hover:bg-[#CF6679]/90 h-9"><RotateCcw className="h-3.5 w-3.5 mr-1.5" />Reset to Demo</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Email Change Password Confirmation Dialog */}
+
+      {/* Email Change Password Dialog */}
       <Dialog open={showEmailPasswordDialog} onOpenChange={(open) => { if (!open) { setShowEmailPasswordDialog(false); setEmailConfirmPassword(''); } }}>
         <DialogContent className="adm-dialog-content bg-[#0D0D0D] border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white/90 flex items-center gap-2">
-              <Lock className="h-4 w-4 text-[#FFD700]" />
-              Confirm Password to Change Email
-            </DialogTitle>
-            <DialogDescription className="text-white/40">
-              Changing your email address requires password verification for security.
-            </DialogDescription>
+            <DialogTitle className="text-white/90 flex items-center gap-2"><Lock className="h-4 w-4 text-[#FFD700]" />Confirm Password to Change Email</DialogTitle>
+            <DialogDescription className="text-white/40">Changing your email address requires password verification for security.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/10">
-              <p className="text-[11px] text-[#FFD700]/70">
-                Your email will be changed to: <span className="font-semibold">{profileEmail}</span>
-              </p>
+              <p className="text-[11px] text-[#FFD700]/70">Your email will be changed to: <span className="font-semibold">{profileEmail}</span></p>
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Current Password</Label>
-              <Input
-                type="password"
-                value={emailConfirmPassword}
-                onChange={(e) => setEmailConfirmPassword(e.target.value)}
-                className={inputCls}
-                placeholder="Enter your current password"
-                onKeyDown={(e) => { if (e.key === 'Enter' && emailConfirmPassword) handleSaveProfile(emailConfirmPassword); }}
-              />
+              <Input type="password" value={emailConfirmPassword} onChange={(e) => setEmailConfirmPassword(e.target.value)} className={inputCls} placeholder="Enter your current password" onKeyDown={(e) => { if (e.key === 'Enter' && emailConfirmPassword) handleSaveProfile(emailConfirmPassword); }} />
             </div>
           </div>
           <DialogFooter className="gap-2">

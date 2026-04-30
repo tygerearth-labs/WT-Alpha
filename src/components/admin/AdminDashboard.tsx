@@ -15,8 +15,10 @@ import {
   Activity, TrendingUp, TrendingDown, UserCheck, UserX, Crown, Sparkles,
   RefreshCw, ArrowUpRight, ArrowDownRight, Zap, Database, Wallet,
   Clock, BarChart3, Star, Target, Bell, FileText, Link,
-  ChevronRight, Loader2, History,
+  ChevronRight, Loader2, History, Building2, Briefcase, TrendingUp as TrendUpIcon,
+  PieChart, DollarSign,
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -41,6 +43,14 @@ interface AdminStats {
   planDistribution: { plan: string; count: number; percentage: number }[];
   topUsers: { id: string; username: string; email: string; plan: string; _count: { transactions: number } }[];
   systemHealth: { databaseSize: string; uptime: number; activeSessions: number };
+  // Business stats
+  totalBusinesses: number;
+  activeBusinesses: number;
+  totalBusinessSales: number;
+  // Investment stats
+  totalPortfolios: number;
+  openPositions: number;
+  totalInvestmentValue: number;
 }
 
 interface ActivityLogEntry {
@@ -105,9 +115,22 @@ function formatTimeAgo(dateStr: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function formatCurrency(value: number) {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toFixed(0);
+}
+
 interface AdminDashboardProps {
   onNavigate?: (page: AdminPage) => void;
 }
+
+const springTransition = {
+  type: 'spring' as const,
+  stiffness: 400,
+  damping: 25,
+};
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const { t } = useTranslation();
@@ -116,11 +139,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [tiltCard, setTiltCard] = useState<string | null>(null);
   const [recentActivity, setRecentActivity] = useState<ActivityLogEntry[]>([]);
   const [reportGenerating, setReportGenerating] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(30);
-
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async (showSpinner = false) => {
@@ -137,7 +158,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         const errorMsg = errorData?.error || `Server error (${res.status})`;
         console.error('Admin stats API error:', res.status, errorMsg);
         setError(errorMsg);
-        // If unauthorized, the session may have expired
         if (res.status === 401 || res.status === 403) {
           setError('Session expired or unauthorized. Please log in again.');
         }
@@ -166,7 +186,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     fetchRecentActivity();
   }, [fetchStats, fetchRecentActivity]);
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!autoRefresh) {
       setCountdown(30);
@@ -201,28 +220,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     return `${h}h ${m}m`;
-  };
-
-  const handleTiltMouseMove = (e: React.MouseEvent<HTMLDivElement>, cardLabel: string) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setTiltCard(`${cardLabel}-${x.toFixed(3)}-${y.toFixed(3)}`);
-  };
-
-  const handleTiltMouseLeave = () => {
-    setTiltCard(null);
-  };
-
-  const getTiltStyle = (cardLabel: string): React.CSSProperties => {
-    if (!tiltCard?.startsWith(cardLabel)) return {};
-    const parts = tiltCard.split('-');
-    const x = parseFloat(parts[parts.length - 2]);
-    const y = parseFloat(parts[parts.length - 1]);
-    return {
-      transform: `perspective(600px) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`,
-      transition: 'transform 0.15s ease-out',
-    };
   };
 
   const handleGenerateReport = async (reportType: string) => {
@@ -267,28 +264,36 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const animPro = useCountUp(stats?.proUsers ?? 0);
   const animInvites = useCountUp(stats?.activeInvites ?? 0);
   const animSuspended = useCountUp(stats?.suspendedUsers ?? 0);
+  const animBusinesses = useCountUp(stats?.totalBusinesses ?? 0);
+  const animPortfolios = useCountUp(stats?.totalPortfolios ?? 0);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-64 rounded-xl bg-white/[0.03] animate-pulse" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="relative h-32 rounded-2xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
+        {/* Hero skeleton */}
+        <div className="relative h-40 rounded-2xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
+          <div className="absolute inset-0 animate-shimmer"
+            style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
+        </div>
+        {/* Stat card skeletons */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="relative h-28 rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
               <div className="absolute inset-0 animate-shimmer"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
-                  backgroundSize: '200% 100%',
-                }} />
+                style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
             </div>
           ))}
         </div>
-        <div className="relative h-48 rounded-2xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
-          <div className="absolute inset-0 animate-shimmer"
-            style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)',
-              backgroundSize: '200% 100%',
-            }} />
+        {/* Charts skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="relative h-52 lg:col-span-2 rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
+            <div className="absolute inset-0 animate-shimmer"
+              style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
+          </div>
+          <div className="relative h-52 rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
+            <div className="absolute inset-0 animate-shimmer"
+              style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)', backgroundSize: '200% 100%' }} />
+          </div>
         </div>
       </div>
     );
@@ -319,10 +324,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     );
   }
 
-  const maxDailyCount = Math.max(...stats.dailyRegistrations.map(d => d.count), 1);
   const notificationCount = stats.usersExpiringSoon + (stats.suspendedUsers > 0 ? 1 : 0);
+  const maxDailyCount = Math.max(...stats.dailyRegistrations.map(d => d.count), 1);
 
-  // Compute trend from daily registrations
   const computeTrend = (daily: { date: string; count: number }[]): string => {
     if (daily.length < 2) return '—';
     const last = daily[daily.length - 1]?.count || 0;
@@ -336,492 +340,603 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     return (daily[daily.length - 1]?.count || 0) >= (daily[daily.length - 2]?.count || 0);
   };
 
+  const trendLabel = stats.dailyRegistrations.length > 1 ? computeTrend(stats.dailyRegistrations) : '—';
+  const trendUp = stats.dailyRegistrations.length > 1 && computeTrendDir(stats.dailyRegistrations);
+
+  // Chart data for Recharts
+  const chartData = stats.dailyRegistrations.map((d) => ({
+    ...d,
+    day: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3),
+  }));
+
+  // 6 Stat cards
   const statCards = [
-    { label: 'Total Users', value: animTotal, icon: Users, color: '#03DAC6', sub: `${stats.activeUsers} active`, trend: stats.dailyRegistrations.length > 1 ? computeTrend(stats.dailyRegistrations) : '—', trendUp: stats.dailyRegistrations.length > 1 && computeTrendDir(stats.dailyRegistrations), gradient: 'linear-gradient(135deg, rgba(3,218,198,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(3,218,198,0.03) 100%)' },
-    { label: 'Pro Users', value: animPro, icon: Crown, color: '#FFD700', sub: `${stats.basicUsers} basic`, trend: stats.totalUsers > 0 ? `${Math.round((stats.proUsers / stats.totalUsers) * 100)}%` : '—', trendUp: stats.proUsers > 0, gradient: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(255,215,0,0.03) 100%)' },
-    { label: 'Active Invites', value: animInvites, icon: UserPlus, color: '#BB86FC', sub: `${stats.usedInvites} used`, trend: stats.activeInvites > 0 ? `${stats.activeInvites} open` : 'none', trendUp: stats.activeInvites > 0, gradient: 'linear-gradient(135deg, rgba(187,134,252,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(187,134,252,0.03) 100%)' },
+    { label: 'Total Users', value: animTotal, icon: Users, color: '#03DAC6', sub: `${stats.activeUsers} active`, trend: trendLabel, trendUp, gradient: 'linear-gradient(135deg, rgba(3,218,198,0.10) 0%, rgba(13,13,13,0.95) 50%, rgba(3,218,198,0.03) 100%)' },
+    { label: 'Pro Plans', value: animPro, icon: Crown, color: '#FFD700', sub: `${stats.basicUsers} basic`, trend: stats.totalUsers > 0 ? `${Math.round((stats.proUsers / stats.totalUsers) * 100)}%` : '—', trendUp: stats.proUsers > 0, gradient: 'linear-gradient(135deg, rgba(255,215,0,0.10) 0%, rgba(13,13,13,0.95) 50%, rgba(255,215,0,0.03) 100%)' },
+    { label: 'Businesses', value: animBusinesses, icon: Building2, color: '#BB86FC', sub: `${stats.activeBusinesses} active`, trend: `${stats.totalBusinessSales > 0 ? formatCurrency(stats.totalBusinessSales) : '0'} sales`, trendUp: stats.activeBusinesses > 0, gradient: 'linear-gradient(135deg, rgba(187,134,252,0.10) 0%, rgba(13,13,13,0.95) 50%, rgba(187,134,252,0.03) 100%)' },
+    { label: 'Portfolios', value: animPortfolios, icon: Briefcase, color: '#03DAC6', sub: `${stats.openPositions} open`, trend: stats.totalInvestmentValue > 0 ? formatCurrency(stats.totalInvestmentValue) : '—', trendUp: stats.openPositions > 0, gradient: 'linear-gradient(135deg, rgba(3,218,198,0.07) 0%, rgba(13,13,13,0.95) 50%, rgba(3,218,198,0.02) 100%)' },
+    { label: 'Active Invites', value: animInvites, icon: Link, color: '#BB86FC', sub: `${stats.usedInvites} used`, trend: stats.activeInvites > 0 ? `${stats.activeInvites} open` : 'none', trendUp: stats.activeInvites > 0, gradient: 'linear-gradient(135deg, rgba(187,134,252,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(187,134,252,0.03) 100%)' },
     { label: 'Suspended', value: animSuspended, icon: UserX, color: '#CF6679', sub: `${stats.usersExpiringSoon} expiring`, trend: `${stats.suspendedUsers}`, trendUp: false, gradient: 'linear-gradient(135deg, rgba(207,102,121,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(207,102,121,0.03) 100%)' },
   ];
 
   const quickActions = [
     { label: 'Create User', icon: UserPlus, color: '#03DAC6', page: 'users' as AdminPage },
     { label: 'Create Invite', icon: Link, color: '#BB86FC', page: 'invites' as AdminPage },
-    { label: 'View Activity Log', icon: History, color: '#FFD700', page: 'activity-log' as AdminPage },
+    { label: 'Export Report', icon: FileText, color: '#FFD700', action: () => handleGenerateReport('user-report') },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">👋</span>
-            <h2 className="text-xl font-bold adm-gradient-text">{getGreeting()}, Admin!</h2>
-          </div>
-          <p className="text-sm text-white/40">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Export Data Dialog */}
-          <ExportDialog />
+    <div className="space-y-5">
+      {/* ═══════════════════ HERO SECTION ═══════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springTransition, delay: 0 }}
+      >
+        <div className="adm-hero-card relative overflow-hidden p-5 sm:p-6">
+          {/* Ambient glows */}
+          <div className="adm-ambient-glow adm-ambient-glow-teal pointer-events-none" style={{ top: '-40%', left: '-10%' }} />
+          <div className="adm-ambient-glow adm-ambient-glow-purple pointer-events-none" style={{ top: '-20%', right: '-5%' }} />
 
-          {/* Generate Report Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04] transition-all"
-              >
-                {reportGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
-                {t('admin.dashboard.quickReport')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-52 bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
-            >
-              <DropdownMenuItem
-                onClick={() => handleGenerateReport('user-report')}
-                disabled={!!reportGenerating}
-                className="text-white/60 focus:text-white focus:bg-white/[0.05] rounded-lg mx-1 my-0.5 cursor-pointer"
-              >
-                <Users className="mr-2.5 h-4 w-4 text-[#03DAC6]" />
-                <span className="text-[13px]">User Report</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleGenerateReport('financial-summary')}
-                disabled={!!reportGenerating}
-                className="text-white/60 focus:text-white focus:bg-white/[0.05] rounded-lg mx-1 my-0.5 cursor-pointer"
-              >
-                <CreditCard className="mr-2.5 h-4 w-4 text-[#FFD700]" />
-                <span className="text-[13px]">Financial Summary</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleGenerateReport('activity-report')}
-                disabled={!!reportGenerating}
-                className="text-white/60 focus:text-white focus:bg-white/[0.05] rounded-lg mx-1 my-0.5 cursor-pointer"
-              >
-                <Activity className="mr-2.5 h-4 w-4 text-[#BB86FC]" />
-                <span className="text-[13px]">Activity Report</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex items-center gap-1.5 text-[10px] text-white/25 px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-            <Clock className="h-3 w-3" />
-            Updated {lastRefresh.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-          </div>
-          {/* Live Pulse Indicator + Auto-refresh toggle */}
-          {autoRefresh && (
-            <div className="flex items-center gap-1.5 text-[10px] text-[#03DAC6]/70 px-2.5 py-1.5 rounded-lg bg-[#03DAC6]/5 border border-[#03DAC6]/10">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#03DAC6] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#03DAC6]" />
-              </span>
-              <span className="font-medium">Live</span>
-              <span className="text-white/20">·</span>
-              <span className="text-[#03DAC6]/50 tabular-nums">Refreshing in {countdown}s</span>
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">👋</span>
+                <h2 className="text-xl sm:text-2xl font-bold adm-gradient-text">{getGreeting()}, Admin!</h2>
+              </div>
+              <p className="text-[13px] text-white/40">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
             </div>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'h-8 w-8 p-0 rounded-lg',
-              autoRefresh ? 'text-[#03DAC6] bg-[#03DAC6]/10' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]'
-            )}
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
-          </Button>
-          <Button variant="outline" size="sm"
-            className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
-            onClick={() => fetchStats(true)}>
-            <RefreshCw className={cn('h-3 w-3', isRefreshing && 'animate-spin')} />
-            Refresh
-          </Button>
-        </div>
-      </div>
 
-      {/* Notification Alert Bar */}
-      {notificationCount > 0 && (
-        <div className="adm-alert-banner flex items-center gap-3 p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/10 animate-in fade-in-0 slide-in-from-bottom-3 duration-500 [animation-delay:150ms]">
-          <div className="relative">
-            <Bell className="h-4 w-4 text-[#FFD700]" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#CF6679] animate-ping" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#CF6679]" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <ExportDialog />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04] transition-all"
+                  >
+                    {reportGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                    {t('admin.dashboard.quickReport')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-52 bg-[#0D0D0D]/95 backdrop-blur-xl border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                  <DropdownMenuItem onClick={() => handleGenerateReport('user-report')} disabled={!!reportGenerating}
+                    className="text-white/60 focus:text-white focus:bg-white/[0.05] rounded-lg mx-1 my-0.5 cursor-pointer">
+                    <Users className="mr-2.5 h-4 w-4 text-[#03DAC6]" /><span className="text-[13px]">User Report</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGenerateReport('financial-summary')} disabled={!!reportGenerating}
+                    className="text-white/60 focus:text-white focus:bg-white/[0.05] rounded-lg mx-1 my-0.5 cursor-pointer">
+                    <CreditCard className="mr-2.5 h-4 w-4 text-[#FFD700]" /><span className="text-[13px]">Financial Summary</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGenerateReport('activity-report')} disabled={!!reportGenerating}
+                    className="text-white/60 focus:text-white focus:bg-white/[0.05] rounded-lg mx-1 my-0.5 cursor-pointer">
+                    <Activity className="mr-2.5 h-4 w-4 text-[#BB86FC]" /><span className="text-[13px]">Activity Report</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="flex items-center gap-1.5 text-[10px] text-white/25 px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                <Clock className="h-3 w-3" />
+                {lastRefresh.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+
+              {autoRefresh && (
+                <div className="flex items-center gap-1.5 text-[10px] text-[#03DAC6]/70 px-2.5 py-1.5 rounded-lg bg-[#03DAC6]/5 border border-[#03DAC6]/10">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#03DAC6] opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#03DAC6]" />
+                  </span>
+                  <span className="font-medium">Live</span>
+                  <span className="text-white/20">·</span>
+                  <span className="text-[#03DAC6]/50 tabular-nums">{countdown}s</span>
+                </div>
+              )}
+
+              <Button variant="ghost" size="sm"
+                className={cn('h-8 w-8 p-0 rounded-lg', autoRefresh ? 'text-[#03DAC6] bg-[#03DAC6]/10' : 'text-white/30 hover:text-white/50 hover:bg-white/[0.04]')}
+                onClick={() => setAutoRefresh(!autoRefresh)} title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}>
+                <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
+              </Button>
+              <Button variant="outline" size="sm"
+                className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04]"
+                onClick={() => fetchStats(true)}>
+                <RefreshCw className={cn('h-3 w-3', isRefreshing && 'animate-spin')} />
+                Refresh
+              </Button>
+            </div>
           </div>
-          <p className="text-[12px] text-[#FFD700]/70 font-medium">
-            {stats.usersExpiringSoon > 0 && `${stats.usersExpiringSoon} subscription(s) expiring soon`}
-            {stats.usersExpiringSoon > 0 && stats.suspendedUsers > 0 && ' · '}
-            {stats.suspendedUsers > 0 && `${stats.suspendedUsers} suspended user(s)`}
-          </p>
+
+          {/* Hero metric chips */}
+          <div className="relative z-10 mt-5 flex flex-wrap gap-3">
+            <div className="adm-metric-chip">
+              <div className="adm-metric-chip-icon" style={{ backgroundColor: 'rgba(3,218,198,0.12)' }}>
+                <Users className="h-4 w-4 text-[#03DAC6]" />
+              </div>
+              <div>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">Users</p>
+                <p className="text-lg font-bold text-white/90 tabular-nums">{stats.totalUsers}</p>
+              </div>
+            </div>
+            <div className="adm-metric-chip">
+              <div className="adm-metric-chip-icon" style={{ backgroundColor: 'rgba(187,134,252,0.12)' }}>
+                <Building2 className="h-4 w-4 text-[#BB86FC]" />
+              </div>
+              <div>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">Businesses</p>
+                <p className="text-lg font-bold text-white/90 tabular-nums">{stats.totalBusinesses}</p>
+              </div>
+            </div>
+            <div className="adm-metric-chip">
+              <div className="adm-metric-chip-icon" style={{ backgroundColor: 'rgba(255,215,0,0.12)' }}>
+                <Briefcase className="h-4 w-4 text-[#FFD700]" />
+              </div>
+              <div>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">Investments</p>
+                <p className="text-lg font-bold text-white/90 tabular-nums">{stats.totalPortfolios}</p>
+              </div>
+            </div>
+          </div>
         </div>
+      </motion.div>
+
+      {/* ═══════════════════ NOTIFICATION ALERT BAR ═══════════════════ */}
+      {notificationCount > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springTransition, delay: 0.05 }}
+        >
+          <div className="adm-alert-banner flex items-center gap-3 p-3 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/10">
+            <div className="relative">
+              <Bell className="h-4 w-4 text-[#FFD700]" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#CF6679] animate-ping" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#CF6679]" />
+            </div>
+            <p className="text-[12px] text-[#FFD700]/70 font-medium">
+              {stats.usersExpiringSoon > 0 && `${stats.usersExpiringSoon} subscription(s) expiring soon`}
+              {stats.usersExpiringSoon > 0 && stats.suspendedUsers > 0 && ' · '}
+              {stats.suspendedUsers > 0 && `${stats.suspendedUsers} suspended user(s)`}
+            </p>
+          </div>
+        </motion.div>
       )}
 
-      {/* Stat Cards with Gradient Backgrounds + Staggered Entrance + Hover Tilt */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="dashboard-stats">
+      {/* ═══════════════════ STATS GRID (6 cards) ═══════════════════ */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" data-tour="dashboard-stats">
         {statCards.map((card, idx) => {
           const Icon = card.icon;
           return (
             <motion.div key={card.label}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
-              whileHover={{ y: -2, scale: 1.01 }}
+              initial={{ opacity: 0, y: 12, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.08 + idx * 0.05, type: 'spring', stiffness: 380, damping: 22 }}
+              whileHover={{ y: -3, scale: 1.02 }}
               className="group relative"
             >
-              {/* Gradient border effect */}
-              <div className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: `linear-gradient(135deg, ${card.color}30, transparent 50%, ${card.color}15)` }} />
+              {/* Gradient border hover effect */}
+              <div className="absolute -inset-[1px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ background: `linear-gradient(135deg, ${card.color}35, transparent 50%, ${card.color}15)` }} />
               <Card
-                className="relative border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
-                style={{ ...getTiltStyle(card.label), background: card.gradient }}
-                onMouseMove={(e) => handleTiltMouseMove(e, card.label)}
-                onMouseLeave={handleTiltMouseLeave}
+                className="adm-stat-card relative overflow-hidden p-4 border-white/[0.06]"
+                style={{ background: card.gradient, '--biz-accent': `${card.color}50` } as React.CSSProperties}
               >
-                {/* Subtle gradient glow at top */}
-                <div className="absolute top-0 left-0 right-0 h-16 pointer-events-none"
-                  style={{ background: `linear-gradient(180deg, ${card.color}06 0%, transparent 100%)` }} />
-                {/* Corner accent glow */}
-                <div className="absolute top-0 right-0 w-24 h-24 pointer-events-none"
-                  style={{ background: `radial-gradient(circle at 100% 0%, ${card.color}10 0%, transparent 70%)` }} />
-                <CardContent className="relative p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">{card.label}</p>
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <p className="text-3xl font-bold text-white/90 tracking-tight tabular-nums">{card.value}</p>
-                        <div className={cn(
-                          'flex items-center gap-0.5 text-[10px] font-semibold mb-1 px-1.5 py-0.5 rounded-md',
-                          card.trendUp ? 'text-[#03DAC6] bg-[#03DAC6]/10' : 'text-[#CF6679] bg-[#CF6679]/10'
-                        )}>
-                          {card.trendUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
-                          {card.trend}
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-white/30">{card.sub}</p>
+                {/* Top glow */}
+                <div className="absolute top-0 left-0 right-0 h-12 pointer-events-none"
+                  style={{ background: `linear-gradient(180deg, ${card.color}08 0%, transparent 100%)` }} />
+
+                <div className="relative flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                      style={{ background: `linear-gradient(135deg, ${card.color}20, ${card.color}10)`, boxShadow: `0 2px 8px ${card.color}15` }}>
+                      <Icon className="h-4 w-4" style={{ color: card.color }} />
                     </div>
-                    <div className="relative">
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
-                        style={{ background: `linear-gradient(135deg, ${card.color}20, ${card.color}10)`, boxShadow: `0 4px 12px ${card.color}15` }}>
-                        <Icon className="h-5 w-5" style={{ color: card.color }} />
-                      </div>
-                      <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0D0D0D]"
-                        style={{ backgroundColor: idx < 2 ? '#03DAC6' : '#666' }} />
+                    <div className={cn(
+                      'flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-md',
+                      card.trendUp ? 'text-[#03DAC6] bg-[#03DAC6]/10' : 'text-[#CF6679] bg-[#CF6679]/10'
+                    )}>
+                      {card.trendUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
+                      {card.trend}
                     </div>
                   </div>
-                </CardContent>
+                  <div>
+                    <p className="text-2xl font-bold text-white/90 tracking-tight tabular-nums">{card.value}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30 mt-0.5">{card.label}</p>
+                  </div>
+                  <p className="text-[10px] text-white/25">{card.sub}</p>
+                </div>
               </Card>
             </motion.div>
           );
         })}
       </div>
 
-      {/* Quick Actions Row */}
-      <div className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '350ms', animationFillMode: 'backwards' }} data-tour="quick-actions">
-        <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
-          <CardHeader className="pb-3">
-            <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Zap className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
-              Quick Actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {quickActions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <button
-                    key={action.label}
-                    onClick={() => onNavigate?.(action.page)}
-                    className="group flex items-center gap-3 p-4 rounded-xl border border-white/[0.04] bg-white/[0.015] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-200 active:scale-[0.98] text-left"
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
-                      style={{ background: `linear-gradient(135deg, ${action.color}15, ${action.color}08)`, boxShadow: `0 2px 8px ${action.color}10` }}>
-                      <Icon className="h-4.5 w-4.5" style={{ color: action.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-white/70 group-hover:text-white/90 transition-colors">{action.label}</p>
-                      <p className="text-[10px] text-white/25 mt-0.5">Click to navigate</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-white/15 group-hover:text-white/40 group-hover:translate-x-0.5 transition-all shrink-0" />
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ═══════════════════ CHARTS SECTION ═══════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Daily Registrations — Recharts Bar Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springTransition, delay: 0.4 }}
+          className="lg:col-span-2"
+        >
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+                  <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
+                  User Registrations
+                  <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30">
+                    Last 7 days
+                  </Badge>
+                </CardTitle>
+                <span className="text-[11px] text-white/20 font-medium">
+                  Total: {stats.dailyRegistrations.reduce((s, d) => s + d.count, 0)} new users
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="h-48 sm:h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} barCategoryGap="20%">
+                    <XAxis
+                      dataKey="day"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 500 }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 10 }}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'rgba(13,13,13,0.95)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '10px',
+                        fontSize: '12px',
+                        color: 'rgba(255,255,255,0.8)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                        backdropFilter: 'blur(12px)',
+                      }}
+                      cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                      labelStyle={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: 4 }}
+                    />
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                      {chartData.map((entry, index) => (
+                        <Cell
+                          key={entry.date}
+                          fill={index === chartData.length - 1 ? '#03DAC6' : 'rgba(3,218,198,0.25)'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '500ms', animationFillMode: 'backwards' }}>
-        {/* Daily Registrations Chart */}
-        <Card className="adm-content-card lg:col-span-2 bg-[#0D0D0D] border-white/[0.06]">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
+        {/* Plan Distribution Donut */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springTransition, delay: 0.45 }}
+        >
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
+            <CardHeader className="pb-3">
               <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-                <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
-                User Registrations
-                <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-white/[0.02] border-white/[0.06] text-white/30">
-                  Last 7 days
-                </Badge>
+                <PieChart className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
+                Plan Distribution
               </CardTitle>
-              <span className="text-[11px] text-white/20 font-medium">
-                Total: {stats.dailyRegistrations.reduce((s, d) => s + d.count, 0)} new users
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-end gap-2 h-40 px-1">
-              {stats.dailyRegistrations.map((day, idx) => {
-                const height = maxDailyCount > 0 ? (day.count / maxDailyCount) * 100 : 0;
-                const isToday = idx === stats.dailyRegistrations.length - 1;
-                return (
-                  <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
-                    <div className="w-full flex flex-col items-center justify-end" style={{ height: '120px' }}>
-                      <span className="text-[10px] font-semibold text-white/40 mb-1">
-                        {day.count > 0 ? day.count : ''}
-                      </span>
-                      <div className="w-full max-w-[36px] rounded-lg relative overflow-hidden transition-all duration-500 group/bar"
-                        style={{
-                          height: `${Math.max(height, 4)}%`,
-                          background: isToday
-                            ? 'linear-gradient(to top, #03DAC6, #03DAC680)'
-                            : 'linear-gradient(to top, rgba(3,218,198,0.3), rgba(3,218,198,0.1))',
-                        }}>
-                        <div className="absolute inset-0 opacity-0 group-hover/bar:opacity-100 transition-opacity"
-                          style={{ background: isToday ? 'linear-gradient(to top, #03DAC6, #03DAC6CC)' : 'linear-gradient(to top, rgba(3,218,198,0.5), rgba(3,218,198,0.2))' }} />
-                      </div>
-                    </div>
-                    <span className={cn(
-                      'text-[9px] font-medium',
-                      isToday ? 'text-[#03DAC6]' : 'text-white/20'
-                    )}>
-                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3)}
-                    </span>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex justify-center mb-5">
+                <div className="relative w-28 h-28">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="12" />
+                    {stats.planDistribution.map((p, i) => {
+                      const circumference = 2 * Math.PI * 40;
+                      const segmentLength = (p.percentage / 100) * circumference;
+                      const offset = i === 0 ? 0 : stats.planDistribution.slice(0, i).reduce((s, pp) => s + (pp.percentage / 100) * circumference, 0);
+                      const color = p.plan === 'pro' ? '#FFD700' : p.plan === 'ultimate' ? '#BB86FC' : p.plan === 'admin' ? '#03DAC6' : '#555';
+                      return (
+                        <circle
+                          key={p.plan}
+                          cx="50" cy="50" r="40"
+                          fill="none"
+                          stroke={color}
+                          strokeWidth="12"
+                          strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
+                          strokeDashoffset={-offset}
+                          strokeLinecap="round"
+                          className="transition-all duration-700"
+                        />
+                      );
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <p className="text-lg font-bold text-white/90 tabular-nums">{stats.totalUsers}</p>
+                    <p className="text-[9px] text-white/30 uppercase tracking-wider">Total</p>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Plan Distribution */}
-        <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
-          <CardHeader className="pb-4">
-            <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Target className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
-              Plan Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex justify-center mb-6">
-              <div className="relative w-28 h-28">
-                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="12" />
-                  {stats.planDistribution.map((p, i) => {
-                    const circumference = 2 * Math.PI * 40;
-                    const segmentLength = (p.percentage / 100) * circumference;
-                    const offset = i === 0 ? 0 : stats.planDistribution.slice(0, i).reduce((s, pp) => s + (pp.percentage / 100) * circumference, 0);
-                    const color = p.plan === 'pro' ? '#FFD700' : p.plan === 'admin' ? '#03DAC6' : '#666';
-                    return (
-                      <circle
-                        key={p.plan}
-                        cx="50" cy="50" r="40"
-                        fill="none"
-                        stroke={color}
-                        strokeWidth="12"
-                        strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
-                        strokeDashoffset={-offset}
-                        strokeLinecap="round"
-                        className="transition-all duration-700"
-                      />
-                    );
-                  })}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <p className="text-lg font-bold text-white/90 tabular-nums">{stats.totalUsers}</p>
-                  <p className="text-[9px] text-white/30 uppercase tracking-wider">Total</p>
                 </div>
               </div>
-            </div>
-            <div className="space-y-3">
-              {stats.planDistribution.map((p) => {
-                const color = p.plan === 'pro' ? '#FFD700' : p.plan === 'admin' ? '#03DAC6' : '#666';
-                const Icon = p.plan === 'pro' ? Crown : p.plan === 'admin' ? Shield : Sparkles;
-                return (
-                  <div key={p.plan} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-md flex items-center justify-center"
-                        style={{ background: `${color}15` }}>
-                        <Icon className="h-3.5 w-3.5" style={{ color }} />
-                      </div>
-                      <span className="text-[12px] font-medium text-white/60 capitalize">{p.plan}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${p.percentage}%`, backgroundColor: color }} />
-                      </div>
-                      <span className="text-[11px] font-semibold text-white/40 w-12 text-right">{p.count}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Middle Row: Recent Activity + Quick Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}>
-        {/* Recent Activity Feed */}
-        <Card className="adm-content-card lg:col-span-2 bg-[#0D0D0D] border-white/[0D0D0D] border-white/[0.06]">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-                <Activity className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
-                Recent Activity
-                <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/50">
-                  Last 5
-                </Badge>
-              </CardTitle>
-              <button
-                onClick={() => onNavigate?.('activity-log')}
-                className="flex items-center gap-1 text-[11px] text-[#03DAC6]/60 hover:text-[#03DAC6] transition-colors"
-              >
-                View All
-                <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {recentActivity.length === 0 ? (
-              <div className="text-center py-8 text-white/20 text-[12px]">
-                <History className="h-8 w-8 mx-auto mb-2 text-white/10" />
-                No recent activity
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {recentActivity.map((log, idx) => {
-                  const { icon: LogIcon, color } = getActivityIcon(log.action);
+              <div className="space-y-2.5">
+                {stats.planDistribution.map((p) => {
+                  const color = p.plan === 'pro' ? '#FFD700' : p.plan === 'ultimate' ? '#BB86FC' : p.plan === 'admin' ? '#03DAC6' : '#555';
+                  const Icon = p.plan === 'pro' ? Crown : p.plan === 'ultimate' ? Sparkles : p.plan === 'admin' ? Shield : Users;
                   return (
-                    <div
-                      key={log.id}
-                      className={cn(
-                        'flex items-center gap-3 p-3 rounded-xl transition-colors',
-                        idx === 0 ? 'bg-white/[0.02] border border-white/[0.04]' : 'hover:bg-white/[0.015]'
-                      )}
-                    >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: `${color}12` }}>
-                        <LogIcon className="h-3.5 w-3.5" style={{ color }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[12px] font-semibold text-white/70 capitalize">{log.action}</p>
-                          {idx === 0 && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#03DAC6] animate-pulse" />
-                          )}
+                    <div key={p.plan} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: `${color}15` }}>
+                          <Icon className="h-3.5 w-3.5" style={{ color }} />
                         </div>
-                        <p className="text-[11px] text-white/30 truncate mt-0.5">{log.details || '—'}</p>
+                        <span className="text-[12px] font-medium text-white/60 capitalize">{p.plan}</span>
                       </div>
-                      <span className="text-[10px] text-white/20 shrink-0">{formatTimeAgo(log.createdAt)}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${p.percentage}%`, backgroundColor: color }} />
+                        </div>
+                        <span className="text-[11px] font-semibold text-white/40 w-12 text-right">{p.count}</span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Platform Health */}
-        <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
-          <CardHeader className="pb-3">
-            <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
-              <Zap className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
-              Platform Health
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#03DAC6]/10 flex items-center justify-center">
-                  <UserCheck className="h-4 w-4 text-[#03DAC6]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white/80">{stats.activeUsers}</p>
-                  <p className="text-[10px] text-white/30">Active Users</p>
-                </div>
-                <Badge variant="outline" className="text-[9px] font-semibold border-[#03DAC6]/20 text-[#03DAC6] bg-[#03DAC6]/5">
-                  {stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0}%
-                </Badge>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#FFD700]/10 flex items-center justify-center">
-                  <Crown className="h-4 w-4 text-[#FFD700]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white/80">{stats.proUsers}</p>
-                  <p className="text-[10px] text-white/30">Pro Subscribers</p>
-                </div>
-                <Badge variant="outline" className="text-[9px] font-semibold border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5">
-                  {stats.totalUsers > 0 ? Math.round((stats.proUsers / stats.totalUsers) * 100) : 0}%
-                </Badge>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                <div className="w-9 h-9 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-[#BB86FC]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white/80">
-                    {stats.totalUsers > 0 ? Math.round((stats.proUsers / stats.totalUsers) * 100) : 0}%
-                  </p>
-                  <p className="text-[10px] text-white/30">Conversion Rate</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white/[0.015]">
-                  <Database className="h-3.5 w-3.5 text-white/20" />
-                  <div>
-                    <p className="text-[10px] font-semibold text-white/50">{stats.systemHealth?.databaseSize || 'N/A'}</p>
-                    <p className="text-[8px] text-white/15 uppercase">DB Size</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white/[0.015]">
-                  <Zap className="h-3.5 w-3.5 text-white/20" />
-                  <div>
-                    <p className="text-[10px] font-semibold text-white/50">{formatUptime(stats.systemHealth?.uptime || 0)}</p>
-                    <p className="text-[8px] text-white/15 uppercase">Uptime</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {stats.usersExpiringSoon > 0 && (
-              <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-[#FFD700]/5 border border-[#FFD700]/15">
-                <div className="w-8 h-8 rounded-lg bg-[#FFD700]/10 flex items-center justify-center shrink-0">
-                  <AlertTriangle className="h-4 w-4 text-[#FFD700]" />
-                </div>
-                <div>
-                  <p className="text-[12px] font-semibold text-[#FFD700]/80">
-                    {stats.usersExpiringSoon} subscription(s) expiring soon
-                  </p>
-                  <p className="text-[10px] text-[#FFD700]/40">Within the next 7 days</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '750ms', animationFillMode: 'backwards' }}>
-        {/* Top Active Users */}
+      {/* ═══════════════════ BUSINESS & INVESTMENT SECTION ═══════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springTransition, delay: 0.5 }}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Business Card */}
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06] p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(187,134,252,0.18), rgba(187,134,252,0.08))' }}>
+                <Building2 className="h-5 w-5 text-[#BB86FC]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">Businesses</p>
+                <p className="text-xl font-bold text-white/90 tabular-nums">{stats.totalBusinesses}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">Active</span>
+                <span className="text-white/60 font-semibold tabular-nums">{stats.activeBusinesses}</span>
+              </div>
+              <div className="adm-progress-track">
+                <div className="adm-progress-fill adm-progress-glow" style={{ width: `${stats.totalBusinesses > 0 ? (stats.activeBusinesses / stats.totalBusinesses) * 100 : 0}%`, backgroundColor: '#BB86FC', '--biz-progress-color': 'rgba(187,134,252,0.3)' } as React.CSSProperties} />
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1">
+                <span className="text-white/35">Total Sales</span>
+                <span className="text-[#BB86FC] font-semibold tabular-nums">{formatCurrency(stats.totalBusinessSales)}</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Investment Card */}
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06] p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(3,218,198,0.18), rgba(3,218,198,0.08))' }}>
+                <Briefcase className="h-5 w-5 text-[#03DAC6]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">Portfolios</p>
+                <p className="text-xl font-bold text-white/90 tabular-nums">{stats.totalPortfolios}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">Open Positions</span>
+                <span className="text-white/60 font-semibold tabular-nums">{stats.openPositions}</span>
+              </div>
+              <div className="adm-progress-track">
+                <div className="adm-progress-fill adm-progress-glow" style={{ width: `${stats.totalPortfolios > 0 ? (stats.openPositions / stats.totalPortfolios) * 100 : 0}%`, backgroundColor: '#03DAC6', '--biz-progress-color': 'rgba(3,218,198,0.3)' } as React.CSSProperties} />
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1">
+                <span className="text-white/35">Total Value</span>
+                <span className="text-[#03DAC6] font-semibold tabular-nums">{formatCurrency(stats.totalInvestmentValue)}</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Platform Health */}
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06] p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,215,0,0.08))' }}>
+                <Zap className="h-5 w-5 text-[#FFD700]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">Health</p>
+                <p className="text-xl font-bold text-white/90">Online</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">DB Size</span>
+                <span className="text-white/60 font-semibold">{stats.systemHealth?.databaseSize || 'N/A'}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">Uptime</span>
+                <span className="text-white/60 font-semibold">{formatUptime(stats.systemHealth?.uptime || 0)}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">Sessions</span>
+                <span className="text-white/60 font-semibold tabular-nums">{stats.systemHealth?.activeSessions}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1">
+                <span className="text-white/35">Conversion</span>
+                <span className="text-[#FFD700] font-semibold tabular-nums">
+                  {stats.totalUsers > 0 ? `${Math.round((stats.proUsers / stats.totalUsers) * 100)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Quick Stats — Expiring + Active */}
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06] p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(207,102,121,0.18), rgba(207,102,121,0.08))' }}>
+                <AlertTriangle className="h-5 w-5 text-[#CF6679]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">Alerts</p>
+                <p className="text-xl font-bold text-white/90 tabular-nums">{notificationCount}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">Expiring Soon</span>
+                <span className={cn('font-semibold tabular-nums', stats.usersExpiringSoon > 0 ? 'text-[#FFD700]' : 'text-white/40')}>{stats.usersExpiringSoon}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">Suspended</span>
+                <span className={cn('font-semibold tabular-nums', stats.suspendedUsers > 0 ? 'text-[#CF6679]' : 'text-white/40')}>{stats.suspendedUsers}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-white/35">Active Users</span>
+                <span className="text-[#03DAC6] font-semibold tabular-nums">{stats.activeUsers}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1">
+                <span className="text-white/35">Active %</span>
+                <span className="text-[#03DAC6] font-semibold tabular-nums">
+                  {stats.totalUsers > 0 ? `${Math.round((stats.activeUsers / stats.totalUsers) * 100)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════ QUICK ACTIONS + RECENT ACTIVITY ═══════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Quick Actions Row */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springTransition, delay: 0.55 }}
+        >
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]" data-tour="quick-actions">
+            <CardHeader className="pb-3">
+              <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+                <Zap className="adm-section-header-icon h-4 w-4 text-[#FFD700]" />
+                Quick Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+                {quickActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.label}
+                      onClick={() => action.page ? onNavigate?.(action.page) : action.action?.()}
+                      className="adm-quick-action group flex items-center gap-3 p-3.5 rounded-xl text-left"
+                    >
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
+                        style={{ background: `linear-gradient(135deg, ${action.color}18, ${action.color}08)` }}>
+                        <Icon className="h-4 w-4" style={{ color: action.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-white/70 group-hover:text-white/90 transition-colors">{action.label}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-white/15 group-hover:text-white/40 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Recent Activity Feed */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springTransition, delay: 0.6 }}
+          className="lg:col-span-2"
+        >
+          <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+                  <Activity className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
+                  Recent Activity
+                  <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/50">
+                    Last 5
+                  </Badge>
+                </CardTitle>
+                <button
+                  onClick={() => onNavigate?.('activity-log')}
+                  className="flex items-center gap-1 text-[11px] text-[#03DAC6]/60 hover:text-[#03DAC6] transition-colors"
+                >
+                  View All
+                  <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-8 text-white/20 text-[12px]">
+                  <History className="h-8 w-8 mx-auto mb-2 text-white/10" />
+                  No recent activity
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {recentActivity.map((log, idx) => {
+                    const { icon: LogIcon, color } = getActivityIcon(log.action);
+                    return (
+                      <motion.div
+                        key={log.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.65 + idx * 0.04, type: 'spring', stiffness: 300, damping: 20 }}
+                        className={cn(
+                          'adm-list-item rounded-xl',
+                          idx === 0 ? 'bg-white/[0.02] border border-white/[0.04]' : ''
+                        )}
+                      >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ background: `${color}12` }}>
+                          <LogIcon className="h-3.5 w-3.5" style={{ color }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-[12px] font-semibold text-white/70 capitalize">{log.action}</p>
+                            {idx === 0 && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#03DAC6] animate-pulse" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-white/30 truncate mt-0.5">{log.details || '—'}</p>
+                        </div>
+                        <span className="text-[10px] text-white/20 shrink-0">{formatTimeAgo(log.createdAt)}</span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* ═══════════════════ BOTTOM ROW: TOP USERS ═══════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springTransition, delay: 0.7 }}
+      >
         <Card className="adm-content-card bg-[#0D0D0D] border-white/[0.06]">
           <CardHeader className="pb-3">
             <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
@@ -833,9 +948,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             {stats.topUsers.length === 0 ? (
               <div className="text-center py-6 text-white/20 text-[12px]">No user activity yet</div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {stats.topUsers.map((user, idx) => (
-                  <div key={user.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                  <div key={user.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
                     <div className={cn(
                       'w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0',
                       idx === 0 ? 'bg-[#FFD700]/15 text-[#FFD700]' :
@@ -858,225 +973,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             )}
           </CardContent>
         </Card>
-
-        {/* Recent Users */}
-        <Card className="bg-[#0D0D0D] border-white/[0.06]">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-                <Users className="h-4 w-4 text-[#03DAC6]" />
-                Recent Users
-              </CardTitle>
-              <button
-                onClick={() => onNavigate?.('users')}
-                className="flex items-center gap-1 text-[11px] text-[#03DAC6]/60 hover:text-[#03DAC6] transition-colors"
-              >
-                View All
-                <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {stats.recentUsers.length === 0 ? (
-              <div className="text-center py-6 text-white/20 text-[12px]">No users yet</div>
-            ) : (
-              <div className="space-y-1.5 max-h-[280px] overflow-y-auto custom-scrollbar">
-                {stats.recentUsers.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors group/user">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                        style={{
-                          background: u.plan === 'pro' ? 'linear-gradient(135deg, #FFD70020, #FFD70010)' : 'rgba(255,255,255,0.04)',
-                          color: u.plan === 'pro' ? '#FFD700' : 'rgba(255,255,255,0.4)',
-                          border: `1px solid ${u.plan === 'pro' ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.06)'}`,
-                        }}>
-                        {u.username.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[12px] font-medium text-white/70 truncate">{u.username}</p>
-                        <p className="text-[10px] text-white/25 truncate">{u.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className={cn(
-                        'text-[8px] font-bold uppercase px-1.5 py-0.5',
-                        u.plan === 'pro' ? 'border-[#FFD700]/20 text-[#FFD700] bg-[#FFD700]/5' : 'border-white/10 text-white/30 bg-white/[0.02]',
-                      )}>
-                        {u.plan === 'pro' ? <><Crown className="h-2 w-2 mr-0.5 inline" />PRO</> : <><Sparkles className="h-2 w-2 mr-0.5 inline" />BASIC</>}
-                      </Badge>
-                      <span className="text-[10px] text-white/15 hidden sm:inline">
-                        {new Date(u.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Platform Financial Analytics */}
-      <PlatformAnalytics />
+      </motion.div>
     </div>
-  );
-}
-
-// ── Platform Analytics Inline Widget ─────────────────────────────
-function fmt(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-function PlatformAnalytics() {
-  const [data, setData] = useState<{
-    financials: { totalIncome: number; totalExpense: number; netFlow: number; incomeTxnCount: number; expenseTxnCount: number };
-    topCategories: { name: string; icon: string; total: number; count: number }[];
-    engagement: { totalUsers: number; activeUsersThisMonth: number; engagementRate: number };
-    platformHealth: { savingsTargets: number; activeSavingsTargets: number; categories: number; activeInvites: number };
-    monthlyAggregates: { month: string; income: number; expense: number; savings: number }[];
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-
-  const fetchAnalytics = useCallback(async (showSpinner = false) => {
-    if (showSpinner) setIsRefreshing(true);
-    try {
-      const res = await fetch('/api/admin/analytics');
-      if (res.ok) setData(await res.json());
-    } catch {}
-    finally { setLoading(false); setIsRefreshing(false); }
-  }, []);
-
-  useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
-
-  const totalCat = data ? Math.max(...data.topCategories.map(c => c.total), 1) : 1;
-  const colors = ['#BB86FC', '#03DAC6', '#CF6679', '#F9A825', '#64B5F6', '#81C784', '#FFB74D', '#E57373'];
-
-  return (
-    <Card className="bg-[#0D0D0D] border-white/[0.06] animate-in fade-in-0 slide-in-from-bottom-4 duration-500" style={{ animationDelay: '850ms', animationFillMode: 'backwards' }}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-[#BB86FC]" />
-            Platform Financial Analytics
-            <Badge variant="outline" className="text-[9px] font-semibold px-1.5 py-0 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]/50">
-              Live Data
-            </Badge>
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm"
-              className={cn('h-8 gap-1.5 text-[11px] rounded-lg border transition-all', expanded ? 'bg-white/[0.04] border-white/[0.08] text-white/60' : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/60 hover:bg-white/[0.04]')}
-              onClick={() => setExpanded(!expanded)}>
-              {expanded ? 'Collapse' : 'Expand'}
-              <ChevronRight className={cn('h-3 w-3 transition-transform', expanded && 'rotate-90')} />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-white/30 hover:text-white/60 hover:bg-white/[0.04] rounded-lg" onClick={() => fetchAnalytics(true)}>
-              <RefreshCw className={cn('h-3 w-3', isRefreshing && 'animate-spin')} />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 py-2">
-            {[1,2,3,4].map(i => <div key={i} className="h-20 rounded-xl bg-white/[0.02] animate-pulse" />)}
-          </div>
-        ) : !data ? (
-          <div className="text-center py-8 text-white/15 text-[12px]">Failed to load analytics</div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[
-                { label: 'Platform Income', value: fmt(data.financials.totalIncome), icon: TrendingUp, color: '#03DAC6', sub: `${data.financials.incomeTxnCount} txns` },
-                { label: 'Platform Expenses', value: fmt(data.financials.totalExpense), icon: TrendingDown, color: '#CF6679', sub: `${data.financials.expenseTxnCount} txns` },
-                { label: 'Net Cash Flow', value: `${data.financials.netFlow >= 0 ? '+' : ''}${fmt(data.financials.netFlow)}`, icon: Wallet, color: data.financials.netFlow >= 0 ? '#03DAC6' : '#CF6679', sub: data.financials.netFlow >= 0 ? 'Profitable' : 'Deficit' },
-                { label: 'Engagement', value: `${data.engagement.engagementRate}%`, icon: Users, color: '#FFD700', sub: `${data.engagement.activeUsersThisMonth}/${data.engagement.totalUsers} active` },
-              ].map((card) => {
-                const Icon = card.icon;
-                return (
-                  <div key={card.label} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.03] transition-all duration-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${card.color}15` }}><Icon className="h-4 w-4" style={{ color: card.color }} /></div>
-                      {data.financials.netFlow !== 0 && card.label === 'Net Cash Flow' && (
-                        <span className={cn('text-[10px]', data.financials.netFlow >= 0 ? 'text-[#03DAC6]' : 'text-[#CF6679]')}>
-                          {data.financials.netFlow >= 0 ? <ArrowUpRight className="h-3 w-3 inline" /> : <ArrowDownRight className="h-3 w-3 inline" />}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-lg font-bold text-white/85 tabular-nums">{card.value}</p>
-                    <p className="text-[10px] text-white/25">{card.sub}</p>
-                  </div>
-                );
-              })}
-            </div>
-            {expanded && (
-              <>
-                {data.monthlyAggregates.length > 0 && (
-                  <div className="p-4 rounded-xl bg-white/[0.015] border border-white/[0.04]">
-                    <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-1.5"><TrendingUp className="h-3 w-3" /> Monthly Revenue (6 months)</h4>
-                    <div className="flex items-end gap-2 h-36 px-2">
-                      {data.monthlyAggregates.map((m) => {
-                        const maxVal = Math.max(...data.monthlyAggregates.map(d => Math.max(d.income, d.expense)), 1);
-                        return (
-                          <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                            <div className="w-full flex items-end justify-center gap-[2px]" style={{ height: '100px' }}>
-                              <div className="w-[40%] max-w-[24px] rounded-t-md transition-all duration-500" style={{ height: `${Math.max((m.income / maxVal) * 100, 2)}%`, background: 'linear-gradient(to top, #03DAC6, #03DAC680)' }} />
-                              <div className="w-[40%] max-w-[24px] rounded-t-md transition-all duration-500" style={{ height: `${Math.max((m.expense / maxVal) * 100, 2)}%`, background: 'linear-gradient(to top, #CF6679, #CF667980)' }} />
-                            </div>
-                            <span className="text-[8px] text-white/15">{new Date(m.month + '-01').toLocaleDateString('en-US', { month: 'short' })}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="flex items-center gap-4 mt-2 justify-center">
-                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#03DAC6]" /><span className="text-[9px] text-white/25">Income</span></div>
-                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-[#CF6679]" /><span className="text-[9px] text-white/25">Expense</span></div>
-                    </div>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  {data.topCategories.length > 0 && (
-                    <div className="p-4 rounded-xl bg-white/[0.015] border border-white/[0.04]">
-                      <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Target className="h-3 w-3" /> Top Platform Categories</h4>
-                      <div className="space-y-2">{data.topCategories.slice(0, 5).map((cat, idx) => (
-                        <div key={cat.name}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[11px] text-white/50 truncate max-w-[140px]">{cat.name}</span>
-                            <span className="text-[10px] font-semibold text-white/35 tabular-nums">{fmt(cat.total)}</span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-white/[0.04] overflow-hidden"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${(cat.total / totalCat) * 100}%`, background: colors[idx % colors.length] }} /></div>
-                        </div>
-                      ))}</div>
-                    </div>
-                  )}
-                  <div className="p-4 rounded-xl bg-white/[0.015] border border-white/[0.04]">
-                    <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Zap className="h-3 w-3" /> Platform Health</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { label: 'Savings Targets', value: data.platformHealth.savingsTargets, sub: `${data.platformHealth.activeSavingsTargets} active` },
-                        { label: 'Categories', value: data.platformHealth.categories, sub: 'total created' },
-                        { label: 'Active Invites', value: data.platformHealth.activeInvites, sub: 'available' },
-                        { label: 'Users', value: data.engagement.totalUsers, sub: `${data.engagement.engagementRate}% engaged` },
-                      ].map((item) => (
-                        <div key={item.label} className="p-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.03] transition-colors">
-                          <p className="text-sm font-bold text-white/70 tabular-nums">{item.value}</p>
-                          <p className="text-[9px] text-white/20">{item.label} · {item.sub}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {data.monthlyAggregates.length === 0 && data.topCategories.length === 0 && (
-                  <div className="text-center py-8 text-white/15 text-[12px]"><BarChart3 className="h-8 w-8 mx-auto mb-2 text-white/8" />No transaction data available yet</div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }

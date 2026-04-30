@@ -86,6 +86,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
     }
 
+    // Check username uniqueness
+    const existingUsername = await db.user.findUnique({ where: { username: username.trim() } });
+    if (existingUsername) {
+      return NextResponse.json({ error: 'Username already exists' }, { status: 409 });
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 

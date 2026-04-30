@@ -122,6 +122,30 @@ export async function GET() {
       activeSessions: adminSessions
     };
 
+    // --- Business Stats ---
+    const totalBusinesses = await db.business.count();
+    const activeBusinesses = await db.business.count({ where: { isActive: true } });
+
+    // Sum of all BusinessSale amounts
+    const salesAgg = await db.businessSale.aggregate({
+      _sum: { amount: true }
+    });
+    const totalBusinessSales = salesAgg._sum.amount ?? 0;
+
+    // --- Investment Stats ---
+    const totalPortfolios = await db.investmentPortfolio.count();
+    const openPositions = await db.investmentPortfolio.count({ where: { status: 'open' } });
+
+    // Total investment value = sum of (currentPrice * quantity) for open positions
+    const openPositionsData = await db.investmentPortfolio.findMany({
+      where: { status: 'open' },
+      select: { currentPrice: true, quantity: true }
+    });
+    const totalInvestmentValue = openPositionsData.reduce(
+      (sum, p) => sum + (p.currentPrice * p.quantity),
+      0
+    );
+
     return NextResponse.json({
       totalUsers,
       activeUsers,
@@ -135,7 +159,15 @@ export async function GET() {
       dailyRegistrations,
       planDistribution,
       topUsers,
-      systemHealth
+      systemHealth,
+      // Business stats
+      totalBusinesses,
+      activeBusinesses,
+      totalBusinessSales,
+      // Investment stats
+      totalPortfolios,
+      openPositions,
+      totalInvestmentValue,
     });
   } catch (error) {
     console.error('Admin stats error:', error);

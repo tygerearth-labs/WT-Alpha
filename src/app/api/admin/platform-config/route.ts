@@ -68,6 +68,7 @@ export async function PUT(request: NextRequest) {
       whatsappNumber, registrationOpen, registrationMessage, availablePlans,
       sectionVisibility, exportEnabled,
       landingPageConfig, landingPageStats,
+      emailNotifications,
     } = body;
 
     // Validate JSON string fields before saving
@@ -122,6 +123,12 @@ export async function PUT(request: NextRequest) {
     if (exportEnabled !== undefined) updateData.exportEnabled = exportEnabled;
     if (landingPageConfig !== undefined) updateData.landingPageConfig = landingPageConfig;
     if (landingPageStats !== undefined) updateData.landingPageStats = landingPageStats;
+    if (emailNotifications !== undefined) {
+      // Store emailNotifications as JSON string if it's an object
+      updateData.emailNotifications = typeof emailNotifications === 'string' 
+        ? emailNotifications 
+        : JSON.stringify(emailNotifications);
+    }
 
     // Ensure the config row exists, then update with all fields
     // Using separate create + update avoids TypeScript issues with upsert's create type

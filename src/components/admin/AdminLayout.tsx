@@ -42,6 +42,7 @@ import { AdminAnnouncements } from './AdminAnnouncements';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminOnboardingTour, isTourCompleted, resetTour } from './AdminOnboardingTour';
 import { toast } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 import {
@@ -596,7 +597,7 @@ export function AdminLayout() {
         )}>
           <div className="max-w-7xl mx-auto">
             <div key={currentPage} className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-              {renderPage()}
+              <TooltipProvider delayDuration={200}>{renderPage()}</TooltipProvider>
             </div>
           </div>
         </main>

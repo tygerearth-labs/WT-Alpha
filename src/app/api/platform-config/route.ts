@@ -25,7 +25,7 @@ const FALLBACK_CONFIG = {
   registrationMessage: null,
   availablePlans: ['basic', 'pro', 'ultimate'],
   sectionVisibility: null,
-  exportEnabled: { basic: { pdf: false, excel: false }, pro: { pdf: true, excel: true }, ultimate: { pdf: true, excel: true } },
+  exportEnabled: { basic: { pdf: true, excel: true }, pro: { pdf: true, excel: true, csv: true }, ultimate: { pdf: true, excel: true, csv: true, custom: true } },
   landingPageConfig: {
     showStory: true,
     showFeatures: true,
