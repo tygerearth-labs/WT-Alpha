@@ -458,7 +458,7 @@ model InvestmentPortfolio {
   id            String   @id @default(cuid())
   businessId    String
   business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  type          String   // "saham", "crypto", "forex"
+  type          String   // "saham", "crypto", "forex", "crypto_perpetual"
   symbol        String
   name          String?
   entryPrice    Float
@@ -468,6 +468,8 @@ model InvestmentPortfolio {
   stopLoss      Float?
   status        String   @default("open") // open, closed
   notes         String?
+  currency      String   @default("IDR")
+  leverage      Float?   // for forex/crypto_perpetual
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -478,24 +480,58 @@ model InvestmentPortfolio {
 }
 
 model TradingJournal {
+  id              String   @id @default(cuid())
+  portfolioId     String
+  portfolio       InvestmentPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  type            String   // "buy", "sell"
+  entryPrice      Float
+  exitPrice       Float?
+  quantity        Float
+  pnl             Float    @default(0)
+  pnlPercentage   Float    @default(0)
+  riskReward      Float?
+  fees            Float    @default(0)
+  notes           String?
+  date            DateTime @default(now())
+  closedAt        DateTime?
+
+  // ── Trading Journal Core Fields ──
+  strategy        String?  // Breakout, Mean Reversion, FVG, Scalping, Swing, etc.
+  emotionalState  String?  // Calm, Revenge Trading, FOMO, Confident, Anxious, Disciplined
+  confluence      String?  // JSON array: ["RSI Divergence", "Support Level", "Volume Spike"]
+  screenshotBefore String? // image URL or base64
+  screenshotAfter  String? // image URL or base64
+
+  // ── Instrument-Specific Fields ──
+  instrumentCategory String? // "saham", "forex", "crypto_perpetual"
+  lotSize         Float?   // forex lot size
+  pipValue        Float?   // forex pip value per standard lot
+  leverage        Float?   // crypto_perpetual / forex leverage
+  fundingFee      Float?   // crypto_perpetual funding fee
+  liquidationPrice Float?  // crypto_perpetual estimated liquidation price
+
+  // ── Multi-Currency Fields ──
+  tradeCurrency   String?  // currency of the trade (USD, IDR, EUR, etc.)
+  exchangeRate    Float?   // rate at time of trade close (to base currency)
+  riskMultiple    Float?   // R-multiple: profit / initial risk
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([portfolioId, date])
+}
+
+model ExchangeRate {
   id            String   @id @default(cuid())
-  portfolioId   String
-  portfolio     InvestmentPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
-  type          String   // "buy", "sell"
-  entryPrice    Float
-  exitPrice     Float?
-  quantity      Float
-  pnl           Float    @default(0)
-  pnlPercentage Float    @default(0)
-  riskReward    Float?
-  fees          Float    @default(0)
-  notes         String?
+  fromCurrency  String   // "USD", "IDR", "EUR", etc.
+  toCurrency    String   // "USD", "IDR", "EUR", etc.
+  rate          Float
+  source        String   @default("manual") // "manual", "api", "auto"
   date          DateTime @default(now())
-  closedAt      DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@index([portfolioId, date])
+  @@unique([fromCurrency, toCurrency, date])
 }
 
 model WatchlistItem {
