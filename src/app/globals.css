@@ -3187,3 +3187,521 @@ html {
     padding: 12px 16px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   NOTIFICATION MODULE DARK PREMIUM STYLING
+   Mobile-first • Dark glassmorphism • Color palette: #BB86FC #03DAC6 #FFD700 #CF6679
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Notif 1: Popover/Panel Container — Glass backdrop with depth ── */
+.notif-panel {
+  background: rgba(13, 13, 13, 0.92);
+  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+              0 2px 8px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.notif-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(187, 134, 252, 0.25) 20%,
+    rgba(3, 218, 198, 0.15) 50%,
+    rgba(187, 134, 252, 0.25) 80%,
+    transparent 100%
+  );
+}
+@media screen and (max-width: 767px) {
+  .notif-panel {
+    border-radius: 1.25rem;
+  }
+}
+
+/* ── Notif 2: Notification Item — Touch-optimized with type accent ── */
+.notif-item {
+  position: relative;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background-color 0.15s ease-out,
+              transform 0.12s cubic-bezier(0.2, 0, 0, 1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.notif-item:last-child {
+  border-bottom: none;
+}
+.notif-item:hover {
+  background-color: rgba(255, 255, 255, 0.025);
+}
+.notif-item:active {
+  background-color: rgba(255, 255, 255, 0.04);
+  transform: scale(0.995);
+}
+@media screen and (max-width: 767px) {
+  .notif-item {
+    padding: 14px 16px;
+    min-height: 64px;
+  }
+}
+
+/* Unread notification with subtle left accent */
+.notif-item-unread {
+  background: rgba(187, 134, 252, 0.03);
+}
+.notif-item-unread::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--notif-accent, rgba(187, 134, 252, 0.5));
+}
+
+/* ── Notif 3: Type Icon Container — Colored glow badge ── */
+.notif-type-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.notif-item:hover .notif-type-icon {
+  transform: scale(1.08);
+}
+@media screen and (max-width: 767px) {
+  .notif-type-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+}
+
+/* ── Notif 4: Unread Dot — Glowing pulse indicator ── */
+.notif-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--notif-accent, #BB86FC);
+  box-shadow: 0 0 6px var(--notif-accent, rgba(187, 134, 252, 0.4));
+  animation: notifDotPulse 2.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes notifDotPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--notif-accent, rgba(187, 134, 252, 0.4)); }
+  50% { opacity: 0.7; box-shadow: 0 0 10px var(--notif-accent, rgba(187, 134, 252, 0.6)); }
+}
+
+/* ── Notif 5: Badge Counter — Premium count pill ── */
+.notif-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #CF6679;
+  color: white;
+  box-shadow: 0 0 8px rgba(207, 102, 121, 0.4);
+  animation: notifPulse 2.5s ease-in-out infinite;
+}
+
+/* ── Notif 6: Header Bar — Frosted header with action ── */
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.015);
+}
+@media screen and (max-width: 767px) {
+  .notif-header {
+    padding: 14px 16px;
+  }
+}
+
+/* ── Notif 7: Scrollable List Container ── */
+.notif-scroll-list {
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+.notif-scroll-list::-webkit-scrollbar {
+  width: 3px;
+}
+.notif-scroll-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.notif-scroll-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+@media screen and (max-width: 767px) {
+  .notif-scroll-list {
+    max-height: 360px;
+  }
+}
+
+/* ── Notif 8: Empty State ── */
+.notif-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+.notif-empty-state-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 12px;
+}
+
+/* ── Notif 9: Footer ── */
+.notif-footer {
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.01);
+  text-align: center;
+}
+
+/* ── Notif 10: Amount Badge — Currency display ── */
+.notif-amount {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Notif 11: Mark All Read Button ── */
+.notif-mark-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #BB86FC;
+  background: rgba(187, 134, 252, 0.08);
+  border: 1px solid rgba(187, 134, 252, 0.1);
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.notif-mark-all-btn:hover {
+  background: rgba(187, 134, 252, 0.14);
+  border-color: rgba(187, 134, 252, 0.18);
+}
+.notif-mark-all-btn:active {
+  transform: scale(0.96);
+}
+
+/* ── Notif 12: View All Hint ── */
+.notif-view-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  transition: color 0.2s ease-out;
+  cursor: pointer;
+}
+.notif-view-all:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Notif 13: Loading Spinner ── */
+.notif-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-top-color: rgba(187, 134, 252, 0.6);
+  border-radius: 50%;
+  animation: notifSpin 0.8s linear infinite;
+}
+@keyframes notifSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SHARED COMPONENTS DARK PREMIUM STYLING
+   Announcement Banner • Icon Picker • Shared UI polish
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Shared 1: Announcement Banner — Premium glass with slide-in ── */
+.announce-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  animation: announceSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+.announce-banner::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(3, 218, 198, 0.15) 50%,
+    transparent 100%
+  );
+}
+@keyframes announceSlideIn {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media screen and (max-width: 767px) {
+  .announce-banner {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+}
+
+.announce-dismiss-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: all 0.15s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+.announce-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.announce-dismiss-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.12);
+}
+@media screen and (max-width: 767px) {
+  .announce-dismiss-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Type-specific banner backgrounds */
+.announce-type-info {
+  background: rgba(3, 218, 198, 0.06);
+  border: none;
+}
+.announce-type-warning {
+  background: rgba(249, 168, 37, 0.06);
+  border: none;
+}
+.announce-type-success {
+  background: rgba(34, 197, 94, 0.06);
+  border: none;
+}
+.announce-type-maintenance {
+  background: rgba(207, 102, 121, 0.06);
+  border: none;
+}
+
+.announce-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+@media screen and (max-width: 767px) {
+  .announce-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+}
+
+/* ── Shared 2: Icon Picker Dialog — Premium dark picker ── */
+.iconpicker-panel {
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+              0 2px 8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.iconpicker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease-out;
+}
+.iconpicker-search:focus-within {
+  border-color: rgba(187, 134, 252, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.08);
+}
+@media screen and (max-width: 767px) {
+  .iconpicker-search {
+    height: 44px;
+    border-radius: 14px;
+  }
+}
+
+.iconpicker-grid-item {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.iconpicker-grid-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: scale(1.08);
+}
+.iconpicker-grid-item:active {
+  transform: scale(0.94);
+}
+.iconpicker-grid-item-selected {
+  border-color: var(--iconpicker-accent, rgba(187, 134, 252, 0.5));
+  background: rgba(187, 134, 252, 0.1);
+  box-shadow: 0 0 12px rgba(187, 134, 252, 0.15);
+}
+@media screen and (max-width: 767px) {
+  .iconpicker-grid-item {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+}
+
+.iconpicker-group-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.iconpicker-group-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+}
+.iconpicker-group-tab-active {
+  background: rgba(187, 134, 252, 0.12);
+  border-color: rgba(187, 134, 252, 0.2);
+  color: #BB86FC;
+}
+.iconpicker-group-tab:active {
+  transform: scale(0.96);
+}
+
+.iconpicker-group-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 0 6px;
+}
+
+.iconpicker-scroll {
+  max-height: 55vh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+.iconpicker-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.iconpicker-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.iconpicker-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
+.iconpicker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.iconpicker-trigger:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.iconpicker-trigger:active {
+  transform: scale(0.99);
+}

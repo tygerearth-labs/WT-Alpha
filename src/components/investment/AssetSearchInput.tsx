@@ -309,7 +309,7 @@ export default function AssetSearchInput({
 
             {/* Auto-select hint */}
             {query.length >= 3 && filtered.length === 1 && (
-              <div className="px-3 py-1.5 bg-[#03DAC6]/8 border-b border-[#03DAC6]/15">
+              <div className="px-3 py-1.5 bg-[#03DAC6]/10 border-b border-[#03DAC6]/15">
                 <p className="text-[11px] text-[#03DAC6]/70 flex items-center gap-1">
                   <CornerDownLeft className="h-3 w-3" />
                   Auto-select: {filtered[0].label} ({filtered[0].name})

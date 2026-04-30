@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, BellRing, Info, AlertTriangle, CheckCircle2, XCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { Bell, BellRing, Info, AlertTriangle, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -178,13 +178,7 @@ export function NotificationBell() {
         {/* Unread badge */}
         {unreadCount > 0 && (
           <span
-            className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold"
-            style={{
-              background: '#CF6679',
-              color: '#fff',
-              boxShadow: '0 0 8px rgba(207,102,121,0.4)',
-              animation: isOpen ? 'none' : 'notifPulse 2s ease-in-out infinite',
-            }}
+            className="notif-badge absolute -top-0.5 -right-0.5"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -194,16 +188,10 @@ export function NotificationBell() {
       {/* Dropdown Panel */}
       {isOpen && (
         <div
-          className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl overflow-hidden z-50"
-          style={{
-            background: '#141414',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
-            animation: 'notifSlideDown 0.2s ease-out',
-          }}
+          className="notif-panel absolute right-0 top-full mt-2 w-80 sm:w-96 z-50"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+          <div className="notif-header">
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-[#BB86FC]" />
               <span className="text-sm font-semibold text-[#E6E1E5]">
@@ -220,7 +208,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-[10px] font-medium px-2 py-1 rounded-lg transition-colors text-[#BB86FC] bg-[#BB86FC]/8"
+                className="notif-mark-all-btn"
               >
                 {t('notifications.markAllRead') || 'Mark all read'}
               </button>
@@ -228,16 +216,16 @@ export function NotificationBell() {
           </div>
 
           {/* Notification List */}
-          <div className="max-h-80 overflow-y-auto custom-scrollbar">
+          <div className="notif-scroll-list">
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-5 w-5 animate-spin text-[#666]" />
+                <div className="notif-spinner" />
               </div>
             ) : announcements.length === 0 ? (
               /* Empty State */
-              <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <div className="notif-empty-state">
                 <div
-                  className="grid place-items-center w-12 h-12 rounded-full bg-white/4"
+                  className="notif-empty-state-icon"
                 >
                   <Bell className="h-5 w-5 text-[#555]" />
                 </div>
@@ -256,14 +244,13 @@ export function NotificationBell() {
                     key={announcement.id}
                     onClick={() => handleNotificationClick(announcement)}
                     className={cn(
-                      'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-white/4',
-                      !isRead && 'bg-white/[0.02]',
-                      'hover:bg-white/[0.04]',
+                      'notif-item',
+                      !isRead && 'notif-item-unread',
                     )}
                   >
                     {/* Icon */}
                     <div
-                      className="shrink-0 grid place-items-center w-8 h-8 rounded-lg mt-0.5"
+                      className="notif-type-icon"
                       style={{ background: getTypeBg(announcement.type) }}
                     >
                       {getTypeIcon(announcement.type)}
@@ -305,7 +292,7 @@ export function NotificationBell() {
           {/* Footer */}
           {announcements.length > 0 && (
             <div
-              className="px-4 py-2.5 border-t border-white/[0.06] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              className="notif-footer flex items-center justify-center gap-1.5 cursor-pointer"
               onClick={() => setIsOpen(false)}
             >
               <ExternalLink className="h-3 w-3 text-[#666]" />

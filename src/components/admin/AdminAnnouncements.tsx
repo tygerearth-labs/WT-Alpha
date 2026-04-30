@@ -842,10 +842,10 @@ export function AdminAnnouncements() {
               <div
                 className={cn(
                   'p-4 rounded-b-xl border',
-                  previewItem.type === 'info' && 'bg-[#03DAC6]/8 border-[#03DAC6]/20',
-                  previewItem.type === 'warning' && 'bg-[#FFD700]/8 border-[#FFD700]/20',
-                  previewItem.type === 'success' && 'bg-[#4CAF50]/8 border-[#4CAF50]/20',
-                  previewItem.type === 'maintenance' && 'bg-[#CF6679]/8 border-[#CF6679]/20',
+                  previewItem.type === 'info' && 'bg-[#03DAC6]/10 border-[#03DAC6]/20',
+                  previewItem.type === 'warning' && 'bg-[#FFD700]/10 border-[#FFD700]/20',
+                  previewItem.type === 'success' && 'bg-[#4CAF50]/10 border-[#4CAF50]/20',
+                  previewItem.type === 'maintenance' && 'bg-[#CF6679]/10 border-[#CF6679]/20',
                 )}
               >
                 <div className="flex items-start gap-3">

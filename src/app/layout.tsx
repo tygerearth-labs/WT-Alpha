@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,7 +60,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-x-hidden`}
       >
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
         <SonnerToaster position="top-center" offset="60px" />
       </body>
     </html>

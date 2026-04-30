@@ -593,7 +593,7 @@ export function MainLayout() {
 
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-30" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="absolute inset-0 bg-[#0D0D0D]/80 backdrop-blur-xl" />
+        <div className="absolute inset-0 bg-[#0D0D0D]/100 backdrop-blur-xl" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#BB86FC]/25 to-transparent" />
         <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] blur-sm pointer-events-none"
           style={{ background: 'linear-gradient(to right, transparent, rgba(187,134,252,0.15), transparent)' }} />
@@ -672,14 +672,14 @@ export function MainLayout() {
                 {user?.role === 'admin' && (
                   <>
                     <DropdownMenuSeparator className="bg-white/[0.06] my-1" />
-                    <DropdownMenuItem onClick={() => { window.location.href = '/admin'; }} className="text-[#03DAC6]/80 focus:text-[#03DAC6] focus:bg-[#03DAC6]/8 rounded-lg mx-1 my-0.5 cursor-pointer transition-colors">
+                    <DropdownMenuItem onClick={() => { window.location.href = '/admin'; }} className="text-[#03DAC6]/100 focus:text-[#03DAC6] focus:bg-[#03DAC6]/10 rounded-lg mx-1 my-0.5 cursor-pointer transition-colors">
                       <ArrowLeftRight className="mr-2.5 h-4 w-4 text-[#03DAC6]/50" />
                       <span className="text-[13px]">Switch to Admin</span>
                     </DropdownMenuItem>
                   </>
                 )}
                 <DropdownMenuSeparator className="bg-white/[0.06] my-1" />
-                <DropdownMenuItem onClick={handleLogout} className="text-[#CF6679]/80 focus:text-[#CF6679] focus:bg-[#CF6679]/8 rounded-lg mx-1 my-0.5 cursor-pointer transition-colors">
+                <DropdownMenuItem onClick={handleLogout} className="text-[#CF6679]/100 focus:text-[#CF6679] focus:bg-[#CF6679]/10 rounded-lg mx-1 my-0.5 cursor-pointer transition-colors">
                   <LogOut className="mr-2.5 h-4 w-4 text-[#CF6679]/50" />
                   <span className="text-[13px]">{t('layout.logout')}</span>
                 </DropdownMenuItem>
@@ -855,8 +855,8 @@ export function MainLayout() {
                 )} strokeWidth={isActive ? 2.2 : 1.5} style={isActive ? { color: modeColor(mode) } : undefined} />
                 <span className={cn(
                   'text-[10px] mt-0.5 font-medium truncate w-full text-center leading-tight',
-                  isActive ? 'text-white/80' : 'text-white/25',
-                )}>{item.label}</span>
+                  isActive ? '' : 'text-white/25',
+                )} style={isActive ? { color: modeColor(mode) } : undefined}>{item.label}</span>
                 {item.lock && <Lock className="absolute top-0 right-1 h-2 w-2 text-[#FFD700]/40" />}
               </button>
             );

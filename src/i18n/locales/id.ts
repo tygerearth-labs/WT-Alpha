@@ -33,6 +33,10 @@ export const translations = {
     bisnis: 'Bisnis',
     investasi: 'Investasi',
   },
+  bills: {
+    deleteTitle: 'Hapus tagihan?',
+    deleteDesc: 'Tindakan ini tidak dapat dibatalkan. Tagihan akan dihapus secara permanen.',
+  },
   auth: {
     login: 'Masuk',
     loginButton: 'Masuk',
@@ -318,6 +322,8 @@ export const translations = {
     allGoodDetail: 'Pertahankan kebiasaan menabung yang konsisten',
     totalSavingsDesc: 'Akumulasi tabungan Anda periode ini',
     cashFlow: 'Arus Kas',
+    netCashFlow: 'Arus Kas Bersih',
+    last7DaysGrowth: 'Pertumbuhan 7 Hari',
     topSpending: 'Pengeluaran Terbesar',
     financialHealth: 'Kesehatan Keuangan',
     sixMonths: '6 Bulan Terakhir',

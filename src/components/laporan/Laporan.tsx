@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, Wallet, ArrowUpRight, ArrowDownRight, FileText, FileSpreadsheet } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -66,9 +66,7 @@ export function Laporan() {
     fetchExportConfig();
   }, [user?.plan]);
 
-  useEffect(() => { fetchData(); }, [filter]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (filter.type !== 'all') params.append('type', filter.type);
@@ -86,7 +84,9 @@ export function Laporan() {
       }
     } catch { /* silent */ }
     finally { setIsLoading(false); }
-  };
+  }, [filter]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();

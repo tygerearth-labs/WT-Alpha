@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 // ── Curated icon list for category picker ──
 const PICKER_ICONS: { name: string; label: string; group: string }[] = [
@@ -206,11 +207,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
         type="button"
         title={`${icon.label} (${icon.name})`}
         onClick={() => handleSelect(icon.name)}
-        className="h-12 w-12 sm:h-9 sm:w-9 rounded-xl grid place-items-center transition-all duration-150 hover:scale-110 active:scale-95 leading-none [&>*]:block"
-        style={{
-          background: isSelected ? `${accentColor}25` : 'rgba(255,255,255,0.04)',
-          border: isSelected ? `2px solid ${accentColor}` : '1px solid rgba(255,255,255,0.06)',
-        }}
+        className={cn('h-12 w-12 sm:h-9 sm:w-9 rounded-xl grid place-items-center transition-all duration-150 hover:scale-110 active:scale-95 leading-none [&>*]:block', 'iconpicker-grid-item', isSelected && 'iconpicker-grid-item-selected')}
       >
         <DynamicIcon
           name={icon.name}
@@ -227,7 +224,8 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="w-full h-9 text-xs bg-[#1E1E1E] border border-white/[0.08] text-white/80 rounded-lg px-3 text-left hover:border-white/[0.15] transition-colors flex items-center gap-3"
+        className={cn('w-full h-9 text-xs bg-[#1E1E1E] border border-white/[0.08] text-white/80 rounded-lg px-3 text-left hover:border-white/[0.15] transition-colors flex items-center gap-3', 'iconpicker-trigger')}
+        style={{ '--iconpicker-accent': accentColor } as React.CSSProperties}
       >
         <span
           className="w-6 h-6 rounded-md grid place-items-center shrink-0 leading-none [&>*]:block"
@@ -246,8 +244,8 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
       {/* Icon Picker — Nested Radix Dialog (bottom sheet on mobile, centered modal on desktop) */}
       <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setIsOpen(false); setSearch(''); setActiveGroup(null); } }}>
         <DialogContent
-          className="bg-[#141414] border-white/[0.08] rounded-2xl gap-0 p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-lg max-h-[85vh]"
-          style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
+          className={cn('bg-[#141414] border-white/[0.08] rounded-2xl gap-0 p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-lg max-h-[85vh]', 'iconpicker-panel')}
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent', '--iconpicker-accent': accentColor } as React.CSSProperties}
           showCloseButton={true}
         >
           {/* Accessibility */}
@@ -262,7 +260,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
 
           {/* Search */}
           <div className="px-3 pt-3 pb-2">
-            <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-[#1E1E1E] border border-white/[0.06]">
+            <div className={cn('flex items-center gap-2 px-3 h-9 rounded-lg bg-[#1E1E1E] border border-white/[0.06]', 'iconpicker-search')}>
               <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
               <input
                 type="text"
@@ -289,11 +287,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
               <button
                 type="button"
                 onClick={() => setActiveGroup(null)}
-                className="text-[10px] font-semibold px-2.5 py-1 rounded-md shrink-0 transition-all whitespace-nowrap"
-                style={{
-                  background: activeGroup === null ? `${accentColor}20` : 'transparent',
-                  color: activeGroup === null ? accentColor : '#9E9E9E',
-                }}
+                className={cn('text-[10px] font-semibold px-2.5 py-1 rounded-md shrink-0 transition-all whitespace-nowrap', 'iconpicker-group-tab', activeGroup === null && 'iconpicker-group-tab-active')}
               >
                 Semua
               </button>
@@ -302,11 +296,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
                   key={g}
                   type="button"
                   onClick={() => setActiveGroup(activeGroup === g ? null : g)}
-                  className="text-[10px] font-semibold px-2.5 py-1 rounded-md shrink-0 transition-all whitespace-nowrap"
-                  style={{
-                    background: activeGroup === g ? `${accentColor}20` : 'transparent',
-                    color: activeGroup === g ? accentColor : '#9E9E9E',
-                  }}
+                  className={cn('text-[10px] font-semibold px-2.5 py-1 rounded-md shrink-0 transition-all whitespace-nowrap', 'iconpicker-group-tab', activeGroup === g && 'iconpicker-group-tab-active')}
                 >
                   {g}
                 </button>
@@ -317,7 +307,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
           {/* Icon grid */}
           <div
             ref={gridRef}
-            className="overflow-y-auto px-3 pb-4 pt-2 sm:p-3 sm:pt-3"
+            className={cn('overflow-y-auto px-3 pb-4 pt-2 sm:p-3 sm:pt-3', 'iconpicker-scroll')}
             style={{ maxHeight: 'calc(85vh - 140px)', scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}
           >
             {groupedIcons.length === 0 ? (
@@ -332,7 +322,7 @@ export function IconPicker({ value, onChange, accentColor = '#BB86FC' }: IconPic
               <div className="space-y-4">
                 {groupedIcons.map(({ group, label, icons }) => (
                   <div key={group}>
-                    <p className="text-[10px] font-bold uppercase tracking-wider mb-2 px-0.5 text-center" style={{ color: '#666' }}>
+                    <p className={cn('text-[10px] font-bold uppercase tracking-wider mb-2 px-0.5 text-center', 'iconpicker-group-header')} style={{ color: '#666' }}>
                       {label}
                     </p>
                     <div className="flex flex-wrap justify-center gap-2.5">

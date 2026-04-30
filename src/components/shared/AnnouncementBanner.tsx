@@ -14,11 +14,18 @@ interface Announcement {
   expiresAt: string | null;
 }
 
-const TYPE_STYLES: Record<string, { bg: string; border: string; text: string; icon: React.ElementType; iconColor: string }> = {
-  info: { bg: 'bg-[#03DAC6]/[0.07]', border: 'border-[#03DAC6]/20', text: 'text-[#03DAC6]', icon: Info, iconColor: 'text-[#03DAC6]' },
-  warning: { bg: 'bg-[#FFD700]/[0.07]', border: 'border-[#FFD700]/20', text: 'text-[#FFD700]', icon: AlertTriangle, iconColor: 'text-[#FFD700]' },
-  success: { bg: 'bg-[#4CAF50]/[0.07]', border: 'border-[#4CAF50]/20', text: 'text-[#4CAF50]', icon: CheckCircle, iconColor: 'text-[#4CAF50]' },
-  maintenance: { bg: 'bg-[#CF6679]/[0.07]', border: 'border-[#CF6679]/20', text: 'text-[#CF6679]', icon: Wrench, iconColor: 'text-[#CF6679]' },
+const TYPE_STYLES: Record<string, { text: string; icon: React.ElementType; iconColor: string; iconBg: string }> = {
+  info: { text: 'text-[#03DAC6]', icon: Info, iconColor: 'text-[#03DAC6]', iconBg: 'bg-[#03DAC6]/[0.07]' },
+  warning: { text: 'text-[#FFD700]', icon: AlertTriangle, iconColor: 'text-[#FFD700]', iconBg: 'bg-[#FFD700]/[0.07]' },
+  success: { text: 'text-[#4CAF50]', icon: CheckCircle, iconColor: 'text-[#4CAF50]', iconBg: 'bg-[#4CAF50]/[0.07]' },
+  maintenance: { text: 'text-[#CF6679]', icon: Wrench, iconColor: 'text-[#CF6679]', iconBg: 'bg-[#CF6679]/[0.07]' },
+};
+
+const TYPE_CLASS_MAP: Record<string, string> = {
+  info: 'announce-type-info',
+  warning: 'announce-type-warning',
+  success: 'announce-type-success',
+  maintenance: 'announce-type-maintenance',
 };
 
 const DISMISSED_KEY = 'wt-dismissed-announcements';
@@ -148,7 +155,7 @@ export function AnnouncementBanner() {
   return (
     <div
       ref={bannerRef}
-      className="fixed left-0 right-0 z-25 flex flex-col"
+      className="fixed left-0 right-0 z-[25] flex flex-col"
       style={{ top: 'var(--header-offset, 3.5rem)' }}
     >
       {activeAnnouncements.map((announcement) => {
@@ -159,12 +166,13 @@ export function AnnouncementBanner() {
           <div
             key={announcement.id}
             className={cn(
-              'relative flex items-center gap-3 px-4 py-2.5 border-b backdrop-blur-md',
-              style.bg,
-              style.border,
+              'announce-banner',
+              TYPE_CLASS_MAP[announcement.type] || 'announce-type-info',
             )}
           >
-            <Icon className={cn('h-4 w-4 shrink-0', style.iconColor)} />
+            <div className={cn('announce-icon-wrapper', style.iconBg)}>
+              <Icon className={cn('h-4 w-4', style.iconColor)} />
+            </div>
             <div className="flex-1 min-w-0 text-center">
               <span className={cn('text-[12px] font-medium', style.text)}>
                 <strong>{announcement.title}</strong>
@@ -176,8 +184,7 @@ export function AnnouncementBanner() {
             <button
               onClick={() => handleDismiss(announcement.id)}
               className={cn(
-                'shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors',
-                'hover:bg-white/10',
+                'announce-dismiss-btn',
                 style.text,
               )}
               aria-label={t('common.dismiss')}

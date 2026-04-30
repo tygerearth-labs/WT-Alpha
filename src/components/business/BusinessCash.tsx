@@ -1201,7 +1201,7 @@ export default function BusinessCash() {
       const res = await fetch(`/api/business/${businessId}/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'pengeluaran', name: newCategoryName.trim(), color: '#03DAC6', icon: selectedCategoryIcon }),
+        body: JSON.stringify({ type: 'pengeluaran', name: newCategoryName.trim(), color: '#CF6679', icon: selectedCategoryIcon }),
       });
       if (!res.ok) throw new Error();
       toast.success('Kategori berhasil ditambahkan');

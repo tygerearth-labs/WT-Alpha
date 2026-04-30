@@ -9,7 +9,7 @@ import { TransactionForm } from '@/components/transaction/TransactionForm';
 import { CategoryDialog } from '@/components/transaction/CategoryDialog';
 import { TransactionList } from '@/components/transaction/TransactionList';
 import { CategoryList } from '@/components/transaction/CategoryList';
-import { Transaction, Category, TransactionFormData, CategoryFormData } from '@/types/transaction.types';
+import { Transaction, Category, TransactionFormData, CategoryFormData, SavingsTarget } from '@/types/transaction.types';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
@@ -159,6 +159,7 @@ export function KasKeluar() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [serverTotalAmount, setServerTotalAmount] = useState<number>(0);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [savingsTargets, setSavingsTargets] = useState<SavingsTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -194,19 +195,22 @@ export function KasKeluar() {
         searchParams.append('endDate', end.toISOString());
       }
 
-      const [transRes, catRes] = await Promise.all([
+      const [transRes, catRes, savingsRes] = await Promise.all([
         fetch(`/api/transactions?${searchParams.toString()}`),
         fetch('/api/categories?type=expense'),
+        fetch('/api/savings'),
       ]);
 
-      if (transRes.ok && catRes.ok) {
+      if (transRes.ok && catRes.ok && savingsRes.ok) {
         const transData = await transRes.json();
         const catData = await catRes.json();
+        const savingsData = await savingsRes.json();
 
         const transactions = transData.transactions || [];
         setTransactions(transactions);
         setServerTotalAmount(transData.totalAmount || 0);
         setCategories(catData.categories);
+        setSavingsTargets(savingsData.savingsTargets);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -468,7 +472,7 @@ export function KasKeluar() {
                 </div>
                 <div>
                   <p className="text-[10px] lg:text-sm font-medium uppercase tracking-wider" style={{ color: T.muted }}>{t('kas.totalExpense')}</p>
-                  <p className="text-xl sm:text-2xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                  <p className="text-xl sm:text-2xl lg:text-4xl font-bold tracking-tight bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${T.text}, ${T.accent})` }}>
                     {formatAmount(totalExpense)}
                   </p>
                 </div>
@@ -1142,6 +1146,7 @@ export function KasKeluar() {
         onOpenChange={setIsAddDialogOpen}
         type="expense"
         categories={categories}
+        savingsTargets={savingsTargets}
         onSubmit={handleAddTransaction}
       />
       <TransactionForm
@@ -1149,6 +1154,7 @@ export function KasKeluar() {
         onOpenChange={setIsEditDialogOpen}
         type="expense"
         categories={categories}
+        savingsTargets={savingsTargets}
         initialData={selectedTransaction}
         onSubmit={handleEditTransaction}
       />

@@ -287,18 +287,17 @@ export function NotificationCenter() {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-80 sm:w-96 p-0 overflow-hidden rounded-2xl border-0"
-        style={{
-          background: '#141414',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow:
-            '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
-        }}
+        className={cn(
+          'w-80 sm:w-96 p-0 overflow-hidden rounded-2xl border-0',
+          'notif-panel relative',
+        )}
       >
         {/* ── Header ── */}
         <div
-          className="flex items-center justify-between px-4 py-3 border-b"
-          style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+          className={cn(
+            'flex items-center justify-between px-4 py-3 border-b',
+            'notif-header',
+          )}
         >
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4" style={{ color: '#BB86FC' }} />
@@ -307,11 +306,10 @@ export function NotificationCenter() {
             </span>
             {unreadCount > 0 && (
               <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{
-                  background: 'rgba(187,134,252,0.15)',
-                  color: '#BB86FC',
-                }}
+                className={cn(
+                  'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+                  'notif-badge',
+                )}
               >
                 {unreadCount}
               </span>
@@ -320,11 +318,10 @@ export function NotificationCenter() {
           {unreadCount > 0 && (
             <button
               onClick={markAllRead}
-              className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg transition-colors"
-              style={{
-                color: '#BB86FC',
-                background: 'rgba(187,134,252,0.08)',
-              }}
+              className={cn(
+                'flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg transition-colors',
+                'notif-mark-all-btn',
+              )}
             >
               <Check className="h-3 w-3" />
               <span>{t('notifications.markAllRead')}</span>
@@ -333,17 +330,19 @@ export function NotificationCenter() {
         </div>
 
         {/* ── Notification List ── */}
-        <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
+        <div className={cn('max-h-[320px] overflow-y-auto custom-scrollbar', 'notif-scroll-list')}>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'rgba(255,255,255,0.1)', borderTopColor: 'transparent' }} />
             </div>
           ) : sortedNotifications.length === 0 ? (
             /* Empty State */
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className={cn('flex flex-col items-center justify-center py-12 gap-3', 'notif-empty-state')}>
               <div
-                className="grid place-items-center w-12 h-12 rounded-full"
-                style={{ background: 'rgba(255,255,255,0.04)' }}
+                className={cn(
+                  'grid place-items-center w-12 h-12 rounded-full',
+                  'notif-empty-state-icon',
+                )}
               >
                 <Bell className="h-5 w-5" style={{ color: '#555' }} />
               </div>
@@ -368,17 +367,22 @@ export function NotificationCenter() {
                     'w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-150',
                     !isRead && 'bg-white/[0.02]',
                     'hover:bg-white/[0.04] active:bg-white/[0.06]',
+                    'notif-item',
+                    !isRead && 'notif-item-unread',
                   )}
                   style={{
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  }}
+                    '--notif-accent': config.color,
+                  } as React.CSSProperties}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: index * 0.03 }}
                 >
                   {/* Type Icon */}
                   <div
-                    className="shrink-0 grid place-items-center w-8 h-8 rounded-lg mt-0.5 transition-transform duration-150 hover:scale-110"
+                    className={cn(
+                      'shrink-0 grid place-items-center w-8 h-8 rounded-lg mt-0.5 transition-transform duration-150 hover:scale-110',
+                      'notif-type-icon',
+                    )}
                     style={{ background: config.bgColor }}
                   >
                     {getTypeIcon(notification.type)}
@@ -399,11 +403,10 @@ export function NotificationCenter() {
                       </p>
                       {!isRead && (
                         <div
-                          className="shrink-0 w-2 h-2 rounded-full mt-1.5"
-                          style={{
-                            background: config.color,
-                            boxShadow: `0 0 6px ${config.glowColor}`,
-                          }}
+                          className={cn(
+                            'shrink-0 w-2 h-2 rounded-full mt-1.5',
+                            'notif-unread-dot',
+                          )}
                         />
                       )}
                     </div>
@@ -411,16 +414,15 @@ export function NotificationCenter() {
                     {notification.amount != null &&
                       (notification.type === 'income' || notification.type === 'expense') && (
                         <span
-                          className="inline-flex items-center text-[11px] font-bold mt-1 px-1.5 py-0.5 rounded"
+                          className={cn(
+                            'inline-flex items-center text-[11px] font-bold mt-1 px-1.5 py-0.5 rounded',
+                            'notif-amount',
+                          )}
                           style={{
                             color:
                               notification.type === 'income'
                                 ? TYPE_CONFIG.income.color
                                 : TYPE_CONFIG.expense.color,
-                            background:
-                              notification.type === 'income'
-                                ? TYPE_CONFIG.income.bgColor
-                                : TYPE_CONFIG.expense.bgColor,
                           }}
                         >
                           {notification.type === 'income' ? '+' : '-'}
@@ -466,7 +468,7 @@ export function NotificationCenter() {
               className="px-4 py-2 text-center"
               style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
             >
-              <span className="text-[10px] font-medium" style={{ color: '#555' }}>
+              <span className={cn('text-[10px] font-medium', 'notif-view-all')}>
                 +{sortedNotifications.length - VISIBLE_LIMIT} more notifications
               </span>
             </div>
@@ -476,8 +478,10 @@ export function NotificationCenter() {
         {/* ── Footer ── */}
         {sortedNotifications.length > 0 && (
           <div
-            className="px-4 py-2.5 border-t text-center cursor-pointer transition-colors"
-            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+            className={cn(
+              'px-4 py-2.5 border-t text-center cursor-pointer transition-colors',
+              'notif-footer',
+            )}
             onClick={() => handleOpenChange(false)}
           >
             <span

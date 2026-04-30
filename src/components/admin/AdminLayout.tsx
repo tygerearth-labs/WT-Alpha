@@ -302,7 +302,7 @@ export function AdminLayout() {
 
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-30 adm-section-header" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="absolute inset-0 bg-[#0D0D0D]/80 backdrop-blur-xl" />
+        <div className="absolute inset-0 bg-[#0D0D0D]/100 backdrop-blur-xl" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#03DAC6]/25 to-transparent" />
         <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] blur-sm pointer-events-none"
           style={{ background: 'linear-gradient(to right, transparent, rgba(3,218,198,0.15), transparent)' }} />
@@ -473,7 +473,7 @@ export function AdminLayout() {
                 <DropdownMenuSeparator className="bg-white/[0.06] my-1" />
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="text-[#CF6679]/80 focus:text-[#CF6679] focus:bg-[#CF6679]/8 rounded-lg mx-1 cursor-pointer"
+                  className="text-[#CF6679]/100 focus:text-[#CF6679] focus:bg-[#CF6679]/10 rounded-lg mx-1 cursor-pointer"
                 >
                   <LogOut className="mr-2.5 h-4 w-4 text-[#CF6679]/50" />
                   <span className="text-[13px]">Logout</span>
@@ -501,7 +501,7 @@ export function AdminLayout() {
           <div className="absolute inset-0 bg-[#0D0D0D]/60 backdrop-blur-2xl" />
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: 'linear-gradient(180deg, rgba(3,218,198,0.03) 0%, transparent 30%, transparent 70%, rgba(187,134,252,0.02) 100%)' }} />
-          <div className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-[#03DAC6]/10 via-white/[0.04] to-[#BB86FC]/8" />
+          <div className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-[#03DAC6]/10 via-white/[0.04] to-[#BB86FC]/10" />
 
           {renderNavItems(sidebarCollapsed)}
 

@@ -33,6 +33,8 @@ import { TopCategories } from '@/components/dashboard/TopCategories';
 import { MonthlySummary } from '@/components/dashboard/MonthlySummary';
 import { SavingsOverview } from '@/components/target/SavingsOverview';
 import { FinancialTips } from '@/components/dashboard/FinancialTips';
+import { SpendingInsights } from '@/components/dashboard/SpendingInsights';
+import { CashFlowSummary } from '@/components/dashboard/CashFlowSummary';
 import { EnhancedEmptyState } from '@/components/shared/EnhancedEmptyState';
 
 // ── framer-motion helpers ────────────────────────────────────────
@@ -1651,7 +1653,7 @@ export function Dashboard() {
               </div>
               {mc && getTrendIcon(mc.incomeChange)}
             </div>
-            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
+            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.secondary }}>
               {formatAmount(mc?.currentMonthIncome ?? data.totalIncome)}
             </p>
             {mc && mc.incomeChange !== 0 && (
@@ -1680,7 +1682,7 @@ export function Dashboard() {
               </div>
               {mc && getTrendIcon(mc.expenseChange)}
             </div>
-            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.text }}>
+            <p className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ color: THEME.destructive }}>
               {formatAmount(mc?.currentMonthExpense ?? data.totalExpense)}
             </p>
             {mc && mc.expenseChange !== 0 && (
@@ -1717,6 +1719,16 @@ export function Dashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* ═══ Section 2.5: Cash Flow Summary ═══ */}
+      <CashFlowSummary
+        totalIncome={data.totalIncome}
+        totalExpense={data.totalExpense}
+        balance={data.balance}
+        savingsRate={data.savingsRate}
+        last7DaysGrowth={data.last7DaysGrowth}
+        momentumIndicator={data.momentumIndicator}
+      />
 
       {/* ═══ Section 3: Analytics Carousel ═══ */}
       <div className="h-px bg-white/[0.06]" />
@@ -1769,6 +1781,14 @@ export function Dashboard() {
           </ProFeatureWrapper>
         </>
       )}
+
+      {/* ═══ Section 3.6b: Spending Insights Widget ═══ */}
+      <>
+        <div className="h-px bg-white/[0.06]" />
+        <ProFeatureWrapper feature="tips">
+          <SpendingInsights />
+        </ProFeatureWrapper>
+      </>
 
       {/* ═══ Section 3.7: Financial Insights Widgets ═══ */}
       {(isSectionVisible('spendingTrend') || isSectionVisible('topCategories') || isSectionVisible('monthlySummary')) && (

@@ -250,17 +250,19 @@ export function TransactionList({ transactions, onEdit, onDelete, onAdd, type }:
                     key={transaction.id}
                     className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer"
                     style={{
-                      background: isZebra ? 'bg-white/[0.015]' : T.surface,
+                      background: isZebra ? 'rgba(255,255,255,0.015)' : T.surface,
                       border: `1px solid ${T.border}`,
                       borderLeft: accentBorder,
                     }}
                     whileHover={{ x: 2 }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(187,134,252,0.04)';
-                      e.currentTarget.style.borderColor = 'rgba(187,134,252,0.12)';
+                      const hoverColor = type === 'income' ? 'rgba(3,218,198,0.04)' : 'rgba(207,102,121,0.04)';
+                      const hoverBorder = type === 'income' ? 'rgba(3,218,198,0.12)' : 'rgba(207,102,121,0.12)';
+                      e.currentTarget.style.background = hoverColor;
+                      e.currentTarget.style.borderColor = hoverBorder;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = isZebra ? '#14141414' : T.surface;
+                      e.currentTarget.style.background = isZebra ? 'rgba(255,255,255,0.015)' : T.surface;
                       e.currentTarget.style.borderColor = T.border;
                     }}
                   >

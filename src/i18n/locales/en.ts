@@ -33,6 +33,10 @@ export const translations = {
     bisnis: 'Business',
     investasi: 'Investment',
   },
+  bills: {
+    deleteTitle: 'Delete bill?',
+    deleteDesc: 'This action cannot be undone. The bill will be permanently deleted.',
+  },
   auth: {
     login: 'Login',
     loginButton: 'Sign In',
@@ -318,6 +322,8 @@ export const translations = {
     allGoodDetail: 'Keep up the consistent saving habits',
     totalSavingsDesc: 'Your accumulated savings this period',
     cashFlow: 'Cash Flow',
+    netCashFlow: 'Net Cash Flow',
+    last7DaysGrowth: '7D Growth',
     topSpending: 'Top Spending',
     financialHealth: 'Financial Health',
     sixMonths: 'Last 6 Months',

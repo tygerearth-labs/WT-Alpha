@@ -40,7 +40,7 @@ export function EnhancedEmptyState({
 }: EnhancedEmptyStateProps) {
   return (
     <motion.div
-      className="rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden"
+      className="rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden glass-premium shadow-premium-sm premium-card premium-touch"
       style={{
         background: 'rgba(18, 18, 18, 0.6)',
         border: `1px solid rgba(255, 255, 255, 0.06)`,
@@ -49,23 +49,23 @@ export function EnhancedEmptyState({
       initial="hidden"
       animate="visible"
     >
-      {/* Decorative background glow */}
+      {/* Animated gradient glow behind icon */}
       <motion.div
         className="absolute pointer-events-none"
         style={{
-          width: 120,
-          height: 120,
+          width: 160,
+          height: 160,
           borderRadius: '50%',
-          background: accentColor,
-          filter: 'blur(50px)',
-          opacity: 0.08,
-          top: '20%',
+          background: `linear-gradient(135deg, ${accentColor}, #03DAC6)`,
+          filter: 'blur(60px)',
+          opacity: 0.1,
+          top: '15%',
           left: '50%',
           transform: 'translateX(-50%)',
         }}
         animate={{
-          opacity: [0.06, 0.12, 0.06],
-          scale: [1, 1.1, 1],
+          opacity: [0.06, 0.14, 0.06],
+          scale: [1, 1.15, 1],
         }}
         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
       />
@@ -79,32 +79,39 @@ export function EnhancedEmptyState({
       />
 
       {/* Icon with gradient background + animated pulse ring */}
-      <motion.div className="relative mb-3" custom={0} variants={childVariants} initial="hidden" animate="visible">
+      <motion.div className="relative mb-4" custom={0} variants={childVariants} initial="hidden" animate="visible">
         {/* Animated pulse ring border */}
         <motion.div
-          className="absolute -inset-1.5 rounded-2xl pointer-events-none"
+          className="absolute -inset-2 rounded-2xl pointer-events-none"
           style={{
-            border: `1.5px solid ${accentColor}20`,
+            border: `1.5px solid ${accentColor}30`,
           }}
           animate={{
-            opacity: [0.3, 0.7, 0.3],
-            scale: [1, 1.03, 1],
+            opacity: [0.3, 0.8, 0.3],
+            scale: [1, 1.06, 1],
           }}
           transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
         />
-        {/* Gradient icon background */}
-        <div
-          className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl grid place-items-center [&>*]:block leading-none relative"
-          style={{
-            background: `linear-gradient(135deg, ${accentColor}18, ${accentColor}08)`,
-            border: `1px solid ${accentColor}25`,
-          }}
+        {/* Subtle pulse on the icon container */}
+        <motion.div
+          animate={{ opacity: [0.85, 1, 0.85] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <Icon
-            className="h-6 w-6 sm:h-7 sm:w-7"
-            style={{ color: accentColor, opacity: 0.7 }}
-          />
-        </div>
+          {/* Gradient icon background */}
+          <div
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl grid place-items-center [&>*]:block leading-none relative"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}22, ${accentColor}0C)`,
+              border: `1px solid ${accentColor}30`,
+              boxShadow: `0 0 20px ${accentColor}15`,
+            }}
+          >
+            <Icon
+              className="h-6 w-6 sm:h-7 sm:w-7"
+              style={{ color: accentColor, opacity: 0.85 }}
+            />
+          </div>
+        </motion.div>
         {/* Floating dots */}
         <motion.div
           className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
@@ -122,8 +129,8 @@ export function EnhancedEmptyState({
 
       {/* Title */}
       <motion.p
-        className="relative text-sm font-medium mb-1"
-        style={{ color: '#B3B3B3' }}
+        className="relative text-[15px] sm:text-base font-semibold mb-1.5"
+        style={{ color: '#E6E1E5' }}
         custom={1}
         variants={childVariants}
         initial="hidden"
@@ -134,7 +141,7 @@ export function EnhancedEmptyState({
 
       {/* Description */}
       <motion.p
-        className="relative text-xs max-w-[220px]"
+        className="relative text-[13px] sm:text-sm max-w-[240px] leading-relaxed"
         style={{ color: '#9E9E9E' }}
         custom={2}
         variants={childVariants}
@@ -148,11 +155,11 @@ export function EnhancedEmptyState({
       {actionLabel && onAction && (
         <motion.button
           onClick={onAction}
-          className="relative mt-4 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
+          className="relative mt-5 flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all duration-200 shadow-premium-sm"
           style={{
-            background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
+            background: `linear-gradient(135deg, ${accentColor}25, ${accentColor}12)`,
             color: accentColor,
-            border: `1px solid ${accentColor}25`,
+            border: `1px solid ${accentColor}30`,
           }}
           custom={3}
           variants={childVariants}

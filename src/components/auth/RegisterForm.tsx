@@ -91,7 +91,8 @@ export function RegisterForm() {
     finally { setIsLoading(false); }
   };
 
-  const inputCls = "h-12 rounded-xl text-sm border-0 focus-visible:ring-1";
+  const inputCls = "h-11 rounded-xl text-sm border-0 focus-visible:ring-1 premium-input";
+  const inviteInputCls = "h-11 rounded-xl text-sm border-0 focus-visible:ring-1 premium-input";
 
   // Password strength calculation
   const passwordStrength = useMemo(() => {
@@ -121,189 +122,221 @@ export function RegisterForm() {
   // Show registration closed message
   if (configLoaded && !registrationOpen) {
     return (
-      <div className="w-full max-w-sm mx-auto space-y-6">
-        <div className="text-center space-y-1">
-          <p className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>{t('auth.createAccount')}</p>
-        </div>
+      <div className="relative w-full max-w-sm mx-auto animate-fade-in">
+        {/* Ambient glow blob */}
+        <div
+          className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full pointer-events-none animate-aurora-pulse"
+          style={{ background: 'radial-gradient(circle, rgba(207,102,121,0.06) 0%, transparent 70%)' }}
+        />
 
-        <div className="rounded-xl p-5 text-center" style={{ background: 'rgba(207,102,121,0.08)', border: '1px solid rgba(207,102,121,0.2)' }}>
-          <Lock className="h-8 w-8 mx-auto mb-3" style={{ color: '#CF6679' }} />
-          <p className="text-sm font-semibold mb-2" style={{ color: '#CF6679' }}>Registration Closed</p>
-          <p className="text-[12px] leading-relaxed" style={{ color: '#9E9E9E' }}>
-            {registrationMessage || 'Registration is currently closed. Please contact the administrator.'}
-          </p>
-          {whatsappNumber && (
-            <a
-              href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo, saya ingin mendaftar akun Wealth Tracker')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-4 px-4 py-2.5 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-              style={{ background: '#25D366', color: '#fff' }}
-            >
-              <MessageCircle className="h-4 w-4" />
-              Hubungi via WhatsApp
-            </a>
-          )}
+        {/* Premium glass container */}
+        <div
+          className="relative rounded-2xl p-6 shadow-premium-md"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <div className="text-center space-y-1">
+            <p className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>{t('auth.createAccount')}</p>
+          </div>
+
+          <div className="mt-5 rounded-xl p-5 text-center" style={{ background: 'rgba(207,102,121,0.08)', border: '1px solid rgba(207,102,121,0.2)' }}>
+            <Lock className="h-8 w-8 mx-auto mb-3" style={{ color: '#CF6679' }} />
+            <p className="text-sm font-semibold mb-2" style={{ color: '#CF6679' }}>Registration Closed</p>
+            <p className="text-[12px] leading-relaxed" style={{ color: '#9E9E9E' }}>
+              {registrationMessage || 'Registration is currently closed. Please contact the administrator.'}
+            </p>
+            {whatsappNumber && (
+              <a
+                href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo, saya ingin mendaftar akun Wealth Tracker')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-4 px-4 py-2.5 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95 premium-touch shadow-premium-sm"
+                style={{ background: '#25D366', color: '#fff' }}
+              >
+                <MessageCircle className="h-4 w-4" />
+                Hubungi via WhatsApp
+              </a>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-6">
-      <div className="text-center space-y-1">
-        <p className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>{t('auth.createAccount')}</p>
-        {trialBadge && (
-          <Badge className="mx-auto text-[10px] font-bold uppercase px-3 py-1 rounded-full bg-[#03DAC6]/10 border border-[#03DAC6]/20 text-[#03DAC6]">
-            {trialBadge.label}
-          </Badge>
-        )}
-      </div>
+    <div className="relative w-full max-w-sm mx-auto animate-fade-in">
+      {/* Ambient glow blob behind the form */}
+      <div
+        className="absolute -top-16 left-1/2 -translate-x-1/2 w-56 h-56 rounded-full pointer-events-none animate-aurora-pulse"
+        style={{ background: 'radial-gradient(circle, rgba(187,134,252,0.08) 0%, transparent 70%)' }}
+      />
 
-      {/* Invite Token Section */}
-      <div className="p-3.5 rounded-xl" style={{ background: 'rgba(187,134,252,0.06)', border: '1px solid rgba(187,134,252,0.12)' }}>
-        <div className="flex items-center gap-2 mb-2.5">
-          <Ticket className="h-3.5 w-3.5 text-[#BB86FC]" />
-          <Label className="text-[11px] font-medium text-[#BB86FC]/70">Invite Code (optional)</Label>
-        </div>
-        <Input
-          type="text" placeholder="Enter invite code..."
-          value={inviteToken} onChange={(e) => setInviteToken(e.target.value.toUpperCase())}
-          disabled={isLoading}
-          className={inputCls}
-          style={{ background: 'rgba(0,0,0,0.2)', color: T.text, border: '1px solid rgba(187,134,252,0.15)' }}
-        />
-        {inviteToken && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <Badge variant="outline" className="text-[9px] font-bold uppercase px-2 py-0.5 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]">
-              <Ticket className="h-2 w-2 mr-1 inline" />
-              Code applied
+      {/* Premium glass container */}
+      <div
+        className="relative rounded-2xl p-6 shadow-premium-md premium-scroll"
+        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+      >
+        <div className="text-center space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>{t('auth.createAccount')}</p>
+          {trialBadge && (
+            <Badge className="mx-auto text-[10px] font-bold uppercase px-3 py-1 rounded-full bg-[#03DAC6]/10 border border-[#03DAC6]/20 text-[#03DAC6]">
+              {trialBadge.label}
             </Badge>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.email')}</Label>
-          <Input
-            id="email" type="email" placeholder="email@example.com"
-            value={email} onChange={(e) => setEmail(e.target.value)}
-            required disabled={isLoading}
-            className={inputCls}
-            style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.username')}</Label>
-          <Input
-            id="username" type="text" placeholder="username"
-            value={username} onChange={(e) => setUsername(e.target.value)}
-            required disabled={isLoading}
-            className={inputCls}
-            style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.password')}</Label>
-          <div className="relative">
-            <Input
-              id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••"
-              value={password} onChange={(e) => setPassword(e.target.value)}
-              required disabled={isLoading}
-              className={cn(inputCls, 'pr-10')}
-              style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#E6E1E5] transition-colors"
-              tabIndex={-1}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+        {/* Invite Token Section */}
+        <div className="mt-5 p-3.5 rounded-xl" style={{ background: 'rgba(187,134,252,0.06)', border: '1px solid rgba(187,134,252,0.12)' }}>
+          <div className="flex items-center gap-2 mb-2.5">
+            <Ticket className="h-3.5 w-3.5 text-[#BB86FC]" />
+            <Label className="text-[11px] font-medium text-[#BB86FC]/70">Invite Code (optional)</Label>
           </div>
-          {/* Password strength indicator */}
-          {password && (
-            <div className="space-y-1.5 pt-1">
-              <div className="flex gap-1.5">
-                {[1, 2, 3].map((seg) => (
-                  <div
-                    key={seg}
-                    className="h-1 flex-1 rounded-full transition-all duration-300"
-                    style={{
-                      background: seg <= passwordStrength.level
-                        ? passwordStrength.color
-                        : 'rgba(255,255,255,0.06)',
-                    }}
-                  />
-                ))}
-              </div>
-              <p className="text-[10px] font-medium" style={{ color: passwordStrength.color }}>
-                {passwordStrength.label}
-              </p>
+          <Input
+            type="text" placeholder="Enter invite code..."
+            value={inviteToken} onChange={(e) => setInviteToken(e.target.value.toUpperCase())}
+            disabled={isLoading}
+            className={inviteInputCls}
+            style={{ background: 'rgba(0,0,0,0.2)', color: T.text, border: '1px solid rgba(187,134,252,0.15)' }}
+          />
+          {inviteToken && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Badge variant="outline" className="text-[9px] font-bold uppercase px-2 py-0.5 bg-[#BB86FC]/5 border-[#BB86FC]/15 text-[#BB86FC]">
+                <Ticket className="h-2 w-2 mr-1 inline" />
+                Code applied
+              </Badge>
             </div>
           )}
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.confirmPassword')}</Label>
-          <div className="relative">
+
+        <form onSubmit={handleSubmit} className="space-y-3.5 mt-5">
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.email')}</Label>
             <Input
-              id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••"
-              value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+              id="email" type="email" placeholder="email@example.com"
+              value={email} onChange={(e) => setEmail(e.target.value)}
               required disabled={isLoading}
-              className={cn(inputCls, 'pr-10')}
+              className={inputCls}
               style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
             />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#E6E1E5] transition-colors"
-              tabIndex={-1}
-              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-            >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
           </div>
-        </div>
-        {/* Register Button with smooth loading animation */}
-        <div className="relative overflow-hidden rounded-xl">
-          {isLoading && (
-            <div
-              className="absolute inset-0 animate-shimmer pointer-events-none z-10"
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
-                backgroundSize: '200% 100%',
-              }}
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.username')}</Label>
+            <Input
+              id="username" type="text" placeholder="username"
+              value={username} onChange={(e) => setUsername(e.target.value)}
+              required disabled={isLoading}
+              className={inputCls}
+              style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
             />
-          )}
-          <Button
-            type="submit"
-            className={cn(
-              'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 relative z-20',
-              isLoading
-                ? 'opacity-90'
-                : 'hover:scale-[1.01] active:scale-[0.99]'
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.password')}</Label>
+            <div className="relative">
+              <Input
+                id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••"
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                required disabled={isLoading}
+                className={cn(inputCls, 'pr-10')}
+                style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#E6E1E5] transition-colors premium-touch"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {/* Password strength indicator */}
+            {password && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex gap-1.5">
+                  {[1, 2, 3].map((seg) => (
+                    <div
+                      key={seg}
+                      className="h-1 flex-1 rounded-full transition-all duration-300"
+                      style={{
+                        background: seg <= passwordStrength.level
+                          ? passwordStrength.color
+                          : 'rgba(255,255,255,0.06)',
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] font-medium" style={{ color: passwordStrength.color }}>
+                  {passwordStrength.label}
+                </p>
+              </div>
             )}
-            disabled={isLoading}
-            style={{ background: T.primary, color: '#000' }}
-          >
-            <span className={cn(
-              'transition-all duration-300',
-              isLoading ? 'opacity-0' : 'opacity-100'
-            )}>
-              {t('auth.register')}
-            </span>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-medium" style={{ color: T.textSub }}>{t('auth.confirmPassword')}</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••"
+                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                required disabled={isLoading}
+                className={cn(inputCls, 'pr-10')}
+                style={{ background: T.input, color: T.text, border: `1px solid ${T.border}` }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#E6E1E5] transition-colors premium-touch"
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          {/* Register Button with smooth loading animation */}
+          <div className="relative overflow-hidden rounded-xl">
             {isLoading && (
-              <span className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="ml-2 text-[12px]">Creating account...</span>
-              </span>
+              <div
+                className="absolute inset-0 animate-shimmer pointer-events-none z-10"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                }}
+              />
             )}
-          </Button>
+            <Button
+              type="submit"
+              className={cn(
+                'w-full h-12 rounded-xl font-semibold text-sm transition-all duration-300 relative z-20 shadow-premium-sm',
+                isLoading
+                  ? 'opacity-90'
+                  : 'hover:scale-[1.01] active:scale-[0.99] hover:shadow-premium-md'
+              )}
+              disabled={isLoading}
+              style={{ background: 'linear-gradient(135deg, #BB86FC, #9C5CFC)', color: '#000' }}
+            >
+              <span className={cn(
+                'transition-all duration-300',
+                isLoading ? 'opacity-0' : 'opacity-100'
+              )}>
+                {t('auth.register')}
+              </span>
+              {isLoading && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="ml-2 text-[12px]">Creating account...</span>
+                </span>
+              )}
+            </Button>
+          </div>
+        </form>
+
+        {/* Powered by branding */}
+        <div className="mt-6 pt-4 text-center">
+          <div className="premium-divider mb-3" />
+          <p className="text-[10px] tracking-wider uppercase font-medium" style={{ color: 'rgba(158,158,158,0.35)' }}>
+            ✦ Secured by Wealth Tracker
+          </p>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

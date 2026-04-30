@@ -150,7 +150,7 @@ function FilterTabs({
           key={f.key}
           onClick={() => onChange(f.key)}
           className={cn(
-            'flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold transition-all duration-200 min-h-[36px] sm:min-h-0',
+            'biz-filter-chip', active === f.key && 'biz-filter-chip-active', 'premium-touch', 'premium-smooth', 'flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold transition-all duration-200 min-h-[36px] sm:min-h-0',
           )}
           style={
             active === f.key
@@ -207,7 +207,7 @@ function StatCard({
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      className="bg-white/[0.03] border-white/[0.06] rounded-2xl md:rounded-xl overflow-hidden cursor-pointer"
+      className={cn('biz-stat-card', 'premium-touch', 'premium-spring', 'bg-white/[0.03] border-white/[0.06] rounded-2xl md:rounded-xl overflow-hidden cursor-pointer')}
       style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}
     >
       <div className="h-px bg-white/[0.06]" />
@@ -258,7 +258,7 @@ function BillCard({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
       whileHover={{ x: 2 }}
-      className="rounded-2xl overflow-hidden transition-all duration-200"
+      className={cn('biz-list-item', 'premium-touch', 'premium-smooth', 'rounded-2xl overflow-hidden transition-all duration-200')}
       style={{
         background: T.bg,
         border: `1px solid ${T.border}`,
@@ -348,7 +348,7 @@ function BillCard({
           {!bill.isPaid && (
             <button
               onClick={() => onPay(bill)}
-              className="flex-1 text-[11px] sm:text-[12px] font-semibold h-11 sm:h-auto sm:py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95"
+              className={cn('premium-touch', 'flex-1 text-[11px] sm:text-[12px] font-semibold h-11 sm:h-auto sm:py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95')}
               style={{ background: `linear-gradient(135deg, ${T.secondary}, ${T.primary})`, color: '#fff' }}
             >
               <CheckCircle2 className="h-3 w-3" /> Bayar
@@ -356,14 +356,14 @@ function BillCard({
           )}
           <button
             onClick={() => onEdit(bill)}
-            className="flex-1 text-[11px] sm:text-[12px] font-medium h-11 sm:h-auto sm:py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95"
+            className={cn('premium-touch', 'flex-1 text-[11px] sm:text-[12px] font-medium h-11 sm:h-auto sm:py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95')}
             style={{ background: `${T.primary}10`, color: T.primary }}
           >
             <Edit className="h-3 w-3" /> {t('common.edit')}
           </button>
           <button
             onClick={() => onDelete(bill.id)}
-            className="text-[11px] sm:text-[12px] font-medium h-11 w-11 min-w-[44px] sm:h-auto sm:w-auto sm:min-w-0 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95"
+            className={cn('premium-touch', 'text-[11px] sm:text-[12px] font-medium h-11 w-11 min-w-[44px] sm:h-auto sm:w-auto sm:min-w-0 sm:px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95')}
             style={{ background: `${T.destructive}10`, color: T.destructive }}
           >
             <Trash2 className="h-3 w-3" />
@@ -420,7 +420,7 @@ function BillFormDialog({
   };
 
   const inputCls =
-    'h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/30 focus:ring-0';
+    cn('premium-input', 'h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white placeholder:text-[#9E9E9E] focus:border-[#BB86FC]/30 focus:ring-0');
 
   const categories = [
     'Lainnya',
@@ -442,7 +442,7 @@ function BillFormDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         key={key}
-        className="sm:max-w-[440px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden"
+        className={cn('biz-dialog-content', 'sm:max-w-[440px] bg-[#141414] border-white/[0.08] rounded-2xl p-0 overflow-hidden')}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 sm:p-6">
@@ -469,7 +469,7 @@ function BillFormDialog({
                 />
               </div>
 
-              <div className="h-px bg-white/[0.06] my-1" />
+              <div className={cn('premium-divider', 'h-px bg-white/[0.06] my-1')} />
 
               {/* Amount & Due Date */}
               <div className="grid grid-cols-2 gap-3">
@@ -497,7 +497,7 @@ function BillFormDialog({
                 </div>
               </div>
 
-              <div className="h-px bg-white/[0.06] my-1" />
+              <div className={cn('premium-divider', 'h-px bg-white/[0.06] my-1')} />
 
               {/* Category & Recurrence */}
               <div className="grid grid-cols-2 gap-3">
@@ -507,7 +507,7 @@ function BillFormDialog({
                     value={form.category}
                     onValueChange={(v) => setForm({ ...form, category: v })}
                   >
-                    <SelectTrigger className="h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0">
+                    <SelectTrigger className={cn('premium-input', 'h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0')}>
                       <SelectValue placeholder="Pilih" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1a1a1a] border-white/[0.08] rounded-xl">
@@ -525,7 +525,7 @@ function BillFormDialog({
                     value={form.recurrence}
                     onValueChange={(v) => setForm({ ...form, recurrence: v })}
                   >
-                    <SelectTrigger className="h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0">
+                    <SelectTrigger className={cn('premium-input', 'h-11 sm:h-9 text-sm bg-white/[0.04] border-white/[0.08] rounded-xl text-white focus:border-[#BB86FC]/30 focus:ring-0')}>
                       <SelectValue placeholder="Pilih" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1a1a1a] border-white/[0.08] rounded-xl">
@@ -537,7 +537,7 @@ function BillFormDialog({
                 </div>
               </div>
 
-              <div className="h-px bg-white/[0.06] my-1" />
+              <div className={cn('premium-divider', 'h-px bg-white/[0.06] my-1')} />
 
               {/* Notes */}
               <div className="space-y-1.5">
@@ -715,19 +715,25 @@ export function BillReminders() {
   return (
     <div className="px-4 sm:px-6 space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: T.text }}>
-            {t('nav.billReminders') || 'Pengingat Tagihan'}
-          </p>
-          <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>
-            Kelola dan pantau tagihan rutin Anda
-          </p>
+      <div className={cn('biz-section-header', 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between')}>
+        <div className="flex items-center gap-2">
+          <div className={cn('biz-section-header-icon', 'w-8 h-8 rounded-lg grid place-items-center shrink-0')}
+            style={{ background: `${T.primary}12` }}>
+            <Bell className="h-4 w-4" style={{ color: T.primary }} />
+          </div>
+          <div>
+            <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: T.text }}>
+              {t('nav.billReminders') || 'Pengingat Tagihan'}
+            </p>
+            <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>
+              Kelola dan pantau tagihan rutin Anda
+            </p>
+          </div>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <Button
             size="sm"
-            className="w-full sm:w-auto h-12 sm:h-8 px-4 sm:px-3 text-xs sm:text-[13px] font-semibold gap-1.5 rounded-xl"
+            className={cn('biz-quick-action', 'w-full sm:w-auto h-12 sm:h-8 px-4 sm:px-3 text-xs sm:text-[13px] font-semibold gap-1.5 rounded-xl')}
             style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.secondary})`, color: '#000', boxShadow: `0 4px 20px ${T.primary}30` }}
           >
             <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> Tambah Tagihan
@@ -774,7 +780,7 @@ export function BillReminders() {
       <FilterTabs active={activeFilter} onChange={setActiveFilter} stats={stats} />
 
       {/* Section divider */}
-      <div className="h-px bg-white/[0.06]" />
+      <div className={cn('premium-divider', 'h-px bg-white/[0.06]')} />
 
       {/* Loading */}
       {isLoading && (
@@ -789,13 +795,13 @@ export function BillReminders() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-col items-center justify-center py-16 sm:py-20 text-center relative"
+          className={cn('biz-empty-state', 'flex flex-col items-center justify-center py-16 sm:py-20 text-center relative')}
         >
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-32 h-32 rounded-full blur-3xl opacity-20" style={{ background: T.primary }} />
           </div>
           <div
-            className="w-20 h-20 sm:w-16 sm:h-16 rounded-2xl grid place-items-center mb-4 relative border"
+            className={cn('biz-empty-state-icon', 'w-20 h-20 sm:w-16 sm:h-16 rounded-2xl grid place-items-center mb-4 relative border')}
             style={{ background: `${T.primary}10`, borderColor: `${T.primary}20` }}
           >
             <Bell className="h-10 w-10 sm:h-8 sm:w-8 relative" style={{ color: T.primary, opacity: 0.7 }} />
@@ -823,7 +829,7 @@ export function BillReminders() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
             onClick={() => setIsAddOpen(true)}
-            className="mt-4 text-[12px] sm:text-[11px] font-semibold px-6 sm:px-4 py-3 sm:py-2 rounded-full relative min-h-[44px] sm:min-h-0 flex items-center justify-center"
+            className={cn('premium-touch', 'mt-4 text-[12px] sm:text-[11px] font-semibold px-6 sm:px-4 py-3 sm:py-2 rounded-full relative min-h-[44px] sm:min-h-0 flex items-center justify-center')}
             style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.secondary})`, color: '#fff', boxShadow: `0 4px 20px ${T.primary}25` }}
           >
             <span className="flex items-center gap-1.5">
@@ -835,7 +841,7 @@ export function BillReminders() {
 
       {/* Bill List */}
       {!isLoading && filteredBills.length > 0 && (
-        <div className="space-y-3 sm:space-y-4">
+        <div className={cn('premium-scroll', 'space-y-3 sm:space-y-4')}>
           {filteredBills.map((bill, idx) => (
             <BillCard
               key={bill.id}
@@ -869,11 +875,11 @@ export function BillReminders() {
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
       >
-        <AlertDialogContent className="bg-[#141414] border-white/[0.08] rounded-2xl p-4 sm:p-6">
+        <AlertDialogContent className={cn('biz-dialog-content', 'bg-[#141414] border-white/[0.08] rounded-2xl p-4 sm:p-6')}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Hapus tagihan?</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">{t('bills.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription className="text-[#9E9E9E]">
-              Tindakan ini tidak dapat dibatalkan. Tagihan akan dihapus secara permanen.
+              {t('bills.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

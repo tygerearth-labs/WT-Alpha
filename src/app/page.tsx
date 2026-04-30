@@ -8,6 +8,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { LandingPage } from '@/components/landing/LandingPage';
 import { PWAInstallPrompt } from '@/components/pwa/PWAInstallPrompt';
 import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 function useIsAuthenticated() {
   return useSyncExternalStore(
@@ -89,10 +90,10 @@ export default function Home() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <AnnouncementBanner />
       <MainLayout />
       <PWAInstallPrompt />
-    </>
+    </ErrorBoundary>
   );
 }
