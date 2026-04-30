@@ -31,6 +31,7 @@ import {
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface UserRecord {
   id: string; email: string; username: string; image?: string | null;
@@ -64,6 +65,7 @@ function getAvatarColor(id: string) {
 }
 
 export function AdminUsers({ showAccessControl }: AdminUsersProps) {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [search, setSearch] = useState('');
@@ -264,7 +266,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
 
   const handleResetPassword = async () => {
     if (!resetPwUser || !newPassword) return;
-    if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (newPassword.length < 8) { toast.error('Password must be at least 8 characters'); return; }
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -564,7 +566,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
           <div className="space-y-3">
             <div className="space-y-2">
               <Label className="text-[11px] text-white/50">New Password</Label>
-              <Input type="password" placeholder="Enter new password (min 6 chars)"
+              <Input type="password" placeholder="Enter new password (min 8 chars)"
                 value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
                 className="bg-white/[0.03] border-white/[0.06] text-white/70" />
             </div>
@@ -1127,7 +1129,7 @@ export function AdminUsers({ showAccessControl }: AdminUsersProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white/90">User Management</h2>
+          <h2 className="text-xl font-bold text-white/90">{t('admin.users.title')}</h2>
           <p className="text-sm text-white/40 mt-1">{pagination.total} total users</p>
         </div>
         <div className="flex items-center gap-2">

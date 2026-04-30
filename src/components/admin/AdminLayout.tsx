@@ -68,7 +68,13 @@ interface Notification {
 export function AdminLayout() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  const [currentPage, setCurrentPage] = useState<AdminPage>('dashboard');
+  const [currentPage, setCurrentPage] = useState<AdminPage>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    const hash = window.location.hash.replace('#', '');
+    const validPages: AdminPage[] = ['dashboard', 'users', 'subscriptions', 'analytics', 'settings', 'activity-log', 'announcements', 'invites', 'access-control'];
+    if (validPages.includes(hash as AdminPage)) return hash as AdminPage;
+    return 'dashboard';
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -79,8 +85,29 @@ export function AdminLayout() {
 
   const navigateTo = useCallback((page: AdminPage) => {
     setCurrentPage(page);
+    window.location.hash = page;
     setMobileMenuOpen(false);
     setTourActive(false);
+  }, []);
+
+  // Sync hash changes (browser back/forward, direct URL)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const validPages: AdminPage[] = ['dashboard', 'users', 'subscriptions', 'analytics', 'settings', 'activity-log', 'announcements', 'invites', 'access-control'];
+      if (validPages.includes(hash as AdminPage)) {
+        setCurrentPage(hash as AdminPage);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Set initial hash on mount if none exists
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.location.hash) {
+      window.location.hash = 'dashboard';
+    }
   }, []);
 
   const handleStartTour = useCallback(() => {

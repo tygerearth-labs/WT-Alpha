@@ -146,12 +146,6 @@ export function NotificationBell() {
     if (newOpen) {
       // Immediately clear badge count locally
       handleMarkAllAsRead();
-      // Also mark all as read via API
-      try {
-        await fetch('/api/notifications/mark-all-read', { method: 'POST' });
-      } catch {
-        // silent fail
-      }
     }
   }, [isOpen, announcements]);
 

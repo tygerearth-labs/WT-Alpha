@@ -42,17 +42,17 @@ export async function POST(request: NextRequest) {
       registrationAttempts.set(clientIp, { count: 1, firstAttempt: now });
     }
 
-    // Check if registration is open
+    const body = await request.json();
+    const { email, username, password, inviteToken } = body;
+
+    // Check if registration is open (but allow invite tokens to bypass)
     let config = await db.platformConfig.findUnique({ where: { id: 'platform' } });
-    if (config && !config.registrationOpen) {
+    if (config && !config.registrationOpen && !inviteToken) {
       return NextResponse.json(
         { error: config.registrationMessage || 'Registration is currently closed. Please contact the administrator.', registrationClosed: true },
         { status: 403 }
       );
     }
-
-    const body = await request.json();
-    const { email, username, password, inviteToken } = body;
 
     if (!email || !username || !password) {
       return NextResponse.json(

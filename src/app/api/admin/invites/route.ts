@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate plan is 'basic' or 'pro'
+    // Validate plan is 'basic', 'pro', or 'ultimate'
     const invitePlan = plan || 'basic';
-    if (!['basic', 'pro'].includes(invitePlan)) {
-      return NextResponse.json({ error: 'Plan must be "basic" or "pro"' }, { status: 400 });
+    if (!['basic', 'pro', 'ultimate'].includes(invitePlan)) {
+      return NextResponse.json({ error: 'Plan must be "basic", "pro", or "ultimate"' }, { status: 400 });
     }
 
     // Validate maxUses is positive integer

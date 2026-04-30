@@ -24,6 +24,7 @@ export async function GET() {
         ultimatePurchaseUrl: null,
         trialEnabled: true,
         trialDurationDays: 30,
+        trialPlan: 'basic',
         whatsappNumber: null,
         registrationOpen: true,
         registrationMessage: null,
@@ -40,6 +41,7 @@ export async function GET() {
           heroSubtitle: '',
           customFooterText: '',
         },
+        landingPageStats: null,
       });
     }
 
@@ -65,6 +67,8 @@ export async function GET() {
         parsedLandingPageConfig = { ...parsedLandingPageConfig, ...JSON.parse(config.landingPageConfig) };
       }
     } catch {}
+    let parsedLandingStats = null;
+    try { parsedLandingStats = config.landingPageStats ? JSON.parse(config.landingPageStats) : null; } catch {}
 
     return NextResponse.json({
       basicPlanPrice: config.basicPlanPrice || 'Gratis',
@@ -84,6 +88,7 @@ export async function GET() {
       ultimatePurchaseUrl: config.ultimatePurchaseUrl || null,
       trialEnabled: config.trialEnabled ?? true,
       trialDurationDays: config.trialDurationDays || 30,
+      trialPlan: config.trialPlan || 'basic',
       whatsappNumber: config.whatsappNumber || null,
       registrationOpen: config.registrationOpen ?? true,
       registrationMessage: config.registrationMessage || null,
@@ -91,6 +96,7 @@ export async function GET() {
       sectionVisibility: parsedSectionVisibility,
       exportEnabled: parsedExportEnabled,
       landingPageConfig: parsedLandingPageConfig,
+      landingPageStats: parsedLandingStats,
     });
   } catch (error) {
     console.error('Public platform config error:', error);
@@ -112,6 +118,7 @@ export async function GET() {
       ultimatePurchaseUrl: null,
       trialEnabled: true,
       trialDurationDays: 30,
+      trialPlan: 'basic',
       whatsappNumber: null,
       registrationOpen: true,
       registrationMessage: null,
@@ -128,6 +135,7 @@ export async function GET() {
         heroSubtitle: '',
         customFooterText: '',
       },
+      landingPageStats: null,
     }, { status: 500 });
   }
 }

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    const where: Record<string, unknown> = { role: 'user' };
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -197,6 +197,36 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Admin delete user error:', error);
     return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+  }
+}
+
+// PATCH /api/admin/users — Bulk suspend free trials
+export async function PATCH(request: NextRequest) {
+  const adminId = await requireAdmin();
+  if (adminId instanceof NextResponse) return adminId;
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('subscription');
+
+    if (action === 'free_trial') {
+      const result = await db.user.updateMany({
+        where: {
+          plan: 'free_trial',
+          role: 'user',
+          status: 'active',
+        },
+        data: { status: 'suspended' },
+      });
+
+      await logAdminActivity(adminId as string, 'bulk_suspend_free_trials', `Suspended ${result.count} free trial users`);
+      return NextResponse.json({ count: result.count, message: `${result.count} free trial users suspended` });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error) {
+    console.error('Admin bulk action error:', error);
+    return NextResponse.json({ error: 'Failed to perform bulk action' }, { status: 500 });
   }
 }
 

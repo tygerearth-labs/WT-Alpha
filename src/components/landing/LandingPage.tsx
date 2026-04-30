@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { useTranslation } from '@/hooks/useTranslation';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -125,9 +126,14 @@ function AnimatedCounter({ target, suffix = '', startOnMount = false }: { target
 }
 
 /* ------------------------------------------------------------------ */
+/*  Stat colors palette (shared across components)                       */
+/* ------------------------------------------------------------------ */
+const STAT_COLORS = ['#CF6679', '#03DAC6', '#BB86FC', '#F9A825', '#FFD700', '#25D366'];
+
+/* ------------------------------------------------------------------ */
 /*  Stats section with animated counters                               */
 /* ------------------------------------------------------------------ */
-function StatsSection({ noTrack, statMoreSavings, statAvgSaving }: { noTrack: string; statMoreSavings: string; statAvgSaving: string }) {
+function StatsSection({ statsItems }: { statsItems: { value: string; label: string; color: string }[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [started, setStarted] = useState(false);
 
@@ -168,20 +174,33 @@ function StatsSection({ noTrack, statMoreSavings, statAvgSaving }: { noTrack: st
     };
   }, []);
 
+  const renderStatValue = (rawValue: string, isStarted: boolean) => {
+    // Try to parse numeric value for animated counter (e.g. "73%", "2x", "30%")
+    const numericMatch = rawValue.match(/^(\d+(?:\.\d+)?)(%|x)?$/i);
+    if (numericMatch) {
+      const num = parseFloat(numericMatch[1]);
+      const suffix = numericMatch[2] || '';
+      return <AnimatedCounter target={num} suffix={suffix} startOnMount={isStarted} />;
+    }
+    return rawValue;
+  };
+
   return (
     <div ref={containerRef} className="mt-10 sm:mt-16">
-      <div className="flex gap-3.5 overflow-x-auto pb-3 sm:pb-0 sm:grid sm:grid-cols-3 sm:gap-6 scroll-smooth snap-x snap-mandatory scrollbar-hide">
-        {[
-          { value: <AnimatedCounter target={73} suffix="%" startOnMount={started} />, label: noTrack, color: '#CF6679' },
-          { value: <><AnimatedCounter target={2} startOnMount={started} />x</>, label: statMoreSavings, color: '#03DAC6' },
-          { value: <AnimatedCounter target={30} suffix="%" startOnMount={started} />, label: statAvgSaving, color: '#BB86FC' },
-        ].map((stat) => (
+      <div className={cn(
+        "flex gap-3.5 overflow-x-auto pb-3 sm:pb-0 sm:grid sm:gap-6 scroll-smooth snap-x snap-mandatory scrollbar-hide",
+        statsItems.length === 1 && 'sm:grid-cols-1',
+        statsItems.length === 2 && 'sm:grid-cols-2',
+        statsItems.length === 3 && 'sm:grid-cols-3',
+        statsItems.length >= 4 && 'sm:grid-cols-4',
+      )}>
+        {statsItems.map((stat, idx) => (
           <div
-            key={stat.label}
+            key={idx}
             className="min-w-[160px] sm:min-w-0 rounded-2xl p-5 sm:p-6 text-center border shrink-0 sm:shrink transition-all duration-300 sm:hover:scale-[1.02] snap-center sm:snap-none stats-pattern bg-[rgba(18,18,18,0.6)] border-[rgba(255,255,255,0.06)] backdrop-blur-xl"
           >
-            <div className="text-3xl sm:text-4xl font-extrabold mb-1.5 tracking-tight" style={{ color: stat.color }}>
-              {stat.value}
+            <div className="text-3xl sm:text-4xl font-extrabold mb-1.5 tracking-tight" style={{ color: stat.color || STAT_COLORS[idx % STAT_COLORS.length] }}>
+              {renderStatValue(stat.value, started)}
             </div>
             <p className="text-[11px] sm:text-sm text-muted-foreground leading-snug">
               {stat.label}
@@ -333,6 +352,7 @@ export function LandingPage() {
       heroSubtitle: string;
       customFooterText: string;
     } | null;
+    landingPageStats: { value: string; label: string }[] | null;
   } | null>(null);
 
   // Glassmorphism scroll effect
@@ -826,9 +846,15 @@ export function LandingPage() {
 
           {/* Statistics */}
           {visibleSections.stats && <StatsSection
-            noTrack={t('landing.noTrack') + ' ' + t('landing.statNoTrack')}
-            statMoreSavings={t('landing.statMoreSavings')}
-            statAvgSaving={t('landing.statAvgSaving')}
+            statsItems={
+              platformConfig?.landingPageStats?.length
+                ? platformConfig.landingPageStats.map((s, i) => ({ value: s.value, label: s.label, color: STAT_COLORS[i % STAT_COLORS.length] }))
+                : [
+                    { value: '73%', label: t('landing.noTrack') + ' ' + t('landing.statNoTrack'), color: '#CF6679' },
+                    { value: '2x', label: t('landing.statMoreSavings'), color: '#03DAC6' },
+                    { value: '30%', label: t('landing.statAvgSaving'), color: '#BB86FC' },
+                  ]
+            }
           />}
         </div>
       </section>}

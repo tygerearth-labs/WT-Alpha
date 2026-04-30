@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SystemHealth {
   status: string;
@@ -135,11 +136,11 @@ const contentVariants = {
 };
 
 export function AdminSettings() {
+  const { t } = useTranslation();
   /* ── All state variables (unchanged) ── */
   const [profileName, setProfileName] = useState('Admin');
   const [profileEmail, setProfileEmail] = useState('admin@wealthtracker.com');
-  const [themeVariant, setThemeVariant] = useState<'midnight' | 'charcoal' | 'deep-space'>('midnight');
-  const [compactMode, setCompactMode] = useState(false);
+
   const [defaultPlan, setDefaultPlan] = useState('basic');
   const [defaultCategoryLimit, setDefaultCategoryLimit] = useState('10');
   const [defaultSavingsLimit, setDefaultSavingsLimit] = useState('3');
@@ -185,6 +186,11 @@ export function AdminSettings() {
     heroSubtitle: '',
     customFooterText: '',
   });
+  const [landingStats, setLandingStats] = useState([
+    { value: '73%', label: 'Accuracy Rate' },
+    { value: '2x', label: 'Faster Tracking' },
+    { value: '30%', label: 'Time Saved' },
+  ]);
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
   const [exportEnabled, setExportEnabled] = useState<Record<string, Record<string, boolean>>>({ basic: {}, pro: {}, ultimate: {} });
 
@@ -227,12 +233,18 @@ export function AdminSettings() {
       basicPurchaseUrl,
       proPurchaseUrl,
       ultimatePurchaseUrl,
+      emailNotifNewUser,
+      emailNotifExpiry,
+      emailNotifInviteUsage,
+      emailNotifDailySummary,
       landingPageConfig,
+      landingStats,
       sectionVisibility,
       exportEnabled,
     });
   }, [
     defaultPlan, defaultCategoryLimit, defaultSavingsLimit, autoSuspend,
+    emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
     basicPlanPrice, proPlanPrice, ultimatePlanPrice,
     basicPlanFeatures, proPlanFeatures, ultimatePlanFeatures,
     trialEnabled, trialDurationDays, trialPlan,
@@ -241,7 +253,8 @@ export function AdminSettings() {
     basicPlanDiscountLabel, proPlanDiscountLabel,
     ultimatePlanDiscount, ultimatePlanDiscountLabel,
     basicPurchaseUrl, proPurchaseUrl, ultimatePurchaseUrl,
-    landingPageConfig, sectionVisibility, exportEnabled,
+    emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
+    landingPageConfig, landingStats, sectionVisibility, exportEnabled,
   ]);
 
   /* ── Track dirty state via effect (ref access is safe in effects) ── */
@@ -340,6 +353,18 @@ export function AdminSettings() {
             } catch {
               setExportEnabled(defaultExportEnabled);
             }
+            // Parse landingPageStats
+            let parsedLandingStats = [
+              { value: '73%', label: 'Accuracy Rate' },
+              { value: '2x', label: 'Faster Tracking' },
+              { value: '30%', label: 'Time Saved' },
+            ];
+            try {
+              if (data.config.landingPageStats) {
+                parsedLandingStats = JSON.parse(data.config.landingPageStats);
+              }
+            } catch {}
+            setLandingStats(parsedLandingStats);
             // Parse landingPageConfig
             const defaultLandingPageConfig = {
               showStory: true,
@@ -355,6 +380,18 @@ export function AdminSettings() {
               const lpc = data.config.landingPageConfig ? JSON.parse(data.config.landingPageConfig) : null;
               if (lpc && typeof lpc === 'object') {
                 setLandingPageConfig({ ...defaultLandingPageConfig, ...lpc });
+              }
+            } catch {
+              // keep defaults
+            }
+            // Parse email notifications
+            try {
+              const en = data.config.emailNotifications ? JSON.parse(data.config.emailNotifications) : null;
+              if (en && typeof en === 'object') {
+                setEmailNotifNewUser(en.newUser ?? true);
+                setEmailNotifExpiry(en.expiry ?? true);
+                setEmailNotifInviteUsage(en.inviteUsage ?? false);
+                setEmailNotifDailySummary(en.dailySummary ?? false);
               }
             } catch {
               // keep defaults
@@ -409,6 +446,8 @@ export function AdminSettings() {
           sectionVisibility: JSON.stringify(sectionVisibility),
           exportEnabled: JSON.stringify(exportEnabled),
           landingPageConfig: JSON.stringify(landingPageConfig),
+          landingPageStats: JSON.stringify(landingStats),
+          emailNotifications: JSON.stringify({ newUser: emailNotifNewUser, expiry: emailNotifExpiry, inviteUsage: emailNotifInviteUsage, dailySummary: emailNotifDailySummary }),
         }),
       });
       if (res.ok) {
@@ -434,13 +473,26 @@ export function AdminSettings() {
     availablePlans, basicPlanDiscount, proPlanDiscount, basicPlanDiscountLabel, proPlanDiscountLabel,
     basicPurchaseUrl, proPurchaseUrl, ultimatePlanPrice, ultimatePlanFeatures,
     ultimatePlanDiscount, ultimatePlanDiscountLabel, ultimatePurchaseUrl,
-    sectionVisibility, exportEnabled, landingPageConfig,
+    sectionVisibility, exportEnabled, landingPageConfig, landingStats,
+    emailNotifNewUser, emailNotifExpiry, emailNotifInviteUsage, emailNotifDailySummary,
   ]);
 
-  const handleSaveProfile = () => {
-    toast.success('Profile updated (UI only)', {
-      description: 'Name and email would be saved to the server.',
-    });
+  const handleSaveProfile = async () => {
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: profileName, email: profileEmail }),
+      });
+      if (res.ok) {
+        toast.success('Profile updated', { description: 'Name and email saved successfully.' });
+      } else {
+        const data = await res.json();
+        toast.error('Failed to update profile', { description: data.error || 'Server error.' });
+      }
+    } catch {
+      toast.error('Failed to update profile', { description: 'Network error.' });
+    }
   };
 
   const handleClearLogs = async () => {
@@ -472,11 +524,7 @@ export function AdminSettings() {
     }
   };
 
-  const themeOptions = [
-    { id: 'midnight' as const, label: 'Midnight', icon: Moon, desc: 'Pure dark (#0A0A0A)', color: '#0A0A0A' },
-    { id: 'charcoal' as const, label: 'Charcoal', icon: Monitor, desc: 'Dark gray (#1A1A1A)', color: '#1A1A1A' },
-    { id: 'deep-space' as const, label: 'Deep Space', icon: Sparkles, desc: 'Deep navy (#0A0D1A)', color: '#0A0D1A' },
-  ];
+
 
   const formatUptime = (seconds: number) => {
     const d = Math.floor(seconds / 86400);
@@ -566,65 +614,21 @@ export function AdminSettings() {
       </Card>
 
       {/* Appearance Section */}
-      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06]">
         <CardHeader className="pb-4">
           <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
             <Palette className="adm-section-header-icon h-4 w-4 text-[#BB86FC]" />
-            Appearance
+            {t('admin.settings.appearance')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 space-y-5">
-          {/* Theme Variant */}
-          <div className="space-y-3">
-            <Label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Theme Variant</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {themeOptions.map((option) => {
-                const Icon = option.icon;
-                const isActive = themeVariant === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => setThemeVariant(option.id)}
-                    className={cn(
-                      'relative flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 text-left group/theme',
-                      isActive
-                        ? 'bg-[#03DAC6]/[0.06] border-[#03DAC6]/25'
-                        : 'bg-white/[0.015] border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.03]',
-                    )}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border transition-all"
-                      style={{
-                        backgroundColor: option.color,
-                        borderColor: isActive ? 'rgba(3,218,198,0.3)' : 'rgba(255,255,255,0.06)',
-                      }}
-                    >
-                      <Icon className={cn('h-4 w-4 transition-colors', isActive ? 'text-[#03DAC6]' : 'text-white/40')} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={cn('text-[12px] font-semibold transition-colors', isActive ? 'text-[#03DAC6]' : 'text-white/60')}>{option.label}</p>
-                      <p className="text-[10px] text-white/25 mt-0.5">{option.desc}</p>
-                    </div>
-                    {isActive && (
-                      <div className="absolute top-2 right-2"><Check className="h-3.5 w-3.5 text-[#03DAC6]" /></div>
-                    )}
-                  </button>
-                );
-              })}
+        <CardContent className="pt-0">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <div className="w-9 h-9 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center shrink-0"><Info className="h-4 w-4 text-[#BB86FC]" /></div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold text-white/70">Dark Mode Active</p>
+              <p className="text-[10px] text-white/30 mt-0.5">The platform uses an optimized dark theme. Additional theme options will be available in a future update.</p>
             </div>
-          </div>
-          {/* Compact Mode */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#BB86FC]/10 flex items-center justify-center">
-                <Monitor className="h-4 w-4 text-[#BB86FC]" />
-              </div>
-              <div>
-                <p className="text-[12px] font-semibold text-white/70">Compact Mode</p>
-                <p className="text-[10px] text-white/30 mt-0.5">Reduce spacing and padding across the admin panel</p>
-              </div>
-            </div>
-            <AnimatedSwitch checked={compactMode} onCheckedChange={setCompactMode} activeColor="#BB86FC" />
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto shrink-0">Default</Badge>
           </div>
         </CardContent>
       </Card>
@@ -760,7 +764,7 @@ export function AdminSettings() {
             </div>
             <p className="text-[10px] text-white/25">Select which plans are displayed and available for subscription on the landing page</p>
             <div className="flex items-center gap-3 flex-wrap">
-              {['basic', 'pro'].map((plan) => {
+              {['basic', 'pro', 'ultimate'].map((plan) => {
                 const isActive = availablePlans.includes(plan);
                 return (
                   <button
@@ -1006,6 +1010,81 @@ export function AdminSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Landing Page Stats */}
+      <Card className="adm-content-card bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1] transition-all duration-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+        <CardHeader className="pb-4">
+          <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
+            <BarChart3 className="adm-section-header-icon h-4 w-4 text-[#CF6679]" />
+            Statistics Section
+            <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#CF6679]/5 border-[#CF6679]/15 text-[#CF6679]/70 ml-auto">Stats Config</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-4">
+          <p className="text-[10px] text-white/25">Configure the stat items displayed in the landing page statistics section.</p>
+          <div className="space-y-3">
+            {landingStats.map((stat, idx) => (
+              <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                <div className="flex flex-col items-center gap-1 pt-1">
+                  <button
+                    type="button"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] text-white/30 hover:text-white/60 transition-colors"
+                    onClick={() => {
+                      if (landingStats.length > 1) {
+                        setLandingStats(prev => prev.filter((_, i) => i !== idx));
+                      }
+                    }}
+                    disabled={landingStats.length <= 1}
+                    aria-label="Remove stat"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                  <span className="text-[9px] text-white/20">{idx + 1}</span>
+                </div>
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Value</Label>
+                    <Input
+                      value={stat.value}
+                      onChange={(e) => {
+                        const updated = [...landingStats];
+                        updated[idx] = { ...updated[idx], value: e.target.value };
+                        setLandingStats(updated);
+                      }}
+                      className={inputCls}
+                      placeholder="e.g. 73%"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Label</Label>
+                    <Input
+                      value={stat.label}
+                      onChange={(e) => {
+                        const updated = [...landingStats];
+                        updated[idx] = { ...updated[idx], label: e.target.value };
+                        setLandingStats(updated);
+                      }}
+                      className={inputCls}
+                      placeholder="e.g. Accuracy Rate"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 text-[11px] font-medium rounded-lg border-dashed border-white/[0.1] text-white/40 hover:text-white/70 hover:border-white/[0.2] hover:bg-white/[0.02]"
+            onClick={() => {
+              setLandingStats(prev => [...prev, { value: '', label: '' }]);
+            }}
+          >
+            <ChevronRight className="h-3 w-3 mr-1" />
+            Add Stat Item
+          </Button>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 
@@ -1123,7 +1202,7 @@ export function AdminSettings() {
         <CardHeader className="pb-4">
           <CardTitle className="adm-section-header text-sm font-semibold text-white/70 flex items-center gap-2">
             <Mail className="adm-section-header-icon h-4 w-4 text-[#03DAC6]" />
-            Email Notifications
+            {t('admin.settings.emailNotifications')}
             <Badge variant="outline" className="adm-badge text-[9px] font-semibold px-1.5 py-0 bg-[#03DAC6]/5 border-[#03DAC6]/15 text-[#03DAC6]/70 ml-auto">Alerts</Badge>
           </CardTitle>
         </CardHeader>

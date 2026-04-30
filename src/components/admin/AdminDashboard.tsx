@@ -20,6 +20,7 @@ import {
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { AdminPage } from './AdminLayout';
 import { ExportDialog } from './ExportDialog';
 
@@ -109,6 +110,7 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
@@ -223,31 +225,41 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     };
   };
 
-  const handleGenerateReport = (reportType: string) => {
+  const handleGenerateReport = async (reportType: string) => {
+    const typeMap: Record<string, string> = {
+      'user-report': 'users',
+      'financial-summary': 'activity',
+      'activity-report': 'activity',
+    };
     const labels: Record<string, string> = {
       'user-report': 'User Report',
       'financial-summary': 'Financial Summary',
       'activity-report': 'Activity Report',
     };
+    const exportType = typeMap[reportType] || 'users';
     setReportGenerating(reportType);
-    toast.success('Report generation started', {
-      description: `${labels[reportType]} is being generated...`,
-    });
-    setTimeout(() => {
-      setReportGenerating(null);
-      toast.success('Report ready for download', {
-        description: `${labels[reportType]} has been generated successfully.`,
-        action: {
-          label: 'Download',
-          onClick: () => {
-            toast.info('Download started', {
-              description: 'This is a demo — no file was actually downloaded.',
-            });
-          },
-        },
-        duration: 6000,
+    try {
+      const res = await fetch('/api/admin/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: exportType, format: 'csv' }),
       });
-    }, 2000);
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${labels[reportType].replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`${labels[reportType]} downloaded`);
+    } catch {
+      toast.error(`Failed to generate ${labels[reportType]}`);
+    } finally {
+      setReportGenerating(null);
+    }
   };
 
   // Counter animation hooks
@@ -310,11 +322,25 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const maxDailyCount = Math.max(...stats.dailyRegistrations.map(d => d.count), 1);
   const notificationCount = stats.usersExpiringSoon + (stats.suspendedUsers > 0 ? 1 : 0);
 
+  // Compute trend from daily registrations
+  const computeTrend = (daily: { date: string; count: number }[]): string => {
+    if (daily.length < 2) return '—';
+    const last = daily[daily.length - 1]?.count || 0;
+    const prev = daily[daily.length - 2]?.count || 0;
+    if (prev === 0) return last > 0 ? `+${last}` : '0';
+    const pct = Math.round(((last - prev) / prev) * 100);
+    return `${pct > 0 ? '+' : ''}${pct}%`;
+  };
+  const computeTrendDir = (daily: { date: string; count: number }[]): boolean => {
+    if (daily.length < 2) return true;
+    return (daily[daily.length - 1]?.count || 0) >= (daily[daily.length - 2]?.count || 0);
+  };
+
   const statCards = [
-    { label: 'Total Users', value: animTotal, icon: Users, color: '#03DAC6', sub: `${stats.activeUsers} active`, trend: '+12%', trendUp: true, gradient: 'linear-gradient(135deg, rgba(3,218,198,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(3,218,198,0.03) 100%)' },
-    { label: 'Pro Users', value: animPro, icon: Crown, color: '#FFD700', sub: `${stats.basicUsers} basic`, trend: '+8%', trendUp: true, gradient: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(255,215,0,0.03) 100%)' },
-    { label: 'Active Invites', value: animInvites, icon: UserPlus, color: '#BB86FC', sub: `${stats.usedInvites} used`, trend: '-3%', trendUp: false, gradient: 'linear-gradient(135deg, rgba(187,134,252,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(187,134,252,0.03) 100%)' },
-    { label: 'Suspended', value: animSuspended, icon: UserX, color: '#CF6679', sub: `${stats.usersExpiringSoon} expiring`, trend: stats.suspendedUsers > 0 ? '+1' : '0', trendUp: stats.suspendedUsers > 0, gradient: 'linear-gradient(135deg, rgba(207,102,121,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(207,102,121,0.03) 100%)' },
+    { label: 'Total Users', value: animTotal, icon: Users, color: '#03DAC6', sub: `${stats.activeUsers} active`, trend: stats.dailyRegistrations.length > 1 ? computeTrend(stats.dailyRegistrations) : '—', trendUp: stats.dailyRegistrations.length > 1 && computeTrendDir(stats.dailyRegistrations), gradient: 'linear-gradient(135deg, rgba(3,218,198,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(3,218,198,0.03) 100%)' },
+    { label: 'Pro Users', value: animPro, icon: Crown, color: '#FFD700', sub: `${stats.basicUsers} basic`, trend: stats.totalUsers > 0 ? `${Math.round((stats.proUsers / stats.totalUsers) * 100)}%` : '—', trendUp: stats.proUsers > 0, gradient: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(255,215,0,0.03) 100%)' },
+    { label: 'Active Invites', value: animInvites, icon: UserPlus, color: '#BB86FC', sub: `${stats.usedInvites} used`, trend: stats.activeInvites > 0 ? `${stats.activeInvites} open` : 'none', trendUp: stats.activeInvites > 0, gradient: 'linear-gradient(135deg, rgba(187,134,252,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(187,134,252,0.03) 100%)' },
+    { label: 'Suspended', value: animSuspended, icon: UserX, color: '#CF6679', sub: `${stats.usersExpiringSoon} expiring`, trend: `${stats.suspendedUsers}`, trendUp: false, gradient: 'linear-gradient(135deg, rgba(207,102,121,0.08) 0%, rgba(13,13,13,0.95) 50%, rgba(207,102,121,0.03) 100%)' },
   ];
 
   const quickActions = [
@@ -348,7 +374,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 className="h-8 gap-1.5 text-[11px] rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.04] transition-all"
               >
                 {reportGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
-                Quick Report
+                {t('admin.dashboard.quickReport')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent

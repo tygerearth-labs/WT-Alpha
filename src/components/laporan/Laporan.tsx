@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, Wallet, ArrowUpRight, ArrowDownRight, FileText, FileSpreadsheet } from 'lucide-react';
+import { Target, Wallet, ArrowUpRight, ArrowDownRight, FileText, FileSpreadsheet, FileDown } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCurrencyFormat } from '@/hooks/useCurrencyFormat';
 import { LaporanSkeleton } from '@/components/shared/PageSkeleton';
@@ -12,6 +12,7 @@ import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import { DynamicIcon } from '@/components/shared/DynamicIcon';
 import { useAuthStore } from '@/store/useAuthStore';
+import { generateReportHtml } from '@/lib/generateReportHtml';
 
 // ── Theme ──
 const T = {
@@ -106,6 +107,79 @@ export function Laporan() {
     toast.success(t('laporan.downloadSuccess'));
   };
 
+  const exportToPdf = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const txHtml = transactions.map(tx => {
+      const sign = tx.type === 'income' ? '+' : '-';
+      const amtColor = tx.type === 'income' ? '#059669' : '#dc2626';
+      const dateStr = format(new Date(tx.date), 'dd MMM yyyy', { locale: id });
+      const catName = tx.category.name;
+      const desc = tx.description || '-';
+      const amt = formatAmount(tx.amount);
+      return '<tr>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:13px;white-space:nowrap;">' + dateStr + '</td>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-size:13px;">' + catName + '</td>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:13px;">' + desc + '</td>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px;font-weight:600;color:' + amtColor + ';">' + sign + amt + '</td>'
+        + '</tr>';
+    }).join('');
+
+    const savingsHtml = savingsTargets.map(s => {
+      const pct = (s.currentAmount / s.targetAmount) * 100;
+      const pctColor = pct >= 80 ? '#059669' : pct >= 50 ? '#7c3aed' : '#d97706';
+      const dateStr = format(new Date(s.targetDate), 'dd MMM yyyy', { locale: id });
+      return '<tr>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-size:13px;">' + s.name + '</td>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px;color:#374151;">' + formatAmount(s.currentAmount) + '</td>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px;color:#374151;">' + formatAmount(s.targetAmount) + '</td>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px;font-weight:600;color:' + pctColor + ';">' + (pct || 0).toFixed(1) + '%</td>'
+        + '<td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:13px;white-space:nowrap;">' + dateStr + '</td>'
+        + '</tr>';
+    }).join('');
+
+    const balanceColor = balance >= 0 ? '#059669' : '#dc2626';
+    const savingsRateColor = savingsRate >= 20 ? '#059669' : '#d97706';
+
+    const html = generateReportHtml({
+      title: t('laporan.pdfTitle'),
+      generatedOn: t('laporan.pdfGeneratedOn') + ': ' + format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id }),
+      incomeLabel: t('laporan.income'),
+      expenseLabel: t('laporan.expense'),
+      balanceLabel: t('laporan.pdfBalanceSummary'),
+      savingsLabel: t('laporan.savings'),
+      savingsRateLabel: t('laporan.pdfSavingsRate'),
+      dailyAvgLabel: t('laporan.pdfDailyAvg'),
+      txCountLabel: t('laporan.pdfTransactionCount'),
+      transactionsTitle: t('laporan.pdfTransactionsTitle'),
+      savingsTitle: t('laporan.pdfSavingsTitle'),
+      dateLabel: t('laporan.date'),
+      categoryLabel: t('laporan.category'),
+      descriptionLabel: t('laporan.excelDescription'),
+      amountLabel: t('laporan.excelAmount'),
+      targetNameLabel: t('laporan.targetName'),
+      collectedLabel: t('laporan.collected'),
+      targetAmountLabel: t('laporan.targetAmount'),
+      progressLabel: t('laporan.progress'),
+      deadlineLabel: t('laporan.deadline'),
+      totalIncome: formatAmount(totalIncome),
+      totalExpense: formatAmount(totalExpense),
+      balance: formatAmount(balance),
+      balanceColor,
+      totalSavings: formatAmount(totalSavings),
+      savingsRate: (savingsRate ?? 0).toFixed(1) + '%',
+      savingsRateColor,
+      avgDaily: formatAmount(avgDaily),
+      txCount,
+      txRows: txHtml,
+      savingsRows: savingsHtml,
+    });
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const totalIncome = transactions.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0);
   const totalExpense = transactions.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0);
   const balance = totalIncome - totalExpense;
@@ -138,6 +212,17 @@ export function Laporan() {
           <p className="text-[10px] mt-0.5" style={{ color: T.muted }}>{t('laporan.transactionCount', { count: txCount })}</p>
         </div>
         <div className="flex items-center gap-2">
+          {exportEnabled.pdf && (
+            <button
+              onClick={exportToPdf}
+              disabled={txCount === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40"
+              style={{ background: `${T.primary}12`, color: T.primary, border: `1px solid ${T.primary}20` }}
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {t('laporan.exportPdf')}
+            </button>
+          )}
           {exportEnabled.excel && (
             <button
               onClick={exportToExcel}

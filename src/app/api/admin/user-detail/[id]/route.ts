@@ -66,15 +66,33 @@ export async function GET(
 
     const balance = (totalIncome._sum.amount ?? 0) - (totalExpense._sum.amount ?? 0);
 
+    // Compute subscription info
+    const now = new Date();
+    const subscriptionEnd = user.subscriptionEnd ? new Date(user.subscriptionEnd) : null;
+    const isExpired = subscriptionEnd ? subscriptionEnd < now : false;
+    const daysRemaining = subscriptionEnd
+      ? Math.max(0, Math.ceil((subscriptionEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+      : 0;
+
     return NextResponse.json({
       user,
       stats: {
         transactionCount,
         categoryCount,
         savingsCount,
+        totalTransactions: transactionCount,
+        totalCategories: categoryCount,
+        totalSavingsTargets: savingsCount,
+        categoryUsagePercent: user.maxCategories > 0 ? Math.round((categoryCount / user.maxCategories) * 100) : 0,
+        savingsUsagePercent: user.maxSavings > 0 ? Math.round((savingsCount / user.maxSavings) * 100) : 0,
         totalIncome: totalIncome._sum.amount ?? 0,
         totalExpense: totalExpense._sum.amount ?? 0,
         balance,
+        subscription: {
+          status: isExpired ? 'expired' : user.status === 'suspended' ? 'suspended' : 'active',
+          daysLeft: daysRemaining,
+          end: user.subscriptionEnd,
+        },
       },
       recentTransactions,
       recentActivity,
