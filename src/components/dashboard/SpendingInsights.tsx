@@ -191,7 +191,7 @@ function InsightCard({ insight, index }: { insight: NonNullable<SpendingInsights
 
 // ── Main Widget ────────────────────────────────────────────────
 export function SpendingInsights({ data }: SpendingInsightsProps) {
-  const insights = data ?? defaultData;
+  const insights: NonNullable<SpendingInsightsProps['data']> = data ?? defaultData;
 
   return (
     <motion.section
