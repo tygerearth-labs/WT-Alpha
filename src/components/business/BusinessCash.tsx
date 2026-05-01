@@ -487,7 +487,7 @@ export default function BusinessCash() {
   const businessId = activeBusiness?.id;
 
   // ── Main Tab State ──
-  type MainTab = 'arus_kas' | 'investor' | 'piutang' | 'anggaran';
+  type MainTab = 'arus_kas' | 'investor' | 'piutang' | 'anggaran' | 'hutang';
   const [mainTab, setMainTab] = useState<MainTab>('arus_kas');
 
   // ── Arus Kas State ──
@@ -581,6 +581,10 @@ export default function BusinessCash() {
 
   // ── Tab Switcher Dialog State ──
   const [tabSwitcherOpen, setTabSwitcherOpen] = useState(false);
+
+  // ── Saldo Detail Dialog State ──
+  const [saldoDetailOpen, setSaldoDetailOpen] = useState(false);
+  const [saldoDetailType, setSaldoDetailType] = useState<string>('');
 
   // ── Source Balance State ──
   const [sourceBalances, setSourceBalances] = useState({
@@ -1323,8 +1327,32 @@ export default function BusinessCash() {
 
   const [investorFilter, setInvestorFilter] = useState<'modal_masuk' | 'pengeluaran' | 'pemasukan'>('modal_masuk');
 
+  // ── Saldo Detail Dialog Helper ──
+  const openSaldoDetailDialog = (type: string) => {
+    setSaldoDetailType(type);
+    setSaldoDetailOpen(true);
+  };
+
   // ── Transaction Detail Dialog ──
   const [transactionDetail, setTransactionDetail] = useState<CashEntry | null>(null);
+
+  // ── WhatsApp Comprehensive Investor Report ──
+  const sendComprehensiveInvestorReport = (investor: Investor) => {
+    if (!investor.phone) {
+      toast.error('Nomor telepon investor tidak tersedia');
+      return;
+    }
+    const totalPaid = investorHistory
+      .filter(h => h.investorId === investor.id)
+      .reduce((s, h) => s + h.amount, 0);
+    const remaining = investor.totalInvestment - totalPaid;
+    const msg = `📊 *Laporan Investor - ${investor.name}*\n\n💰 Total Modal: Rp ${investor.totalInvestment.toLocaleString('id-ID')}\n📈 Bagi Hasil: ${investor.profitSharePct}%\n✅ Total Terbayar: Rp ${totalPaid.toLocaleString('id-ID')}\n⏳ Sisa: Rp ${remaining.toLocaleString('id-ID')}\n📅 Bergabung: ${formatDate(investor.joinDate)}\n\n_Dicetak dari Wealth Tracker_`;
+    let formattedPhone = investor.phone.replace(/\D/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
+    if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  };
 
   // ── WhatsApp Report Helper ──
   const getInvestorPhone = (item: InvestorHistoryItem | CashEntry): string => {
@@ -1397,11 +1425,13 @@ export default function BusinessCash() {
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     color: string;
+    comingSoon?: boolean;
   }> = [
     { key: 'arus_kas', label: 'Arus Kas', icon: TrendingUp, color: c.secondary },
     { key: 'investor', label: 'Investor', icon: Users, color: c.primary },
     { key: 'piutang', label: 'Piutang', icon: HandCoins, color: c.warning },
     { key: 'anggaran', label: 'Anggaran', icon: PiggyBank, color: '#A78BFA' },
+    { key: 'hutang', label: 'Hutang', icon: Banknote, color: '#CF6679', comingSoon: true },
   ];
 
   const subTypeConfig = CASH_SUB_TYPES[cashSubTab];
@@ -1453,6 +1483,14 @@ export default function BusinessCash() {
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors" />
           </motion.button>
         </div>
+        {/* Tab description */}
+        <p className="text-[10px] text-muted-foreground mt-1 px-1">
+          {mainTab === 'arus_kas' && 'Kelola arus kas masuk dan keluar bisnis'}
+          {mainTab === 'investor' && 'Data investor dan riwayat modal'}
+          {mainTab === 'piutang' && 'Kelola piutang dan tagihan pelanggan'}
+          {mainTab === 'anggaran' && 'Atur anggaran pengeluaran bisnis'}
+          {mainTab === 'hutang' && 'Kelola hutang dan kewajiban bisnis'}
+        </p>
       </div>
 
       {/* ── Tab Switcher Dialog ── */}
@@ -1473,6 +1511,10 @@ export default function BusinessCash() {
                 <motion.button
                   key={mt.key}
                   onClick={() => {
+                    if (mt.comingSoon) {
+                      toast.info('Fitur Hutang segera hadir!');
+                      return;
+                    }
                     setMainTab(mt.key);
                     setTabSwitcherOpen(false);
                   }}
@@ -1504,9 +1546,13 @@ export default function BusinessCash() {
                       {mt.key === 'arus_kas' && 'Kelola arus kas besar, kecil & keluar'}
                       {mt.key === 'investor' && 'Data modal & profit sharing investor'}
                       {mt.key === 'piutang' && 'Kelola piutang, cicilan & pembayaran'}
+                      {mt.key === 'anggaran' && 'Atur anggaran pengeluaran bisnis'}
+                      {mt.key === 'hutang' && 'Kelola hutang dan kewajiban bisnis'}
                     </p>
                   </div>
-                  {isActive && (
+                  {mt.comingSoon ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0" style={{ background: 'rgba(207,102,121,0.12)', color: '#CF6679' }}>Coming Soon</span>
+                  ) : isActive && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -1609,7 +1655,10 @@ export default function BusinessCash() {
                         <ArrowUpRight className="h-3 w-3 text-secondary" />
                         <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Masuk</span>
                       </div>
-                      <p className="text-[11px] sm:text-xs font-bold tabular-nums text-secondary">{formatAmount(animIncome)}</p>
+                      <p className="text-[11px] sm:text-xs font-bold tabular-nums text-secondary">
+                        <span className="sm:hidden">{formatCompactAmount(incomeTotal)}</span>
+                        <span className="hidden sm:inline">{formatAmount(animIncome)}</span>
+                      </p>
                       <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
                     </div>
                   </motion.div>
@@ -1626,7 +1675,10 @@ export default function BusinessCash() {
                         <ArrowDownRight className="h-3 w-3 text-destructive" />
                         <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Keluar</span>
                       </div>
-                      <p className="text-[11px] sm:text-xs font-bold tabular-nums text-destructive">{formatAmount(animExpense)}</p>
+                      <p className="text-[11px] sm:text-xs font-bold tabular-nums text-destructive">
+                        <span className="sm:hidden">{formatCompactAmount(expenseTotal)}</span>
+                        <span className="hidden sm:inline">{formatAmount(animExpense)}</span>
+                      </p>
                       <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
                     </div>
                   </motion.div>
@@ -1644,7 +1696,7 @@ export default function BusinessCash() {
                         <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Bersih</span>
                       </div>
                       <p className={cn("text-[11px] sm:text-xs font-bold tabular-nums", animNet >= 0 ? "text-secondary" : "text-destructive")}>
-                        {animNet >= 0 ? '+' : '-'}{formatAmount(Math.abs(animNet))}
+                        {animNet >= 0 ? '+' : '-'}<span className="sm:hidden">{formatCompactAmount(Math.abs(incomeTotal - expenseTotal))}</span><span className="hidden sm:inline">{formatAmount(Math.abs(animNet))}</span>
                       </p>
                       <p className="text-[9px] text-muted-foreground mt-0.5">periode ini</p>
                     </div>
@@ -1653,19 +1705,16 @@ export default function BusinessCash() {
 
                 {/* Source Breakdown Chips */}
                 <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
-                  <div className="biz-metric-chip flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30">
-                    <div className="biz-metric-chip-icon h-1.5 w-1.5 rounded-full bg-secondary" />
-                    <span className="text-[10px] text-muted-foreground">Kas Besar</span>
+                  <div className="biz-metric-chip flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30 cursor-pointer" onClick={() => openSaldoDetailDialog('kas_besar')}>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(3,218,198,0.12)', color: '#03DAC6' }}>Kas Besar</span>
                     <span className="text-[10px] font-semibold tabular-nums text-foreground">{formatCompactAmount(sourceBalances.kasBesarSaldo)}</span>
                   </div>
-                  <div className="biz-metric-chip flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30">
-                    <div className="biz-metric-chip-icon h-1.5 w-1.5 rounded-full bg-warning" />
-                    <span className="text-[10px] text-muted-foreground">Kas Kecil</span>
+                  <div className="biz-metric-chip flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30 cursor-pointer" onClick={() => openSaldoDetailDialog('kas_kecil')}>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(249,168,37,0.12)', color: '#F9A825' }}>Kas Kecil</span>
                     <span className="text-[10px] font-semibold tabular-nums text-foreground">{formatCompactAmount(sourceBalances.kasKecilSaldo)}</span>
                   </div>
-                  <div className="biz-metric-chip flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30">
-                    <div className="biz-metric-chip-icon h-1.5 w-1.5 rounded-full bg-primary" />
-                    <span className="text-[10px] text-muted-foreground">Dana Investor</span>
+                  <div className="biz-metric-chip flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.04] border border-border/30 cursor-pointer" onClick={() => openSaldoDetailDialog('investor')}>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(187,134,252,0.12)', color: '#BB86FC' }}>Dana Investor</span>
                     <span className="text-[10px] font-semibold tabular-nums text-foreground">{formatCompactAmount(sourceBalances.investorSaldo)}</span>
                   </div>
                 </div>
@@ -1742,6 +1791,12 @@ export default function BusinessCash() {
                   <span className="hidden sm:inline ml-1">{t('biz.addCashEntry')}</span>
                 </Button>
               </div>
+              {/* Description below filter */}
+              <p className="text-[10px] text-muted-foreground px-1 -mt-0.5">
+                {cashFilter === 'all' && 'Menampilkan semua transaksi kas masuk dan keluar'}
+                {cashFilter === 'masuk' && 'Menampilkan hanya transaksi pemasukan (kas besar & kas kecil)'}
+                {cashFilter === 'keluar' && 'Menampilkan hanya transaksi pengeluaran'}
+              </p>
             </div>
 
             {/* ══════════════════════════════════════════════ */}
@@ -2107,14 +2162,14 @@ export default function BusinessCash() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={() => setQuickAddOpen(false)}
-                    className="fixed inset-0 bg-black/40 z-[45] sm:hidden"
+                    className="fixed inset-0 bg-black/40 z-[60] sm:hidden"
                   />
                   <motion.div
                     initial={{ opacity: 0, y: 80 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 80 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="fixed bottom-0 left-0 right-0 z-50 sm:bottom-auto sm:right-6 sm:left-auto sm:top-auto sm:z-50 sm:w-[360px]"
+                    className="fixed bottom-0 left-0 right-0 z-[60] sm:bottom-auto sm:right-6 sm:left-auto sm:top-auto sm:z-[60] sm:w-[360px]"
                     style={{ bottom: 0 }}
                   >
                     <div className="bg-[#141414] border-t border-white/[0.08] sm:border sm:border-white/[0.08] sm:rounded-2xl p-4 sm:p-5 max-h-[85vh] overflow-y-auto">
@@ -2473,6 +2528,16 @@ export default function BusinessCash() {
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
+                            {inv.phone && (
+                              <button
+                                onClick={() => sendComprehensiveInvestorReport(inv)}
+                                className="h-9 w-9 flex items-center justify-center rounded-lg shrink-0 transition-colors"
+                                style={{ color: '#25D366' }}
+                                title="Kirim laporan investor via WhatsApp"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </motion.div>
                       ))}
@@ -2526,6 +2591,16 @@ export default function BusinessCash() {
                               >
                                 <Pencil className="h-3 w-3" />
                               </Button>
+                              {inv.phone && (
+                                <button
+                                  onClick={() => sendComprehensiveInvestorReport(inv)}
+                                  className="h-6 w-6 flex items-center justify-center rounded-md shrink-0 transition-colors"
+                                  style={{ color: '#25D366' }}
+                                  title="Kirim laporan investor via WhatsApp"
+                                >
+                                  <MessageCircle className="h-3 w-3" />
+                                </button>
+                              )}
                             </div>
 
                             <div className="space-y-1.5">
@@ -3058,7 +3133,7 @@ export default function BusinessCash() {
             </div>
 
             {/* ── Piutang Summary Cards (Detailed) ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Cicilan Berjalan */}
               <Card className="biz-stat-card rounded-xl overflow-hidden bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
                 <CardContent className="p-3 sm:p-3">
@@ -4404,6 +4479,31 @@ export default function BusinessCash() {
               </div>
             </motion.div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* ── SALDO DETAIL DIALOG ────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      <Dialog open={saldoDetailOpen} onOpenChange={setSaldoDetailOpen}>
+        <DialogContent className="biz-dialog-content max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center"
+                style={{ background: saldoDetailType === 'kas_besar' ? 'rgba(3,218,198,0.12)' : saldoDetailType === 'kas_kecil' ? 'rgba(249,168,37,0.12)' : 'rgba(187,134,252,0.12)' }}>
+                <Wallet className={cn("h-3.5 w-3.5", saldoDetailType === 'kas_besar' ? 'text-secondary' : saldoDetailType === 'kas_kecil' ? 'text-warning' : 'text-primary')} />
+              </div>
+              Detail Saldo
+            </DialogTitle>
+            <DialogDescription>Lihat saldo lengkap sumber dana</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 rounded-lg bg-white/[0.03] border border-border/30">
+              <span className="text-sm text-muted-foreground">{saldoDetailType === 'kas_besar' ? 'Kas Besar' : saldoDetailType === 'kas_kecil' ? 'Kas Kecil' : 'Dana Investor'}</span>
+              <span className="text-sm font-bold text-foreground">{formatAmount(saldoDetailType === 'kas_besar' ? sourceBalances.kasBesarSaldo : saldoDetailType === 'kas_kecil' ? sourceBalances.kasKecilSaldo : sourceBalances.investorSaldo)}</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center">Klik OK untuk menutup</p>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -429,7 +429,7 @@ export default function BusinessInvoiceSettings() {
   }
 
   return (
-    <div className="space-y-4 pb-8 relative">
+    <div className="space-y-3 sm:space-y-4 pb-8 relative overflow-hidden">
       {/* Ambient glows */}
       <div className="absolute -top-32 -left-20 h-[400px] w-[400px] rounded-full opacity-[0.06] blur-[100px] pointer-events-none" style={{ background: 'rgba(187,134,252,0.12)' }} />
       <div className="absolute top-60 -right-24 h-[350px] w-[350px] rounded-full opacity-[0.04] blur-[100px] pointer-events-none" style={{ background: 'rgba(103,58,183,0.15)' }} />
@@ -448,7 +448,7 @@ export default function BusinessInvoiceSettings() {
 
         {/* ═══ Completion Summary Row ═══ */}
         {!loading && (
-          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2">
+          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { label: 'Template', value: form.template.charAt(0).toUpperCase() + form.template.slice(1), color: c.primary, icon: Layout },
               { label: 'Completion', value: `${completionPct}%`, color: c.secondary, icon: CheckCircle2 },
@@ -478,13 +478,13 @@ export default function BusinessInvoiceSettings() {
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" style={{ backgroundColor: alpha(c.foreground, 4) }} />)}
           </motion.div>
         ) : (
-          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             {/* ========== LEFT COLUMN ========== */}
-            <div className="md:col-span-2 space-y-4">
+            <div className="md:col-span-2 space-y-3 sm:space-y-4">
 
               {/* 1. Template Selection */}
               <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={FileText} title="Template Selection" color={c.primary} />
                   <div className="grid grid-cols-3 gap-2">
                     {(Object.keys(TEMPLATE_META) as TemplateType[]).map((type) => {
@@ -507,9 +507,9 @@ export default function BusinessInvoiceSettings() {
 
               {/* 2. Invoice Template Settings */}
               <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={Settings} title="Invoice Template Settings" color={c.warning} />
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {/* Default Due Days */}
                     <div className="space-y-1.5">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" />Default Jatuh Tempo (hari)</Label>
@@ -573,10 +573,10 @@ export default function BusinessInvoiceSettings() {
 
               {/* 3. Business Info */}
               <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={Building2} title="Informasi Bisnis" color="#CF6679" />
                   {/* Logo + Signature */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div className="space-y-1.5">
                       <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5"><Upload className="h-3 w-3" />Logo</Label>
                       <input ref={logoInputRef} type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} className="hidden" />
@@ -636,9 +636,9 @@ export default function BusinessInvoiceSettings() {
 
               {/* 4. Color & Branding */}
               <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={Palette} title="Warna & Branding" color={c.secondary} />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <ColorSwatch label="Primary Color" color={form.primaryColor} onChange={(v) => update('primaryColor', v)} />
                     <ColorSwatch label="Secondary / Accent" color={form.secondaryColor} onChange={(v) => update('secondaryColor', v)} />
                   </div>
@@ -652,7 +652,7 @@ export default function BusinessInvoiceSettings() {
 
               {/* 5. Rekening Pembayaran */}
               <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
                       <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}><Landmark className="h-3.5 w-3.5" style={{ color: c.secondary }} /></div>
@@ -694,7 +694,7 @@ export default function BusinessInvoiceSettings() {
 
               {/* 6. Footer & Payment Terms */}
               <Card className="biz-content-card bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl rounded-xl overflow-hidden">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <SectionHeader icon={Sparkles} title="Footer & Ketentuan" color="#BB86FC" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -723,7 +723,7 @@ export default function BusinessInvoiceSettings() {
                     }}
                   />
                 <Card className="biz-content-card relative rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(187,134,252,0.06), rgba(103,58,183,0.03))', border: '1px solid rgba(187,134,252,0.12)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: alpha(c.secondary, 12) }}><Eye className="h-3.5 w-3.5" style={{ color: c.secondary }} /></div>
                       <h3 className="text-xs font-semibold text-foreground">Preview Invoice</h3>

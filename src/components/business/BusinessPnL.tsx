@@ -527,7 +527,7 @@ export default function BusinessPnL() {
   const chartData = data?.chartData ?? [];
 
   return (
-    <div className="relative space-y-4 print:space-y-2">
+    <div className="relative space-y-3 sm:space-y-4 print:space-y-2 overflow-hidden">
       <style>{`
         @keyframes heroGlow {
           0%, 100% { opacity: 0.3; }

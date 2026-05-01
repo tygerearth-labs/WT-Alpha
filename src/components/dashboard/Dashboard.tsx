@@ -1728,23 +1728,24 @@ export function Dashboard() {
 
       {/* ═══ Mobile Tab Bar ═══ */}
       <div className="lg:hidden sticky top-0 z-20 -mx-4 px-4 pb-2 pt-1" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.97) 70%, rgba(0,0,0,0) 100%)' }}>
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-1">
           {[
-            { key: 0, label: t('dashboard.tabSummary') },
-            { key: 1, label: t('dashboard.tabAnalytics') },
-            { key: 2, label: t('dashboard.tabTargets') },
-            { key: 3, label: t('dashboard.tabTips') },
+            { key: 0, label: t('dashboard.tabSummary'), Icon: Wallet },
+            { key: 1, label: t('dashboard.tabAnalytics'), Icon: BarChart3 },
+            { key: 2, label: t('dashboard.tabTargets'), Icon: Target },
+            { key: 3, label: t('dashboard.tabTips'), Icon: Lightbulb },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setMobileTab(tab.key)}
-              className="shrink-0 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px]"
+              className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-xl transition-all duration-200 min-h-[44px]"
               style={{
                 background: mobileTab === tab.key ? `${THEME.primary}15` : 'rgba(255,255,255,0.03)',
                 border: mobileTab === tab.key ? `1px solid ${THEME.primary}30` : '1px solid rgba(255,255,255,0.06)',
               }}
             >
-              <span className="text-xs font-semibold whitespace-nowrap" style={{ color: mobileTab === tab.key ? THEME.primary : THEME.textSecondary }}>
+              <tab.Icon className="h-3.5 w-3.5" style={{ color: mobileTab === tab.key ? THEME.primary : THEME.textSecondary }} />
+              <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: mobileTab === tab.key ? THEME.primary : THEME.textSecondary }}>
                 {tab.label}
               </span>
             </button>

@@ -444,7 +444,7 @@ export default function BusinessInvoice() {
   }
 
   return (
-    <div className="space-y-4 relative">
+    <div className="space-y-3 sm:space-y-4 relative overflow-hidden">
       {/* Premium gradient keyframes */}
       <style>{`
         @keyframes heroGlow {
@@ -538,7 +538,7 @@ export default function BusinessInvoice() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 {/* Total Invoices */}
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ backgroundColor: alpha(c.primary, 5) }} />
@@ -602,7 +602,7 @@ export default function BusinessInvoice() {
         </motion.div>
 
         {/* ═══ Status Filter Chips + Search ═══ */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1 sm:pb-0 biz-scroll-mobile">
             {STATUS_CHIPS.map((chip) => (
               <button
@@ -690,7 +690,7 @@ export default function BusinessInvoice() {
               ) : (
                 <>
                   {/* List summary */}
-                  <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                  <div className="flex items-center justify-between px-3 sm:px-4 pt-3 pb-2">
                     <p className="text-[10px] text-muted-foreground">
                       Menampilkan <span className="text-foreground font-medium">{filteredInvoices.length}</span> invoice
                       <span className="ml-1 tabular-nums">
@@ -713,7 +713,7 @@ export default function BusinessInvoice() {
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ delay: index * 0.03, duration: 0.25 }}
                             whileHover={{ x: 2 }}
-                            className="biz-list-item biz-list-item-accent p-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.03] border-l-[3px] border-l-transparent hover:border-l-white/[0.15]"
+                            className="biz-list-item biz-list-item-accent py-2.5 px-3 sm:px-4 cursor-pointer transition-all duration-200 hover:bg-white/[0.03] border-l-[3px] border-l-transparent hover:border-l-white/[0.15]"
                             onClick={() => setViewInvoice(inv)}
                           >
                             <div className="flex items-start justify-between gap-2">

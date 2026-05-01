@@ -307,7 +307,7 @@ export default function BusinessForecast() {
   const chartData = data?.chartData ?? [];
 
   return (
-    <div className="relative space-y-3">
+    <div className="relative space-y-3 overflow-hidden">
       <style>{`
         @keyframes heroGlow {
           0%, 100% { opacity: 0.3; }

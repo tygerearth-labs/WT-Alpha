@@ -14,16 +14,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   User, Trash2, Loader2, LogOut, Camera, Shield, Globe, Coins, Crown, Sparkles,
   Calendar, AlertTriangle, CheckCircle2, BadgeCheck, ArrowRight,
-  Activity, Tag, PiggyBank, Clock, FileDown,
+  Activity, Tag, PiggyBank, Clock, FileDown, Briefcase, Gem,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useI18nStore } from '@/store/useI18nStore';
+import { useBusinessStore } from '@/store/useBusinessStore';
 import { CURRENCIES, POPULAR_CURRENCIES, type CurrencyCode } from '@/lib/currency';
 import type { Locale } from '@/i18n';
 import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ProfileSkeleton } from '@/components/shared/PageSkeleton';
+import { cn } from '@/lib/utils';
 
 const T_THEME = {
   bg: '#121212', input: '#1E1E1E', primary: '#BB86FC', secondary: '#03DAC6',
@@ -264,6 +266,55 @@ export function ProfileSettings() {
   }, [userData?.createdAt]);
 
   const isPro = user?.plan === 'pro';
+  const isUltimate = user?.plan === 'ultimate';
+
+  // Business / Investment tab support
+  const { businesses, setBusinesses } = useBusinessStore();
+  const [settingsTab, setSettingsTab] = useState<'profil' | 'bisnis' | 'investasi'>('profil');
+  const [bizForm, setBizForm] = useState({ name: '', description: '', address: '', phone: '' });
+  const [invForm, setInvForm] = useState({ name: '', description: '', address: '', phone: '' });
+  const [isBizSaving, setIsBizSaving] = useState(false);
+
+  const bisnisBusiness = businesses.find(b => b.category === 'bisnis');
+  const investasiBusiness = businesses.find(b => b.category === 'investasi');
+
+  // Populate biz/inv forms when switching tabs
+  useEffect(() => {
+    if (settingsTab === 'bisnis' && bisnisBusiness) {
+      setBizForm({ name: bisnisBusiness.name || '', description: bisnisBusiness.description || '', address: bisnisBusiness.address || '', phone: bisnisBusiness.phone || '' });
+    }
+    if (settingsTab === 'investasi' && investasiBusiness) {
+      setInvForm({ name: investasiBusiness.name || '', description: investasiBusiness.description || '', address: investasiBusiness.address || '', phone: investasiBusiness.phone || '' });
+    }
+  }, [settingsTab, bisnisBusiness, investasiBusiness]);
+
+  const handleSaveBusiness = async (form: typeof bizForm, businessId: string) => {
+    setIsBizSaving(true);
+    try {
+      const res = await fetch(`/api/business/${businessId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name, description: form.description, address: form.address, phone: form.phone }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.business) {
+          setBusinesses(businesses.map(b => b.id === businessId ? data.business : b));
+        }
+        toast.success(t('profile.updateSuccess'));
+      } else {
+        const err = await res.json();
+        toast.error(err.error || t('profile.updateError'));
+      }
+    } catch { toast.error(t('common.error')); }
+    finally { setIsBizSaving(false); }
+  };
+
+  const settingsTabs = [
+    { key: 'profil' as const, label: 'Profil', icon: User },
+    { key: 'bisnis' as const, label: 'Bisnis', icon: Briefcase },
+    { key: 'investasi' as const, label: 'Investasi', icon: Gem },
+  ];
 
   if (isLoading || !userData) {
     return <ProfileSkeleton />;
@@ -271,6 +322,142 @@ export function ProfileSettings() {
 
   return (
     <div className="px-4 sm:px-6 space-y-5 max-w-2xl lg:max-w-3xl mx-auto">
+      {/* ══════════════════════════════════════════════════════════
+          SETTINGS TAB NAVIGATION
+          ══════════════════════════════════════════════════════════ */}
+      <div className="flex items-center gap-1">
+        {settingsTabs.map((tab) => {
+          const isLocked = (tab.key === 'bisnis' || tab.key === 'investasi') && !isUltimate;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => !isLocked && setSettingsTab(tab.key)}
+              disabled={isLocked}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                settingsTab === tab.key
+                  ? 'bg-white/[0.08] text-foreground'
+                  : 'text-muted-foreground hover:bg-white/[0.04]',
+                isLocked && 'opacity-30 cursor-not-allowed',
+              )}
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          BISNIS TAB
+          ══════════════════════════════════════════════════════════ */}
+      {settingsTab === 'bisnis' && (
+        <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+          <div className="relative rounded-2xl overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+            <div className="p-4 sm:p-5 pb-0">
+              <div className="flex items-center gap-2">
+                <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: 'rgba(3,218,198,0.15)' }}>
+                  <Briefcase className="h-4 w-4" style={{ color: '#03DAC6' }} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: T_THEME.text }}>Profil Bisnis</p>
+                  <p className="text-[11px] font-medium text-white/50">Edit informasi bisnis kamu</p>
+                </div>
+              </div>
+            </div>
+            {bisnisBusiness ? (
+              <div className="p-4 sm:p-5">
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveBusiness(bizForm, bisnisBusiness.id); }} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-medium text-white/50">Nama Bisnis</Label>
+                    <Input value={bizForm.name} onChange={(e) => setBizForm({ ...bizForm, name: e.target.value })} required className={inputCls} style={inputStyle} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-medium text-white/50">Deskripsi</Label>
+                    <Input value={bizForm.description} onChange={(e) => setBizForm({ ...bizForm, description: e.target.value })} placeholder="Deskripsi bisnis..." className={inputCls} style={inputStyle} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-white/50">Alamat</Label>
+                      <Input value={bizForm.address} onChange={(e) => setBizForm({ ...bizForm, address: e.target.value })} placeholder="Alamat bisnis" className={inputCls} style={inputStyle} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-white/50">Telepon</Label>
+                      <Input value={bizForm.phone} onChange={(e) => setBizForm({ ...bizForm, phone: e.target.value })} placeholder="08xxxxxxxxxx" className={inputCls} style={inputStyle} />
+                    </div>
+                  </div>
+                  <Button type="submit" disabled={isBizSaving} className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: 'linear-gradient(135deg, #03DAC6, #0097A7)' }}>
+                    {isBizSaving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('profile.saving')}</> : t('common.save')}
+                  </Button>
+                </form>
+              </div>
+            ) : (
+              <div className="p-6 text-center">
+                <Briefcase className="h-10 w-10 mx-auto mb-3 text-[#03DAC6]/30" />
+                <p className="text-sm text-white/50">Belum ada bisnis terdaftar. Daftarkan bisnis terlebih dahulu.</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          INVESTASI TAB
+          ══════════════════════════════════════════════════════════ */}
+      {settingsTab === 'investasi' && (
+        <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+          <div className="relative rounded-2xl overflow-hidden" style={{ background: T_THEME.bg, border: `1px solid ${T_THEME.border}` }}>
+            <div className="p-4 sm:p-5 pb-0">
+              <div className="flex items-center gap-2">
+                <div className="grid place-items-center w-8 h-8 rounded-lg [&>*]:block leading-none" style={{ background: 'rgba(255,215,0,0.15)' }}>
+                  <Gem className="h-4 w-4" style={{ color: '#FFD700' }} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold uppercase tracking-wider" style={{ color: T_THEME.text }}>Profil Investasi</p>
+                  <p className="text-[11px] font-medium text-white/50">Edit informasi portofolio investasi kamu</p>
+                </div>
+              </div>
+            </div>
+            {investasiBusiness ? (
+              <div className="p-4 sm:p-5">
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveBusiness(invForm, investasiBusiness.id); }} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-medium text-white/50">Nama Portofolio</Label>
+                    <Input value={invForm.name} onChange={(e) => setInvForm({ ...invForm, name: e.target.value })} required className={inputCls} style={inputStyle} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-medium text-white/50">Deskripsi</Label>
+                    <Input value={invForm.description} onChange={(e) => setInvForm({ ...invForm, description: e.target.value })} placeholder="Deskripsi portofolio..." className={inputCls} style={inputStyle} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-white/50">Alamat</Label>
+                      <Input value={invForm.address} onChange={(e) => setInvForm({ ...invForm, address: e.target.value })} placeholder="Alamat" className={inputCls} style={inputStyle} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-white/50">Telepon</Label>
+                      <Input value={invForm.phone} onChange={(e) => setInvForm({ ...invForm, phone: e.target.value })} placeholder="08xxxxxxxxxx" className={inputCls} style={inputStyle} />
+                    </div>
+                  </div>
+                  <Button type="submit" disabled={isBizSaving} className="w-full h-12 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.01] active:scale-[0.99]" style={{ background: 'linear-gradient(135deg, #FFD700, #FFA500)' }}>
+                    {isBizSaving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('profile.saving')}</> : t('common.save')}
+                  </Button>
+                </form>
+              </div>
+            ) : (
+              <div className="p-6 text-center">
+                <Gem className="h-10 w-10 mx-auto mb-3 text-[#FFD700]/30" />
+                <p className="text-sm text-white/50">Belum ada portofolio investasi terdaftar. Daftarkan terlebih dahulu.</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          PROFIL TAB (default)
+          ══════════════════════════════════════════════════════════ */}
+      {settingsTab === 'profil' && (<>
       {/* ══════════════════════════════════════════════════════════
           1. PROFILE HEADER CARD
           ══════════════════════════════════════════════════════════ */}
@@ -747,6 +934,7 @@ export function ProfileSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>)}
     </div>
   );
 }

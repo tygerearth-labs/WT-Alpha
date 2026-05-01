@@ -343,7 +343,7 @@ export default function BusinessAllocation() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 sm:space-y-4">
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
 
         {/* ═══ Header ═══ */}
@@ -540,7 +540,7 @@ export default function BusinessAllocation() {
                   {/* Mobile Card List */}
                   <div className="sm:hidden max-h-96 overflow-y-auto divide-y divide-border">
                     {allocations.map(alloc => (
-                      <div key={alloc.id} className="p-3 space-y-1.5">
+                      <div key={alloc.id} className="py-2.5 px-3 sm:px-4 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">

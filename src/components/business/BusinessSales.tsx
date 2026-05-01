@@ -670,7 +670,7 @@ export default function BusinessSales() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 sm:space-y-4">
       {/* Premium gradient keyframes */}
       <style>{`
         @keyframes heroGlow {
@@ -860,7 +860,7 @@ export default function BusinessSales() {
           </motion.div>
 
           {/* ═══ STATUS FILTER CHIPS + SEARCH + ADD ═══ */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-3">
             {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: c.muted }} />
@@ -1505,9 +1505,20 @@ export default function BusinessSales() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Customer */}
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
-                        {t('biz.saleCustomer')}
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
+                          {t('biz.saleCustomer')}
+                        </Label>
+                        <button
+                          type="button"
+                          onClick={() => { setShowNewCustomerForm(true); setCustomerSearchOpen(true); }}
+                          className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md transition-colors"
+                          style={{ color: c.primary, backgroundColor: alpha(c.primary, 8) }}
+                        >
+                          <UserPlus className="h-3 w-3" />
+                          <span className="hidden sm:inline">Tambah Pelanggan</span>
+                        </button>
+                      </div>
                       <Popover open={customerSearchOpen} onOpenChange={(open) => { setCustomerSearchOpen(open); if (!open) setShowNewCustomerForm(false); }}>
                         <PopoverTrigger asChild>
                           <div className="relative">
@@ -1583,7 +1594,8 @@ export default function BusinessSales() {
                                   style={{ color: c.primary }}
                                 >
                                   <UserPlus className="h-3.5 w-3.5" />
-                                  Tambah Pelanggan Baru
+                                  <span className="hidden sm:inline">Tambah Pelanggan Baru</span>
+                                  <span className="sm:hidden">+ Pelanggan</span>
                                 </button>
                               </div>
                             </Command>

@@ -781,7 +781,7 @@ export function MainLayout() {
 
           {/* Page Content */}
           <main className={cn('flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto overflow-x-hidden w-full min-w-0 max-w-full transition-all duration-300 ease-in-out scrollbar-hide safe-bottom',
-            'pb-[100px] lg:pb-8', sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64')}>
+            'pb-[90px] lg:pb-8', sidebarCollapsed ? 'lg:ml-[64px] xl:ml-[64px]' : 'lg:ml-56 xl:ml-64')}>
             {isTransitioning && (
               <div className="fixed left-0 right-0 z-50 h-[2px]" style={{ top: 'calc(var(--header-offset, 3.5rem) + var(--announcement-height, 0px))' }}>
                 <div className="h-full animate-pulse" style={{ background: modeColor(mode), boxShadow: `0 0 12px ${modeColor(mode)}66` }} />
@@ -806,7 +806,7 @@ export function MainLayout() {
         <div className="relative flex items-center gap-0.5 px-2 py-1.5 border-b border-white/[0.04]">
           {/* Sliding pill */}
           <div
-            className="absolute top-[6px] bottom-[6px] rounded-lg transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            className="absolute top-[4px] bottom-[4px] rounded-lg transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
             style={{
               width: `calc((100% - 20px) / 3)`,
               left: `calc(${modeList.findIndex(m => m.key === mode)} * ((100% - 20px) / 3) + 10px)`,
@@ -823,7 +823,7 @@ export function MainLayout() {
             return (
               <button key={m.key} onClick={() => handleModeSwitch(m.key)}
                 className={cn(
-                  'relative z-10 flex-1 flex items-center justify-center gap-1 py-2 rounded-lg transition-all duration-200',
+                  'relative z-10 flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg transition-all duration-200',
                   isActive ? modeColorClass(m.key) : 'text-white/25',
                   isLocked && 'opacity-25 pointer-events-none',
                 )}>
@@ -838,13 +838,13 @@ export function MainLayout() {
           })}
         </div>
         {/* Mobile page nav items — scrollable */}
-        <div className="flex items-center px-1 h-[50px] overflow-x-auto scrollbar-hide">
+        <div className="flex items-center px-1 h-[46px] overflow-x-auto scrollbar-hide">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
-                className="relative flex flex-col items-center justify-center py-1 px-3 rounded-xl min-w-[64px] shrink-0 transition-all duration-200 active:scale-[0.88] active:opacity-70">
+                className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-xl min-w-[56px] shrink-0 transition-all duration-200 active:scale-[0.88] active:opacity-70">
                 {isActive && (
                   <div className="absolute -top-0 left-1/2 -translate-x-1/2">
                     <div className="w-6 h-[2.5px] rounded-full animate-pulse" style={{ background: modeColor(mode), boxShadow: `0 0 10px ${modeColor(mode)}88, 0 0 20px ${modeColor(mode)}44` }} />
@@ -866,7 +866,7 @@ export function MainLayout() {
       </nav>
 
       {/* Footer (mobile) */}
-      <footer className="px-2 py-2 pb-[88px] md:hidden" style={{ background: 'linear-gradient(to bottom, transparent, rgba(13,13,13,0.6))' }}>
+      <footer className="px-2 py-2 pb-[80px] md:hidden" style={{ background: 'linear-gradient(to bottom, transparent, rgba(13,13,13,0.6))' }}>
         <div className="text-center text-[10px] text-white/15">Creator: Tyger Earth | Ahtjong Labs</div>
       </footer>
 
